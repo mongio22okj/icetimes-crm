@@ -1,50 +1,61 @@
-"""Thin client for the external CRM lead API (x-api-key auth).
+"""Thin client for the TrackBox lead API (track.fintechgurus.org).
 
 Uses urllib from the standard library so no new dependency enters the
-locked dependency tree. Endpoints (see Postman docs):
+locked dependency tree. Endpoints (Tigloo TrackBox docs):
 
-    GET  /customer/integrations-lead?from=&to=&isDeposit=
-    POST /customer/lead
+    POST /api/pull/customers      — read leads/deposits in a date range
+    POST /api/signup/procform     — push a new lead
 
-Both require the ``x-api-key`` header. Base URL and key come from the
-``CRM_API_BASE_URL`` / ``CRM_API_KEY`` environment variables.
+Every call requires the headers x-trackbox-username, x-trackbox-password
+and x-api-key. Configuration comes from environment variables:
+TRACKBOX_BASE_URL, TRACKBOX_USERNAME, TRACKBOX_PASSWORD, TRACKBOX_API_KEY,
+TRACKBOX_AI, TRACKBOX_CI, TRACKBOX_GI.
 """
 import json
 import urllib.error
-import urllib.parse
 import urllib.request
 
 from django.conf import settings
 
-# ISO-8601 UTC format the API expects for the from/to range params.
-API_DATE_FORMAT = "%Y-%m-%dT%H:%M:%S.000Z"
+# TrackBox pull "type" values.
+PULL_LEADS = "2"
+PULL_LEADS_AND_DEPOSITS = "3"
+PULL_DEPOSITS = "4"
+
+# Date format TrackBox expects in pull from/to params.
+API_DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 
 class CRMAPIError(Exception):
-    """Raised when the CRM API is unconfigured, unreachable, or errors."""
+    """Raised when the TrackBox API is unconfigured, unreachable, or errors."""
 
 
 def is_configured() -> bool:
-    return bool(settings.CRM_API_BASE_URL and settings.CRM_API_KEY)
+    return all([
+        settings.TRACKBOX_BASE_URL,
+        settings.TRACKBOX_USERNAME,
+        settings.TRACKBOX_PASSWORD,
+        settings.TRACKBOX_API_KEY,
+    ])
 
 
-def _request(method, path, *, params=None, payload=None, timeout=20):
+def _request(path, payload, timeout=25):
     if not is_configured():
         raise CRMAPIError(
-            "CRM API non configurata: impostare le variabili d'ambiente "
-            "CRM_API_BASE_URL e CRM_API_KEY."
+            "TrackBox non configurato: servono TRACKBOX_BASE_URL, "
+            "TRACKBOX_USERNAME, TRACKBOX_PASSWORD e TRACKBOX_API_KEY "
+            "nelle variabili d'ambiente."
         )
-    url = settings.CRM_API_BASE_URL.rstrip("/") + path
-    if params:
-        url += "?" + urllib.parse.urlencode(params)
-    data = json.dumps(payload).encode() if payload is not None else None
+    url = settings.TRACKBOX_BASE_URL.rstrip("/") + path
     req = urllib.request.Request(
         url,
-        data=data,
-        method=method,
+        data=json.dumps(payload).encode(),
+        method="POST",
         headers={
             "Content-Type": "application/json",
-            "x-api-key": settings.CRM_API_KEY,
+            "x-trackbox-username": settings.TRACKBOX_USERNAME,
+            "x-trackbox-password": settings.TRACKBOX_PASSWORD,
+            "x-api-key": settings.TRACKBOX_API_KEY,
         },
     )
     try:
@@ -52,31 +63,62 @@ def _request(method, path, *, params=None, payload=None, timeout=20):
             body = resp.read().decode("utf-8", errors="replace")
     except urllib.error.HTTPError as exc:
         detail = exc.read().decode("utf-8", errors="replace")[:300]
-        raise CRMAPIError(f"CRM API ha risposto HTTP {exc.code}: {detail}") from exc
+        raise CRMAPIError(f"TrackBox ha risposto HTTP {exc.code}: {detail}") from exc
     except urllib.error.URLError as exc:
-        raise CRMAPIError(f"CRM API non raggiungibile: {exc.reason}") from exc
+        raise CRMAPIError(f"TrackBox non raggiungibile: {exc.reason}") from exc
     except TimeoutError as exc:
-        raise CRMAPIError("CRM API: timeout della richiesta.") from exc
-    if not body:
-        return None
+        raise CRMAPIError("TrackBox: timeout della richiesta.") from exc
     try:
-        return json.loads(body)
+        data = json.loads(body)
     except json.JSONDecodeError as exc:
-        raise CRMAPIError(f"CRM API ha restituito JSON non valido: {body[:200]}") from exc
+        raise CRMAPIError(f"TrackBox ha restituito JSON non valido: {body[:200]}") from exc
+
+    # TrackBox wraps errors in {"status": false, "message": ..., "code": ...}.
+    if isinstance(data, dict) and data.get("status") is False:
+        raise CRMAPIError(
+            f"TrackBox: {data.get('message', 'errore sconosciuto')} "
+            f"(code {data.get('code', '?')})"
+        )
+    return data
 
 
-def get_leads(date_from, date_to, is_deposit=None):
-    """Return the lead list for the datetime range [date_from, date_to]."""
-    params = {
+def pull_customers(date_from, date_to, pull_type=PULL_LEADS_AND_DEPOSITS, page=0):
+    """Return leads/deposits between two datetimes (TrackBox pull API)."""
+    payload = {
         "from": date_from.strftime(API_DATE_FORMAT),
         "to": date_to.strftime(API_DATE_FORMAT),
+        "type": str(pull_type),
+        "page": str(page),
     }
-    if is_deposit is not None:
-        params["isDeposit"] = "true" if is_deposit else "false"
-    result = _request("GET", "/customer/integrations-lead", params=params)
-    return result if isinstance(result, list) else []
+    return _request("/api/pull/customers", payload)
 
 
-def send_lead(payload):
-    """Submit a new lead; returns the API response (status/uuid/autologinLink)."""
-    return _request("POST", "/customer/lead", payload=payload)
+def push_lead(payload):
+    """Submit a new lead (TrackBox signup API). ai/ci/gi come from settings."""
+    body = {
+        "ai": settings.TRACKBOX_AI,
+        "ci": settings.TRACKBOX_CI,
+        "gi": settings.TRACKBOX_GI,
+        **payload,
+    }
+    return _request("/api/signup/procform", body)
+
+
+def extract_rows(response):
+    """Normalize the pull response into a list of dicts.
+
+    The exact response shape isn't documented; tolerate the common
+    wrappings: a bare list, {"data": [...]}, or {"data": {"customers"|
+    "leads": [...]}}.
+    """
+    if isinstance(response, list):
+        return response
+    if isinstance(response, dict):
+        data = response.get("data", response)
+        if isinstance(data, list):
+            return data
+        if isinstance(data, dict):
+            for key in ("customers", "leads", "rows", "items"):
+                if isinstance(data.get(key), list):
+                    return data[key]
+    return []

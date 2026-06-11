@@ -231,9 +231,15 @@ DEMO_MODE = False
 DEMO_USERNAME = "demo"
 DEMO_PASSWORD = "ApexShowcase!2026"
 
-# ── External CRM lead API ────────────────────────────────────────────────
-# Integration with the external lead CRM (x-api-key auth). When unset,
-# the Leads pages render a configuration warning instead of calling out.
-CRM_API_BASE_URL = os.environ.get("CRM_API_BASE_URL", "")
-CRM_API_KEY = os.environ.get("CRM_API_KEY", "")
+# ── TrackBox lead API ────────────────────────────────────────────────────
+# Integration with the external TrackBox CRM (track.fintechgurus.org).
+# When unset, the Leads pages render a configuration warning instead of
+# calling out. ai/ci/gi are the partner identifiers used on lead push.
+TRACKBOX_BASE_URL = os.environ.get("TRACKBOX_BASE_URL", "")
+TRACKBOX_USERNAME = os.environ.get("TRACKBOX_USERNAME", "")
+TRACKBOX_PASSWORD = os.environ.get("TRACKBOX_PASSWORD", "")
+TRACKBOX_API_KEY = os.environ.get("TRACKBOX_API_KEY", "")
+TRACKBOX_AI = os.environ.get("TRACKBOX_AI", "")
+TRACKBOX_CI = os.environ.get("TRACKBOX_CI", "1")
+TRACKBOX_GI = os.environ.get("TRACKBOX_GI", "")
 

@@ -6,7 +6,7 @@
 <div class="mb-6">
   <h1 class="text-2xl font-bold tracking-tight">{% translate "Send lead" %}</h1>
   <p class="text-sm text-muted-foreground mt-1">
-    {% translate "Submit a new lead to the CRM integration. IP and user agent are filled automatically." %}
+    {% translate "Submit a new lead to TrackBox. IP address and account password are handled automatically." %}
   </p>
 </div>
 
@@ -19,20 +19,19 @@
   <section class="rounded-lg border border-border bg-card p-6 space-y-4">
     <h2 class="text-base font-semibold">{% translate "Contact" %}</h2>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <div>{% apex_field form.name %}</div>
-      <div>{% apex_field form.last_name %}</div>
+      <div>{% apex_field form.firstname %}</div>
+      <div>{% apex_field form.lastname %}</div>
       <div>{% apex_field form.phone %}</div>
       <div>{% apex_field form.email %}</div>
     </div>
   </section>
 
   <section class="rounded-lg border border-border bg-card p-6 space-y-4">
-    <h2 class="text-base font-semibold">{% translate "Attribution" %}</h2>
+    <h2 class="text-base font-semibold">{% translate "Tracking" %}</h2>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <div>{% apex_field form.box_id %}</div>
-      <div>{% apex_field form.offer_id %}</div>
-      <div>{% apex_field form.country %}</div>
-      <div>{% apex_field form.lang %}</div>
+      <div>{% apex_field form.so %}</div>
+      <div>{% apex_field form.lg %}</div>
+      <div class="md:col-span-2">{% apex_field form.sub %}</div>
     </div>
   </section>
 
