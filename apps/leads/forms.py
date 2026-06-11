@@ -7,40 +7,6 @@ BASE_INPUT = (
     "placeholder:text-muted-foreground transition-colors"
 )
 
-PULL_TYPE_CHOICES = (
-    ("3", _("Leads + deposits")),
-    ("2", _("Leads only")),
-    ("4", _("Deposits only")),
-)
-
-
-class LeadFilterForm(forms.Form):
-    """Date-range + type filter for the TrackBox pull API."""
-
-    date_from = forms.DateField(
-        label=_("From"),
-        required=False,
-        widget=forms.DateInput(attrs={"type": "date", "class": BASE_INPUT}),
-    )
-    date_to = forms.DateField(
-        label=_("To"),
-        required=False,
-        widget=forms.DateInput(attrs={"type": "date", "class": BASE_INPUT}),
-    )
-    pull_type = forms.ChoiceField(
-        label=_("Type"),
-        required=False,
-        choices=PULL_TYPE_CHOICES,
-        widget=forms.Select(attrs={"class": BASE_INPUT}),
-    )
-
-    def clean(self):
-        cleaned = super().clean()
-        date_from, date_to = cleaned.get("date_from"), cleaned.get("date_to")
-        if date_from and date_to and date_to < date_from:
-            raise forms.ValidationError(_("The end date cannot be before the start date."))
-        return cleaned
-
 
 class LeadSendForm(forms.Form):
     """Manual lead submission towards TrackBox (/api/signup/procform).

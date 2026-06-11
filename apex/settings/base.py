@@ -243,3 +243,7 @@ TRACKBOX_AI = os.environ.get("TRACKBOX_AI", "")
 TRACKBOX_CI = os.environ.get("TRACKBOX_CI", "1")
 TRACKBOX_GI = os.environ.get("TRACKBOX_GI", "")
 
+# Shared secret for the public TrackBox postback receiver (/leads/postback/).
+# When unset, the endpoint rejects everything.
+LEADS_POSTBACK_TOKEN = os.environ.get("LEADS_POSTBACK_TOKEN", "")
+

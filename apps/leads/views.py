@@ -1,107 +1,69 @@
+import hmac
+import json
 import secrets
-from datetime import datetime, time, timedelta, timezone as dt_timezone
 
+from django.conf import settings
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.http import JsonResponse
+from django.shortcuts import redirect
 from django.urls import reverse_lazy
-from django.utils import timezone
 from django.utils.dateparse import parse_datetime
-from django.views.generic import FormView, TemplateView
+from django.views.decorators.csrf import csrf_exempt
+from django.views.generic import FormView
 
 from apps.accounts.mixins import EmailVerifiedRequiredMixin
 from apps.accounts.views import StaffRequiredMixin
 from apps.core.breadcrumbs import BreadcrumbsMixin
 from apps.core.messages import LEVEL_SUCCESS, toast
+from apps.core.tables import BulkAction, Column, Filter, TableConfig, TableView
 
 from . import client
-from .forms import LeadFilterForm, LeadSendForm
+from .forms import LeadSendForm
+from .models import Lead
 
-
-def _first(row, *keys):
-    """Return the first non-empty value among candidate keys in an API row."""
-    for key in keys:
-        value = row.get(key)
-        if value not in (None, ""):
-            return value
-    return None
-
-
-def _normalize(row):
-    """Map a TrackBox pull row (shape not fully documented) to display fields."""
-    created_raw = _first(row, "createdAt", "created_at", "signupDate", "date", "regDate")
-    created_dt = None
-    if isinstance(created_raw, str):
-        created_dt = parse_datetime(created_raw.replace(" ", "T"))
-    first = _first(row, "firstname", "firstName", "name") or ""
-    last = _first(row, "lastname", "lastName") or ""
-    deposit_raw = _first(row, "isDeposit", "deposit", "hasFTD", "ftd")
-    return {
-        "created_raw": created_raw,
-        "created_dt": created_dt,
-        "name": f"{first} {last}".strip() or None,
-        "email": _first(row, "email"),
-        "phone": _first(row, "phone", "phoneNumber"),
-        "status": _first(row, "callStatus", "saleStatus", "status", "statusName"),
-        "country": _first(row, "country", "countryCode", "geo"),
-        "is_deposit": bool(deposit_raw) if deposit_raw is not None else None,
-        "uuid": _first(row, "uuid", "id", "leadId", "customerId"),
-        "raw": row,
-    }
+LEADS_TABLE = TableConfig(
+    key="leads",
+    columns=(
+        Column("created_at", "Received", sortable=True, pinned=True,
+               filter=Filter("daterange"),
+               formatter=lambda v: v.strftime("%d/%m/%Y %H:%M") if v else ""),
+        Column("firstname", "First name", searchable=True),
+        Column("lastname", "Last name", searchable=True),
+        Column("email", "Email", searchable=True),
+        Column("phone", "Phone"),
+        Column("country", "Country",
+               filter=Filter("text", placeholder="IT, ES…")),
+        Column("status", "Status", sortable=True,
+               filter=Filter("text", placeholder="Filter status…")),
+        Column("is_deposit", "Deposit", sortable=True,
+               formatter=lambda v: "✓ deposit" if v else "—"),
+        Column("source", "Source", priority=3),
+    ),
+    bulk_actions=(
+        BulkAction(slug="delete", label="Delete", icon="trash", destructive=True,
+                   confirm_text="Delete {n} leads? This cannot be undone."),
+    ),
+    exports=["csv", "xlsx"],
+    page_size=25,
+    default_sort="-created_at",
+    sticky_first=True,
+    caption="Leads ricevuti da TrackBox via postback e invii manuali.",
+)
 
 
 class LeadListView(BreadcrumbsMixin, LoginRequiredMixin,
-                   EmailVerifiedRequiredMixin, StaffRequiredMixin, TemplateView):
-    """Live list of leads pulled from TrackBox.
-
-    Data is external (not ORM), so this is a plain TemplateView with a
-    filter form rather than a TableView subclass.
-    """
-
+                   EmailVerifiedRequiredMixin, StaffRequiredMixin, TableView):
+    model = Lead
     template_name = "leads/lead_list.html"
+    context_object_name = "leads"
     breadcrumb_title = "Leads"
+    table_config = LEADS_TABLE
 
-    def get_context_data(self, **kwargs):
-        ctx = super().get_context_data(**kwargs)
-        form = LeadFilterForm(self.request.GET or None)
-
-        today = timezone.localdate()
-        date_from = today - timedelta(days=30)
-        date_to = today
-        pull_type = client.PULL_LEADS_AND_DEPOSITS
-        if form.is_bound and form.is_valid():
-            date_from = form.cleaned_data.get("date_from") or date_from
-            date_to = form.cleaned_data.get("date_to") or date_to
-            pull_type = form.cleaned_data.get("pull_type") or pull_type
-
-        dt_from = datetime.combine(date_from, time.min, tzinfo=dt_timezone.utc)
-        dt_to = datetime.combine(date_to, time.max, tzinfo=dt_timezone.utc)
-
-        leads, error = [], None
-        if client.is_configured():
-            try:
-                response = client.pull_customers(dt_from, dt_to, pull_type)
-                leads = [_normalize(r) for r in client.extract_rows(response)
-                         if isinstance(r, dict)]
-            except client.CRMAPIError as exc:
-                error = str(exc)
-        else:
-            error = (
-                "TrackBox non configurato: impostare TRACKBOX_BASE_URL, "
-                "TRACKBOX_USERNAME, TRACKBOX_PASSWORD e TRACKBOX_API_KEY "
-                "nelle variabili d'ambiente del servizio."
-            )
-
-        leads.sort(key=lambda x: x.get("created_raw") or "", reverse=True)
-        deposits = sum(1 for lead in leads if lead.get("is_deposit"))
-        ctx.update({
-            "form": form,
-            "leads": leads,
-            "error": error,
-            "date_from": date_from,
-            "date_to": date_to,
-            "total": len(leads),
-            "deposits": deposits,
-        })
-        return ctx
+    def handle_bulk_action(self, action, ids, request):
+        if action.slug == "delete":
+            n, _ = Lead.objects.filter(pk__in=ids).delete()
+            toast(request, LEVEL_SUCCESS, f"Deleted {n} leads.")
+        return redirect("leads:list")
 
 
 class LeadSendView(BreadcrumbsMixin, LoginRequiredMixin,
@@ -125,9 +87,111 @@ class LeadSendView(BreadcrumbsMixin, LoginRequiredMixin,
         except client.CRMAPIError as exc:
             form.add_error(None, str(exc))
             return self.form_invalid(form)
-        ref = ""
+
+        uniqueid = ""
         if isinstance(result, dict):
-            ref = result.get("uuid") or result.get("id") or ""
+            addon = result.get("addonData") or {}
+            inner = addon.get("data") or {}
+            uniqueid = str(
+                result.get("uniqueid") or addon.get("uniqueid")
+                or inner.get("uniqueid") or result.get("uuid") or ""
+            )
+        data = form.cleaned_data
+        Lead.objects.create(
+            uniqueid=uniqueid,
+            firstname=data["firstname"],
+            lastname=data["lastname"],
+            email=data["email"],
+            phone=data["phone"],
+            country="",
+            status="sent",
+            source="manual",
+            payload=result if isinstance(result, dict) else {},
+        )
         toast(self.request, LEVEL_SUCCESS,
-              f"Lead inviato a TrackBox{f' (rif: {ref})' if ref else ''}.")
+              f"Lead inviato a TrackBox{f' (rif: {uniqueid})' if uniqueid else ''}.")
         return super().form_valid(form)
+
+
+# ── Postback receiver ────────────────────────────────────────────────────
+# Public endpoint TrackBox calls on lead events. Protected by a shared
+# token (?token=… or X-Postback-Token header) instead of session auth —
+# this is a machine-to-machine hook, not an API-key endpoint.
+
+def _first(data, *keys):
+    for key in keys:
+        value = data.get(key)
+        if value not in (None, "", "null", "{", "}"):
+            return value
+    return None
+
+
+def _truthy(value):
+    return str(value).strip().lower() in {"1", "true", "yes", "deposit", "ftd", "depositor"}
+
+
+@csrf_exempt
+def postback(request):
+    expected = settings.LEADS_POSTBACK_TOKEN
+    supplied = request.GET.get("token") or request.headers.get("X-Postback-Token", "")
+    if not expected or not hmac.compare_digest(supplied, expected):
+        return JsonResponse({"ok": False, "error": "invalid token"}, status=403)
+
+    data = dict(request.GET.items())
+    if request.method == "POST":
+        if "json" in (request.content_type or ""):
+            try:
+                body = json.loads(request.body.decode("utf-8", errors="replace") or "{}")
+                if isinstance(body, dict):
+                    data.update(body)
+            except json.JSONDecodeError:
+                pass
+        else:
+            data.update(request.POST.items())
+    data.pop("token", None)
+
+    uniqueid = str(_first(data, "uniqueid", "clickid", "uuid", "leadId",
+                          "customerId", "id") or "")
+    email = str(_first(data, "email") or "")
+    status = str(_first(data, "callStatus", "saleStatus", "status", "statusName",
+                        "event") or "")
+    deposit_raw = _first(data, "isDeposit", "deposit", "ftd", "hasFTD", "type")
+    event_raw = _first(data, "createdAt", "date", "time", "eventDate")
+    event_at = None
+    if isinstance(event_raw, str):
+        event_at = parse_datetime(event_raw.replace(" ", "T"))
+
+    lead = None
+    if uniqueid:
+        lead = Lead.objects.filter(uniqueid=uniqueid).order_by("-created_at").first()
+    if lead is None and email:
+        lead = Lead.objects.filter(email__iexact=email).order_by("-created_at").first()
+    if lead is None:
+        lead = Lead(source="postback")
+
+    # Update only with non-empty incoming values so a status-only
+    # postback doesn't blank out contact fields captured earlier.
+    if uniqueid:
+        lead.uniqueid = uniqueid
+    if email:
+        lead.email = email
+    for field, keys in (
+        ("firstname", ("firstname", "firstName", "name")),
+        ("lastname", ("lastname", "lastName")),
+        ("phone", ("phone", "phoneNumber")),
+        ("country", ("country", "countryCode", "geo")),
+    ):
+        value = _first(data, *keys)
+        if value:
+            setattr(lead, field, str(value)[:120])
+    if status:
+        lead.status = status[:120]
+    if deposit_raw is not None and _truthy(deposit_raw):
+        lead.is_deposit = True
+    if event_at:
+        lead.event_at = event_at
+    merged = dict(lead.payload or {})
+    merged.update(data)
+    lead.payload = merged
+    lead.save()
+    return JsonResponse({"ok": True, "id": lead.pk})

@@ -3,98 +3,18 @@
 {% load i18n %}
 {% block title %}Leads · IceTimes CRM{% endblock %}
 {% block content %}
-<div class="mb-6 flex flex-wrap items-end justify-between gap-4">
+<div class="flex items-center justify-between mb-6">
   <div>
     <h1 class="text-2xl font-bold tracking-tight">{% translate "Leads" %}</h1>
-    <p class="text-sm text-muted-foreground mt-1">
-      {% blocktranslate with from=date_from|date:"d/m/Y" to=date_to|date:"d/m/Y" %}Leads from TrackBox, {{ from }} – {{ to }}.{% endblocktranslate %}
-    </p>
+    {% if config.caption %}
+      <p class="text-sm text-muted-foreground mt-1">{{ config.caption }}</p>
+    {% endif %}
   </div>
   <a href="{% url 'leads:send' %}"
-     class="h-10 px-4 rounded-md bg-primary text-primary-foreground inline-flex items-center gap-2 text-sm font-medium hover:opacity-90">
+     class="h-10 px-4 rounded-md bg-primary text-primary-foreground inline-flex items-center gap-2 font-medium hover:opacity-90">
     {% icon "plus" %} {% translate "Send lead" %}
   </a>
 </div>
 
-{% if error %}
-  <div class="mb-6 rounded-md border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
-    {{ error }}
-  </div>
-{% endif %}
-
-<form method="get" class="mb-6 rounded-lg border border-border bg-card p-4">
-  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
-    <div>{% apex_field form.date_from %}</div>
-    <div>{% apex_field form.date_to %}</div>
-    <div>{% apex_field form.pull_type %}</div>
-    <div>
-      <button type="submit"
-              class="h-10 w-full px-4 rounded-md border border-border inline-flex items-center justify-center gap-2 text-sm font-medium hover:bg-accent">
-        {% icon "search" %} {% translate "Filter" %}
-      </button>
-    </div>
-  </div>
-</form>
-
-<div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-  <div class="rounded-lg border border-border bg-card p-4">
-    <div class="text-sm text-muted-foreground">{% translate "Total leads" %}</div>
-    <div class="text-2xl font-bold mt-1">{{ total }}</div>
-  </div>
-  <div class="rounded-lg border border-border bg-card p-4">
-    <div class="text-sm text-muted-foreground">{% translate "With deposit" %}</div>
-    <div class="text-2xl font-bold mt-1">{{ deposits }}</div>
-  </div>
-</div>
-
-<div class="rounded-lg border border-border bg-card overflow-x-auto">
-  <table class="w-full text-sm">
-    <thead>
-      <tr class="border-b border-border text-left text-muted-foreground">
-        <th class="px-4 py-3 font-medium">{% translate "Created" %}</th>
-        <th class="px-4 py-3 font-medium">{% translate "Name" %}</th>
-        <th class="px-4 py-3 font-medium">Email</th>
-        <th class="px-4 py-3 font-medium">{% translate "Phone" %}</th>
-        <th class="px-4 py-3 font-medium">{% translate "Status" %}</th>
-        <th class="px-4 py-3 font-medium">{% translate "Deposit" %}</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for lead in leads %}
-      <tr class="border-b border-border last:border-0 hover:bg-accent/40">
-        <td class="px-4 py-3 whitespace-nowrap">
-          {% if lead.created_dt %}{{ lead.created_dt|date:"d/m/Y H:i" }}{% else %}{{ lead.created_raw|default:"—" }}{% endif %}
-        </td>
-        <td class="px-4 py-3">{{ lead.name|default:"—" }}</td>
-        <td class="px-4 py-3">{{ lead.email|default:"—" }}</td>
-        <td class="px-4 py-3 whitespace-nowrap">{{ lead.phone|default:"—" }}</td>
-        <td class="px-4 py-3">{{ lead.status|default:"—" }}</td>
-        <td class="px-4 py-3">
-          {% if lead.is_deposit %}
-            <span class="inline-flex items-center rounded-full bg-emerald-500/10 px-2 py-0.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">
-              {% translate "Deposit" %}
-            </span>
-          {% elif lead.is_deposit is False %}
-            <span class="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
-              {% translate "No deposit" %}
-            </span>
-          {% else %}
-            <span class="text-muted-foreground">—</span>
-          {% endif %}
-        </td>
-      </tr>
-      {% empty %}
-      <tr>
-        <td colspan="6" class="px-4 py-10 text-center text-muted-foreground">
-          {% if error %}
-            {% translate "No data — fix the configuration above to load leads." %}
-          {% else %}
-            {% translate "No leads in the selected period." %}
-          {% endif %}
-        </td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-</div>
+{% include "core/tables/_table.html" %}
 {% endblock %}
