@@ -1,0 +1,65 @@
+{% load apex %}
+<aside aria-label="Sidebar"
+       :aria-hidden="!drawer.open && isMobile"
+       :inert="!drawer.open && isMobile"
+       class="fixed left-0 top-0 z-40 h-screen w-[260px] bg-sidebar text-sidebar-foreground border-r border-sidebar-border flex flex-col transition-transform duration-200 ease-out lg:translate-x-0"
+       :class="drawer.open ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'">
+  <div class="h-16 flex items-center justify-between px-6 border-b border-sidebar-border shrink-0">
+    <a href="/" aria-label="Apex home" class="flex items-center gap-2.5 font-semibold text-sidebar-primary-foreground">
+      <span class="h-8 w-8 rounded-md bg-primary text-primary-foreground inline-flex items-center justify-center">
+        {% icon "package" 18 %}
+      </span>
+      <span class="text-base tracking-tight">Apex</span>
+    </a>
+    <button type="button"
+            @click="drawer.open = false"
+            class="lg:hidden h-8 w-8 rounded-md inline-flex items-center justify-center hover:bg-sidebar-accent"
+            aria-label="Close menu">
+      {% icon "x" 18 %}
+    </button>
+  </div>
+  <nav aria-label="Main navigation" class="flex-1 overflow-y-auto p-4 space-y-6">
+    {% for group in nav_groups %}
+      <div>
+        <p class="px-2 pb-2 text-xs uppercase tracking-wider text-sidebar-foreground/60">{{ group.label }}</p>
+        <ul class="space-y-1">
+          {% for item in group.items %}
+            {% is_active current_path item.href as item_active %}
+            <li>
+              <a href="{{ item.href }}"
+                 @click="drawer.open = false"
+                 {% if item_active %}aria-current="page"{% endif %}
+                 class="flex items-center gap-3 rounded-md px-2 py-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {% active current_path item.href %}">
+                {% icon item.icon 18 %}
+                <span>{{ item.label }}</span>
+              </a>
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
+    {% endfor %}
+  </nav>
+  {% if user.is_authenticated %}
+    <div class="p-3 border-t border-sidebar-border shrink-0">
+      <div class="flex items-center gap-3 rounded-md px-2 py-2">
+        {% if user.avatar %}
+          <img src="{{ user.avatar.url }}" alt="" class="h-9 w-9 rounded-full object-cover shrink-0" />
+        {% else %}
+          <span class="h-9 w-9 rounded-full inline-flex items-center justify-center text-xs font-semibold text-white shrink-0"
+                style="background-color: {{ user|avatar_color }};">{{ user|initials }}</span>
+        {% endif %}
+        <div class="min-w-0 flex-1">
+          <div class="text-sm font-medium truncate">{{ user.get_full_name|default:user.username }}</div>
+          <div class="text-xs text-sidebar-foreground/60 truncate capitalize">{{ user.get_role_display|default:"Member" }}</div>
+        </div>
+        <form method="post" action="{% url 'logout' %}">
+          {% csrf_token %}
+          <button type="submit" aria-label="Sign out"
+                  class="h-8 w-8 rounded-md inline-flex items-center justify-center hover:bg-sidebar-accent hover:text-sidebar-accent-foreground">
+            {% icon "log-out" 16 %}
+          </button>
+        </form>
+      </div>
+    </div>
+  {% endif %}
+</aside>

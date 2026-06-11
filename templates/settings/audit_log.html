@@ -1,0 +1,38 @@
+{% extends "layouts/settings.html" %}
+{% load apex %}
+{% block settings_content %}
+<div class="rounded-lg border border-border bg-card overflow-hidden">
+  <div class="px-5 py-4 border-b border-border">
+    <h2 class="text-base font-semibold">Audit log</h2>
+    <p class="text-xs text-muted-foreground mt-0.5">Security-relevant events on your account — sign-ins, password changes, token activity, sessions revoked. Last 200 entries.</p>
+  </div>
+  {% if events %}
+    <ul class="divide-y divide-border">
+      {% for e in events %}
+        <li class="px-5 py-3 flex items-start gap-3 text-sm">
+          <span class="inline-flex h-7 w-7 rounded-full items-center justify-center shrink-0 mt-0.5
+                       {% if 'failed' in e.kind %}bg-destructive/10 text-destructive
+                       {% elif 'login' in e.kind or 'logout' in e.kind %}bg-primary/10 text-primary
+                       {% elif 'password' in e.kind or 'two_factor' in e.kind %}bg-amber-500/10 text-amber-600
+                       {% elif 'api_key' in e.kind %}bg-indigo-500/10 text-indigo-500
+                       {% else %}bg-muted text-muted-foreground{% endif %}">
+            {% icon "activity" 14 %}
+          </span>
+          <div class="flex-1 min-w-0">
+            <p class="font-medium">{{ e.get_kind_display }}</p>
+            {% if e.description %}
+              <p class="text-xs text-muted-foreground">{{ e.description }}</p>
+            {% endif %}
+            <p class="text-[11px] text-muted-foreground mt-0.5">
+              {{ e.created_at|date:"M d, Y H:i" }}
+              {% if e.ip_address %} · from {{ e.ip_address }}{% endif %}
+            </p>
+          </div>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    {% include "components/_empty_state.html" with icon="activity" headline="No events yet" body="Sign-ins and security changes will show up here." %}
+  {% endif %}
+</div>
+{% endblock %}

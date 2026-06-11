@@ -1,0 +1,40 @@
+{% extends "layouts/dashboard.html" %}
+{% load apex %}
+{% block content %}
+<div class="flex flex-col lg:flex-row h-[calc(100vh-8rem)] -m-6 border-t border-border">
+
+  {# === Left: conversation list === #}
+  <aside class="{% if partner %}hidden lg:flex{% else %}flex{% endif %} lg:w-72 shrink-0 border-r border-border bg-card flex-col">
+    <header class="h-12 px-4 flex items-center justify-between border-b border-border">
+      <h1 class="font-semibold text-sm uppercase tracking-wide text-muted-foreground">Chats</h1>
+      <a href="{% url 'chat:new' %}"
+         class="h-8 w-8 rounded-md border border-border inline-flex items-center justify-center hover:bg-accent"
+         title="Start new conversation">
+        {% icon "plus" 14 %}
+      </a>
+    </header>
+    <div class="flex-1 overflow-y-auto">
+      {% include "chat/_conversation_list.html" %}
+    </div>
+  </aside>
+
+  {# === Right: stream / picker / empty state === #}
+  <section class="{% if not partner %}hidden lg:flex{% else %}flex{% endif %} flex-1 min-w-0 flex-col">
+    {% if partner %}
+      <a href="{% url 'chat:home' %}" class="lg:hidden flex items-center gap-1 px-4 py-2 text-xs text-muted-foreground border-b border-border hover:bg-accent">
+        ← Back to chats
+      </a>
+    {% endif %}
+    {% block stream_pane %}
+      <div class="flex-1 flex items-center justify-center p-12">
+        <div class="text-center">
+          <div class="mx-auto h-12 w-12 rounded-full bg-muted/50 inline-flex items-center justify-center mb-3">
+            {% icon "message-circle" 20 %}
+          </div>
+          <p class="text-sm text-muted-foreground">Pick a conversation to start chatting.</p>
+        </div>
+      </div>
+    {% endblock %}
+  </section>
+</div>
+{% endblock %}

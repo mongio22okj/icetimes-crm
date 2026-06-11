@@ -1,0 +1,120 @@
+{% extends "layouts/dashboard.html" %}
+{% load apex %}
+{% block title %}SaaS · Apex{% endblock %}
+{% block content %}
+<div class="mb-6">
+  <h1 class="text-2xl font-bold tracking-tight">SaaS</h1>
+  <p class="mt-1 text-sm text-muted-foreground">MRR, growth, and subscriber health for your subscription business.</p>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+  {% for stat in stats %}
+    {% include "components/stat_card.html" with label=stat.label value=stat.value delta=stat.delta trend=stat.trend icon=stat.icon accent=stat.accent spark=stat.spark %}
+  {% endfor %}
+</div>
+
+<div class="mt-6 grid grid-cols-1 xl:grid-cols-12 gap-4">
+  <div class="xl:col-span-8 rounded-lg border border-border bg-card p-4">
+    <div class="mb-4">
+      <h2 class="font-semibold">Revenue Growth</h2>
+      <p class="text-sm text-muted-foreground">MRR and ARR over the last 12 months.</p>
+    </div>
+    {{ revenue_growth_data|json_script:"revenue-growth-data" }}
+    <div id="revenue-growth-chart" class="h-[320px]" x-data="revenueGrowthChart()"></div>
+  </div>
+
+  <div class="xl:col-span-4 rounded-lg border border-border bg-card p-4">
+    <div class="mb-4">
+      <h2 class="font-semibold">Subscription Plans</h2>
+      <p class="text-sm text-muted-foreground">Active subscribers by plan.</p>
+    </div>
+    {{ plans_data|json_script:"plans-data" }}
+    <div id="plans-chart" class="h-[260px]" x-data="plansChart()"></div>
+  </div>
+</div>
+
+<div class="mt-6 grid grid-cols-1 xl:grid-cols-12 gap-4">
+  <div class="xl:col-span-8 rounded-lg border border-border bg-card">
+    <div class="px-4 pt-4 pb-3 border-b border-border">
+      <h2 class="font-semibold">Marketing Channels</h2>
+      <p class="text-sm text-muted-foreground">Visitor → signup conversion by acquisition channel.</p>
+    </div>
+    <table class="w-full text-sm">
+      <thead class="text-xs text-muted-foreground uppercase tracking-wide bg-muted/30">
+        <tr>
+          <th class="text-left px-4 py-2 font-medium">Channel</th>
+          <th class="text-right px-4 py-2 font-medium">Visitors</th>
+          <th class="text-right px-4 py-2 font-medium">Signups</th>
+          <th class="text-right px-4 py-2 font-medium">Conv.</th>
+          <th class="text-right px-4 py-2 font-medium pr-6">CPA</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-border">
+        {% for c in marketing_channels %}
+          <tr class="hover:bg-muted/30">
+            <td class="px-4 py-3 font-medium">{{ c.channel }}</td>
+            <td class="px-4 py-3 text-right tabular-nums">{{ c.visitors|floatformat:0 }}</td>
+            <td class="px-4 py-3 text-right tabular-nums">{{ c.signups|floatformat:0 }}</td>
+            <td class="px-4 py-3 text-right tabular-nums">{{ c.conv }}%</td>
+            <td class="px-4 py-3 pr-6 text-right tabular-nums text-muted-foreground">
+              {% if c.cpa %}${{ c.cpa }}{% else %}—{% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="xl:col-span-4 rounded-lg border border-border bg-card p-4">
+    <div class="mb-4">
+      <h2 class="font-semibold">User Growth</h2>
+      <p class="text-sm text-muted-foreground">New users per month, last 6 months.</p>
+    </div>
+    {{ user_growth_data|json_script:"user-growth-data" }}
+    <div id="user-growth-chart" class="h-[260px]" x-data="userGrowthChart()"></div>
+  </div>
+</div>
+
+<div class="mt-6 grid grid-cols-1 xl:grid-cols-12 gap-4">
+  <div class="xl:col-span-8 rounded-lg border border-border bg-card">
+    <div class="px-4 pt-4 pb-3 border-b border-border">
+      <h2 class="font-semibold">Recent Signups</h2>
+      <p class="text-sm text-muted-foreground">Newest accounts joining your platform.</p>
+    </div>
+    <table class="w-full text-sm">
+      <thead class="text-xs text-muted-foreground uppercase tracking-wide bg-muted/30">
+        <tr>
+          <th class="text-left px-4 py-2 font-medium">User</th>
+          <th class="text-left px-4 py-2 font-medium">Email</th>
+          <th class="text-left px-4 py-2 font-medium">Plan</th>
+          <th class="text-right px-4 py-2 font-medium pr-6">Signed up</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-border">
+        {% for s in recent_signups %}
+          <tr class="hover:bg-muted/30">
+            <td class="px-4 py-3">
+              <div class="flex items-center gap-3">
+                <span class="inline-flex h-9 w-9 items-center justify-center rounded-full text-xs font-semibold text-white" style="background-color: {{ s.name|avatar_color }};">{{ s.initials }}</span>
+                <span class="font-medium">{{ s.name }}</span>
+              </div>
+            </td>
+            <td class="px-4 py-3 text-muted-foreground">{{ s.email }}</td>
+            <td class="px-4 py-3">
+              {% if s.plan == "enterprise" %}<span class="inline-flex items-center px-2 h-6 rounded-md text-xs font-medium bg-success/10 text-success">Enterprise</span>
+              {% elif s.plan == "pro" %}<span class="inline-flex items-center px-2 h-6 rounded-md text-xs font-medium bg-primary/10 text-primary">Pro</span>
+              {% elif s.plan == "starter" %}<span class="inline-flex items-center px-2 h-6 rounded-md text-xs font-medium bg-amber-500/10 text-amber-600">Starter</span>
+              {% elif s.plan == "free" %}<span class="inline-flex items-center px-2 h-6 rounded-md text-xs font-medium bg-muted text-muted-foreground">Free</span>{% endif %}
+            </td>
+            <td class="px-4 py-3 pr-6 text-right text-muted-foreground">{{ s.date }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="xl:col-span-4">
+    {% include "dashboard/_targets.html" with title="Growth Targets" subtitle="Quarterly goals at a glance." targets=targets %}
+  </div>
+</div>
+{% endblock %}

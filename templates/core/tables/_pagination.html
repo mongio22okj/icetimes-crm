@@ -1,0 +1,44 @@
+{% load apex %}
+{% comment %}
+HTMX-driven pagination: each link swaps just the table region.
+Falls back to a plain page reload when JS is off.
+{% endcomment %}
+<nav class="flex items-center justify-between gap-3" aria-label="Pagination">
+  <div class="text-xs text-muted-foreground">
+    Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+    · {{ page_obj.paginator.count }} total
+  </div>
+  <div class="flex items-center gap-1">
+    {% if page_obj.has_previous %}
+      {% table_url page=page_obj.previous_page_number as prev_href %}
+      <a href="{{ prev_href }}"
+         hx-get="{{ prev_href }}&_partial=table"
+         hx-target="#table-{{ config.key }}"
+         hx-swap="outerHTML"
+         hx-push-url="{{ prev_href }}"
+         class="h-8 px-3 inline-flex items-center rounded-md border border-border text-sm hover:bg-accent">
+        ← Prev
+      </a>
+    {% else %}
+      <span class="h-8 px-3 inline-flex items-center rounded-md border border-border text-sm opacity-40">
+        ← Prev
+      </span>
+    {% endif %}
+
+    {% if page_obj.has_next %}
+      {% table_url page=page_obj.next_page_number as next_href %}
+      <a href="{{ next_href }}"
+         hx-get="{{ next_href }}&_partial=table"
+         hx-target="#table-{{ config.key }}"
+         hx-swap="outerHTML"
+         hx-push-url="{{ next_href }}"
+         class="h-8 px-3 inline-flex items-center rounded-md border border-border text-sm hover:bg-accent">
+        Next →
+      </a>
+    {% else %}
+      <span class="h-8 px-3 inline-flex items-center rounded-md border border-border text-sm opacity-40">
+        Next →
+      </span>
+    {% endif %}
+  </div>
+</nav>

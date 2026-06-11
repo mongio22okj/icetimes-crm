@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% load apex %}
+{% block title %}Coming Soon · Apex{% endblock %}
+{% block body %}
+<main class="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-primary/5 p-4">
+  <div class="w-full max-w-2xl text-center">
+    <a href="/" aria-label="Apex home" class="mb-8 inline-flex items-center justify-center gap-2.5 font-semibold">
+      <span class="h-10 w-10 rounded-md bg-primary text-primary-foreground inline-flex items-center justify-center">
+        {% icon "package" 22 %}
+      </span>
+      <span class="text-xl tracking-tight">Apex</span>
+    </a>
+
+    <span class="inline-flex items-center gap-1.5 px-3 h-7 rounded-full text-xs font-medium bg-primary/10 text-primary mb-5">
+      <span class="h-1.5 w-1.5 rounded-full bg-primary animate-pulse"></span>
+      Launching soon
+    </span>
+
+    <h1 class="text-4xl sm:text-5xl font-bold tracking-tight mb-4">Something great is coming.</h1>
+    <p class="text-base text-muted-foreground max-w-xl mx-auto mb-10">
+      We're putting the finishing touches on the next version of Apex. Drop your email below and we'll let you know the moment it ships.
+    </p>
+
+    <div x-data="countdownTimer('{{ launch_at|date:'c' }}')" class="grid grid-cols-4 gap-3 max-w-lg mx-auto mb-10">
+      <div class="rounded-lg border border-border bg-card p-4">
+        <p class="text-3xl sm:text-4xl font-bold tabular-nums" x-text="String(days).padStart(2,'0')">00</p>
+        <p class="text-xs uppercase tracking-wide text-muted-foreground mt-1">Days</p>
+      </div>
+      <div class="rounded-lg border border-border bg-card p-4">
+        <p class="text-3xl sm:text-4xl font-bold tabular-nums" x-text="String(hours).padStart(2,'0')">00</p>
+        <p class="text-xs uppercase tracking-wide text-muted-foreground mt-1">Hours</p>
+      </div>
+      <div class="rounded-lg border border-border bg-card p-4">
+        <p class="text-3xl sm:text-4xl font-bold tabular-nums" x-text="String(minutes).padStart(2,'0')">00</p>
+        <p class="text-xs uppercase tracking-wide text-muted-foreground mt-1">Minutes</p>
+      </div>
+      <div class="rounded-lg border border-border bg-card p-4">
+        <p class="text-3xl sm:text-4xl font-bold tabular-nums" x-text="String(seconds).padStart(2,'0')">00</p>
+        <p class="text-xs uppercase tracking-wide text-muted-foreground mt-1">Seconds</p>
+      </div>
+    </div>
+
+    <form method="post" action="{% url 'pages:coming_soon_subscribe' %}" class="max-w-md mx-auto">
+      {% csrf_token %}
+      <div class="flex flex-col sm:flex-row gap-2">
+        <label for="email" class="sr-only">Email address</label>
+        <input id="email" name="email" type="email" required placeholder="you@example.com"
+               class="flex-1 h-11 rounded-md border border-border bg-background px-4 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+        <button type="submit" class="h-11 px-5 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 whitespace-nowrap">
+          Notify me
+        </button>
+      </div>
+      {% if subscribed %}
+        <p class="text-sm text-success mt-3">Thanks! We'll let you know when it's live.</p>
+      {% endif %}
+    </form>
+
+    <div class="mt-12 flex items-center justify-center gap-5 text-sm text-muted-foreground">
+      <a href="/" class="hover:text-foreground inline-flex items-center gap-1.5">{% icon "arrow-up-right" 14 %}Visit dashboard</a>
+      <a href="{% url 'marketing:support' %}" class="hover:text-foreground inline-flex items-center gap-1.5">{% icon "mail" 14 %}Get in touch</a>
+    </div>
+  </div>
+</main>
+
+<script nonce="{{ csp_nonce }}">function countdownTimer(target) {
+  return {
+    days: 0, hours: 0, minutes: 0, seconds: 0,
+    init() {
+      this.target = new Date(target).getTime();
+      this.update();
+      this._t = setInterval(() => this.update(), 1000);
+    },
+    update() {
+      const diff = Math.max(0, this.target - Date.now());
+      this.days    = Math.floor(diff / (1000 * 60 * 60 * 24));
+      this.hours   = Math.floor((diff / (1000 * 60 * 60)) % 24);
+      this.minutes = Math.floor((diff / (1000 * 60)) % 60);
+      this.seconds = Math.floor((diff / 1000) % 60);
+    },
+    destroy() { clearInterval(this._t); },
+  };
+}
+window.countdownTimer = countdownTimer;
+</script>
+{% endblock %}

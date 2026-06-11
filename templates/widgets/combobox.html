@@ -1,0 +1,79 @@
+{% load apex %}
+{% comment %}
+Combobox widget — single-select typeahead.
+
+Posts a single hidden `name` input with the selected value. Async loads
+options from `widget.async_url` (when set) — falls back to static choices.
+{% endcomment %}
+{% with attrs=widget.attrs async_url=widget.async_url %}
+<div data-widget="combobox"
+     x-data='{
+       all: {{ widget.options_json|safe }},
+       value: {{ widget.selected_value|json_dumps }},
+       label: {{ widget.selected_label|json_dumps }},
+       query: "",
+       open: false,
+       activeIndex: 0,
+       _t: null,
+       filtered() {
+         const q = this.query.trim().toLowerCase();
+         if (!q) return this.all;
+         return this.all.filter(o => o.label.toLowerCase().includes(q));
+       },
+       async fetchAsync() {
+         if (!"{{ async_url }}") return;
+         clearTimeout(this._t);
+         this._t = setTimeout(async () => {
+           const url = "{{ async_url }}" + (("{{ async_url }}".includes("?") ? "&" : "?")
+                       + "_typeahead=1&q=" + encodeURIComponent(this.query));
+           try {
+             const r = await fetch(url, {headers: {Accept: "application/json"}});
+             if (r.ok) this.all = await r.json();
+           } catch (_e) {}
+         }, 250);
+       },
+       pick(v, l) { this.value = v; this.label = l; this.close(); },
+       close() { this.open = false; this.query = ""; this.activeIndex = 0; },
+       moveDown() { const len = this.filtered().length; if (len) this.activeIndex = (this.activeIndex + 1) % len; },
+       moveUp()   { const len = this.filtered().length; if (len) this.activeIndex = (this.activeIndex - 1 + len) % len; },
+       pickActive() { const opts = this.filtered(); if (opts.length) {
+           const o = opts[Math.max(0, Math.min(this.activeIndex, opts.length - 1))];
+           this.pick(o.value, o.label);
+         } },
+     }'
+     class="relative">
+
+  <input type="hidden" name="{{ widget.name }}" :value="value" {% if attrs.id %}id="{{ attrs.id }}"{% endif %}>
+
+  <button type="button" @click="open = !open" :aria-expanded="open" role="combobox"
+          class="w-full h-10 px-3 rounded-md border border-input bg-background text-sm flex items-center justify-between
+                 focus:outline-none focus:ring-2 focus:ring-ring/50 focus:border-ring">
+    <span x-text="label || '{{ widget.placeholder|escapejs }}'" :class="label ? '' : 'text-muted-foreground'"></span>
+    {% icon "chevron-down" 14 cls="text-muted-foreground" %}
+  </button>
+
+  <div x-show="open" x-cloak @click.outside="close()" @keydown.escape.window="close()"
+       class="absolute z-30 left-0 right-0 top-full mt-1 rounded-md border border-border bg-popover shadow-lg p-1">
+    <div class="px-2 py-1.5">
+      <input type="text" x-model="query"
+             @input="fetchAsync()"
+             @keydown.down.prevent="moveDown()" @keydown.up.prevent="moveUp()"
+             @keydown.enter.prevent="pickActive()"
+             placeholder="Type to search…"
+             class="w-full h-9 px-2 rounded-md border border-input bg-background text-sm" />
+    </div>
+    <div role="listbox" class="max-h-60 overflow-y-auto">
+      <template x-for="(opt, i) in filtered()" :key="opt.value">
+        <button type="button" @click="pick(opt.value, opt.label)" @mouseenter="activeIndex = i"
+                role="option" :aria-selected="value === opt.value"
+                class="w-full text-left px-3 py-1.5 text-sm rounded flex items-center justify-between"
+                :class="i === activeIndex ? 'bg-accent text-foreground' : ''">
+          <span x-text="opt.label"></span>
+          <span x-show="value === opt.value">{% icon "check" 14 %}</span>
+        </button>
+      </template>
+      <p x-show="filtered().length === 0" class="text-xs text-muted-foreground px-3 py-2">No matches.</p>
+    </div>
+  </div>
+</div>
+{% endwith %}

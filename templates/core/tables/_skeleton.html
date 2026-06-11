@@ -1,0 +1,14 @@
+{% comment %}
+Skeleton rows shown during HTMX swaps that take >200ms. Phase 11
+commit 3 wires this via `hx-indicator`. Pulls in the shimmer styles
+defined on the components Skeleton page (which inlines them).
+{% endcomment %}
+{% for _ in "1234" %}
+  <tr>
+    {% for col in config.columns %}
+      {% if col.key in visible_columns %}
+        <td class="px-3 py-3"><div class="apex-skeleton h-4 w-2/3 rounded"></div></td>
+      {% endif %}
+    {% endfor %}
+  </tr>
+{% endfor %}

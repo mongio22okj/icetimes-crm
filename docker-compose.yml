@@ -1,0 +1,43 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: apex
+      POSTGRES_USER: apex
+      POSTGRES_PASSWORD: apex
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U apex -d apex"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    ports:
+      - "5432:5432"
+
+  web:
+    build: .
+    image: apex-dashboard:latest
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DJANGO_SETTINGS_MODULE: apex.settings.prod
+      SECRET_KEY: ${SECRET_KEY:-dev-only-change-me-in-production-please}
+      DEBUG: ${DEBUG:-False}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost,127.0.0.1,*}
+      DATABASE_URL: postgres://apex:apex@db:5432/apex
+      DEFAULT_FROM_EMAIL: ${DEFAULT_FROM_EMAIL:-noreply@apex.local}
+    ports:
+      - "8000:8000"
+    volumes:
+      - media:/app/media
+    # On first run, migrate + seed before starting gunicorn
+    command: >
+      sh -c "uv run python manage.py migrate --noinput &&
+             uv run python manage.py seed_demo &&
+             uv run gunicorn apex.wsgi:application --bind 0.0.0.0:8000 --workers 3 --access-logfile - --error-logfile -"
+
+volumes:
+  pg_data:
+  media:

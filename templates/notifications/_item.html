@@ -1,0 +1,59 @@
+{% load apex %}
+{% comment %}Single notification row. Used by list + bell dropdown.
+  Phase 13: shows actor avatar when present + category pill + archive
+  action.{% endcomment %}
+<div class="flex items-start gap-3 py-3 px-4 {% if notification.is_unread %}border-l-4 border-primary bg-primary/5{% else %}border-l-4 border-transparent{% endif %}">
+  {% if notification.actor %}
+    {% include "components/user_avatar.html" with user=notification.actor size="h-8 w-8" %}
+  {% else %}
+    <span class="h-8 w-8 rounded-full inline-flex items-center justify-center text-xs font-semibold bg-muted text-muted-foreground shrink-0">
+      {% icon "bell" 14 %}
+    </span>
+  {% endif %}
+  <div class="flex-1 min-w-0">
+    <div class="flex items-center gap-2 flex-wrap">
+      <p class="text-sm {% if notification.is_unread %}font-semibold{% endif %} truncate min-w-0">
+        {% if notification.url %}
+          <a href="{{ notification.url }}" class="hover:underline">{{ notification.title }}</a>
+        {% else %}
+          {{ notification.title }}
+        {% endif %}
+      </p>
+      <span class="inline-flex items-center px-2 h-5 rounded text-[10px] font-medium uppercase tracking-wider
+                   {% if notification.category == 'billing' %}bg-success/10 text-success
+                   {% elif notification.category == 'mention' %}bg-primary/10 text-primary
+                   {% elif notification.category == 'comment' %}bg-indigo-500/10 text-indigo-500
+                   {% elif notification.category == 'security' %}bg-destructive/10 text-destructive
+                   {% else %}bg-muted text-muted-foreground{% endif %}">
+        {{ notification.get_category_display }}
+      </span>
+    </div>
+    {% if notification.body %}
+      <p class="text-xs text-muted-foreground truncate">{{ notification.body }}</p>
+    {% endif %}
+    <p class="text-xs text-muted-foreground mt-1">{{ notification.created_at|timesince }} ago</p>
+  </div>
+  <div class="flex items-center gap-1 shrink-0">
+    {% if notification.is_unread %}
+      <form method="post" action="{% url 'notifications:mark_read' notification.pk %}"
+            hx-post="{% url 'notifications:mark_read' notification.pk %}"
+            hx-target="#notification-bell-content"
+            hx-swap="outerHTML">
+        {% csrf_token %}
+        <button type="submit" class="text-xs text-muted-foreground hover:text-foreground px-2 py-1 rounded hover:bg-accent">Mark read</button>
+      </form>
+    {% endif %}
+    {% if notification.archived_at %}
+      <form method="post" action="{% url 'notifications:archive' notification.pk %}">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="restore">
+        <button type="submit" class="text-xs text-muted-foreground hover:text-foreground px-2 py-1 rounded hover:bg-accent">Restore</button>
+      </form>
+    {% else %}
+      <form method="post" action="{% url 'notifications:archive' notification.pk %}">
+        {% csrf_token %}
+        <button type="submit" class="text-xs text-muted-foreground hover:text-foreground px-2 py-1 rounded hover:bg-accent" aria-label="Archive">{% icon "x" 12 %}</button>
+      </form>
+    {% endif %}
+  </div>
+</div>

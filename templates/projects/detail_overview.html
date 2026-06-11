@@ -1,0 +1,111 @@
+{% extends "layouts/dashboard.html" %}
+{% load apex %}
+{% block title %}{{ project.name }} · Apex{% endblock %}
+{% block content %}
+{% include "projects/_detail_header.html" with project=project active_tab=active_tab %}
+
+<div class="grid grid-cols-1 xl:grid-cols-12 gap-6">
+  <div class="xl:col-span-8 space-y-6">
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div class="rounded-lg border border-border bg-card p-4">
+        <p class="text-xs text-muted-foreground">Tasks</p>
+        <p class="text-2xl font-bold mt-1">{{ task_count }}</p>
+      </div>
+      <div class="rounded-lg border border-border bg-card p-4">
+        <p class="text-xs text-muted-foreground">Done</p>
+        <p class="text-2xl font-bold mt-1 text-success">{{ completed_task_count }}</p>
+      </div>
+      <div class="rounded-lg border border-border bg-card p-4">
+        <p class="text-xs text-muted-foreground">Open</p>
+        <p class="text-2xl font-bold mt-1">{{ project.open_task_count }}</p>
+      </div>
+      <div class="rounded-lg border border-border bg-card p-4">
+        <p class="text-xs text-muted-foreground">Progress</p>
+        <p class="text-2xl font-bold mt-1">{{ computed_progress }}%</p>
+      </div>
+    </div>
+
+    <section class="rounded-lg border border-border bg-card">
+      <div class="px-4 pt-4 pb-3 border-b border-border flex items-center justify-between">
+        <h2 class="font-semibold">Recent tasks</h2>
+        <a href="{% url 'projects:tasks' project.slug %}" class="text-xs text-muted-foreground hover:text-foreground">View board →</a>
+      </div>
+      {% if recent_tasks %}
+        <ul class="divide-y divide-border">
+          {% for task in recent_tasks %}
+            <li class="px-4 py-3 flex items-center justify-between gap-3">
+              <div class="min-w-0">
+                <p class="font-medium text-sm truncate">{{ task.title }}</p>
+                <p class="text-xs text-muted-foreground">
+                  {% if task.assignee %}{{ task.assignee.get_full_name|default:task.assignee.username }}{% else %}Unassigned{% endif %}
+                  {% if task.due_date %} · Due {{ task.due_date|date:"M j" }}{% endif %}
+                </p>
+              </div>
+              <div class="flex items-center gap-2 shrink-0">
+                {% include "projects/_priority_pill.html" with priority=task.priority %}
+                {% if task.status == "done" %}<span class="inline-flex items-center px-2 h-6 rounded-md text-xs font-medium bg-success/10 text-success">Done</span>
+                {% elif task.status == "review" %}<span class="inline-flex items-center px-2 h-6 rounded-md text-xs font-medium bg-primary/10 text-primary">Review</span>
+                {% elif task.status == "in_progress" %}<span class="inline-flex items-center px-2 h-6 rounded-md text-xs font-medium bg-amber-500/10 text-amber-600">In Progress</span>
+                {% else %}<span class="inline-flex items-center px-2 h-6 rounded-md text-xs font-medium bg-muted text-muted-foreground">To do</span>{% endif %}
+              </div>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <div class="p-8 text-center text-sm text-muted-foreground">No tasks yet — head to the Tasks tab to add some.</div>
+      {% endif %}
+    </section>
+  </div>
+
+  <aside class="xl:col-span-4 space-y-6">
+    <section class="rounded-lg border border-border bg-card p-4">
+      <h2 class="font-semibold mb-3">Milestones</h2>
+      {% if milestones %}
+        <ul class="space-y-2.5 mb-4">
+          {% for m in milestones %}
+            <li class="flex items-center gap-3">
+              <form method="post" action="{% url 'projects:milestone_toggle' project.slug m.pk %}">
+                {% csrf_token %}
+                <button type="submit" class="flex h-5 w-5 items-center justify-center rounded border-2 {% if m.is_completed %}bg-success border-success text-white{% else %}border-border{% endif %}" aria-label="Toggle">
+                  {% if m.is_completed %}{% icon "arrow-up-right" 12 %}{% endif %}
+                </button>
+              </form>
+              <div class="flex-1 min-w-0">
+                <p class="text-sm {% if m.is_completed %}line-through text-muted-foreground{% endif %} truncate">{{ m.title }}</p>
+                {% if m.due_date %}<p class="text-xs text-muted-foreground">{{ m.due_date|date:"M j, Y" }}</p>{% endif %}
+              </div>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="text-sm text-muted-foreground mb-4">No milestones yet.</p>
+      {% endif %}
+      <form method="post" action="{% url 'projects:milestone_create' project.slug %}" class="space-y-2 pt-2 border-t border-border">
+        {% csrf_token %}
+        <input type="text" name="title" required placeholder="Milestone title" class="h-9 w-full rounded-md border border-border bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+        <input type="date" name="due_date" class="h-9 w-full rounded-md border border-border bg-background px-3 text-sm">
+        <button type="submit" class="w-full h-9 rounded-md border border-border text-sm hover:bg-accent">Add milestone</button>
+      </form>
+    </section>
+
+    <section class="rounded-lg border border-border bg-card p-4">
+      <h2 class="font-semibold mb-3">Team</h2>
+      {% if team %}
+        <ul class="space-y-2.5">
+          {% for member in team %}
+            <li class="flex items-center gap-3">
+              <span class="inline-flex h-9 w-9 items-center justify-center rounded-full text-xs font-semibold text-white" style="background-color: {{ member|avatar_color }};">{{ member|initials }}</span>
+              <div class="min-w-0">
+                <p class="text-sm font-medium truncate">{{ member.get_full_name|default:member.username }}</p>
+                <p class="text-xs text-muted-foreground truncate">{{ member.email }}</p>
+              </div>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="text-sm text-muted-foreground">No team members yet.</p>
+      {% endif %}
+    </section>
+  </aside>
+</div>
+{% endblock %}

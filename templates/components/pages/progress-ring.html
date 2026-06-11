@@ -1,0 +1,89 @@
+{% extends "components/_detail_layout.html" %}
+{% load apex %}
+
+{% block component_body %}
+<div class="space-y-8">
+
+  <div class="rounded-lg border border-border bg-card p-6">
+    <h2 class="text-sm font-semibold mb-1">Sizes</h2>
+    <p class="text-xs text-muted-foreground mb-6">Pure SVG. Pass <code class="text-[11px] bg-muted px-1 rounded">value</code> 0–100 and a CSS var <code class="text-[11px] bg-muted px-1 rounded">--apex-ring-pct</code>.</p>
+    <div class="flex items-end gap-8">
+      <div class="text-center">
+        <span class="apex-ring text-primary" style="--apex-ring-size:40px;--apex-ring-stroke:4px;--apex-ring-pct:25">
+          <svg viewBox="0 0 36 36"><circle cx="18" cy="18" r="16" class="apex-ring-track"/><circle cx="18" cy="18" r="16" class="apex-ring-fill"/></svg>
+        </span>
+        <p class="text-[11px] text-muted-foreground mt-2">25%</p>
+      </div>
+      <div class="text-center">
+        <span class="apex-ring text-primary" style="--apex-ring-size:56px;--apex-ring-stroke:5px;--apex-ring-pct:55">
+          <svg viewBox="0 0 36 36"><circle cx="18" cy="18" r="16" class="apex-ring-track"/><circle cx="18" cy="18" r="16" class="apex-ring-fill"/></svg>
+        </span>
+        <p class="text-[11px] text-muted-foreground mt-2">55%</p>
+      </div>
+      <div class="text-center">
+        <span class="apex-ring text-success" style="--apex-ring-size:80px;--apex-ring-stroke:6px;--apex-ring-pct:80">
+          <svg viewBox="0 0 36 36"><circle cx="18" cy="18" r="16" class="apex-ring-track"/><circle cx="18" cy="18" r="16" class="apex-ring-fill"/></svg>
+        </span>
+        <p class="text-[11px] text-muted-foreground mt-2">80%</p>
+      </div>
+      <div class="text-center">
+        <span class="apex-ring text-destructive" style="--apex-ring-size:96px;--apex-ring-stroke:7px;--apex-ring-pct:95">
+          <svg viewBox="0 0 36 36"><circle cx="18" cy="18" r="16" class="apex-ring-track"/><circle cx="18" cy="18" r="16" class="apex-ring-fill"/></svg>
+        </span>
+        <p class="text-[11px] text-muted-foreground mt-2">95%</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="rounded-lg border border-border bg-card p-6">
+    <h2 class="text-sm font-semibold mb-1">With centered value</h2>
+    <p class="text-xs text-muted-foreground mb-6">Most common use — wrap the SVG and overlay the value.</p>
+    <div class="flex items-center gap-8">
+      <div class="relative inline-block" role="meter" aria-valuenow="68" aria-valuemin="0" aria-valuemax="100">
+        <span class="apex-ring text-primary" style="--apex-ring-size:120px;--apex-ring-stroke:8px;--apex-ring-pct:68">
+          <svg viewBox="0 0 36 36"><circle cx="18" cy="18" r="16" class="apex-ring-track"/><circle cx="18" cy="18" r="16" class="apex-ring-fill"/></svg>
+        </span>
+        <div class="absolute inset-0 flex flex-col items-center justify-center">
+          <span class="text-2xl font-bold tabular-nums">68%</span>
+          <span class="text-[10px] text-muted-foreground uppercase tracking-wider">Goal</span>
+        </div>
+      </div>
+
+      <div class="relative inline-block" role="meter" aria-valuenow="847" aria-valuemin="0" aria-valuemax="1000">
+        <span class="apex-ring text-success" style="--apex-ring-size:120px;--apex-ring-stroke:8px;--apex-ring-pct:84.7">
+          <svg viewBox="0 0 36 36"><circle cx="18" cy="18" r="16" class="apex-ring-track"/><circle cx="18" cy="18" r="16" class="apex-ring-fill"/></svg>
+        </span>
+        <div class="absolute inset-0 flex flex-col items-center justify-center">
+          <span class="text-xl font-bold tabular-nums">847</span>
+          <span class="text-[10px] text-muted-foreground">/ 1,000</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<style>
+  .apex-ring {
+    display: inline-block;
+    width: var(--apex-ring-size, 56px);
+    height: var(--apex-ring-size, 56px);
+    transform: rotate(-90deg);
+  }
+  .apex-ring svg { width: 100%; height: 100%; overflow: visible; }
+  .apex-ring-track {
+    fill: none;
+    stroke: var(--muted);
+    stroke-width: var(--apex-ring-stroke, 4);
+  }
+  .apex-ring-fill {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: var(--apex-ring-stroke, 4);
+    stroke-linecap: round;
+    stroke-dasharray: 100.53;          /* 2 * π * 16 */
+    stroke-dashoffset: calc(100.53 - (100.53 * var(--apex-ring-pct)) / 100);
+    transition: stroke-dashoffset 0.4s ease;
+  }
+</style>
+{% endblock %}

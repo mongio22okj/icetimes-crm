@@ -1,0 +1,125 @@
+{% extends "components/_detail_layout.html" %}
+{% load apex %}
+
+{% block component_body %}
+<div class="space-y-8">
+
+  {# ── Horizontal numbered ──────────────────────────────────────── #}
+  <div class="rounded-lg border border-border bg-card p-6">
+    <h2 class="text-sm font-semibold mb-1">Horizontal · numbered</h2>
+    <p class="text-xs text-muted-foreground mb-6">For multi-step forms (cf. the wizard at <code class="text-[11px] bg-muted px-1 rounded">/wizard/</code>).</p>
+    <ol class="flex items-center gap-2" role="list">
+      {# Step 1 — completed #}
+      <li class="flex items-center gap-2 flex-1">
+        <span class="h-8 w-8 rounded-full bg-success text-success-foreground inline-flex items-center justify-center text-xs font-semibold">
+          {% icon "check" 14 %}
+        </span>
+        <span class="text-sm font-medium">Account</span>
+        <span aria-hidden="true" class="flex-1 h-px bg-success"></span>
+      </li>
+      {# Step 2 — completed #}
+      <li class="flex items-center gap-2 flex-1">
+        <span class="h-8 w-8 rounded-full bg-success text-success-foreground inline-flex items-center justify-center text-xs font-semibold">
+          {% icon "check" 14 %}
+        </span>
+        <span class="text-sm font-medium">Company</span>
+        <span aria-hidden="true" class="flex-1 h-px bg-border"></span>
+      </li>
+      {# Step 3 — current #}
+      <li class="flex items-center gap-2 flex-1" aria-current="step">
+        <span class="h-8 w-8 rounded-full bg-primary text-primary-foreground inline-flex items-center justify-center text-xs font-semibold ring-4 ring-primary/15">3</span>
+        <span class="text-sm font-medium text-primary">Preferences</span>
+        <span aria-hidden="true" class="flex-1 h-px bg-border"></span>
+      </li>
+      {# Step 4 — pending #}
+      <li class="flex items-center gap-2">
+        <span class="h-8 w-8 rounded-full bg-muted text-muted-foreground inline-flex items-center justify-center text-xs font-semibold">4</span>
+        <span class="text-sm font-medium text-muted-foreground">Review</span>
+      </li>
+    </ol>
+  </div>
+
+  {# ── Horizontal · with progress bar ──────────────────────────── #}
+  <div class="rounded-lg border border-border bg-card p-6">
+    <h2 class="text-sm font-semibold mb-1">With progress bar</h2>
+    <p class="text-xs text-muted-foreground mb-6">Lower-density layout — useful when you want a clear "% complete" feel.</p>
+    <div class="space-y-3">
+      <div class="flex items-center justify-between text-xs">
+        <span class="text-muted-foreground">Step 3 of 5</span>
+        <span class="font-medium">60%</span>
+      </div>
+      <div class="h-2 bg-muted rounded-full overflow-hidden">
+        <div class="h-full bg-primary rounded-full transition-all" style="width: 60%"></div>
+      </div>
+      <div class="flex justify-between text-xs">
+        <span class="text-muted-foreground">Connect data</span>
+        <span class="text-primary font-medium">Configure alerts</span>
+        <span class="text-muted-foreground">Invite team</span>
+      </div>
+    </div>
+  </div>
+
+  {# ── Vertical ─────────────────────────────────────────────────── #}
+  <div class="rounded-lg border border-border bg-card p-6">
+    <h2 class="text-sm font-semibold mb-1">Vertical</h2>
+    <p class="text-xs text-muted-foreground mb-6">Best for setup flows where each step has a description.</p>
+    <ol class="space-y-6" role="list">
+      <li class="flex gap-4">
+        <div class="flex flex-col items-center">
+          <span class="h-8 w-8 rounded-full bg-success text-success-foreground inline-flex items-center justify-center text-xs font-semibold">
+            {% icon "check" 14 %}
+          </span>
+          <span aria-hidden="true" class="w-px flex-1 bg-success mt-2"></span>
+        </div>
+        <div class="pb-2">
+          <p class="text-sm font-semibold">Create your account</p>
+          <p class="text-xs text-muted-foreground mt-0.5">Email + password. Took 30 seconds.</p>
+        </div>
+      </li>
+      <li class="flex gap-4">
+        <div class="flex flex-col items-center">
+          <span class="h-8 w-8 rounded-full bg-success text-success-foreground inline-flex items-center justify-center text-xs font-semibold">
+            {% icon "check" 14 %}
+          </span>
+          <span aria-hidden="true" class="w-px flex-1 bg-border mt-2"></span>
+        </div>
+        <div class="pb-2">
+          <p class="text-sm font-semibold">Verify email</p>
+          <p class="text-xs text-muted-foreground mt-0.5">Confirmation link sent and clicked.</p>
+        </div>
+      </li>
+      <li class="flex gap-4" aria-current="step">
+        <div class="flex flex-col items-center">
+          <span class="h-8 w-8 rounded-full bg-primary text-primary-foreground inline-flex items-center justify-center text-xs font-semibold ring-4 ring-primary/15">3</span>
+          <span aria-hidden="true" class="w-px flex-1 bg-border mt-2"></span>
+        </div>
+        <div class="pb-2">
+          <p class="text-sm font-semibold text-primary">Set up your workspace</p>
+          <p class="text-xs text-muted-foreground mt-0.5">Pick a name and invite collaborators.</p>
+          <button type="button" class="mt-2 h-8 px-3 rounded-md bg-primary text-primary-foreground text-xs font-medium hover:opacity-90">Continue</button>
+        </div>
+      </li>
+      <li class="flex gap-4">
+        <div class="flex flex-col items-center">
+          <span class="h-8 w-8 rounded-full bg-muted text-muted-foreground inline-flex items-center justify-center text-xs font-semibold">4</span>
+        </div>
+        <div>
+          <p class="text-sm font-semibold text-muted-foreground">Connect a data source</p>
+          <p class="text-xs text-muted-foreground mt-0.5">Hook up Postgres, Stripe, or upload a CSV.</p>
+        </div>
+      </li>
+    </ol>
+  </div>
+
+  <div class="rounded-lg border border-border bg-card p-6 text-sm">
+    <h2 class="text-sm font-semibold mb-3">Accessibility</h2>
+    <ul class="space-y-1.5 text-muted-foreground">
+      <li>• Stepper container is an <strong class="text-foreground">&lt;ol&gt;</strong> with <strong class="text-foreground">role="list"</strong> (defensive — Tailwind reset removes default semantics).</li>
+      <li>• Current step gets <strong class="text-foreground">aria-current="step"</strong>.</li>
+      <li>• Connector lines use <strong class="text-foreground">aria-hidden="true"</strong> so screen readers don't announce them.</li>
+      <li>• Stepper is presentational — there's no factory; copy the markup pattern and swap state classes.</li>
+    </ul>
+  </div>
+
+</div>
+{% endblock %}

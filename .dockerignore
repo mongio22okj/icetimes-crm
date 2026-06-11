@@ -1,0 +1,40 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+.playwright/
+
+# Node
+node_modules/
+
+# Build artifacts
+static/css/app.css
+staticfiles/
+
+# Local DB + uploads
+db.sqlite3
+media/
+user_files/
+
+# Tooling / IDE / OS
+.git/
+.gitignore
+.env
+.env.*
+.DS_Store
+.vscode/
+.idea/
+.claude/
+CLAUDE.md
+
+# Tests output
+test-results/
+*.log
+
+# Docs (not needed in image)
+docs/superpowers/specs/
+docs/superpowers/plans/
+
+# Screenshots (~3MB)
+screenshots/

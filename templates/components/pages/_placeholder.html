@@ -1,0 +1,15 @@
+{% extends "components/_detail_layout.html" %}
+{% load apex %}
+
+{% block component_body %}
+<div class="rounded-lg border border-dashed border-border bg-card p-10 text-center">
+  <div class="mx-auto h-12 w-12 rounded-full bg-muted text-muted-foreground inline-flex items-center justify-center mb-3">
+    {% icon "clock" 22 %}
+  </div>
+  <h3 class="text-base font-semibold mb-1">Demo coming soon</h3>
+  <p class="text-sm text-muted-foreground max-w-md mx-auto">
+    This primitive is registered but its variants page hasn't shipped yet.
+    Track progress in the Phase&nbsp;10 spec.
+  </p>
+</div>
+{% endblock %}

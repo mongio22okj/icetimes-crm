@@ -1,0 +1,29 @@
+{% load apex %}
+{% comment %}
+IconSuffixInput template — Lucide icon inside the right edge.
+When `clickable=True`, the icon becomes a button that dispatches
+`apex:icon-suffix:click` for views/Alpine to handle.
+{% endcomment %}
+{% with attrs=widget.attrs %}
+<div class="relative" data-widget="icon-suffix-input">
+  <input type="{{ widget.type|default:'text' }}"
+         name="{{ widget.name }}"
+         {% if widget.value != None %}value="{{ widget.value }}"{% endif %}
+         {% for k, v in attrs.items %}{% if k != 'class' %}{{ k }}="{{ v }}" {% endif %}{% endfor %}
+         class="w-full {{ widget.size_input_classes }} pl-3 pr-9 rounded-md border border-input bg-background
+                placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/50 focus:border-ring
+                transition-colors {{ attrs.class|default:'' }}" />
+  {% if widget.clickable %}
+    <button type="button"
+            class="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded text-muted-foreground hover:text-foreground hover:bg-accent"
+            @click="$dispatch('apex:icon-suffix:click', {field: '{{ widget.name }}'})"
+            aria-label="Action">
+      {% icon widget.icon 16 %}
+    </button>
+  {% else %}
+    <span class="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none">
+      {% icon widget.icon 16 %}
+    </span>
+  {% endif %}
+</div>
+{% endwith %}

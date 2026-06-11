@@ -1,0 +1,37 @@
+{% extends "layouts/dashboard.html" %}
+{% load apex %}
+{% block title %}{{ person.get_full_name|default:person.username }} · Projects · Apex{% endblock %}
+{% block content %}
+{% include "profiles/_detail_header.html" with person=person active_tab=active_tab %}
+
+{% if projects %}
+  <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+    {% for project in projects %}
+      <article class="rounded-lg border border-border bg-card p-5 hover:border-primary/40 transition-colors">
+        <div class="flex items-start justify-between mb-3">
+          <a href="{% url 'projects:overview' project.slug %}" class="font-semibold hover:text-primary line-clamp-1">{{ project.name }}</a>
+          {% include "projects/_priority_pill.html" with priority=project.priority %}
+        </div>
+        <p class="text-sm text-muted-foreground line-clamp-2 mb-4 min-h-[2.5em]">{{ project.description|default:"No description." }}</p>
+        <div class="flex items-center justify-between text-xs mb-2">
+          <span class="text-muted-foreground">Progress</span>
+          <span class="font-medium tabular-nums">{{ project.computed_progress }}%</span>
+        </div>
+        <div class="h-1.5 rounded-full bg-muted overflow-hidden mb-4">
+          <div class="h-full rounded-full bg-primary" style="width: {{ project.computed_progress }}%;"></div>
+        </div>
+        <div class="flex items-center justify-between gap-3 text-xs text-muted-foreground">
+          {% if project.owner == person %}
+            <span class="inline-flex items-center px-2 h-5 rounded-md text-[10px] font-medium bg-primary/10 text-primary">Owner</span>
+          {% else %}
+            <span class="inline-flex items-center px-2 h-5 rounded-md text-[10px] font-medium bg-muted text-muted-foreground">Member</span>
+          {% endif %}
+          {% include "projects/_status_pill.html" with status=project.status %}
+        </div>
+      </article>
+    {% endfor %}
+  </div>
+{% else %}
+  {% include "components/_empty_state.html" with icon="briefcase" headline="No projects yet" body=person.first_name|default:"This person"|add:" isn't on any active projects." %}
+{% endif %}
+{% endblock %}

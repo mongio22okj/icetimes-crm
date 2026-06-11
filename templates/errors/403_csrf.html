@@ -1,0 +1,23 @@
+{% extends "layouts/auth.html" %}
+{% load apex %}
+{% block title %}Session expired · Apex{% endblock %}
+{% block auth_content %}
+<div class="text-center">
+  <div class="mx-auto mb-4 inline-flex h-12 w-12 items-center justify-center rounded-full bg-warning/10 text-warning">
+    {% icon "alert-triangle" 22 %}
+  </div>
+  <h1 class="text-2xl font-bold tracking-tight mb-2">Session expired</h1>
+  <p class="text-sm text-muted-foreground mb-6 leading-relaxed">
+    Your session timed out while this form was open, so we couldn't verify
+    the request. Refresh the page and try again — your input wasn't saved.
+  </p>
+  <a href="{{ request.META.HTTP_REFERER|default:'/' }}"
+     class="inline-flex w-full h-10 items-center justify-center rounded-md bg-primary text-primary-foreground font-medium">
+    Refresh and retry
+  </a>
+  <p class="text-xs text-muted-foreground mt-4">
+    Public demo? Data resets every hour at HH:05 UTC — that's the most
+    likely cause.
+  </p>
+</div>
+{% endblock %}

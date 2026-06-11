@@ -1,0 +1,124 @@
+{% extends "layouts/docs.html" %}
+{% load docs_tags %}
+
+{% block doc_title %}Health + monitoring{% endblock %}
+{% block doc_subtitle %}One JSON endpoint to know if the whole stack is alive. Optional Sentry SDK pre-wired and gated on an env var.{% endblock %}
+
+{% block doc_body %}
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">The /__health/ endpoint</h2>
+  {% code lang="bash" %}curl https://apex-django.example.com/__health/{% endcode %}
+  {% code lang="json" %}{
+  "status": "ok",
+  "checks": {
+    "db":            {"ok": true, "ms": 1.2},
+    "channel_layer": {"ok": true, "ms": 0.4}
+  },
+  "failed": []
+}{% endcode %}
+  <p class="text-sm text-muted-foreground">Returns:</p>
+  <ul class="space-y-1.5 text-sm text-muted-foreground ml-5 list-disc">
+    <li><code class="rounded bg-muted px-1 text-xs">200</code> when every required check passes</li>
+    <li><code class="rounded bg-muted px-1 text-xs">503</code> when any check fails (with <code class="rounded bg-muted px-1 text-xs">{"status": "degraded", "failed": [...]}</code>)</li>
+  </ul>
+  <p class="text-sm text-muted-foreground">
+    The endpoint is <strong>anonymous</strong> (no auth) and
+    <strong>no-cache</strong> (no edge caching). Wired in
+    <code class="rounded bg-muted px-1 text-xs">apex/urls.py</code> at
+    <code class="rounded bg-muted px-1 text-xs">/__health/</code> (double
+    underscore = "internal, not for humans").
+  </p>
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">What it checks</h2>
+  <div class="overflow-hidden rounded-lg border border-border">
+    <table class="w-full text-sm">
+      <thead class="bg-muted/50 text-left text-xs uppercase tracking-wider text-muted-foreground">
+        <tr><th class="px-4 py-2.5">Check</th><th class="px-4 py-2.5">What it does</th><th class="px-4 py-2.5">Why</th></tr>
+      </thead>
+      <tbody class="divide-y divide-border">
+        <tr>
+          <td class="px-4 py-2.5"><code class="text-xs">db</code></td>
+          <td class="px-4 py-2.5"><code class="text-xs">SELECT 1</code></td>
+          <td class="px-4 py-2.5">confirms Postgres is reachable + connection pool is alive</td>
+        </tr>
+        <tr>
+          <td class="px-4 py-2.5"><code class="text-xs">channel_layer</code></td>
+          <td class="px-4 py-2.5">sends + receives one message through the layer</td>
+          <td class="px-4 py-2.5">confirms Redis (in prod) or in-memory layer is functional</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="text-sm text-muted-foreground">
+    Each check is wrapped in try/except so a probe failure never raises 500
+    — the response always returns valid JSON with the failure mode in the body.
+  </p>
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">Wiring an uptime monitor</h2>
+  <p class="text-sm font-medium">UptimeRobot (free tier)</p>
+  <ol class="space-y-1.5 text-sm text-muted-foreground ml-5 list-decimal">
+    <li>Add a monitor of type <strong>HTTP(S)</strong>.</li>
+    <li>URL: <code class="rounded bg-muted px-1 text-xs">https://apex-django.example.com/__health/</code></li>
+    <li>Keyword monitoring: <code class="rounded bg-muted px-1 text-xs">"status": "ok"</code> — alerts when the keyword disappears.</li>
+    <li>Interval: 5 min.</li>
+  </ol>
+  <p class="text-sm font-medium">Cron-based self-check (zero external deps)</p>
+  {% code lang="cron" %}*/5 * * * * curl -fsS https://apex-django.example.com/__health/ | grep -q '"status": "ok"' || systemctl restart apex-django{% endcode %}
+  {% callout type="warn" %}
+    Auto-restart loops can spiral if the underlying problem is e.g. an
+    out-of-memory condition. Wrap in something smarter (systemd
+    <code class="rounded bg-muted px-1 text-xs">RestartSec=</code> + restart
+    limit) for production.
+  {% endcallout %}
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">Sentry — error capture (opt-in)</h2>
+  <p class="text-sm text-muted-foreground">
+    Apex has Sentry SDK pre-wired (gated on
+    <code class="rounded bg-muted px-1 text-xs">SENTRY_DSN</code> env var).
+    To enable:
+  </p>
+  {% code lang="bash" %}# 1. Install the optional dep
+sudo -u apex bash -lc "cd /var/www/apex-django && uv sync --extra sentry"
+
+# 2. Add to /etc/apex-django.env:
+SENTRY_DSN=https://abc123@oXXXXX.ingest.sentry.io/PROJECT_ID
+SENTRY_ENV=production           # or "demo", "staging", etc.
+SENTRY_TRACES_SAMPLE=0.05       # 5% perf trace sampling
+
+# 3. Restart Daphne
+sudo systemctl restart apex-django{% endcode %}
+  <p class="text-sm text-muted-foreground">
+    When <code class="rounded bg-muted px-1 text-xs">SENTRY_DSN</code> is
+    empty (default), Sentry is skipped entirely — the import is wrapped so
+    the app boots even if the <code class="rounded bg-muted px-1 text-xs">sentry-sdk</code>
+    package isn't installed. Safe to leave unset in dev / private deploys.
+  </p>
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">Sentry config notes</h2>
+  <ul class="space-y-2 text-sm text-muted-foreground">
+    <li><strong class="text-foreground"><code class="rounded bg-muted px-1 text-xs">send_default_pii=False</code></strong> — usernames + IPs aren't shipped to Sentry by default. Flip in <code class="rounded bg-muted px-1 text-xs">prod.py</code> if you have explicit user consent.</li>
+    <li><strong class="text-foreground"><code class="rounded bg-muted px-1 text-xs">SENTRY_TRACES_SAMPLE</code></strong> — performance trace sample rate (0.0–1.0). On a busy site even 1% can be a lot — start low.</li>
+    <li><strong class="text-foreground"><code class="rounded bg-muted px-1 text-xs">SENTRY_RELEASE</code></strong> — bind to a git SHA in CI (<code class="rounded bg-muted px-1 text-xs">$(git rev-parse --short HEAD)</code>) so Sentry tags events with the deploy version.</li>
+  </ul>
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">Logs</h2>
+  <p class="text-sm text-muted-foreground">
+    Daphne's <code class="rounded bg-muted px-1 text-xs">--access-log -</code>
+    flag writes the access log to stdout, which systemd captures into the journal:
+  </p>
+  {% code lang="bash" %}sudo journalctl -u apex-django -f             # tail live
+sudo journalctl -u apex-django --since '1 hour ago' | grep WSREJECT{% endcode %}
+</section>
+
+{% endblock %}

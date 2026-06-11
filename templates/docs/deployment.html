@@ -1,0 +1,92 @@
+{% extends "layouts/docs.html" %}
+{% load docs_tags %}
+
+{% block doc_title %}Deploy to Linux{% endblock %}
+{% block doc_subtitle %}~15 minutes from blank VPS to live demo. Daphne + nginx + Postgres + Redis on a single box. Cloudflare in front for TLS + CDN + DDoS shield.{% endblock %}
+
+{% block doc_body %}
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">Architecture</h2>
+  {% code lang="text" %}Cloudflare ─▶ nginx ─▶ unix:/run/apex-django/apex-django.sock ─▶ Daphne ─▶ Django
+                │
+                └─▶ /static/ ─▶ /var/www/apex-django/staticfiles/  (served directly){% endcode %}
+  <ul class="space-y-2 text-sm text-muted-foreground">
+    <li><strong class="text-foreground">Cloudflare</strong> — TLS termination, DDoS shield, CDN. Origin uses the shared <code class="rounded bg-muted px-1 text-xs">*.yourdomain.com</code> wildcard cert (or a Cloudflare Origin Certificate).</li>
+    <li><strong class="text-foreground">nginx</strong> — terminates origin TLS, serves <code class="rounded bg-muted px-1 text-xs">/static/</code> and <code class="rounded bg-muted px-1 text-xs">/media/</code> directly via <code class="rounded bg-muted px-1 text-xs">alias</code>, proxies everything else to Daphne over a unix socket.</li>
+    <li><strong class="text-foreground">Daphne</strong> — Django HTTP + WebSocket, single process, in <code class="rounded bg-muted px-1 text-xs">apex-django.service</code> systemd unit.</li>
+    <li><strong class="text-foreground">Postgres + Redis</strong> — co-located on the same box.</li>
+  </ul>
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">Files in deploy/</h2>
+  <div class="overflow-hidden rounded-lg border border-border">
+    <table class="w-full text-sm">
+      <thead class="bg-muted/50 text-left text-xs uppercase tracking-wider text-muted-foreground">
+        <tr><th class="px-4 py-2.5">Path</th><th class="px-4 py-2.5">Purpose</th></tr>
+      </thead>
+      <tbody class="divide-y divide-border">
+        <tr><td class="px-4 py-2.5"><code class="text-xs">deploy/.env.example</code></td><td class="px-4 py-2.5">Template for <code class="text-xs">/etc/apex-django.env</code></td></tr>
+        <tr><td class="px-4 py-2.5"><code class="text-xs">deploy/nginx/...</code></td><td class="px-4 py-2.5">Vhost config (Cloudflare-fronted, WS upgrade, static + media aliases)</td></tr>
+        <tr><td class="px-4 py-2.5"><code class="text-xs">deploy/systemd/apex-django.service</code></td><td class="px-4 py-2.5">Daphne unit (unix socket, RuntimeDirectory, hardened)</td></tr>
+        <tr><td class="px-4 py-2.5"><code class="text-xs">deploy/scripts/deploy.sh</code></td><td class="px-4 py-2.5">Idempotent: <code class="text-xs">git pull → uv sync → npm build → migrate → collectstatic → reload</code></td></tr>
+        <tr><td class="px-4 py-2.5"><code class="text-xs">deploy/scripts/reset_demo_cron.sh</code></td><td class="px-4 py-2.5">Wrapper that sources the env file before <code class="text-xs">reset_demo</code></td></tr>
+        <tr><td class="px-4 py-2.5"><code class="text-xs">deploy/README.md</code></td><td class="px-4 py-2.5">Full step-by-step server install (10 numbered steps)</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">First-time setup (~15 min)</h2>
+  <p class="text-sm text-muted-foreground">
+    The complete walkthrough lives in
+    <a href="https://github.com/puikinsh/dashboardpack-apex-django/blob/main/deploy/README.md" class="text-primary hover:underline">deploy/README.md</a>.
+    Summary:
+  </p>
+  <ol class="space-y-2 text-sm text-muted-foreground ml-5 list-decimal">
+    <li>DNS: <code class="rounded bg-muted px-1 text-xs">A</code> record for the subdomain → server IP, orange-cloud on, Cloudflare SSL = <strong>Full (strict)</strong>.</li>
+    <li>System packages: <code class="rounded bg-muted px-1 text-xs">apt install postgresql redis-server libpango-1.0-0 libpangoft2-1.0-0 libcairo2 nodejs</code> + <code class="rounded bg-muted px-1 text-xs">curl -LsSf https://astral.sh/uv/install.sh | sh</code>.</li>
+    <li>Service user: <code class="rounded bg-muted px-1 text-xs">useradd --system --create-home --home-dir /var/www/apex-django apex && usermod -aG www-data apex</code>.</li>
+    <li>Postgres: <code class="rounded bg-muted px-1 text-xs">createuser apex_django -P && createdb apex_django -O apex_django</code>.</li>
+    <li>Env file: copy <code class="rounded bg-muted px-1 text-xs">deploy/.env.example</code> → <code class="rounded bg-muted px-1 text-xs">/etc/apex-django.env</code>, fill in <code class="rounded bg-muted px-1 text-xs">SECRET_KEY</code> + <code class="rounded bg-muted px-1 text-xs">DATABASE_URL</code>, <code class="rounded bg-muted px-1 text-xs">chmod 0640 && chown apex:apex</code>.</li>
+    <li>First run: <code class="rounded bg-muted px-1 text-xs">uv sync && npm ci && npm run build && python manage.py migrate && python manage.py collectstatic && python manage.py seed_demo</code>.</li>
+    <li>systemd: copy <code class="rounded bg-muted px-1 text-xs">deploy/systemd/apex-django.service</code> → <code class="rounded bg-muted px-1 text-xs">/etc/systemd/system/</code>, <code class="rounded bg-muted px-1 text-xs">systemctl enable --now apex-django</code>.</li>
+    <li>nginx: copy the vhost into <code class="rounded bg-muted px-1 text-xs">/etc/nginx/sites-available/</code>, symlink to <code class="rounded bg-muted px-1 text-xs">sites-enabled/</code>, <code class="rounded bg-muted px-1 text-xs">nginx -t && systemctl reload nginx</code>.</li>
+    <li>Smoke test: <code class="rounded bg-muted px-1 text-xs">curl -I https://your-domain/accounts/login/</code> → 200.</li>
+  </ol>
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">Coexistence with PHP / Node sites</h2>
+  <p class="text-sm text-muted-foreground">
+    The new vhost only adds a new
+    <code class="rounded bg-muted px-1 text-xs">server { server_name your-domain; }</code>
+    block — existing vhosts are untouched. Watch out for:
+  </p>
+  <ul class="space-y-2 text-sm text-muted-foreground ml-5 list-disc">
+    <li><strong class="text-foreground"><code class="rounded bg-muted px-1 text-xs">map $http_upgrade $connection_upgrade { … }</code></strong> — declared once globally (we put it in <code class="rounded bg-muted px-1 text-xs">/etc/nginx/conf.d/upgrade-map.conf</code>). nginx errors on duplicate map declarations.</li>
+    <li><strong class="text-foreground">Postgres role isolation</strong> — give Apex its own <code class="rounded bg-muted px-1 text-xs">apex_django</code> role + DB; don't share with other apps.</li>
+    <li><strong class="text-foreground">Redis DB number</strong> — pick one (e.g. <code class="rounded bg-muted px-1 text-xs">redis://127.0.0.1:6380/3</code>) separate from whatever PHP/Node services are using.</li>
+  </ul>
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">Ongoing deploys</h2>
+  <p class="text-sm text-muted-foreground">Once first-time setup is done:</p>
+  {% code lang="bash" %}sudo -u apex /var/www/apex-django/deploy/scripts/deploy.sh{% endcode %}
+  <p class="text-sm text-muted-foreground">
+    Pulls, syncs deps, builds CSS, migrates, collects static, gracefully
+    reloads Daphne. Open WebSocket sessions survive the reload.
+  </p>
+  {% callout type="tip" %}
+    Set up a GitHub deploy key on the server (<code class="rounded bg-muted px-1 text-xs">ssh-keygen -t ed25519</code>
+    as the <code class="rounded bg-muted px-1 text-xs">apex</code> user, add
+    public key to GitHub repo's Deploy keys) so
+    <code class="rounded bg-muted px-1 text-xs">git pull</code> works without
+    a password prompt.
+  {% endcallout %}
+</section>
+
+{% endblock %}

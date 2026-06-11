@@ -1,0 +1,7 @@
+Hi {{ user.first_name|default:user.username }},
+
+Welcome to {{ site_name }}. Confirm your email address by clicking the link below:
+
+{{ verify_url }}
+
+If you didn't create an account, you can safely ignore this message.

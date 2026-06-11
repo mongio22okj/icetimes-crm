@@ -1,0 +1,14 @@
+{% load i18n %}
+<details data-filter-title="{{ title }}" open class="border-b border-border last:border-b-0 py-2">
+  <summary class="cursor-pointer text-xs font-semibold text-foreground py-1 list-none flex items-center justify-between">
+    <span>{% blocktrans with filter_title=title %}By {{ filter_title }}{% endblocktrans %}</span>
+    <span class="text-muted-foreground transition-transform group-open:rotate-180">⌄</span>
+  </summary>
+  <ul class="mt-1.5 space-y-0.5">
+    {% for choice in choices %}
+      <li{% if choice.selected %} class="selected"{% endif %}>
+        <a href="{{ choice.query_string|iriencode }}">{{ choice.display }}</a>
+      </li>
+    {% endfor %}
+  </ul>
+</details>

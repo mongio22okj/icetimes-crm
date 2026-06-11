@@ -1,0 +1,83 @@
+{% extends "layouts/dashboard.html" %}
+{% block title %}{% if form.instance.pk %}Edit{% else %}New{% endif %} order · Apex{% endblock %}
+{% block content %}
+<div class="mb-6">
+  <nav class="text-sm text-muted-foreground mb-1">
+    <a href="{% url 'orders:list' %}" class="hover:text-primary">Orders</a> <span class="mx-1">/</span>
+    <span>{% if form.instance.pk %}Edit{% else %}New{% endif %}</span>
+  </nav>
+  <h1 class="text-2xl font-bold tracking-tight">
+    {% if form.instance.pk %}Edit {{ form.instance.number }}{% else %}New order{% endif %}
+  </h1>
+</div>
+
+<form method="post" class="max-w-3xl space-y-4">
+  {% csrf_token %}
+
+  <div class="rounded-lg border border-border bg-card p-6 space-y-4">
+    <h2 class="font-semibold">Order details</h2>
+    {% if form.non_field_errors %}
+      <div class="text-sm text-destructive">{{ form.non_field_errors }}</div>
+    {% endif %}
+    {% for field in form %}
+      <div>
+        <label for="{{ field.id_for_label }}" class="block text-sm font-medium mb-1">{{ field.label }}</label>
+        {{ field }}
+        {% if field.errors %}<p class="text-xs text-destructive mt-1">{{ field.errors.0 }}</p>{% endif %}
+      </div>
+    {% endfor %}
+  </div>
+
+  <div class="rounded-lg border border-border bg-card p-6 space-y-4" x-data="{}">
+    <div class="flex items-center justify-between">
+      <h2 class="font-semibold">Items</h2>
+      <button type="button" class="h-8 px-3 rounded-md border border-border text-sm"
+              x-on:click="
+                const container = $refs.items;
+                const lastRow = container.lastElementChild;
+                const tpl = lastRow.cloneNode(true);
+                const totalInput = document.querySelector('[name=items-TOTAL_FORMS]');
+                const idx = parseInt(totalInput.value);
+                tpl.innerHTML = tpl.innerHTML.replace(/items-\d+-/g, `items-${idx}-`);
+                tpl.querySelectorAll('input,select').forEach(el => {
+                  if (el.type !== 'hidden') el.value = '';
+                });
+                container.appendChild(tpl);
+                totalInput.value = idx + 1;
+              ">+ Add item</button>
+    </div>
+    {{ items_formset.management_form }}
+    <div x-ref="items" class="space-y-3">
+      {% for item_form in items_formset %}
+      <div class="grid grid-cols-4 gap-2 items-start p-3 rounded-md border border-border">
+        <div class="col-span-4 md:col-span-2">
+          <label class="block text-xs text-muted-foreground mb-1">Product</label>
+          {{ item_form.product }}
+          {% if item_form.product.errors %}<p class="text-xs text-destructive mt-1">{{ item_form.product.errors.0 }}</p>{% endif %}
+        </div>
+        <div>
+          <label class="block text-xs text-muted-foreground mb-1">Qty</label>
+          {{ item_form.quantity }}
+        </div>
+        <div>
+          <label class="block text-xs text-muted-foreground mb-1">Unit price</label>
+          {{ item_form.unit_price }}
+        </div>
+        {% for hidden in item_form.hidden_fields %}{{ hidden }}{% endfor %}
+        {% if item_form.instance.pk %}
+          <div class="col-span-4 flex items-center gap-2 text-sm">
+            {{ item_form.DELETE }}
+            <label for="{{ item_form.DELETE.id_for_label }}">Delete this item</label>
+          </div>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="flex justify-end gap-2">
+    <a href="{% url 'orders:list' %}" class="h-10 px-4 rounded-md border border-border inline-flex items-center">Cancel</a>
+    <button type="submit" class="h-10 px-4 rounded-md bg-primary text-primary-foreground inline-flex items-center font-medium">Save</button>
+  </div>
+</form>
+{% endblock %}

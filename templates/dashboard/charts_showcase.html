@@ -1,0 +1,151 @@
+{% extends "layouts/dashboard.html" %}
+{% block title %}Charts showcase · Apex{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+  <h1 class="text-2xl font-bold tracking-tight">Charts showcase</h1>
+  <p class="text-sm text-muted-foreground mt-1">A gallery of every ApexCharts variant the dashboard ships with.</p>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+  <section class="rounded-lg border border-border bg-card p-6">
+    <h2 class="text-sm font-semibold mb-4">Bar</h2>
+    <div id="cs-bar"></div>
+  </section>
+
+  <section class="rounded-lg border border-border bg-card p-6">
+    <h2 class="text-sm font-semibold mb-4">Line</h2>
+    <div id="cs-line"></div>
+  </section>
+
+  <section class="rounded-lg border border-border bg-card p-6">
+    <h2 class="text-sm font-semibold mb-4">Area</h2>
+    <div id="cs-area"></div>
+  </section>
+
+  <section class="rounded-lg border border-border bg-card p-6">
+    <h2 class="text-sm font-semibold mb-4">Donut</h2>
+    <div id="cs-donut"></div>
+  </section>
+
+  <section class="rounded-lg border border-border bg-card p-6">
+    <h2 class="text-sm font-semibold mb-4">Radial</h2>
+    <div id="cs-radial"></div>
+  </section>
+
+  <section class="rounded-lg border border-border bg-card p-6">
+    <h2 class="text-sm font-semibold mb-4">Heatmap</h2>
+    <div id="cs-heatmap"></div>
+  </section>
+
+  <section class="rounded-lg border border-border bg-card p-6">
+    <h2 class="text-sm font-semibold mb-4">Scatter</h2>
+    <div id="cs-scatter"></div>
+  </section>
+
+  <section class="rounded-lg border border-border bg-card p-6">
+    <h2 class="text-sm font-semibold mb-4">Mixed (line + bar)</h2>
+    <div id="cs-mixed"></div>
+  </section>
+
+</div>
+
+<script nonce="{{ csp_nonce }}">document.addEventListener("DOMContentLoaded", () => {
+  if (typeof ApexCharts === "undefined") return;
+  const isDark = document.documentElement.classList.contains("dark");
+  const fg = isDark ? "#cbd5e1" : "#475569";
+  const grid = isDark ? "#334155" : "#e2e8f0";
+
+  const baseOpts = {
+    chart: { toolbar: { show: false }, foreColor: fg, height: 240 },
+    colors: ["#3b82f6", "#10b981", "#f59e0b", "#ef4444"],
+    grid: { borderColor: grid },
+    tooltip: { theme: isDark ? "dark" : "light" },
+  };
+
+  // Bar
+  new ApexCharts(document.getElementById("cs-bar"), {
+    ...baseOpts,
+    chart: { ...baseOpts.chart, type: "bar" },
+    series: [{ name: "Revenue", data: [44, 55, 57, 56, 61, 58, 63, 60, 66] }],
+    xaxis: { categories: ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep"] },
+  }).render();
+
+  // Line
+  new ApexCharts(document.getElementById("cs-line"), {
+    ...baseOpts,
+    chart: { ...baseOpts.chart, type: "line" },
+    series: [
+      { name: "Sessions", data: [30, 40, 28, 51, 42, 109, 100] },
+      { name: "Pageviews", data: [11, 32, 45, 32, 34, 52, 41] },
+    ],
+    xaxis: { categories: ["M","T","W","T","F","S","S"] },
+    stroke: { curve: "smooth", width: 2 },
+  }).render();
+
+  // Area
+  new ApexCharts(document.getElementById("cs-area"), {
+    ...baseOpts,
+    chart: { ...baseOpts.chart, type: "area" },
+    series: [{ name: "Active users", data: [31, 40, 28, 51, 42, 109, 100, 90, 80, 75, 88, 95] }],
+    xaxis: { categories: ["1","2","3","4","5","6","7","8","9","10","11","12"] },
+    stroke: { curve: "smooth", width: 2 },
+    fill: { type: "gradient", gradient: { opacityFrom: 0.6, opacityTo: 0.1 } },
+  }).render();
+
+  // Donut
+  new ApexCharts(document.getElementById("cs-donut"), {
+    ...baseOpts,
+    chart: { ...baseOpts.chart, type: "donut" },
+    series: [44, 55, 41, 17],
+    labels: ["Direct", "Search", "Social", "Referral"],
+    legend: { position: "bottom" },
+  }).render();
+
+  // Radial
+  new ApexCharts(document.getElementById("cs-radial"), {
+    ...baseOpts,
+    chart: { ...baseOpts.chart, type: "radialBar" },
+    series: [76, 67, 61, 90],
+    labels: ["MRR", "ARR", "NPS", "Retention"],
+    plotOptions: { radialBar: { dataLabels: { name: { fontSize: "14px" } } } },
+  }).render();
+
+  // Heatmap
+  new ApexCharts(document.getElementById("cs-heatmap"), {
+    ...baseOpts,
+    chart: { ...baseOpts.chart, type: "heatmap" },
+    series: ["W1","W2","W3","W4"].map((w) => ({
+      name: w,
+      data: ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].map((d) => ({
+        x: d, y: Math.floor(Math.random() * 60) + 10,
+      })),
+    })),
+    dataLabels: { enabled: false },
+  }).render();
+
+  // Scatter
+  new ApexCharts(document.getElementById("cs-scatter"), {
+    ...baseOpts,
+    chart: { ...baseOpts.chart, type: "scatter" },
+    series: [{
+      name: "Sample",
+      data: Array.from({length: 30}, () => [Math.random()*10, Math.random()*10]),
+    }],
+  }).render();
+
+  // Mixed
+  new ApexCharts(document.getElementById("cs-mixed"), {
+    ...baseOpts,
+    chart: { ...baseOpts.chart, type: "line", stacked: false },
+    series: [
+      { name: "Bar", type: "column", data: [23, 11, 22, 27, 13, 22, 37, 21, 44] },
+      { name: "Line", type: "line", data: [30, 25, 36, 30, 45, 35, 64, 52, 59] },
+    ],
+    stroke: { width: [0, 2] },
+    xaxis: { categories: ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep"] },
+  }).render();
+});
+</script>
+{% endblock %}

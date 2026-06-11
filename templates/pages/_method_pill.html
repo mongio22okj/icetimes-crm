@@ -1,0 +1,7 @@
+{% comment %}HTTP method pill. Pass `method` (GET/POST/PATCH/PUT/DELETE).{% endcomment %}
+{% if method == "GET" %}<span class="inline-flex items-center px-2 h-5 rounded text-[10px] font-bold tracking-wider bg-success/10 text-success font-mono">GET</span>
+{% elif method == "POST" %}<span class="inline-flex items-center px-2 h-5 rounded text-[10px] font-bold tracking-wider bg-primary/10 text-primary font-mono">POST</span>
+{% elif method == "PATCH" %}<span class="inline-flex items-center px-2 h-5 rounded text-[10px] font-bold tracking-wider bg-amber-500/10 text-amber-600 font-mono">PATCH</span>
+{% elif method == "PUT" %}<span class="inline-flex items-center px-2 h-5 rounded text-[10px] font-bold tracking-wider bg-amber-500/10 text-amber-600 font-mono">PUT</span>
+{% elif method == "DELETE" %}<span class="inline-flex items-center px-2 h-5 rounded text-[10px] font-bold tracking-wider bg-destructive/10 text-destructive font-mono">DEL</span>
+{% endif %}

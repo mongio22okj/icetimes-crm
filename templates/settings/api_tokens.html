@@ -1,0 +1,102 @@
+{% extends "layouts/settings.html" %}
+{% load apex %}
+{% block settings_content %}
+
+<div class="space-y-6">
+
+  {# ── Just-created banner — shows the raw key once ─────────────── #}
+  {% if just_created_raw %}
+    <div class="rounded-lg border border-success/40 bg-success/5 p-5"
+         x-data="{copied: false}">
+      <div class="flex items-start gap-3">
+        <span class="inline-flex h-8 w-8 rounded-full bg-success/15 text-success items-center justify-center shrink-0">
+          {% icon "check" 16 %}
+        </span>
+        <div class="flex-1 min-w-0">
+          <h3 class="text-sm font-semibold mb-1">API key created</h3>
+          <p class="text-xs text-muted-foreground mb-3">
+            This is the only time you'll see the full key — copy it now and store it somewhere safe.
+          </p>
+          <div class="flex items-center gap-2 max-w-2xl">
+            <code class="flex-1 min-w-0 truncate font-mono text-xs px-3 py-2 rounded-md border border-border bg-card">{{ just_created_raw }}</code>
+            <button type="button"
+                    @click="navigator.clipboard.writeText('{{ just_created_raw|escapejs }}'); copied = true; setTimeout(() => copied = false, 2000)"
+                    class="h-8 px-3 rounded-md border border-border text-xs hover:bg-accent inline-flex items-center gap-1.5 shrink-0">
+              <span x-show="!copied">{% icon "download" 12 %} Copy</span>
+              <span x-show="copied" x-cloak>Copied!</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  {% endif %}
+
+  {# ── New token form ──────────────────────────────────────────── #}
+  <div class="rounded-lg border border-border bg-card p-5">
+    <h2 class="text-base font-semibold mb-1">Create an API token</h2>
+    <p class="text-xs text-muted-foreground mb-4">Tokens are bearer credentials — anyone with the raw value can act as you. Pick a memorable label so you can revoke it later.</p>
+    <form method="post" class="flex flex-col sm:flex-row gap-3">
+      {% csrf_token %}
+      <input type="text" name="name" required maxlength="80"
+             placeholder="e.g. Production server, Local dev"
+             class="flex-1 h-10 px-3 rounded-md border border-input bg-background text-sm">
+      <button type="submit"
+              class="h-10 px-4 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 inline-flex items-center justify-center">
+        Generate token
+      </button>
+    </form>
+  </div>
+
+  {# ── Existing tokens ─────────────────────────────────────────── #}
+  <div class="rounded-lg border border-border bg-card overflow-hidden">
+    <div class="px-5 py-3 border-b border-border">
+      <h2 class="text-base font-semibold">Your tokens</h2>
+    </div>
+    {% if tokens %}
+      <table class="w-full text-sm">
+        <thead class="bg-muted/30 text-xs uppercase tracking-wider text-muted-foreground">
+          <tr>
+            <th class="text-left px-5 py-2.5 font-semibold">Name</th>
+            <th class="text-left px-5 py-2.5 font-semibold">Prefix</th>
+            <th class="text-left px-5 py-2.5 font-semibold">Last used</th>
+            <th class="text-left px-5 py-2.5 font-semibold">Status</th>
+            <th class="px-5 py-2.5"></th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-border">
+          {% for t in tokens %}
+            <tr>
+              <td class="px-5 py-3">
+                <p class="font-medium">{{ t.name }}</p>
+                <p class="text-xs text-muted-foreground">Created {{ t.created_at|date:"M d, Y" }}</p>
+              </td>
+              <td class="px-5 py-3 text-muted-foreground font-mono text-xs">apex_{{ t.key_prefix }}…</td>
+              <td class="px-5 py-3 text-muted-foreground text-xs">
+                {% if t.last_used_at %}{{ t.last_used_at|timesince }} ago{% else %}—{% endif %}
+              </td>
+              <td class="px-5 py-3">
+                {% if t.is_active %}
+                  <span class="inline-flex items-center px-2 h-5 rounded text-[10px] font-medium uppercase tracking-wider bg-success/10 text-success">Active</span>
+                {% else %}
+                  <span class="inline-flex items-center px-2 h-5 rounded text-[10px] font-medium uppercase tracking-wider bg-muted text-muted-foreground">Revoked</span>
+                {% endif %}
+              </td>
+              <td class="px-5 py-3 text-right">
+                {% if t.is_active %}
+                  <form method="post" action="{% url 'settings:revoke_api_token' t.pk %}">
+                    {% csrf_token %}
+                    <button type="submit" class="text-xs text-destructive hover:bg-destructive/10 px-2 py-1 rounded">Revoke</button>
+                  </form>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      {% include "components/_empty_state.html" with icon="settings" headline="No tokens yet" body="Create one above to authenticate against the API." %}
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

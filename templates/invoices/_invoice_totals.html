@@ -1,0 +1,14 @@
+<div class="flex flex-col gap-1 text-sm">
+  <div class="flex justify-between">
+    <span class="text-muted-foreground">Subtotal</span>
+    <span>${{ invoice.subtotal|floatformat:2 }}</span>
+  </div>
+  <div class="flex justify-between">
+    <span class="text-muted-foreground">Tax ({{ invoice.tax_rate|floatformat:"-2" }}%)</span>
+    <span>${{ invoice.tax_amount|floatformat:2 }}</span>
+  </div>
+  <div class="flex justify-between border-t border-border pt-2 font-semibold">
+    <span>Total</span>
+    <span>${{ invoice.total|floatformat:2 }}</span>
+  </div>
+</div>

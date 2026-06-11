@@ -1,0 +1,92 @@
+{% extends "components/_detail_layout.html" %}
+{% load apex %}
+
+{% block component_body %}
+<div class="space-y-8">
+
+  <div class="rounded-lg border border-border bg-card p-6">
+    <h2 class="text-sm font-semibold mb-1">Text lines</h2>
+    <p class="text-xs text-muted-foreground mb-4">Use while a paragraph or list of items is loading.</p>
+    <div class="space-y-2">
+      <div class="apex-skeleton h-4 w-3/4 rounded"></div>
+      <div class="apex-skeleton h-4 w-full rounded"></div>
+      <div class="apex-skeleton h-4 w-2/3 rounded"></div>
+    </div>
+  </div>
+
+  <div class="rounded-lg border border-border bg-card p-6">
+    <h2 class="text-sm font-semibold mb-1">Stat card</h2>
+    <p class="text-xs text-muted-foreground mb-4">For dashboard tiles before metrics arrive.</p>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div class="rounded-lg border border-border p-5 space-y-3">
+        <div class="apex-skeleton h-4 w-24 rounded"></div>
+        <div class="apex-skeleton h-8 w-32 rounded"></div>
+        <div class="apex-skeleton h-3 w-20 rounded"></div>
+      </div>
+      <div class="rounded-lg border border-border p-5 space-y-3">
+        <div class="apex-skeleton h-4 w-24 rounded"></div>
+        <div class="apex-skeleton h-8 w-32 rounded"></div>
+        <div class="apex-skeleton h-3 w-20 rounded"></div>
+      </div>
+      <div class="rounded-lg border border-border p-5 space-y-3">
+        <div class="apex-skeleton h-4 w-24 rounded"></div>
+        <div class="apex-skeleton h-8 w-32 rounded"></div>
+        <div class="apex-skeleton h-3 w-20 rounded"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="rounded-lg border border-border bg-card p-6">
+    <h2 class="text-sm font-semibold mb-1">Table rows</h2>
+    <p class="text-xs text-muted-foreground mb-4">For list views (Customers, Orders, etc.) — Phase 11 wires this into the HTMX datatable's loading state.</p>
+    <div class="rounded-md border border-border overflow-hidden">
+      <table class="w-full text-sm">
+        <thead class="bg-muted/40 text-xs uppercase tracking-wider text-muted-foreground">
+          <tr><th class="text-left p-3">Name</th><th class="text-left p-3">Email</th><th class="text-left p-3">Status</th></tr>
+        </thead>
+        <tbody class="divide-y divide-border">
+          {% for _ in "12345" %}
+            <tr>
+              <td class="p-3"><div class="apex-skeleton h-4 w-32 rounded"></div></td>
+              <td class="p-3"><div class="apex-skeleton h-4 w-48 rounded"></div></td>
+              <td class="p-3"><div class="apex-skeleton h-4 w-16 rounded"></div></td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="rounded-lg border border-border bg-card p-6">
+    <h2 class="text-sm font-semibold mb-1">Avatar + name</h2>
+    <p class="text-xs text-muted-foreground mb-4">For profile cards and message lists.</p>
+    <div class="space-y-3">
+      {% for _ in "1234" %}
+        <div class="flex items-center gap-3">
+          <div class="apex-skeleton h-10 w-10 rounded-full"></div>
+          <div class="space-y-2 flex-1">
+            <div class="apex-skeleton h-3 w-40 rounded"></div>
+            <div class="apex-skeleton h-3 w-24 rounded"></div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+
+</div>
+
+<style>
+  .apex-skeleton {
+    background: linear-gradient(90deg, var(--muted) 0%, color-mix(in oklab, var(--muted) 60%, var(--card)) 50%, var(--muted) 100%);
+    background-size: 200% 100%;
+    animation: apex-shimmer 1.4s ease-in-out infinite;
+  }
+  @keyframes apex-shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .apex-skeleton { animation: none; }
+  }
+</style>
+{% endblock %}

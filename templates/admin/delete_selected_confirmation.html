@@ -1,0 +1,77 @@
+{% extends "admin/base_site.html" %}
+{% load i18n l10n admin_urls static apex %}
+
+{% block extrahead %}
+  {{ block.super }}
+  {{ media }}
+  <script src="{% static 'admin/js/cancel.js' %}" async></script>
+{% endblock %}
+
+{% block bodyclass %}{{ block.super }} app-{{ opts.app_label }} model-{{ opts.model_name }} delete-confirmation delete-selected-confirmation{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="{% trans 'Breadcrumb' %}"
+     class="px-6 pt-4 pb-2 text-sm text-muted-foreground flex items-center gap-1.5 flex-wrap">
+  <a href="{% url 'admin:index' %}" class="hover:text-foreground inline-flex items-center gap-1">
+    {% icon "shield" 14 %}<span>{% trans 'Admin' %}</span>
+  </a>
+  <span>/</span>
+  <a href="{% url 'admin:app_list' app_label=opts.app_label %}" class="hover:text-foreground">{{ opts.app_config.verbose_name }}</a>
+  <span>/</span>
+  <a href="{% url opts|admin_urlname:'changelist' %}" class="hover:text-foreground">{{ opts.verbose_name_plural|capfirst }}</a>
+  <span>/</span>
+  <span class="text-foreground">{% trans 'Delete multiple objects' %}</span>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="mx-auto max-w-2xl rounded-lg border border-destructive/30 bg-card overflow-hidden">
+  <header class="flex items-center gap-3 px-5 py-4 border-b border-border bg-destructive/10">
+    <span class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-destructive/20 text-destructive">
+      {% icon "trash" 18 %}
+    </span>
+    <h1 class="text-base font-semibold text-foreground">
+      {% blocktrans with name=objects_name %}Delete selected {{ name }}?{% endblocktrans %}
+    </h1>
+  </header>
+
+  <div class="p-5 space-y-4 text-sm">
+    {% if perms_lacking %}
+      <p>{% blocktrans %}Deleting the selected {{ objects_name }} would result in deleting related objects, but your account doesn't have permission to delete the following types of objects:{% endblocktrans %}</p>
+      <ul class="list-disc pl-5 text-destructive space-y-1">{{ perms_lacking|unordered_list }}</ul>
+    {% elif protected %}
+      <p>{% blocktrans %}Deleting the selected {{ objects_name }} would require deleting the following protected related objects:{% endblocktrans %}</p>
+      <ul class="list-disc pl-5 text-destructive space-y-1">{{ protected|unordered_list }}</ul>
+    {% else %}
+      <p>{% blocktrans %}Are you sure you want to delete the selected {{ objects_name }}? All of the following objects and their related items will be deleted:{% endblocktrans %}</p>
+      {% include "admin/includes/object_delete_summary.html" %}
+      <details class="rounded-md border border-border bg-muted/40 overflow-hidden">
+        <summary class="cursor-pointer px-3 py-2 text-xs font-semibold text-muted-foreground hover:bg-muted">
+          {% trans "Objects" %}
+        </summary>
+        <div class="px-5 py-2 text-xs text-muted-foreground space-y-2">
+          {% for deletable_object in deletable_objects %}
+            <ul class="list-disc">{{ deletable_object|unordered_list }}</ul>
+          {% endfor %}
+        </div>
+      </details>
+      <form method="post" class="flex items-center justify-end gap-2 pt-2 border-t border-border">
+        {% csrf_token %}
+        {% for obj in queryset %}
+          <input type="hidden" name="{{ action_checkbox_name }}" value="{{ obj.pk|unlocalize }}">
+        {% endfor %}
+        <input type="hidden" name="action" value="delete_selected">
+        <input type="hidden" name="post" value="yes">
+        <a role="button" href="#"
+           class="cancel-link h-9 inline-flex items-center px-3 rounded-md border border-border bg-card text-foreground text-sm font-medium hover:bg-muted">
+          {% trans "No, take me back" %}
+        </a>
+        <button type="submit"
+                class="h-9 inline-flex items-center px-3 rounded-md bg-destructive text-destructive-foreground text-sm font-medium hover:opacity-90">
+          {% trans "Yes, I'm sure" %}
+        </button>
+      </form>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

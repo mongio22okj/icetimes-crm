@@ -1,0 +1,28 @@
+{% load apex %}
+{% comment %}
+Cell renderers for the products TableView. Reference as
+`products/_table_cells.html#product|status`.
+{% endcomment %}
+
+{% partialdef product %}
+<div class="flex items-center gap-3 -my-1">
+  {% if row.image %}
+    <img src="{{ row.image.url }}" alt="" class="h-9 w-9 rounded-md object-cover bg-muted shrink-0" />
+  {% else %}
+    <span class="h-9 w-9 rounded-md inline-flex items-center justify-center bg-muted text-muted-foreground shrink-0">
+      {% icon "package" 16 %}
+    </span>
+  {% endif %}
+  <a href="{% url 'products:detail' row.pk %}" class="font-medium hover:text-primary truncate">{{ row.name }}</a>
+</div>
+{% endpartialdef %}
+
+{% partialdef status %}
+{% if row.status == "published" %}
+  <span class="inline-flex items-center text-xs font-medium rounded-full px-2.5 py-0.5 bg-success/10 text-success">{{ row.get_status_display }}</span>
+{% elif row.status == "archived" %}
+  <span class="inline-flex items-center text-xs font-medium rounded-full px-2.5 py-0.5 bg-muted text-muted-foreground">{{ row.get_status_display }}</span>
+{% else %}
+  <span class="inline-flex items-center text-xs font-medium rounded-full px-2.5 py-0.5 bg-amber-500/10 text-amber-600">{{ row.get_status_display }}</span>
+{% endif %}
+{% endpartialdef %}

@@ -1,0 +1,93 @@
+{% extends "layouts/dashboard.html" %}
+{% load apex %}
+{% block title %}Team · Apex{% endblock %}
+{% block content %}
+<div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+  <div>
+    <h1 class="text-2xl font-bold tracking-tight">Team</h1>
+    <p class="mt-1 text-sm text-muted-foreground">Browse profiles, see who's working on what.</p>
+  </div>
+</div>
+
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+  <a href="?" class="rounded-lg border border-border bg-card p-4 hover:border-primary/40">
+    <p class="text-xs text-muted-foreground">Everyone</p>
+    <p class="text-2xl font-bold mt-1">{{ counts.total }}</p>
+  </a>
+  <a href="?role=admin" class="rounded-lg border border-border bg-card p-4 hover:border-primary/40">
+    <p class="text-xs text-muted-foreground">Admins</p>
+    <p class="text-2xl font-bold mt-1 text-success">{{ counts.admin }}</p>
+  </a>
+  <a href="?role=manager" class="rounded-lg border border-border bg-card p-4 hover:border-primary/40">
+    <p class="text-xs text-muted-foreground">Managers</p>
+    <p class="text-2xl font-bold mt-1 text-primary">{{ counts.manager }}</p>
+  </a>
+  <a href="?role=staff" class="rounded-lg border border-border bg-card p-4 hover:border-primary/40">
+    <p class="text-xs text-muted-foreground">Staff</p>
+    <p class="text-2xl font-bold mt-1">{{ counts.staff }}</p>
+  </a>
+</div>
+
+<form method="get" class="mb-6 flex flex-col sm:flex-row gap-3">
+  <div class="relative flex-1">
+    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">{% icon "search" 16 %}</span>
+    <input type="search" name="q" value="{{ q }}" placeholder="Search name, email, title…"
+           class="h-10 w-full rounded-md border border-border bg-background pl-10 pr-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+  </div>
+  <select name="role" class="h-10 rounded-md border border-border bg-background px-3 text-sm">
+    <option value="">All roles</option>
+    {% for v, l in role_choices %}<option value="{{ v }}" {% if role_filter == v %}selected{% endif %}>{{ l }}</option>{% endfor %}
+  </select>
+  <button type="submit" class="h-10 px-4 rounded-md border border-border text-sm hover:bg-accent">Filter</button>
+</form>
+
+{% if people %}
+  <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+    {% for person in people %}
+      <article class="rounded-lg border border-border bg-card p-5 hover:border-primary/40 transition-colors">
+        <div class="flex items-start gap-4">
+          {% if person.avatar %}
+            <img src="{{ person.avatar.url }}" alt="" class="h-14 w-14 rounded-full object-cover shrink-0">
+          {% else %}
+            <span class="inline-flex h-14 w-14 items-center justify-center rounded-full text-base font-semibold text-white shrink-0" style="background-color: {{ person|avatar_color }};">{{ person|initials }}</span>
+          {% endif %}
+          <div class="min-w-0 flex-1">
+            <div class="flex items-center gap-2 mb-0.5">
+              <a href="{% url 'profiles:overview' person.username %}" class="font-semibold hover:text-primary truncate">{{ person.get_full_name|default:person.username }}</a>
+            </div>
+            {% if person.title %}<p class="text-xs text-muted-foreground truncate">{{ person.title }}</p>{% endif %}
+            <p class="text-xs text-muted-foreground truncate mt-0.5">{{ person.email }}</p>
+          </div>
+        </div>
+        <div class="mt-4 pt-4 border-t border-border grid grid-cols-3 gap-2 text-center">
+          <div>
+            <p class="text-sm font-semibold tabular-nums">{{ person.project_count }}</p>
+            <p class="text-[10px] uppercase tracking-wide text-muted-foreground">Projects</p>
+          </div>
+          <div>
+            <p class="text-sm font-semibold tabular-nums">{{ person.task_count }}</p>
+            <p class="text-[10px] uppercase tracking-wide text-muted-foreground">Tasks</p>
+          </div>
+          <div>
+            {% if person.role == "admin" %}<span class="inline-flex items-center px-2 h-5 rounded-md text-[10px] font-medium bg-success/10 text-success">Admin</span>
+            {% elif person.role == "manager" %}<span class="inline-flex items-center px-2 h-5 rounded-md text-[10px] font-medium bg-primary/10 text-primary">Manager</span>
+            {% else %}<span class="inline-flex items-center px-2 h-5 rounded-md text-[10px] font-medium bg-muted text-muted-foreground">Staff</span>{% endif %}
+          </div>
+        </div>
+      </article>
+    {% endfor %}
+  </div>
+
+  {% if is_paginated %}
+    <nav class="mt-6 flex items-center justify-between text-sm" aria-label="Pagination">
+      <span class="text-muted-foreground">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+      <div class="flex gap-2">
+        {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}{% if q %}&q={{ q }}{% endif %}" class="h-9 px-3 rounded-md border border-border inline-flex items-center hover:bg-accent">Previous</a>{% endif %}
+        {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}{% if q %}&q={{ q }}{% endif %}" class="h-9 px-3 rounded-md border border-border inline-flex items-center hover:bg-accent">Next</a>{% endif %}
+      </div>
+    </nav>
+  {% endif %}
+{% else %}
+  {% include "components/_empty_state.html" with icon="users" headline="No people found" body="Try a broader search or clear filters to see everyone." %}
+{% endif %}
+{% endblock %}

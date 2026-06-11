@@ -1,0 +1,22 @@
+{% extends "layouts/dashboard.html" %}
+{% block title %}Upload files · Apex{% endblock %}
+{% block content %}
+<div class="mb-6">
+  <h1 class="text-2xl font-bold tracking-tight">Upload files</h1>
+  <p class="text-sm text-muted-foreground mt-1">Up to 10MB per file. Multiple selection supported.</p>
+</div>
+
+<form method="post" enctype="multipart/form-data" class="max-w-xl space-y-4">
+  {% csrf_token %}
+  {% if parent_pk %}<input type="hidden" name="parent" value="{{ parent_pk }}">{% endif %}
+  <div class="rounded-lg border-2 border-dashed border-border bg-card p-8 text-center">
+    <input type="file" name="files" multiple required class="block mx-auto text-sm">
+    <p class="text-xs text-muted-foreground mt-2">Hold Cmd/Ctrl to select multiple files.</p>
+  </div>
+  <div class="flex justify-end gap-2">
+    <a href="{% if parent_pk %}{% url 'files:folder' parent_pk %}{% else %}{% url 'files:root' %}{% endif %}"
+       class="h-10 px-4 rounded-md border border-border inline-flex items-center text-sm hover:bg-accent">Cancel</a>
+    <button type="submit" class="h-10 px-4 rounded-md bg-primary text-primary-foreground inline-flex items-center font-medium hover:opacity-90 text-sm">Upload</button>
+  </div>
+</form>
+{% endblock %}

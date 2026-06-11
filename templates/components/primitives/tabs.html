@@ -1,0 +1,22 @@
+{% comment %}
+Reusable Tabs primitive.
+
+The include only handles the simplest case (3 tabs, plain text content).
+For richer cases, copy the markup pattern inline so panels can hold any
+content. The Alpine factory `apexTabs(initial)` supports keyboard nav:
+
+  Tab      moves focus into the tablist
+  ←/→      cycles through tabs (horizontal variants)
+  ↑/↓      cycles through tabs (vertical variant)
+  Home/End jumps to first/last
+  Enter    activates focused tab
+  Space    activates focused tab
+
+Args:
+  id            unique id (used for ARIA + tab data-tab values)
+  variant       underline | pill   (default underline)
+  tabs          ignored — the include is a stub. Copy the markup pattern.
+{% endcomment %}
+{% comment %}This file is intentionally minimal — Tabs require panel content
+  that include can't carry. See templates/components/pages/tabs.html for
+  the full pattern.{% endcomment %}

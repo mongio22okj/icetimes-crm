@@ -1,0 +1,23 @@
+{% load apex %}
+<nav class="border-b border-border mb-6 -mx-2" aria-label="Profile sections">
+  <div class="flex gap-1 overflow-x-auto px-2">
+    <a href="{% url 'profiles:overview' person.username %}"
+       class="inline-flex items-center gap-2 px-3 h-10 text-sm font-medium border-b-2 -mb-px transition-colors {% if active_tab == 'overview' %}border-primary text-foreground{% else %}border-transparent text-muted-foreground hover:text-foreground hover:border-border{% endif %}">
+      {% icon "user" 16 %}<span>Overview</span>
+    </a>
+    <a href="{% url 'profiles:projects' person.username %}"
+       class="inline-flex items-center gap-2 px-3 h-10 text-sm font-medium border-b-2 -mb-px transition-colors {% if active_tab == 'projects' %}border-primary text-foreground{% else %}border-transparent text-muted-foreground hover:text-foreground hover:border-border{% endif %}">
+      {% icon "briefcase" 16 %}<span>Projects</span>
+      <span class="text-xs px-1.5 py-0.5 rounded bg-muted text-muted-foreground">{{ project_count }}</span>
+    </a>
+    <a href="{% url 'profiles:activity' person.username %}"
+       class="inline-flex items-center gap-2 px-3 h-10 text-sm font-medium border-b-2 -mb-px transition-colors {% if active_tab == 'activity' %}border-primary text-foreground{% else %}border-transparent text-muted-foreground hover:text-foreground hover:border-border{% endif %}">
+      {% icon "activity" 16 %}<span>Activity</span>
+    </a>
+    <a href="{% url 'profiles:connections' person.username %}"
+       class="inline-flex items-center gap-2 px-3 h-10 text-sm font-medium border-b-2 -mb-px transition-colors {% if active_tab == 'connections' %}border-primary text-foreground{% else %}border-transparent text-muted-foreground hover:text-foreground hover:border-border{% endif %}">
+      {% icon "users" 16 %}<span>Connections</span>
+      <span class="text-xs px-1.5 py-0.5 rounded bg-muted text-muted-foreground">{{ team_count }}</span>
+    </a>
+  </div>
+</nav>

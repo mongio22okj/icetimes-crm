@@ -1,0 +1,29 @@
+{% extends "chat/_layout.html" %}
+{% load apex %}
+{% block title %}New conversation · Chat · Apex{% endblock %}
+
+{% block stream_pane %}
+<header class="h-12 px-6 flex items-center border-b border-border">
+  <h2 class="font-semibold text-sm">Start a new conversation</h2>
+</header>
+
+<div class="flex-1 overflow-y-auto p-6">
+  {% if candidates %}
+    <ul class="divide-y divide-border rounded-lg border border-border bg-card max-w-md">
+      {% for u in candidates %}
+        <li>
+          <a href="{% url 'chat:conversation' u.pk %}"
+             class="flex items-center justify-between px-4 py-3 hover:bg-accent/30">
+            <span class="text-sm">{{ u.get_full_name|default:u.username }}</span>
+            {% if u.pk in existing_partner_ids %}
+              <span class="text-[10px] text-muted-foreground">existing</span>
+            {% endif %}
+          </a>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="text-sm text-muted-foreground">No other staff users to chat with.</p>
+  {% endif %}
+</div>
+{% endblock %}

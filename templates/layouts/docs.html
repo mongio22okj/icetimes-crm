@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+{% load apex i18n %}
+
+{% comment %}
+  Public docs layout. Mirrors the Next.js Apex docs structure:
+
+    ┌──────────────────────────────────────────────┐
+    │  ⚡ Apex Django  [Docs]            🌗 Theme  │  ← sticky top bar
+    ├──────────────────────────────────────────────┤
+    │ GETTING STARTED  │                            │
+    │ → Introduction   │                            │
+    │ → Installation   │      <main content>        │
+    │ → ...            │                            │
+    │ CUSTOMIZATION    │                            │
+    │ → ...            │                            │
+    └──────────────────────────────────────────────┘
+
+  Pages set `{% block doc_title %}{% endblock %}` (page heading) and
+  `{% block doc_subtitle %}{% endblock %}` (one-line description),
+  then fill `{% block doc_body %}{% endblock %}` with their content.
+
+  The sidebar reads `DOCS_NAV` via the `apps.docs.nav` module loaded
+  by the `docs_nav` template tag below.
+{% endcomment %}
+
+{% block title %}{% block doc_title %}Docs{% endblock %} — Apex Django{% endblock %}
+
+{% block body %}
+<a href="#docs-content"
+   class="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50
+          focus:px-4 focus:py-2 focus:rounded-md focus:bg-primary focus:text-primary-foreground
+          focus:font-medium focus:shadow-lg focus:ring-2 focus:ring-ring focus:outline-none">
+  Skip to main content
+</a>
+<div class="min-h-screen bg-background text-foreground"
+     x-data="{ mobileOpen: false }"
+     @keydown.escape.window="mobileOpen = false">
+
+  {# ── Top bar ────────────────────────────────────────────────────── #}
+  <header class="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+    <div class="mx-auto flex h-14 max-w-7xl items-center gap-3 px-4 sm:px-6 lg:px-8">
+
+      {# Mobile menu trigger #}
+      <button type="button"
+              class="lg:hidden h-9 w-9 rounded-md border border-border inline-flex items-center justify-center hover:bg-accent"
+              @click="mobileOpen = !mobileOpen"
+              :aria-expanded="mobileOpen"
+              aria-label="Toggle navigation">
+        <span x-show="!mobileOpen">{% icon "menu" 18 %}</span>
+        <span x-show="mobileOpen" x-cloak>{% icon "x" 18 %}</span>
+      </button>
+
+      <a href="/" class="flex items-center gap-2 font-semibold hover:text-primary transition-colors">
+        <span class="h-7 w-7 rounded-md bg-primary text-primary-foreground inline-flex items-center justify-center">
+          {% icon "package" 16 %}
+        </span>
+        <span>Apex Django</span>
+      </a>
+      <span class="rounded-md bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">Docs</span>
+
+      <div class="flex-1"></div>
+
+      <a href="https://github.com/puikinsh/dashboardpack-apex-django"
+         target="_blank" rel="noopener"
+         class="hidden sm:inline-flex h-9 items-center gap-1.5 px-3 rounded-md border border-border text-sm hover:bg-accent">
+        {% icon "github" 14 %}
+        GitHub
+      </a>
+
+      <button type="button"
+              aria-label="Toggle theme"
+              x-data
+              @click="document.documentElement.classList.toggle('dark'); localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');"
+              class="h-9 w-9 rounded-md border border-border inline-flex items-center justify-center hover:bg-accent">
+        {% icon "sun" 16 %}
+      </button>
+    </div>
+  </header>
+
+  <div class="mx-auto max-w-7xl lg:flex">
+
+    {# ── Desktop sidebar (sticky, scrollable) ───────────────────────── #}
+    <aside class="hidden w-64 shrink-0 border-r border-border lg:block">
+      <div class="sticky top-14 max-h-[calc(100vh-3.5rem)] overflow-y-auto">
+        {% include "docs/_sidebar.html" %}
+      </div>
+    </aside>
+
+    {# ── Mobile sidebar overlay ─────────────────────────────────────── #}
+    <div x-show="mobileOpen"
+         x-cloak
+         x-transition.opacity
+         @click="mobileOpen = false"
+         class="fixed inset-0 z-30 bg-background/80 backdrop-blur-sm lg:hidden"
+         aria-hidden="true"></div>
+    <aside x-show="mobileOpen"
+           x-cloak
+           x-transition:enter="transition ease-out duration-200"
+           x-transition:enter-start="-translate-x-full"
+           x-transition:enter-end="translate-x-0"
+           x-transition:leave="transition ease-in duration-150"
+           x-transition:leave-start="translate-x-0"
+           x-transition:leave-end="-translate-x-full"
+           class="fixed inset-y-14 left-0 z-40 w-64 overflow-y-auto border-r border-border bg-background lg:hidden">
+      {% include "docs/_sidebar.html" %}
+    </aside>
+
+    {# ── Main content ───────────────────────────────────────────────── #}
+    <main id="docs-content" tabindex="-1" class="min-w-0 flex-1 px-4 py-8 sm:px-6 lg:px-12">
+      <div class="mx-auto max-w-3xl">
+
+        {# Page header — title + subtitle #}
+        <div class="mb-8 space-y-2 border-b border-border pb-6">
+          <h1 class="text-3xl font-bold tracking-tight">{% block doc_title_h1 %}{{ block.super }}{% endblock %}</h1>
+          <p class="text-sm text-muted-foreground leading-relaxed">{% block doc_subtitle %}{% endblock %}</p>
+        </div>
+
+        {# Page body — pages override this #}
+        <div class="space-y-10">
+          {% block doc_body %}{% endblock %}
+        </div>
+
+        {# Edit-on-GitHub footer #}
+        <footer class="mt-16 pt-6 border-t border-border text-xs text-muted-foreground flex items-center justify-between">
+          <span>Apex Django · open source</span>
+          <a href="https://github.com/puikinsh/dashboardpack-apex-django"
+             target="_blank" rel="noopener"
+             class="inline-flex items-center gap-1 hover:text-foreground transition-colors">
+            {% icon "github" 12 %}
+            Edit on GitHub
+          </a>
+        </footer>
+      </div>
+    </main>
+  </div>
+</div>
+{% endblock %}

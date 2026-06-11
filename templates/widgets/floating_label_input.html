@@ -1,0 +1,43 @@
+{% comment %}
+FloatingLabelInput template.
+
+Context (from FloatingLabelInput.get_context):
+  widget.name              — field name
+  widget.value             — current value (may be empty string / None)
+  widget.attrs             — html attrs (incl. id, type if non-default)
+  widget.size              — sm | md | lg
+  widget.size_input_classes — h-* + text-* for the active size
+  widget.floating_label    — text shown inside; falls back to attrs.placeholder
+  widget.max_length_counter — bool; when True render `n / max` below
+  widget.helper            — helper text (rendered by _field_wrapper.html)
+
+The floating animation uses :placeholder-shown to detect emptiness — pure
+CSS, no Alpine required for the float behavior. Alpine kicks in only for
+the optional character counter.
+{% endcomment %}
+{% with attrs=widget.attrs label=widget.floating_label|default:widget.name %}
+<div class="relative" data-widget="floating-label-input">
+  <input type="{{ widget.type|default:'text' }}"
+         name="{{ widget.name }}"
+         {% if widget.value != None %}value="{{ widget.value }}"{% endif %}
+         {% for k, v in attrs.items %}{% if k != 'class' and k != 'placeholder' %}{{ k }}="{{ v }}" {% endif %}{% endfor %}
+         placeholder=" "
+         class="peer w-full {{ widget.size_input_classes }} px-3 pt-4 pb-1 rounded-md border border-input bg-background
+                placeholder-transparent focus:outline-none focus:ring-2 focus:ring-ring/50 focus:border-ring
+                transition-colors {{ attrs.class|default:'' }}" />
+  <label for="{{ attrs.id }}"
+         class="absolute left-3 top-1/2 -translate-y-1/2 px-1 bg-background text-muted-foreground transition-all pointer-events-none
+                peer-focus:top-0 peer-focus:text-xs peer-focus:text-foreground
+                peer-[:not(:placeholder-shown)]:top-0 peer-[:not(:placeholder-shown)]:text-xs">
+    {{ label }}
+  </label>
+  {% if widget.max_length_counter and attrs.maxlength %}
+    <div class="absolute right-2 top-1 text-[10px] text-muted-foreground tabular-nums"
+         x-data="{n: ({{ widget.value|default_if_none:''|length }}|0)}"
+         x-init="$el.previousElementSibling || true"
+         @input.window="if ($event.target.name === '{{ widget.name }}') n = $event.target.value.length">
+      <span x-text="n"></span>/<span>{{ attrs.maxlength }}</span>
+    </div>
+  {% endif %}
+</div>
+{% endwith %}

@@ -1,0 +1,10 @@
+{% comment %}Copy-to-clipboard code block. Pass `code` (string) and optional `lang`.{% endcomment %}
+<div class="relative group rounded-md border border-border bg-muted/30 overflow-hidden"
+     x-data="{ copied: false, copy() { navigator.clipboard.writeText(this.$refs.src.textContent.trim()); this.copied = true; setTimeout(() => this.copied = false, 1500); } }">
+  {% if lang %}<div class="px-3 pt-2 text-[10px] uppercase tracking-wide text-muted-foreground font-mono">{{ lang }}</div>{% endif %}
+  <button type="button" x-on:click="copy()"
+          class="absolute top-2 right-2 h-7 px-2 rounded-md border border-border bg-card text-[10px] text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity inline-flex items-center gap-1">
+    <span x-text="copied ? 'Copied' : 'Copy'"></span>
+  </button>
+  <pre class="px-4 py-3 overflow-x-auto text-xs leading-relaxed"><code x-ref="src" class="font-mono">{{ code }}</code></pre>
+</div>

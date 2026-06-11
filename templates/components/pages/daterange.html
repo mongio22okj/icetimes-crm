@@ -1,0 +1,85 @@
+{% extends "components/_detail_layout.html" %}
+{% load apex %}
+
+{% block component_body %}
+<div class="space-y-8">
+
+  <div class="rounded-lg border border-border bg-card p-6">
+    <h2 class="text-sm font-semibold mb-1">Side-by-side native inputs</h2>
+    <p class="text-xs text-muted-foreground mb-4">Simplest implementation — works on every browser without dependencies.</p>
+    <div x-data="{from: '2026-04-01', to: '2026-04-30'}" class="flex items-end gap-3">
+      <div>
+        <label class="block text-sm font-medium mb-1.5">From</label>
+        <input type="date" x-model="from" :max="to"
+               class="h-10 px-3 rounded-md border border-input bg-background text-sm" />
+      </div>
+      <span class="h-10 inline-flex items-center text-muted-foreground">→</span>
+      <div>
+        <label class="block text-sm font-medium mb-1.5">To</label>
+        <input type="date" x-model="to" :min="from"
+               class="h-10 px-3 rounded-md border border-input bg-background text-sm" />
+      </div>
+    </div>
+  </div>
+
+  <div class="rounded-lg border border-border bg-card p-6">
+    <h2 class="text-sm font-semibold mb-1">Popover with presets</h2>
+    <p class="text-xs text-muted-foreground mb-4">Common dashboard pattern — preset shortcuts + a custom range below.</p>
+    <div x-data='{
+      open: false,
+      from: "2026-04-22",
+      to: "2026-04-29",
+      preset: "Last 7 days",
+      apply(label, fromOffset, toOffset) {
+        const f = new Date(); f.setDate(f.getDate() + fromOffset);
+        const t = new Date(); t.setDate(t.getDate() + toOffset);
+        this.from = f.toISOString().slice(0,10);
+        this.to = t.toISOString().slice(0,10);
+        this.preset = label;
+        this.open = false;
+      },
+      label() {
+        const f = new Date(this.from).toLocaleDateString(undefined, {month:"short", day:"numeric"});
+        const t = new Date(this.to).toLocaleDateString(undefined, {month:"short", day:"numeric"});
+        return `${f} – ${t}`;
+      }
+    }' class="relative inline-block">
+      <button type="button" @click="open = !open"
+              class="h-10 px-3 rounded-md border border-input bg-background text-sm inline-flex items-center gap-2">
+        {% icon "calendar" 16 cls="text-muted-foreground" %}
+        <span x-text="label()"></span>
+        <span class="text-xs text-muted-foreground" x-text="`(${preset})`"></span>
+        {% icon "chevron-down" 14 cls="text-muted-foreground" %}
+      </button>
+      <div x-show="open" x-cloak @click.outside="open = false" @keydown.escape.window="open = false"
+           class="absolute z-30 left-0 top-full mt-1 w-80 rounded-md border border-border bg-popover shadow-lg p-3">
+        <div class="grid grid-cols-2 gap-1 mb-3 text-sm">
+          <button type="button" @click="apply('Today', 0, 0)" class="text-left rounded px-2 py-1.5 hover:bg-accent">Today</button>
+          <button type="button" @click="apply('Yesterday', -1, -1)" class="text-left rounded px-2 py-1.5 hover:bg-accent">Yesterday</button>
+          <button type="button" @click="apply('Last 7 days', -7, 0)" class="text-left rounded px-2 py-1.5 hover:bg-accent">Last 7 days</button>
+          <button type="button" @click="apply('Last 30 days', -30, 0)" class="text-left rounded px-2 py-1.5 hover:bg-accent">Last 30 days</button>
+          <button type="button" @click="apply('Last 90 days', -90, 0)" class="text-left rounded px-2 py-1.5 hover:bg-accent">Last 90 days</button>
+          <button type="button" @click="apply('Year to date', -((new Date()).getMonth() * 30), 0)" class="text-left rounded px-2 py-1.5 hover:bg-accent">YTD</button>
+        </div>
+        <div class="border-t border-border pt-3 grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-[11px] uppercase tracking-wider text-muted-foreground font-semibold mb-1">From</label>
+            <input type="date" x-model="from" :max="to" @change="preset='Custom'"
+                   class="w-full h-9 px-2 rounded-md border border-input bg-background text-sm" />
+          </div>
+          <div>
+            <label class="block text-[11px] uppercase tracking-wider text-muted-foreground font-semibold mb-1">To</label>
+            <input type="date" x-model="to" :min="from" @change="preset='Custom'"
+                   class="w-full h-9 px-2 rounded-md border border-input bg-background text-sm" />
+          </div>
+        </div>
+        <div class="flex justify-end gap-2 mt-3 pt-3 border-t border-border">
+          <button type="button" @click="open = false" class="h-8 px-3 rounded-md border border-border text-xs hover:bg-accent">Cancel</button>
+          <button type="button" @click="open = false" class="h-8 px-3 rounded-md bg-primary text-primary-foreground text-xs font-medium hover:opacity-90">Apply</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

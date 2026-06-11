@@ -1,0 +1,56 @@
+{% extends "components/_detail_layout.html" %}
+{% load apex %}
+
+{% block component_body %}
+<div class="space-y-8">
+
+  <div class="rounded-lg border border-border bg-card p-6">
+    <h2 class="text-sm font-semibold mb-1">Stars · interactive</h2>
+    <p class="text-xs text-muted-foreground mb-4">Click to set; Tab + ←/→ to set with the keyboard. Hover previews the value.</p>
+    <div x-data="{value: 4, hover: 0, max: 5}" class="flex items-center gap-2">
+      <div role="radiogroup" aria-label="Rating" class="inline-flex">
+        <template x-for="n in max" :key="n">
+          <button type="button"
+                  role="radio" :aria-checked="value === n" :aria-label="`${n} stars`"
+                  @click="value = n"
+                  @mouseenter="hover = n" @mouseleave="hover = 0"
+                  @keydown.right.prevent="value = Math.min(max, value + 1)"
+                  @keydown.left.prevent="value = Math.max(1, value - 1)"
+                  class="p-1 text-amber-500 transition hover:scale-110 outline-none focus-visible:ring-2 focus-visible:ring-primary rounded">
+            <span x-show="(hover || value) >= n">{% icon "star" 24 cls="fill-amber-500" %}</span>
+            <span x-show="(hover || value) < n" class="text-muted-foreground/40">{% icon "star" 24 %}</span>
+          </button>
+        </template>
+      </div>
+      <span class="text-sm text-muted-foreground" x-text="`${value} / ${max}`"></span>
+    </div>
+  </div>
+
+  <div class="rounded-lg border border-border bg-card p-6">
+    <h2 class="text-sm font-semibold mb-1">Read-only · with average</h2>
+    <p class="text-xs text-muted-foreground mb-4">Display rating; non-interactive (no role="radiogroup").</p>
+    <div class="flex items-center gap-2">
+      <div class="inline-flex text-amber-500" aria-label="Rated 4.6 out of 5">
+        {% icon "star" 18 cls="fill-amber-500" %}{% icon "star" 18 cls="fill-amber-500" %}{% icon "star" 18 cls="fill-amber-500" %}{% icon "star" 18 cls="fill-amber-500" %}<span class="relative inline-block">{% icon "star" 18 cls="fill-amber-500" %}<span class="absolute inset-y-0 right-0 w-2/5 bg-card"></span></span>
+      </div>
+      <span class="text-sm font-semibold">4.6</span>
+      <span class="text-xs text-muted-foreground">(248 reviews)</span>
+    </div>
+  </div>
+
+  <div class="rounded-lg border border-border bg-card p-6">
+    <h2 class="text-sm font-semibold mb-1">Hearts</h2>
+    <div x-data="{value: 3}" class="inline-flex">
+      <template x-for="n in 5" :key="n">
+        <button type="button" @click="value = n"
+                :aria-label="`${n} of 5`"
+                class="p-1 text-rose-500 transition hover:scale-110">
+          <span x-show="value >= n">♥</span>
+          <span x-show="value < n" class="text-muted-foreground/40">♡</span>
+        </button>
+      </template>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

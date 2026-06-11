@@ -1,0 +1,29 @@
+{% extends "layouts/auth.html" %}
+{% block title %}Verify email · Apex{% endblock %}
+{% block auth_content %}
+<h1 class="text-2xl font-bold tracking-tight mb-1">Check your email</h1>
+<p class="text-sm text-muted-foreground mb-6">
+  We sent a verification link to <strong>{{ user.email }}</strong>. Click it to finish setting up your account.
+</p>
+
+{% if messages %}
+  {% for message in messages %}
+    <div class="mb-4 rounded-md border border-border bg-muted p-3 text-sm">{{ message }}</div>
+  {% endfor %}
+{% endif %}
+
+<form method="post" action="{% url 'email_verify_resend' %}" class="space-y-3">
+  {% csrf_token %}
+  <button type="submit" class="w-full h-10 rounded-md bg-primary text-primary-foreground font-medium">
+    Resend verification email
+  </button>
+</form>
+
+<div class="mt-4 flex items-center justify-between text-sm">
+  <span class="text-muted-foreground">Wrong address?</span>
+  <form method="post" action="{% url 'logout' %}">
+    {% csrf_token %}
+    <button type="submit" class="text-primary hover:underline">Sign out</button>
+  </form>
+</div>
+{% endblock %}

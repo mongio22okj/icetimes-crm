@@ -1,0 +1,116 @@
+{% extends "layouts/docs.html" %}
+{% load docs_tags %}
+
+{% block doc_title %}Organizations + RBAC{% endblock %}
+{% block doc_subtitle %}Multi-tenant workspaces with a 5-tier role hierarchy. Opt-in tenant scoping per model.{% endblock %}
+
+{% block doc_body %}
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">Models</h2>
+  <ul class="space-y-2 text-sm text-muted-foreground">
+    {% feature title="Organization" %}
+      Name, auto-generated slug (with collision suffixing), optional logo,
+      plan choice (free / pro / enterprise), <code class="rounded bg-muted px-1 text-xs">created_by</code>, timestamps.
+    {% endfeature %}
+    {% feature title="Membership" %}
+      Joins User × Organization with a role, unique on
+      <code class="rounded bg-muted px-1 text-xs">(user, org)</code>, indexed for fast lookup.
+    {% endfeature %}
+    {% feature title="Invitation" %}
+      Email + role + opaque <code class="rounded bg-muted px-1 text-xs">secrets.token_urlsafe(32)</code> token,
+      14-day TTL, <code class="rounded bg-muted px-1 text-xs">accepted_at</code> timestamp.
+      Idempotent <code class="rounded bg-muted px-1 text-xs">accept()</code> creates the
+      Membership and tolerates double-redeem.
+    {% endfeature %}
+  </ul>
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">Roles</h2>
+  <p class="text-sm text-muted-foreground">
+    Five roles, strict hierarchy from most- to least-privileged:
+  </p>
+  <div class="overflow-hidden rounded-lg border border-border">
+    <table class="w-full text-sm">
+      <thead class="bg-muted/50 text-left text-xs uppercase tracking-wider text-muted-foreground">
+        <tr><th class="px-4 py-2.5">Role</th><th class="px-4 py-2.5">Can do</th></tr>
+      </thead>
+      <tbody class="divide-y divide-border">
+        <tr><td class="px-4 py-2.5"><code class="text-xs">owner</code></td><td class="px-4 py-2.5">Everything, including delete the org</td></tr>
+        <tr><td class="px-4 py-2.5"><code class="text-xs">admin</code></td><td class="px-4 py-2.5">Manage members + settings, can't delete the org</td></tr>
+        <tr><td class="px-4 py-2.5"><code class="text-xs">billing</code></td><td class="px-4 py-2.5">Manage subscriptions + payment methods, see invoices</td></tr>
+        <tr><td class="px-4 py-2.5"><code class="text-xs">member</code></td><td class="px-4 py-2.5">Read + write tenant-scoped data</td></tr>
+        <tr><td class="px-4 py-2.5"><code class="text-xs">viewer</code></td><td class="px-4 py-2.5">Read-only access to tenant-scoped data</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">Request middleware</h2>
+  <p class="text-sm text-muted-foreground">
+    <code class="rounded bg-muted px-1 text-xs">OrganizationMiddleware</code>
+    resolves <code class="rounded bg-muted px-1 text-xs">request.organization</code>,
+    <code class="rounded bg-muted px-1 text-xs">request.memberships</code>,
+    <code class="rounded bg-muted px-1 text-xs">request.organization_role</code>
+    for every authenticated request. Precedence:
+  </p>
+  <ol class="space-y-1.5 text-sm text-muted-foreground ml-5 list-decimal">
+    <li>session-stored slug → 2. first membership alphabetically → 3. <code class="rounded bg-muted px-1 text-xs">None</code>.</li>
+  </ol>
+  <p class="text-sm text-muted-foreground">
+    Failures are swallowed so a tenant lookup never breaks the request.
+  </p>
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">View mixins</h2>
+  {% code lang="python" %}from apps.organizations.mixins import OrgRequiredMixin, HasRoleMixin, OrgScopedMixin
+
+# Bounce to /orgs/ when no active org is set
+class MyView(LoginRequiredMixin, OrgRequiredMixin, TemplateView):
+    ...
+
+# Require at least admin role; raises 403 otherwise
+class SettingsView(HasRoleMixin, ...):
+    required_role = "admin"
+
+# Filter the queryset to the active org (model needs an `organization` FK)
+class CustomerListView(OrgRequiredMixin, OrgScopedMixin, ListView):
+    model = Customer
+    org_field = "organization"   # default; override if your FK has a different name{% endcode %}
+  {% callout type="tip" %}
+    <code class="rounded bg-muted px-1 text-xs">OrgScopedMixin</code> is opt-in.
+    Existing apps aren't migrated yet — apply per app as you add the
+    <code class="rounded bg-muted px-1 text-xs">organization</code> FK to each model.
+  {% endcallout %}
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">UI surfaces</h2>
+  <ul class="space-y-2 text-sm text-muted-foreground">
+    <li><strong class="text-foreground"><code class="rounded bg-muted px-1 text-xs">/orgs/</code></strong> — list of memberships with switch / settings actions + create-new form (owner role auto-assigned).</li>
+    <li><strong class="text-foreground"><code class="rounded bg-muted px-1 text-xs">/orgs/&lt;slug&gt;/settings/</code></strong> — name + plan editor with an owner-only Danger Zone delete confirmation.</li>
+    <li><strong class="text-foreground"><code class="rounded bg-muted px-1 text-xs">/orgs/&lt;slug&gt;/members/</code></strong> — member roster with inline role change + remove buttons (admin/owner only). Pending invitations panel with expiry countdown and cancel action.</li>
+    <li><strong class="text-foreground"><code class="rounded bg-muted px-1 text-xs">/invitations/&lt;token&gt;/</code></strong> — public accept page, handles unauthenticated, wrong-account, expired, already-accepted, and happy-path states.</li>
+    <li><strong class="text-foreground">Header org switcher</strong> — auth-only dropdown showing all memberships.</li>
+  </ul>
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">Where to read more</h2>
+  <p class="text-sm text-muted-foreground">
+    <code class="rounded bg-muted px-1 text-xs">apps/organizations/</code> is
+    self-contained — start with
+    <code class="rounded bg-muted px-1 text-xs">models.py</code> (the
+    <code class="rounded bg-muted px-1 text-xs">role_at_least()</code> helper
+    is the heart of the RBAC), then
+    <code class="rounded bg-muted px-1 text-xs">mixins.py</code> for the view
+    integration. Tests in
+    <code class="rounded bg-muted px-1 text-xs">apps/organizations/tests/</code>
+    show every flow end-to-end.
+  </p>
+</section>
+
+{% endblock %}

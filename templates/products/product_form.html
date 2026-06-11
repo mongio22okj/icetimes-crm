@@ -1,0 +1,32 @@
+{% extends "layouts/dashboard.html" %}
+{% block title %}{% if form.instance.pk %}Edit{% else %}New{% endif %} product · Apex{% endblock %}
+{% block content %}
+<div class="mb-6">
+  <nav class="text-sm text-muted-foreground mb-1">
+    <a href="{% url 'products:list' %}" class="hover:text-primary">Products</a> <span class="mx-1">/</span>
+    <span>{% if form.instance.pk %}Edit{% else %}New{% endif %}</span>
+  </nav>
+  <h1 class="text-2xl font-bold tracking-tight">
+    {% if form.instance.pk %}Edit {{ form.instance.name }}{% else %}New product{% endif %}
+  </h1>
+</div>
+
+<form method="post" enctype="multipart/form-data" class="max-w-2xl rounded-lg border border-border bg-card p-6 space-y-4">
+  {% csrf_token %}
+  {% if form.non_field_errors %}
+    <div class="text-sm text-destructive">{{ form.non_field_errors }}</div>
+  {% endif %}
+  {% for field in form %}
+    <div>
+      <label for="{{ field.id_for_label }}" class="block text-sm font-medium mb-1">{{ field.label }}</label>
+      {{ field }}
+      {% if field.help_text %}<p class="text-xs text-muted-foreground mt-1">{{ field.help_text }}</p>{% endif %}
+      {% if field.errors %}<p class="text-xs text-destructive mt-1">{{ field.errors.0 }}</p>{% endif %}
+    </div>
+  {% endfor %}
+  <div class="flex justify-end gap-2 pt-2">
+    <a href="{% url 'products:list' %}" class="h-10 px-4 rounded-md border border-border inline-flex items-center">Cancel</a>
+    <button type="submit" class="h-10 px-4 rounded-md bg-primary text-primary-foreground inline-flex items-center font-medium">Save</button>
+  </div>
+</form>
+{% endblock %}

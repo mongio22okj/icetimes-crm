@@ -1,0 +1,14 @@
+<tr x-data="{ removed: false }" x-show="!removed" class="border-b border-border">
+  <td class="p-2">
+    {{ form.description }}
+    {% if form.id %}{{ form.id }}{% endif %}
+  </td>
+  <td class="p-2 w-24">{{ form.quantity }}</td>
+  <td class="p-2 w-32">{{ form.unit_price }}</td>
+  <td class="p-2 w-12 text-right">
+    <button type="button"
+            @click="removed = true; $refs.del.checked = true"
+            class="text-muted-foreground hover:text-destructive">×</button>
+    <input x-ref="del" type="checkbox" name="{{ form.DELETE.html_name }}" class="hidden">
+  </td>
+</tr>

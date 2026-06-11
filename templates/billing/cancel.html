@@ -1,0 +1,45 @@
+{% extends "layouts/dashboard.html" %}
+{% load apex %}
+{% block title %}Cancel subscription · Apex{% endblock %}
+{% block content %}
+<div class="mb-6">
+  <h1 class="text-2xl font-bold tracking-tight">Cancel subscription</h1>
+  <p class="mt-1 text-sm text-muted-foreground">We're sorry to see you go.</p>
+</div>
+
+<div class="max-w-2xl">
+  <section class="rounded-lg border border-destructive/20 bg-destructive/5 p-6">
+    <div class="flex items-start gap-4">
+      <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-destructive/10 text-destructive">
+        {% icon "trash" 18 %}
+      </span>
+      <div class="flex-1">
+        <h2 class="font-semibold mb-1">You're about to cancel {{ subscription.get_plan_display }}</h2>
+        <p class="text-sm text-muted-foreground mb-4">
+          Your plan stays active until <span class="font-medium text-foreground">{{ subscription.renews_at|date:"M j, Y"|default:"the end of the current period" }}</span>.
+          After that, you'll lose access to:
+        </p>
+        <ul class="space-y-2 text-sm mb-5">
+          <li class="flex items-start gap-2">{% icon "trash" 14 cls="text-destructive mt-0.5 shrink-0" %}<span>Multi-user seats and team workspaces</span></li>
+          <li class="flex items-start gap-2">{% icon "trash" 14 cls="text-destructive mt-0.5 shrink-0" %}<span>Priority support and SLA</span></li>
+          <li class="flex items-start gap-2">{% icon "trash" 14 cls="text-destructive mt-0.5 shrink-0" %}<span>Audit log and 2FA enforcement</span></li>
+          <li class="flex items-start gap-2">{% icon "trash" 14 cls="text-destructive mt-0.5 shrink-0" %}<span>API rate limit above the free tier</span></li>
+        </ul>
+
+        <div class="rounded-md border border-border bg-card p-3 text-sm mb-5">
+          <p class="font-medium mb-1">Before you go — would <a href="{% url 'billing:plans' %}" class="text-primary hover:underline">downgrading</a> work instead?</p>
+          <p class="text-xs text-muted-foreground">You can switch to a smaller plan and keep most features at a lower cost.</p>
+        </div>
+
+        <form method="post" class="flex flex-wrap gap-2">
+          {% csrf_token %}
+          <button type="submit" class="h-10 px-4 rounded-md bg-destructive text-destructive-foreground text-sm font-medium hover:bg-destructive/90">
+            {% if subscription.is_canceled %}Reactivate subscription{% else %}Confirm cancellation{% endif %}
+          </button>
+          <a href="{% url 'billing:overview' %}" class="h-10 px-4 rounded-md border border-border inline-flex items-center text-sm hover:bg-accent">Keep my plan</a>
+        </form>
+      </div>
+    </div>
+  </section>
+</div>
+{% endblock %}

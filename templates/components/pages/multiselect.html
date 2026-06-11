@@ -1,0 +1,80 @@
+{% extends "components/_detail_layout.html" %}
+{% load apex %}
+
+{% block component_body %}
+<div class="space-y-8">
+
+  {# ── Tag-style chips inside the field ────────────────────────── #}
+  <div class="rounded-lg border border-border bg-card p-6">
+    <h2 class="text-sm font-semibold mb-1">Tag-style</h2>
+    <p class="text-xs text-muted-foreground mb-4">Click options in the menu to add them. Backspace in the field removes the last selected. Esc closes.</p>
+    <div x-data='apexMultiSelect({all: ["Design","Engineering","Marketing","Sales","Support","Operations","Finance","Legal"], selected: ["Engineering","Sales"]})' class="relative">
+      <div @click="open = true" class="min-h-10 px-2 py-1.5 rounded-md border border-input bg-background flex flex-wrap gap-1.5 items-center cursor-text">
+        <template x-for="value in selected" :key="value">
+          <span class="inline-flex items-center gap-1 h-7 px-2 rounded-md bg-primary/10 text-primary text-xs font-medium">
+            <span x-text="value"></span>
+            <button type="button" @click.stop="remove(value)" class="hover:opacity-70" aria-label="Remove">
+              {% icon "x" 12 %}
+            </button>
+          </span>
+        </template>
+        <input type="text" x-model="query"
+               @keydown.backspace="if(!query) removeLast()"
+               @keydown.escape="open = false"
+               @focus="open = true"
+               class="flex-1 min-w-24 h-7 bg-transparent text-sm focus:outline-none"
+               placeholder="Add a tag…" />
+      </div>
+      <div x-show="open" x-cloak @click.outside="open = false"
+           class="absolute z-30 left-0 right-0 top-full mt-1 max-h-60 overflow-y-auto rounded-md border border-border bg-popover shadow-lg p-1">
+        <template x-for="opt in filtered()" :key="opt">
+          <button type="button" @click="add(opt)"
+                  class="w-full text-left px-3 py-1.5 text-sm rounded hover:bg-accent flex items-center gap-2"
+                  :class="selected.includes(opt) ? 'opacity-50' : ''"
+                  :disabled="selected.includes(opt)">
+            <span x-text="opt"></span>
+            <span x-show="selected.includes(opt)" class="ml-auto">{% icon "check" 14 %}</span>
+          </button>
+        </template>
+        <p x-show="filtered().length === 0" class="text-xs text-muted-foreground px-3 py-2">No matches.</p>
+      </div>
+    </div>
+  </div>
+
+  {# ── Dropdown with checkboxes ───────────────────────────────── #}
+  <div class="rounded-lg border border-border bg-card p-6">
+    <h2 class="text-sm font-semibold mb-1">Dropdown · checkboxes</h2>
+    <p class="text-xs text-muted-foreground mb-4">For column visibility and filter pickers — selection is shown as a count.</p>
+    <div x-data='apexMultiSelect({all: ["Name","Email","Status","Owner","Created","Tags","Last seen"], selected: ["Name","Email","Status","Owner"]})' class="relative inline-block">
+      <button type="button" @click="open = !open"
+              class="h-9 px-3 rounded-md border border-border text-sm hover:bg-accent inline-flex items-center gap-1.5">
+        <span>Columns</span>
+        <span class="inline-flex items-center justify-center min-w-5 h-5 rounded-full bg-primary/15 text-primary text-[10px] font-semibold px-1.5"
+              x-text="selected.length"></span>
+        {% icon "chevron-down" 14 %}
+      </button>
+      <div x-show="open" x-cloak @click.outside="open = false" @keydown.escape.window="open = false"
+           class="absolute z-30 left-0 top-full mt-1 w-56 rounded-md border border-border bg-popover shadow-lg p-1">
+        <template x-for="opt in all" :key="opt">
+          <label class="flex items-center gap-2 px-3 py-1.5 text-sm rounded hover:bg-accent cursor-pointer">
+            <input type="checkbox" :checked="selected.includes(opt)"
+                   @change="selected.includes(opt) ? remove(opt) : add(opt)"
+                   class="h-4 w-4 rounded border-input">
+            <span x-text="opt"></span>
+          </label>
+        </template>
+      </div>
+    </div>
+  </div>
+
+  <div class="rounded-lg border border-border bg-card overflow-hidden">
+    <div class="px-5 py-3 border-b border-border">
+      <h2 class="text-sm font-semibold">Phase 12 note</h2>
+    </div>
+    <div class="px-5 py-4 text-sm text-muted-foreground">
+      This is a presentational demo. Phase 12 ships <code class="text-[11px] bg-muted px-1 rounded">apps.core.widgets.MultiSelect</code> as a real Django form widget that integrates with <code class="text-[11px] bg-muted px-1 rounded">forms.MultipleChoiceField</code> + validation states + async option loading.
+    </div>
+  </div>
+
+</div>
+{% endblock %}

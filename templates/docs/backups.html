@@ -1,0 +1,118 @@
+{% extends "layouts/docs.html" %}
+{% load docs_tags %}
+
+{% block doc_title %}Backups{% endblock %}
+{% block doc_subtitle %}~10 lines of bash + a cron entry. The cheapest insurance you can buy.{% endblock %}
+
+{% block doc_body %}
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">The script</h2>
+  <p class="text-sm text-muted-foreground">
+    Save as <code class="rounded bg-muted px-1 text-xs">/usr/local/bin/apex-django-backup.sh</code>:
+  </p>
+  {% code lang="bash" %}#!/usr/bin/env bash
+# Daily backup of the apex_django Postgres DB with 14-day rotation.
+set -euo pipefail
+
+BACKUP_DIR="/var/backups/apex-django"
+KEEP_DAYS=14
+DB_NAME="apex_django"
+DB_USER="apex_django"
+TIMESTAMP=$(date -u +%Y%m%dT%H%M%SZ)
+OUT="$BACKUP_DIR/${DB_NAME}_${TIMESTAMP}.sql.gz"
+
+mkdir -p "$BACKUP_DIR"
+
+# Read DB password from the same env file the app uses.
+PGPASSWORD=$(grep "^DATABASE_URL=" /etc/apex-django.env \
+  | sed -E "s|.*://[^:]+:([^@]+)@.*|\1|")
+export PGPASSWORD
+
+pg_dump -U "$DB_USER" -h 127.0.0.1 "$DB_NAME" | gzip -9 > "$OUT"
+chmod 0600 "$OUT"
+
+# Rotate: delete dumps older than KEEP_DAYS.
+find "$BACKUP_DIR" -name "${DB_NAME}_*.sql.gz" -type f \
+  -mtime "+${KEEP_DAYS}" -delete
+
+echo "$(date -u +%FT%TZ) — backup written to $OUT ($(du -h "$OUT" | cut -f1))"{% endcode %}
+  {% code lang="bash" %}sudo chmod +x /usr/local/bin/apex-django-backup.sh
+sudo install -d -o root -g root -m 0700 /var/backups/apex-django{% endcode %}
+  {% callout type="warn" %}
+    <code class="rounded bg-muted px-1 text-xs">mode 0700</code> on the backup
+    directory is critical — these dumps contain all user data and password
+    hashes.
+  {% endcallout %}
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">Cron — daily at 03:30 UTC</h2>
+  {% code lang="bash" %}sudo crontab -e{% endcode %}
+  <p class="text-sm text-muted-foreground">Add:</p>
+  {% code lang="cron" %}30 3 * * * /usr/local/bin/apex-django-backup.sh >> /var/log/apex-django/backup.log 2>&1{% endcode %}
+  <p class="text-sm text-muted-foreground">
+    Run as root since the script reads
+    <code class="rounded bg-muted px-1 text-xs">/etc/apex-django.env</code>
+    (mode 0640 owned by <code class="rounded bg-muted px-1 text-xs">apex:apex</code>
+    — root has implicit access).
+  </p>
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">Restoring</h2>
+  {% code lang="bash" %}# Decompress and restore — make sure the DB is empty / dropped first.
+gunzip -c /var/backups/apex-django/apex_django_20260503T033000Z.sql.gz \
+  | sudo -u postgres psql apex_django{% endcode %}
+  <p class="text-sm text-muted-foreground">For point-in-time tests, restore into a throwaway DB:</p>
+  {% code lang="bash" %}sudo -u postgres createdb apex_django_test
+gunzip -c /var/backups/apex-django/apex_django_*.sql.gz \
+  | sudo -u postgres psql apex_django_test{% endcode %}
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">Off-host backups (recommended)</h2>
+  <p class="text-sm text-muted-foreground">
+    Local backups protect against
+    <code class="rounded bg-muted px-1 text-xs">DROP TABLE</code>-by-the-app
+    accidents but not against the whole server going away. Two cheap options:
+  </p>
+
+  <p class="text-sm font-medium">Cloudflare R2 (S3-compatible)</p>
+  <p class="text-sm text-muted-foreground">
+    Add to the backup script after the
+    <code class="rounded bg-muted px-1 text-xs">pg_dump</code>:
+  </p>
+  {% code lang="bash" %}rclone copy "$OUT" r2pro:colorlib-backups/apex-django/ --progress{% endcode %}
+
+  <p class="text-sm font-medium">restic to Backblaze B2</p>
+  {% code lang="bash" %}# Initial setup
+restic -r b2:bucket-name:apex-django init
+
+# In the backup script, after pg_dump:
+restic -r b2:bucket-name:apex-django backup "$OUT" --tag postgres
+restic -r b2:bucket-name:apex-django forget --keep-daily 14 --prune{% endcode %}
+  <p class="text-sm text-muted-foreground">
+    restic deduplicates across snapshots, so 14 daily dumps of a
+    slowly-changing DB take far less than 14× the space.
+  </p>
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">What to actually back up</h2>
+  <p class="text-sm text-muted-foreground">
+    For a demo, only the DB matters — everything else
+    (<code class="rounded bg-muted px-1 text-xs">/var/www/apex-django/</code>
+    code + <code class="rounded bg-muted px-1 text-xs">staticfiles/</code>) is
+    regenerable from <code class="rounded bg-muted px-1 text-xs">git pull && deploy.sh</code>.
+    For a real product, also include:
+  </p>
+  <ul class="space-y-1.5 text-sm text-muted-foreground ml-5 list-disc">
+    <li><code class="rounded bg-muted px-1 text-xs">/var/www/apex-django/user_files/</code> — uploaded files</li>
+    <li><code class="rounded bg-muted px-1 text-xs">/etc/apex-django.env</code> — env file with secrets</li>
+    <li><code class="rounded bg-muted px-1 text-xs">/etc/nginx/sites-available/apex-django.*.conf</code> — vhost config</li>
+    <li><code class="rounded bg-muted px-1 text-xs">/etc/systemd/system/apex-django.service</code> — Daphne unit</li>
+  </ul>
+</section>
+
+{% endblock %}

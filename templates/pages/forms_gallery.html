@@ -1,0 +1,319 @@
+{% extends "layouts/dashboard.html" %}
+{% load apex static %}
+{% block title %}Forms · Apex{% endblock %}
+{% block head_extra %}
+  {# EasyMDE assets for the RichText demo. Loaded only on this page. #}
+  <link rel="stylesheet" href="{% static 'css/vendor/easymde.css' %}">
+  <script src="{% static 'js/vendor/easymde.js' %}" defer></script>
+{% endblock %}
+{% block content %}
+<div class="mb-8">
+  <h1 class="text-2xl font-bold tracking-tight">Forms</h1>
+  <p class="mt-1 text-sm text-muted-foreground">
+    The Apex widget library — every input, choice control, upload, and rich
+    editor we ship. Each widget is a Django <code class="text-[11px] bg-muted px-1 rounded">forms.Widget</code> subclass with its own
+    template, sizes, and validation states.
+  </p>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-[200px_1fr] gap-8">
+  {# Left rail TOC — anchors mirror the section IDs below #}
+  <aside class="hidden lg:block">
+    <nav class="sticky top-6 text-sm space-y-6" aria-label="Widget sections">
+      <div>
+        <p class="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold mb-2">Inputs</p>
+        <ul class="space-y-0.5">
+          <li><a href="#floating-input" class="block px-2 py-1 rounded-md text-sm text-muted-foreground hover:bg-accent hover:text-foreground">Floating label input</a></li>
+          <li><a href="#floating-textarea" class="block px-2 py-1 rounded-md text-sm text-muted-foreground hover:bg-accent hover:text-foreground">Floating label textarea</a></li>
+          <li><a href="#icon-prefix" class="block px-2 py-1 rounded-md text-sm text-muted-foreground hover:bg-accent hover:text-foreground">Icon prefix</a></li>
+          <li><a href="#icon-suffix" class="block px-2 py-1 rounded-md text-sm text-muted-foreground hover:bg-accent hover:text-foreground">Icon suffix</a></li>
+        </ul>
+      </div>
+      <div>
+        <p class="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold mb-2">Choice</p>
+        <ul class="space-y-0.5">
+          <li><a href="#multi-select" class="block px-2 py-1 rounded-md text-sm text-muted-foreground hover:bg-accent hover:text-foreground">Multi-select</a></li>
+          <li><a href="#tag-input" class="block px-2 py-1 rounded-md text-sm text-muted-foreground hover:bg-accent hover:text-foreground">Tag input</a></li>
+          <li><a href="#combobox" class="block px-2 py-1 rounded-md text-sm text-muted-foreground hover:bg-accent hover:text-foreground">Combobox</a></li>
+        </ul>
+      </div>
+      <div>
+        <p class="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold mb-2">Date &amp; upload</p>
+        <ul class="space-y-0.5">
+          <li><a href="#date-range" class="block px-2 py-1 rounded-md text-sm text-muted-foreground hover:bg-accent hover:text-foreground">Date range picker</a></li>
+          <li><a href="#file-dropzone" class="block px-2 py-1 rounded-md text-sm text-muted-foreground hover:bg-accent hover:text-foreground">File dropzone</a></li>
+        </ul>
+      </div>
+      <div>
+        <p class="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold mb-2">Rich content</p>
+        <ul class="space-y-0.5">
+          <li><a href="#rich-text" class="block px-2 py-1 rounded-md text-sm text-muted-foreground hover:bg-accent hover:text-foreground">Rich text editor</a></li>
+        </ul>
+      </div>
+      <div>
+        <p class="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold mb-2">Helpers</p>
+        <ul class="space-y-0.5">
+          <li><a href="#character-counter" class="block px-2 py-1 rounded-md text-sm text-muted-foreground hover:bg-accent hover:text-foreground">Character counter</a></li>
+          <li><a href="#conditional-reveal" class="block px-2 py-1 rounded-md text-sm text-muted-foreground hover:bg-accent hover:text-foreground">Conditional reveal</a></li>
+        </ul>
+      </div>
+      <div>
+        <p class="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold mb-2">Reference</p>
+        <ul class="space-y-0.5">
+          <li><a href="#validation-states" class="block px-2 py-1 rounded-md text-sm text-muted-foreground hover:bg-accent hover:text-foreground">Validation states</a></li>
+          <li><a href="#sizes" class="block px-2 py-1 rounded-md text-sm text-muted-foreground hover:bg-accent hover:text-foreground">Sizes</a></li>
+        </ul>
+      </div>
+    </nav>
+  </aside>
+
+  {# Main column — sections fill in across commits 3–6 #}
+  <div class="space-y-10 min-w-0">
+
+    {% comment %}Sections placeholder while widgets are being built.
+      As each widget lands, replace the placeholder with the live demo +
+      variants + code snippet + accessibility notes.{% endcomment %}
+
+    <section id="floating-input" class="rounded-lg border border-border bg-card p-6">
+      <h2 class="text-base font-semibold mb-1">Floating label input</h2>
+      <p class="text-xs text-muted-foreground mb-4">Single-line text input with a label that floats inside on focus. Backs <code class="text-[11px] bg-muted px-1 rounded">forms.CharField</code>.</p>
+      <div class="max-w-md">{% apex_field demo_inputs.full_name %}</div>
+      <pre class="text-xs p-4 mt-4 rounded-md bg-muted/30 overflow-x-auto"><code>full_name = forms.CharField(
+    label="Full name",
+    widget=FloatingLabelInput(floating_label="Full name"),
+)</code></pre>
+    </section>
+
+    <section id="floating-textarea" class="rounded-lg border border-border bg-card p-6">
+      <h2 class="text-base font-semibold mb-1">Floating label textarea</h2>
+      <p class="text-xs text-muted-foreground mb-4">Multi-line variant with auto-grow up to <code class="text-[11px] bg-muted px-1 rounded">max_rows</code>. Optional character counter.</p>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl">
+        <div>
+          <p class="text-xs uppercase tracking-wider text-muted-foreground font-semibold mb-2">Default</p>
+          {% apex_field demo_inputs.bio %}
+        </div>
+        <div>
+          <p class="text-xs uppercase tracking-wider text-muted-foreground font-semibold mb-2">With character counter</p>
+          {% apex_field demo_inputs.bio_counter %}
+        </div>
+      </div>
+      <pre class="text-xs p-4 mt-4 rounded-md bg-muted/30 overflow-x-auto"><code>bio = forms.CharField(
+    widget=FloatingLabelTextarea(
+        floating_label="Bio",
+        rows=3, max_rows=8,
+        max_length_counter=True,
+        attrs={"maxlength": "280"},
+    ),
+)</code></pre>
+    </section>
+
+    <section id="icon-prefix" class="rounded-lg border border-border bg-card p-6">
+      <h2 class="text-base font-semibold mb-1">Icon prefix input</h2>
+      <p class="text-xs text-muted-foreground mb-4">Lucide icon inside the left edge — for search, mail, currency patterns.</p>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl">
+        <div>{% apex_field demo_inputs.search %}</div>
+        <div>{% apex_field demo_inputs.email %}</div>
+      </div>
+      <pre class="text-xs p-4 mt-4 rounded-md bg-muted/30 overflow-x-auto"><code>search = forms.CharField(
+    widget=IconPrefixInput(icon="search",
+                           attrs={"placeholder": "Search…"}),
+)</code></pre>
+    </section>
+
+    <section id="icon-suffix" class="rounded-lg border border-border bg-card p-6">
+      <h2 class="text-base font-semibold mb-1">Icon suffix input</h2>
+      <p class="text-xs text-muted-foreground mb-4">Icon at the right edge. <code class="text-[11px] bg-muted px-1 rounded">clickable=True</code> renders a button that dispatches <code class="text-[11px] bg-muted px-1 rounded">apex:icon-suffix:click</code> for show/hide and copy patterns.</p>
+      <div class="max-w-md">{% apex_field demo_inputs.password %}</div>
+      <pre class="text-xs p-4 mt-4 rounded-md bg-muted/30 overflow-x-auto"><code>password = forms.CharField(
+    widget=IconSuffixInput(icon="eye", clickable=True,
+                           attrs={"type": "password"}),
+)
+
+{# Hook the click in your page-level JS: #}
+&lt;div @apex:icon-suffix:click="$event.detail.field === 'password' &amp;&amp; togglePassword()"&gt;</code></pre>
+    </section>
+
+    <section id="multi-select" class="rounded-lg border border-border bg-card p-6">
+      <h2 class="text-base font-semibold mb-1">Multi-select</h2>
+      <p class="text-xs text-muted-foreground mb-4">Tag-style chips inside a single field. Backs <code class="text-[11px] bg-muted px-1 rounded">forms.MultipleChoiceField</code>. Submitted as repeated form values.</p>
+      <div class="max-w-md">{% apex_field demo_choice.departments %}</div>
+      <pre class="text-xs p-4 mt-4 rounded-md bg-muted/30 overflow-x-auto"><code>departments = forms.MultipleChoiceField(
+    choices=DEPARTMENTS,
+    widget=MultiSelect(placeholder="Pick teams…"),
+)</code></pre>
+    </section>
+
+    <section id="tag-input" class="rounded-lg border border-border bg-card p-6">
+      <h2 class="text-base font-semibold mb-1">Tag input</h2>
+      <p class="text-xs text-muted-foreground mb-4">Free-form chips. Enter or comma commits a tag; paste a comma-separated string to bulk add. Optional suggestions chips below.</p>
+      <div class="max-w-md">{% apex_field demo_choice.tags %}</div>
+      <pre class="text-xs p-4 mt-4 rounded-md bg-muted/30 overflow-x-auto"><code>tags = forms.CharField(
+    widget=TagInput(suggestions=["urgent", "follow-up", "vip"]),
+)
+
+{# Submitted as comma-separated string. Split in clean_tags() if needed. #}</code></pre>
+    </section>
+
+    <section id="combobox" class="rounded-lg border border-border bg-card p-6">
+      <h2 class="text-base font-semibold mb-1">Combobox</h2>
+      <p class="text-xs text-muted-foreground mb-4">Single-select typeahead. Static option list shown here; pass <code class="text-[11px] bg-muted px-1 rounded">async_url</code> to load options from an HTMX/JSON endpoint backed by <code class="text-[11px] bg-muted px-1 rounded">TypeaheadMixin</code>.</p>
+      <div class="max-w-md">{% apex_field demo_choice.owner %}</div>
+      <pre class="text-xs p-4 mt-4 rounded-md bg-muted/30 overflow-x-auto"><code>owner = forms.ModelChoiceField(
+    queryset=User.objects.all(),
+    widget=Combobox(async_url=reverse_lazy("users:typeahead")),
+)
+
+{# In the source view: #}
+class UserListView(TypeaheadMixin, ListView):
+    typeahead_fields = ("username", "email", "first_name", "last_name")
+    typeahead_limit = 20</code></pre>
+    </section>
+
+    <section id="date-range" class="rounded-lg border border-border bg-card p-6">
+      <h2 class="text-base font-semibold mb-1">Date range picker</h2>
+      <p class="text-xs text-muted-foreground mb-4">Trigger button + popover with two native date inputs and preset shortcuts. Stores the range as a comma-joined ISO string.</p>
+      <div class="max-w-md">{% apex_field demo_date_upload.period %}</div>
+      <pre class="text-xs p-4 mt-4 rounded-md bg-muted/30 overflow-x-auto"><code>period = forms.CharField(
+    required=False,
+    widget=DateRangePicker(),
+)
+
+def clean_period(self):
+    raw = self.cleaned_data["period"] or ""
+    parts = [p.strip() for p in raw.split(",")]
+    if len(parts) == 2 and parts[0] and parts[1]:
+        from datetime import date
+        return (date.fromisoformat(parts[0]), date.fromisoformat(parts[1]))
+    return None</code></pre>
+    </section>
+
+    <section id="file-dropzone" class="rounded-lg border border-border bg-card p-6">
+      <h2 class="text-base font-semibold mb-1">File dropzone</h2>
+      <p class="text-xs text-muted-foreground mb-4">Drag-drop multi-file uploader with previews and per-file XHR progress. The widget POSTs each file to <code class="text-[11px] bg-muted px-1 rounded">upload_url</code> and tracks the returned IDs in the hidden field value.</p>
+      <div class="max-w-md">{% apex_field demo_date_upload.attachments %}</div>
+      <pre class="text-xs p-4 mt-4 rounded-md bg-muted/30 overflow-x-auto"><code>attachments = forms.CharField(
+    required=False,
+    widget=FileDropzone(
+        upload_url="files:upload_xhr",   # URL name or path
+        accept="image/*,.pdf",
+        max_files=5,
+        max_size_mb=10,
+    ),
+)
+
+{# Endpoint: accept multipart/form-data 'file', return JSON #}
+{# {"id": "...", "name": "...", "size": 1234, "url": "/..."}    #}</code></pre>
+    </section>
+
+    <section id="rich-text" class="rounded-lg border border-border bg-card p-6">
+      <h2 class="text-base font-semibold mb-1">Rich text editor</h2>
+      <p class="text-xs text-muted-foreground mb-4">Self-hosted EasyMDE — markdown-first, three toolbar presets (<code class="text-[11px] bg-muted px-1 rounded">minimal</code>, <code class="text-[11px] bg-muted px-1 rounded">basic</code>, <code class="text-[11px] bg-muted px-1 rounded">full</code>). No external CDN; assets live under <code class="text-[11px] bg-muted px-1 rounded">static/{js,css}/vendor/</code>.</p>
+      <div class="max-w-2xl">{% apex_field demo_rich.body_basic %}</div>
+      <pre class="text-xs p-4 mt-4 rounded-md bg-muted/30 overflow-x-auto"><code>body = forms.CharField(widget=RichText(toolbar="basic"))
+
+{# In your form's template, include the editor's CSS+JS once: #}
+{% verbatim %}{% block head_extra %}{{ form.media }}{% endblock %}{% endverbatim %}</code></pre>
+    </section>
+
+    <section id="character-counter" class="rounded-lg border border-border bg-card p-6">
+      <h2 class="text-base font-semibold mb-1">Character counter</h2>
+      <p class="text-xs text-muted-foreground mb-4">Standalone Alpine helper. Wrap any input + counter element with <code class="text-[11px] bg-muted px-1 rounded">x-data="apexCharCounter(maxLen)"</code>; the counter classes auto-color amber → red as you approach the cap.</p>
+
+      <div class="max-w-md" x-data="apexCharCounter(140)">
+        <textarea x-ref="input" @input="update($event.target.value)" maxlength="140" rows="3"
+                  placeholder="Tweet-style; cap is 140."
+                  class="w-full px-3 py-2 rounded-md border border-input bg-background text-sm
+                         focus:outline-none focus:ring-2 focus:ring-ring/50 focus:border-ring"></textarea>
+        <p class="text-xs mt-1.5 tabular-nums" :class="classes">
+          <span x-text="n"></span> / <span x-text="max"></span>
+        </p>
+      </div>
+
+      <pre class="text-xs p-4 mt-4 rounded-md bg-muted/30 overflow-x-auto"><code>&lt;div x-data="apexCharCounter(140)"&gt;
+  &lt;textarea x-ref="input" @input="update($event.target.value)"
+            maxlength="140"&gt;&lt;/textarea&gt;
+  &lt;p :class="classes"&gt;
+    &lt;span x-text="n"&gt;&lt;/span&gt; / &lt;span x-text="max"&gt;&lt;/span&gt;
+  &lt;/p&gt;
+&lt;/div&gt;</code></pre>
+    </section>
+
+    <section id="conditional-reveal" class="rounded-lg border border-border bg-card p-6">
+      <h2 class="text-base font-semibold mb-1">Conditional reveal</h2>
+      <p class="text-xs text-muted-foreground mb-4">Show/hide a field group based on another field's current value. Pure Alpine helper — no backend changes.</p>
+
+      <div class="max-w-md space-y-3">
+        <div>
+          <label class="block text-sm font-medium mb-1.5" for="reveal-trigger">Notification cadence</label>
+          <select id="reveal-trigger"
+                  class="w-full h-10 px-3 rounded-md border border-input bg-background text-sm">
+            <option value="off">Off</option>
+            <option value="daily" selected>Daily digest</option>
+            <option value="instant">Instant</option>
+          </select>
+        </div>
+
+        <div x-data="apexReveal('reveal-trigger', v => v === 'daily')" x-show="visible" x-cloak
+             class="rounded-md border border-border bg-muted/20 p-4">
+          <label class="block text-sm font-medium mb-1.5" for="reveal-time">Send at</label>
+          <input id="reveal-time" type="time" value="09:00"
+                 class="h-10 px-3 rounded-md border border-input bg-background text-sm">
+        </div>
+      </div>
+
+      <pre class="text-xs p-4 mt-4 rounded-md bg-muted/30 overflow-x-auto"><code>&lt;select id="cadence"&gt;…&lt;/select&gt;
+
+&lt;div x-data="apexReveal('cadence', v =&gt; v === 'daily')" x-show="visible" x-cloak&gt;
+  {# this group only renders when cadence === 'daily' #}
+&lt;/div&gt;</code></pre>
+    </section>
+
+    <section id="validation-states" class="rounded-lg border border-border bg-card p-6">
+      <h2 class="text-base font-semibold mb-1">Validation states</h2>
+      <p class="text-xs text-muted-foreground mb-4">Reference — applies to every widget below.</p>
+      <p class="text-sm text-muted-foreground mb-4">Every Apex widget recognizes four visual states. State comes from the bound form's errors automatically; views can override via <code class="text-[11px] bg-muted px-1 rounded">data-state="…"</code>.</p>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium mb-1.5">Default</label>
+          <input type="text" placeholder="Type here…" class="w-full h-10 px-3 rounded-md border border-input bg-background text-sm">
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1.5">Success</label>
+          <input type="text" value="username_available" class="w-full h-10 px-3 rounded-md border border-success/60 bg-background text-sm">
+          <p class="text-xs text-success mt-1">Looks good.</p>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1.5">Warning</label>
+          <input type="password" value="weakpass" class="w-full h-10 px-3 rounded-md border border-amber-500/60 bg-background text-sm">
+          <p class="text-xs text-amber-600 mt-1">Weak password — accepted but consider a stronger one.</p>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1.5">Error</label>
+          <input type="email" value="not-an-email" class="w-full h-10 px-3 rounded-md border border-destructive/60 bg-background text-sm">
+          <p class="text-xs text-destructive mt-1">Enter a valid email address.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="sizes" class="rounded-lg border border-border bg-card p-6">
+      <h2 class="text-base font-semibold mb-1">Sizes</h2>
+      <p class="text-xs text-muted-foreground mb-4">Reference — every widget supports three sizes via <code class="text-[11px] bg-muted px-1 rounded">size="sm" | "md" | "lg"</code>.</p>
+      <div class="space-y-3">
+        <div>
+          <label class="block text-xs font-medium mb-1.5">Small (sm) · h-8 · text-sm</label>
+          <input type="text" placeholder="Toolbar / inline forms" class="w-full h-8 px-3 rounded-md border border-input bg-background text-sm">
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1.5">Medium (md) · default · h-10 · text-sm</label>
+          <input type="text" placeholder="Standard form fields" class="w-full h-10 px-3 rounded-md border border-input bg-background text-sm">
+        </div>
+        <div>
+          <label class="block text-base font-medium mb-1.5">Large (lg) · h-12 · text-base</label>
+          <input type="text" placeholder="Auth pages / hero forms" class="w-full h-12 px-3 rounded-md border border-input bg-background text-base">
+        </div>
+      </div>
+    </section>
+
+  </div>
+</div>
+{% endblock %}

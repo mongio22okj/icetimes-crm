@@ -1,0 +1,95 @@
+[project]
+name = "apex-dashboard-django"
+version = "0.18.2"
+requires-python = ">=3.12,<3.15"
+dependencies = [
+  "django>=6.0,<6.1",
+  "whitenoise>=6.12",
+  "python-dotenv>=1.0",
+  "pillow>=11.0",
+  "pyotp~=2.9",
+  "qrcode~=7.4",
+  "weasyprint>=62.0",
+  "psycopg[binary]>=3.2",
+  "gunicorn>=23.0",
+  "openpyxl>=3.1",
+  "django-ninja>=1.3",
+  "channels>=4.2",
+  "daphne>=4.1",
+]
+
+[project.optional-dependencies]
+# Production realtime: Redis-backed channel layer. Dev defaults to the
+# in-memory layer so `uv sync` stays light. Install with:
+#   uv sync --extra realtime
+realtime = [
+  "channels-redis>=4.2",
+]
+# Sentry SDK for production error capture. Activates only when
+# SENTRY_DSN is set in the environment (prod.py is opt-in). Install:
+#   uv sync --extra sentry
+sentry = [
+  "sentry-sdk[django]>=2.16",
+]
+# Prometheus metrics at /__metrics/. Activates only when METRICS_ENABLED
+# is truthy in the environment (prod.py is opt-in — costs nothing if
+# you don't run a Prometheus scraper). Install:
+#   uv sync --extra metrics
+metrics = [
+  "django-prometheus>=2.3",
+]
+# Microsoft SQL Server backend (Microsoft's official mssql-django + pyodbc).
+# Activates only when DATABASE_URL has scheme mssql:// or sqlserver://.
+# Requires Microsoft ODBC Driver 18 installed at the OS level (see README).
+# Install:
+#   uv sync --extra mssql
+mssql = [
+  "mssql-django>=1.5",
+  "pyodbc>=5.1",
+]
+
+[dependency-groups]
+dev = [
+  "pytest>=8.3",
+  "pytest-django>=4.12",
+  "pytest-playwright>=0.6",
+  "pytest-asyncio>=0.24",
+  "factory-boy>=3.3",
+  "ruff>=0.7",
+]
+
+[tool.ruff]
+line-length = 110
+target-version = "py312"
+extend-exclude = [
+    ".venv",
+    "node_modules",
+    "*/migrations/*",
+    "static",
+    "staticfiles",
+    "media",
+]
+
+[tool.ruff.lint]
+# E: pycodestyle, F: pyflakes, I: isort, B: bugbear, UP: pyupgrade
+select = ["E", "F", "I", "B", "UP"]
+# E501 is the line-too-long rule — we cap at 110 above so it's not too noisy
+ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+# Tests routinely assign factory fixtures to locals for clarity even when
+# the result isn't asserted on — F841 would force ugly `_ = ...` patterns.
+"*/tests/*" = ["B904", "B017", "F841"]
+"tests/*" = ["F841"]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "apex.settings.dev"
+python_files = ["test_*.py"]
+markers = [
+    "e2e: end-to-end tests using Playwright (require live server, browser)",
+]
+# Default: exclude e2e from main run. Run with `pytest -m e2e` explicitly.
+addopts = "-m 'not e2e'"
+# pytest-asyncio is opt-in per test via @pytest.mark.asyncio so it
+# doesn't interfere with the existing sync test suite.
+asyncio_mode = "strict"

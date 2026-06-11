@@ -1,0 +1,22 @@
+{# Caller passes a `testimonials` list of {quote, name, role}. #}
+<section class="border-b border-border bg-muted/20">
+  <div class="mx-auto max-w-6xl px-6 py-20">
+    <div class="text-center max-w-2xl mx-auto">
+      <h2 class="text-3xl font-bold tracking-tight">Trusted by teams worldwide</h2>
+    </div>
+    <div class="mt-12 grid md:grid-cols-3 gap-6">
+      {% for t in testimonials %}
+        <figure class="rounded-lg border border-border bg-card p-6">
+          <blockquote class="text-sm leading-relaxed">"{{ t.quote }}"</blockquote>
+          <figcaption class="mt-4 flex items-center gap-3">
+            <span class="h-9 w-9 rounded-full bg-muted inline-flex items-center justify-center text-xs font-semibold">{{ t.name|slice:":2"|upper }}</span>
+            <div>
+              <p class="text-sm font-medium leading-none">{{ t.name }}</p>
+              <p class="text-xs text-muted-foreground mt-1">{{ t.role }}</p>
+            </div>
+          </figcaption>
+        </figure>
+      {% endfor %}
+    </div>
+  </div>
+</section>

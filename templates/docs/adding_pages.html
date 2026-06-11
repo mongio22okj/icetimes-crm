@@ -1,0 +1,139 @@
+{% extends "layouts/docs.html" %}
+{% load docs_tags %}
+
+{% block doc_title %}Adding pages{% endblock %}
+{% block doc_subtitle %}From "I have an idea for a page" to "it's in the sidebar with a working URL" — five edits across three files.{% endblock %}
+
+{% block doc_body %}
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">The five edits</h2>
+  <p class="text-sm text-muted-foreground">
+    Adding a new page is a predictable, repeatable workflow. We'll add a
+    "Reports" page under the existing
+    <code class="rounded bg-muted px-1 text-xs">apps/dashboard</code> app:
+  </p>
+  <ol class="space-y-2 text-sm text-muted-foreground ml-5 list-decimal">
+    <li>Add a CBV in the app's <code class="rounded bg-muted px-1 text-xs">views.py</code></li>
+    <li>Wire a URL in the app's <code class="rounded bg-muted px-1 text-xs">urls.py</code></li>
+    <li>Create the template under <code class="rounded bg-muted px-1 text-xs">templates/&lt;app&gt;/</code></li>
+    <li>Add a <code class="rounded bg-muted px-1 text-xs">NavItem</code> in <code class="rounded bg-muted px-1 text-xs">apps/core/navigation.py</code> (so the sidebar + palette pick it up)</li>
+    <li>Refresh the browser — done</li>
+  </ol>
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">1. The view</h2>
+  {% code lang="python" %}# apps/dashboard/views.py
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.views.generic import TemplateView
+
+from apps.accounts.mixins import EmailVerifiedRequiredMixin
+from apps.accounts.views import StaffRequiredMixin
+from apps.core.breadcrumbs import BreadcrumbsMixin
+
+
+class ReportsView(BreadcrumbsMixin, LoginRequiredMixin,
+                  EmailVerifiedRequiredMixin, StaffRequiredMixin,
+                  TemplateView):
+    template_name = "dashboard/reports.html"
+    breadcrumb_title = "Reports"
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx["report_data"] = {...}   # whatever your page needs
+        return ctx{% endcode %}
+  <p class="text-sm text-muted-foreground">
+    The mixin order matters — see the
+    <a href="{% url 'docs:architecture' %}#auth-mixin-stack-order-matters" class="text-primary hover:underline">Architecture page</a>.
+  </p>
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">2. The URL</h2>
+  {% code lang="python" %}# apps/dashboard/urls.py
+from django.urls import path
+from apps.dashboard import views
+
+app_name = "dashboard"
+
+urlpatterns = [
+    path("", views.OverviewView.as_view(), name="overview"),
+    path("reports/", views.ReportsView.as_view(), name="reports"),  # ← new
+    # …
+]{% endcode %}
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">3. The template</h2>
+  {% code lang="html" %}{# templates/dashboard/reports.html #}
+{% verbatim %}{% extends "layouts/dashboard.html" %}
+{% load apex %}
+{% block title %}Reports — Apex{% endblock %}
+{% block content %}
+  <div class="space-y-6">
+    <div>
+      <h1 class="text-2xl font-bold tracking-tight">Reports</h1>
+      <p class="text-sm text-muted-foreground mt-1">
+        Drill into the metrics that matter.
+      </p>
+    </div>
+
+    {# Drop in stat cards, charts, datatables, etc. #}
+  </div>
+{% endblock %}{% endverbatim %}{% endcode %}
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">4. The NavItem</h2>
+  {% code lang="python" %}# apps/core/navigation.py
+NAV_ITEMS: tuple[NavItem, ...] = (
+    # …
+    NavItem(_("Reports"), "dashboard:reports", "bar-chart-3",
+            keywords=("reports", "metrics", "analytics"),
+            group=G_DASHBOARDS, requires_staff=True),
+    # …
+){% endcode %}
+  {% callout type="note" %}
+    The icon name must exist in the
+    <code class="rounded bg-muted px-1 text-xs">ICONS</code> dict in
+    <code class="rounded bg-muted px-1 text-xs">apps/core/templatetags/apex.py</code>.
+    Browse Lucide for the icon you want, then paste its inner SVG paths into
+    the dict — see the existing entries for the format.
+  {% endcallout %}
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">5. Verify</h2>
+  <ul class="space-y-2 text-sm text-muted-foreground">
+    <li>Refresh the browser — the sidebar now lists "Reports" under Dashboards.</li>
+    <li>Press Cmd/Ctrl+K and type "reports" — the command palette finds it.</li>
+    <li>Click it — the page renders with the dashboard chrome (sidebar, header, breadcrumb).</li>
+  </ul>
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">Adding a model + CRUD</h2>
+  <p class="text-sm text-muted-foreground">
+    For a list/detail/create/edit/delete surface, the same pattern scales —
+    look at any existing CRUD app
+    (<code class="rounded bg-muted px-1 text-xs">apps/customers/</code>,
+    <code class="rounded bg-muted px-1 text-xs">apps/products/</code>) for
+    the recipe:
+  </p>
+  <ol class="space-y-1.5 text-sm text-muted-foreground ml-5 list-decimal">
+    <li>Model + migration</li>
+    <li>ModelForm in <code class="rounded bg-muted px-1 text-xs">forms.py</code> with our widget overrides</li>
+    <li>Five CBVs: ListView (with <code class="rounded bg-muted px-1 text-xs">TableView</code> mixin), DetailView, CreateView, UpdateView, DeleteView</li>
+    <li>Five templates extending <code class="rounded bg-muted px-1 text-xs">layouts/dashboard.html</code></li>
+    <li>One NavItem</li>
+  </ol>
+  <p class="text-sm text-muted-foreground">
+    The <code class="rounded bg-muted px-1 text-xs">TableView</code> mixin in
+    <code class="rounded bg-muted px-1 text-xs">apps/core/tables/</code> handles
+    sortable columns, per-column filters, URL-state persistence, saved views,
+    bulk actions, and CSV/XLSX export — all configured via class attributes.
+  </p>
+</section>
+
+{% endblock %}

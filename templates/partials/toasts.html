@@ -1,0 +1,56 @@
+{% load apex %}
+{% comment %}
+Toast container — drains Django messages on render and exposes a global
+window.apexToast({level, body, action, persistent}) for client-side pushes.
+
+Included once per layout (dashboard + public). Auth layouts opt out.
+{% endcomment %}
+{{ toasts_payload|json_script:"apex-toast-payload" }}
+
+<div id="apex-toasts"
+     x-data="apexToasts()"
+     x-cloak
+     class="fixed bottom-4 right-4 z-[60] flex flex-col gap-2 max-w-sm w-[calc(100vw-2rem)] sm:w-96 pointer-events-none"
+     aria-live="polite" aria-atomic="false">
+  <template x-for="t in toasts" :key="t.id">
+    <div role="status"
+         x-transition:enter="transition ease-out duration-200"
+         x-transition:enter-start="opacity-0 translate-y-2"
+         x-transition:enter-end="opacity-100 translate-y-0"
+         x-transition:leave="transition ease-in duration-150"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         class="pointer-events-auto rounded-lg border bg-card shadow-lg p-4 flex items-start gap-3"
+         :class="{
+           'border-success/40': t.level === 'success',
+           'border-destructive/40': t.level === 'error',
+           'border-amber-500/40': t.level === 'warning',
+           'border-border': t.level === 'info' || t.level === 'debug',
+         }">
+      <span class="shrink-0 mt-0.5 inline-flex h-5 w-5 items-center justify-center rounded-full"
+            :class="{
+              'bg-success/15 text-success': t.level === 'success',
+              'bg-destructive/15 text-destructive': t.level === 'error',
+              'bg-amber-500/15 text-amber-600': t.level === 'warning',
+              'bg-primary/15 text-primary': t.level === 'info' || t.level === 'debug',
+            }">
+        {# Level glyph — single character, no icon dep #}
+        <span class="text-[10px] font-bold leading-none"
+              x-text="t.level === 'success' ? '✓' : t.level === 'error' ? '!' : t.level === 'warning' ? '!' : 'i'"></span>
+      </span>
+      <div class="flex-1 min-w-0">
+        <p class="text-sm leading-snug" x-text="t.body"></p>
+        <template x-if="t.action">
+          <a :href="t.action.url"
+             class="mt-2 inline-flex h-7 px-2 items-center rounded-md text-xs font-medium bg-primary text-primary-foreground hover:opacity-90"
+             x-text="t.action.label"></a>
+        </template>
+      </div>
+      <button type="button" @click="dismiss(t.id)"
+              class="text-muted-foreground hover:text-foreground shrink-0"
+              aria-label="Dismiss">
+        {% icon "x" 14 %}
+      </button>
+    </div>
+  </template>
+</div>

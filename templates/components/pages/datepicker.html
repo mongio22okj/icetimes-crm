@@ -1,0 +1,52 @@
+{% extends "components/_detail_layout.html" %}
+{% load apex %}
+
+{% block component_body %}
+<div class="space-y-8">
+
+  <div class="rounded-lg border border-border bg-card p-6">
+    <h2 class="text-sm font-semibold mb-1">Native input</h2>
+    <p class="text-xs text-muted-foreground mb-4">Browser-provided date picker — instant, accessible, localized for free. Best default.</p>
+    <label class="block text-sm font-medium mb-1.5">Due date</label>
+    <input type="date" value="2026-05-15"
+           class="h-10 px-3 rounded-md border border-input bg-background text-sm" />
+  </div>
+
+  <div class="rounded-lg border border-border bg-card p-6">
+    <h2 class="text-sm font-semibold mb-1">With shortcuts popover</h2>
+    <p class="text-xs text-muted-foreground mb-4">Native input wrapped in a popover that offers preset shortcuts (Today, Tomorrow, Next week, etc.).</p>
+    <div x-data="{value: '2026-05-15', open: false, label() { return new Date(this.value).toLocaleDateString(undefined, {weekday:'short', month:'short', day:'numeric', year:'numeric'}); }, set(offsetDays) { const d = new Date(); d.setDate(d.getDate() + offsetDays); this.value = d.toISOString().slice(0,10); this.open = false; }}" class="relative inline-block">
+      <button type="button" @click="open = !open"
+              class="h-10 px-3 rounded-md border border-input bg-background text-sm inline-flex items-center gap-2">
+        {% icon "calendar" 16 cls="text-muted-foreground" %}
+        <span x-text="label()"></span>
+        {% icon "chevron-down" 14 cls="text-muted-foreground" %}
+      </button>
+      <div x-show="open" x-cloak @click.outside="open = false" @keydown.escape.window="open = false"
+           class="absolute z-30 left-0 top-full mt-1 w-72 rounded-md border border-border bg-popover shadow-lg p-3">
+        <div class="flex flex-col gap-1 mb-3">
+          <button type="button" @click="set(0)" class="text-left text-sm rounded px-2 py-1.5 hover:bg-accent">Today</button>
+          <button type="button" @click="set(1)" class="text-left text-sm rounded px-2 py-1.5 hover:bg-accent">Tomorrow</button>
+          <button type="button" @click="set(7)" class="text-left text-sm rounded px-2 py-1.5 hover:bg-accent">In a week</button>
+          <button type="button" @click="set(30)" class="text-left text-sm rounded px-2 py-1.5 hover:bg-accent">In a month</button>
+        </div>
+        <div class="border-t border-border pt-3">
+          <label class="block text-[11px] uppercase tracking-wider text-muted-foreground font-semibold mb-1.5">Custom</label>
+          <input type="date" x-model="value" @change="open = false"
+                 class="w-full h-9 px-2 rounded-md border border-input bg-background text-sm" />
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="rounded-lg border border-border bg-card overflow-hidden">
+    <div class="px-5 py-3 border-b border-border">
+      <h2 class="text-sm font-semibold">Phase 12 note</h2>
+    </div>
+    <div class="px-5 py-4 text-sm text-muted-foreground">
+      Phase 12 ships <code class="text-[11px] bg-muted px-1 rounded">apps.core.widgets.DateRangePicker</code> as a vanilla JS widget for richer use cases (calendar grid, keyboard nav, presets). The native input is fine for most single-date fields.
+    </div>
+  </div>
+
+</div>
+{% endblock %}

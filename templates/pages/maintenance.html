@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% load apex %}
+{% block title %}Scheduled maintenance · Apex{% endblock %}
+{% block body %}
+<main class="min-h-screen flex items-center justify-center bg-background p-4">
+  <div class="w-full max-w-lg">
+    <a href="/" aria-label="Apex home" class="mb-6 flex items-center justify-center gap-2.5 font-semibold">
+      <span class="h-9 w-9 rounded-md bg-primary text-primary-foreground inline-flex items-center justify-center">
+        {% icon "package" 20 %}
+      </span>
+      <span class="text-lg tracking-tight">Apex</span>
+    </a>
+
+    <div class="rounded-lg border border-border bg-card p-8 shadow-sm text-center">
+      <div class="mx-auto h-16 w-16 rounded-full bg-amber-500/10 text-amber-600 inline-flex items-center justify-center mb-5 ring-8 ring-amber-500/5">
+        {% icon "settings" 28 %}
+      </div>
+      <h1 class="text-2xl font-bold tracking-tight mb-2">We'll be right back</h1>
+      <p class="text-sm text-muted-foreground mb-6">
+        Apex is undergoing scheduled maintenance to roll out improvements. The dashboard will be back online shortly.
+      </p>
+
+      <dl class="rounded-md border border-border bg-muted/30 p-4 mb-6 text-sm">
+        <div class="flex items-center justify-between">
+          <dt class="text-muted-foreground">Started</dt>
+          <dd class="font-medium tabular-nums">{{ started_at|date:"M j · H:i" }} UTC</dd>
+        </div>
+        <div class="flex items-center justify-between mt-2">
+          <dt class="text-muted-foreground">Expected back</dt>
+          <dd class="font-medium tabular-nums">{{ expected_at|date:"M j · H:i" }} UTC</dd>
+        </div>
+      </dl>
+
+      <div class="space-y-2">
+        <a href="/" class="block w-full h-10 rounded-md bg-primary text-primary-foreground font-medium leading-10">
+          Try again
+        </a>
+        <a href="{% url 'marketing:support' %}" class="block w-full h-10 rounded-md border border-border font-medium leading-10 text-sm hover:bg-accent">
+          Status updates
+        </a>
+      </div>
+    </div>
+
+    <p class="mt-5 text-center text-xs text-muted-foreground">
+      Follow <a href="#" class="text-primary hover:underline">@apexstatus</a> for live updates.
+    </p>
+  </div>
+</main>
+{% endblock %}

@@ -1,0 +1,27 @@
+{% extends "layouts/dashboard.html" %}
+{% block title %}Onboarding · Preferences · Apex{% endblock %}
+{% block content %}
+<div class="max-w-2xl">
+  <div class="mb-6">
+    <h1 class="text-2xl font-bold tracking-tight">Preferences</h1>
+    <p class="text-sm text-muted-foreground mt-1">Step 3 of 4. Tweak any time later.</p>
+  </div>
+  {% include "wizard/_progress.html" %}
+
+  <form method="post" class="rounded-lg border border-border bg-card p-6 space-y-4">
+    {% csrf_token %}
+    <div>
+      <label class="block text-sm font-medium mb-1.5">Theme</label>
+      {{ form.theme }}
+    </div>
+    <div class="flex items-center gap-2">
+      {{ form.notifications_enabled }}
+      <label class="text-sm">Enable email notifications</label>
+    </div>
+    <div class="flex justify-between">
+      <a href="{% url 'wizard:step2' %}" class="h-10 px-4 rounded-md border border-border inline-flex items-center text-sm hover:bg-accent">Back</a>
+      <button type="submit" class="h-10 px-4 rounded-md bg-primary text-primary-foreground font-medium hover:opacity-90 text-sm">Continue</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,10 @@
+{% comment %}
+  Apex override of Django's AdminSplitDateTime widget template. Identical
+  to the stock template except date_label / time_label are filtered
+  through |cut:":" to drop the trailing colon ("Date:" → "Date") — same
+  convention as our fieldset.html override for main field labels.
+{% endcomment %}
+<p class="datetime">
+  <label {% if widget.attrs.id %}for="{{ widget.subwidgets.0.attrs.id }}"{% endif %}>{{ date_label|cut:":" }}</label> {% with widget=widget.subwidgets.0 %}{% include widget.template_name %}{% endwith %}<br>
+  <label {% if widget.attrs.id %}for="{{ widget.subwidgets.1.attrs.id }}"{% endif %}>{{ time_label|cut:":" }}</label> {% with widget=widget.subwidgets.1 %}{% include widget.template_name %}{% endwith %}
+</p>

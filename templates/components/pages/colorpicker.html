@@ -1,0 +1,45 @@
+{% extends "components/_detail_layout.html" %}
+{% load apex %}
+
+{% block component_body %}
+<div class="space-y-8">
+
+  <div class="rounded-lg border border-border bg-card p-6">
+    <h2 class="text-sm font-semibold mb-1">Swatches</h2>
+    <p class="text-xs text-muted-foreground mb-4">Tag- or category-color picking, where the choice is from a fixed palette.</p>
+    <div x-data="{value: '#15803d', palette: ['#15803d','#0e7490','#4f46e5','#b45309','#be185d','#047857','#6d28d9','#0369a1','#db2777','#7c3aed','#ea580c','#0891b2']}">
+      <p class="text-sm mb-3">Selected: <span class="font-mono text-xs" x-text="value"></span> <span class="inline-block ml-2 h-4 w-4 rounded border border-border align-middle" :style="`background:${value}`"></span></p>
+      <div class="flex flex-wrap gap-1.5">
+        <template x-for="c in palette" :key="c">
+          <button type="button" @click="value = c" :aria-label="`Pick ${c}`"
+                  class="h-8 w-8 rounded-md border-2 transition focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  :class="value === c ? 'border-foreground' : 'border-transparent hover:scale-110'"
+                  :style="`background:${c}`"></button>
+        </template>
+      </div>
+    </div>
+  </div>
+
+  <div class="rounded-lg border border-border bg-card p-6">
+    <h2 class="text-sm font-semibold mb-1">Native input + hex</h2>
+    <p class="text-xs text-muted-foreground mb-4">Browser-provided picker (full spectrum) with a synced hex field.</p>
+    <div x-data="{value: '#0e7490'}" class="flex items-end gap-3">
+      <div>
+        <label class="block text-sm font-medium mb-1.5">Picker</label>
+        <input type="color" x-model="value"
+               class="h-10 w-12 rounded-md border border-input bg-background cursor-pointer" />
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1.5">Hex</label>
+        <input type="text" x-model="value" maxlength="7"
+               class="h-10 px-3 rounded-md border border-input bg-background text-sm font-mono w-28" />
+      </div>
+      <div class="h-10 px-3 rounded-md border border-border inline-flex items-center gap-2">
+        <span class="h-5 w-5 rounded" :style="`background:${value}`"></span>
+        <span class="text-xs text-muted-foreground">Preview</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

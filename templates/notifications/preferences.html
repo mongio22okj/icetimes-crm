@@ -1,0 +1,111 @@
+{% extends "layouts/dashboard.html" %}
+{% load apex %}
+{% block title %}Notification preferences · Apex{% endblock %}
+{% block content %}
+<div class="mb-6">
+  <h1 class="text-2xl font-bold tracking-tight">Notification preferences</h1>
+  <p class="text-sm text-muted-foreground mt-1">Pick how you'd like to be notified for each kind of event. In-app notifications appear in the bell + the Notifications page; email goes to your account address; push delivers via the browser when you've allowed it.</p>
+</div>
+
+<form method="post" class="rounded-lg border border-border bg-card overflow-hidden max-w-3xl">
+  {% csrf_token %}
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead class="bg-muted/30 text-xs uppercase tracking-wider text-muted-foreground">
+        <tr>
+          <th class="text-left px-4 py-3 font-semibold">Category</th>
+          {% for channel in channels %}
+            <th class="text-center px-4 py-3 font-semibold">
+              {% if channel == "in_app" %}In-app
+              {% elif channel == "email" %}Email
+              {% elif channel == "push" %}Push{% endif %}
+            </th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-border">
+        {% for row in rows %}
+          <tr>
+            <td class="px-4 py-3">
+              <span class="font-medium">{{ row.label }}</span>
+              <p class="text-xs text-muted-foreground mt-0.5">
+                {% if row.key == "system" %}Workspace events — orders, file changes, system messages.
+                {% elif row.key == "billing" %}Invoice lifecycle, payments, subscription changes.
+                {% elif row.key == "mention" %}Direct messages and @mentions in chat.
+                {% elif row.key == "comment" %}Replies on tasks, files, and other shared objects.
+                {% elif row.key == "security" %}Sign-ins from new devices, password changes, 2FA.{% endif %}
+              </p>
+            </td>
+            <td class="text-center px-4 py-3">
+              <label class="inline-flex items-center cursor-pointer">
+                <input type="checkbox" name="{{ row.key }}__in_app" {% if row.in_app %}checked{% endif %}
+                       class="h-4 w-4 rounded border-input">
+              </label>
+            </td>
+            <td class="text-center px-4 py-3">
+              <label class="inline-flex items-center cursor-pointer">
+                <input type="checkbox" name="{{ row.key }}__email" {% if row.email %}checked{% endif %}
+                       class="h-4 w-4 rounded border-input">
+              </label>
+            </td>
+            <td class="text-center px-4 py-3">
+              <label class="inline-flex items-center cursor-pointer">
+                <input type="checkbox" name="{{ row.key }}__push" {% if row.push %}checked{% endif %}
+                       class="h-4 w-4 rounded border-input">
+              </label>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="px-4 py-3 border-t border-border flex items-center justify-between">
+    <span class="text-xs text-muted-foreground">
+      {% if push_count %}Push enabled on {{ push_count }} device{{ push_count|pluralize }}.
+      {% else %}No browsers subscribed for push yet — see below.{% endif %}
+    </span>
+    <button type="submit" class="h-9 px-4 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:opacity-90">
+      Save preferences
+    </button>
+  </div>
+</form>
+
+{# ── Browser push opt-in ───────────────────────────────────────── #}
+<section class="rounded-lg border border-border bg-card p-6 max-w-3xl mt-6"
+         x-data="apexPushOptIn()">
+  <div class="flex items-start justify-between gap-4">
+    <div>
+      <h2 class="text-base font-semibold mb-1">Browser push notifications</h2>
+      <p class="text-sm text-muted-foreground">
+        Enable to receive notifications even when the dashboard isn't open in
+        a tab. Each browser must opt in separately.
+      </p>
+      <p class="text-xs text-muted-foreground mt-2" x-show="status">
+        <span x-text="status"></span>
+      </p>
+    </div>
+    <div class="shrink-0">
+      <button type="button" x-show="!enabled" x-cloak
+              @click="enable()"
+              class="h-9 px-4 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:opacity-90">
+        Enable on this browser
+      </button>
+      <button type="button" x-show="enabled" x-cloak
+              @click="disable()"
+              class="h-9 px-4 rounded-md border border-border text-sm hover:bg-accent">
+        Disable on this browser
+      </button>
+    </div>
+  </div>
+</section>
+
+<script nonce="{{ csp_nonce }}">  // Configure push opt-in. The serverPublicKey is base64url-encoded
+  // VAPID public key — falls back to demo state when unconfigured.
+  window.APEX_PUSH = {
+    serverPublicKey: "{{ vapid_public_key|default:'' }}",
+    subscribeUrl: "{% url 'notifications:push_subscribe' %}",
+    unsubscribeUrl: "{% url 'notifications:push_unsubscribe' %}",
+  };
+</script>
+{% endblock %}

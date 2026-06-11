@@ -1,0 +1,83 @@
+{% extends "layouts/dashboard.html" %}
+{% load apex %}
+{% block title %}{{ article.title }} · Help · Apex{% endblock %}
+{% block content %}
+<div class="grid grid-cols-1 xl:grid-cols-12 gap-8">
+
+  {# ── Article body ──────────────────────────────────────────── #}
+  <article class="xl:col-span-8">
+    <div class="mb-5">
+      <a href="{% url 'help_center:category' article.category.slug %}" class="inline-flex items-center px-2 h-6 rounded-md text-xs font-medium" style="background-color: {{ article.category.accent }}1a; color: {{ article.category.accent }};">
+        {{ article.category.name }}
+      </a>
+    </div>
+    <h1 class="text-3xl font-bold tracking-tight mb-3">{{ article.title }}</h1>
+    {% if article.summary %}
+      <p class="text-lg text-muted-foreground mb-5">{{ article.summary }}</p>
+    {% endif %}
+    <div class="flex items-center gap-4 text-xs text-muted-foreground mb-8 pb-6 border-b border-border">
+      <span class="inline-flex items-center gap-1.5">{% icon "book-open" 14 %}{{ article.reading_minutes }} min read</span>
+      <span class="inline-flex items-center gap-1.5">{% icon "calendar" 14 %}Updated {{ article.updated_at|date:"M j, Y" }}</span>
+      <span class="inline-flex items-center gap-1.5">{% icon "users" 14 %}{{ article.view_count|floatformat:0 }} views</span>
+    </div>
+
+    <div class="prose-apex space-y-5 text-base leading-relaxed">
+      {% for p in article.paragraphs %}
+        <p>{{ p|linebreaksbr }}</p>
+      {% endfor %}
+    </div>
+
+    {# ── Helpful footer ─────────────────────────────────────── #}
+    <section class="mt-10 pt-6 border-t border-border rounded-lg border border-border bg-card p-5 text-center">
+      <p class="font-medium mb-3">Was this article helpful?</p>
+      <div class="flex items-center justify-center gap-2">
+        <button class="h-9 px-4 rounded-md border border-border inline-flex items-center text-sm hover:bg-accent gap-1.5">
+          {% icon "arrow-up-right" 14 %}<span>Yes, thanks</span>
+        </button>
+        <button class="h-9 px-4 rounded-md border border-border inline-flex items-center text-sm hover:bg-accent gap-1.5">
+          {% icon "arrow-down-right" 14 %}<span>Not really</span>
+        </button>
+      </div>
+      <p class="mt-3 text-xs text-muted-foreground">
+        Still stuck? <a href="{% url 'marketing:support' %}" class="text-primary hover:underline">Contact support</a>.
+      </p>
+    </section>
+  </article>
+
+  {# ── Sidebar: related + categories ──────────────────────── #}
+  <aside class="xl:col-span-4 space-y-6">
+    {% if related %}
+      <section class="rounded-lg border border-border bg-card p-5">
+        <h2 class="font-semibold mb-3">More in {{ article.category.name }}</h2>
+        <ul class="space-y-3">
+          {% for r in related %}
+            <li>
+              <a href="{% url 'help_center:article' r.slug %}" class="block hover:bg-muted/30 -mx-2 px-2 py-1.5 rounded">
+                <p class="text-sm font-medium line-clamp-1">{{ r.title }}</p>
+                <p class="text-xs text-muted-foreground">{{ r.reading_minutes }} min read</p>
+              </a>
+            </li>
+          {% endfor %}
+        </ul>
+      </section>
+    {% endif %}
+
+    <section class="rounded-lg border border-border bg-card p-5">
+      <h2 class="font-semibold mb-3">All categories</h2>
+      <ul class="space-y-1.5 text-sm">
+        {% for c in categories_nav %}
+          <li>
+            <a href="{% url 'help_center:category' c.slug %}" class="flex items-center justify-between gap-2 px-2 py-1.5 rounded hover:bg-muted/30">
+              <span class="inline-flex items-center gap-2 min-w-0">
+                <span class="inline-flex h-6 w-6 items-center justify-center rounded" style="background-color: {{ c.accent }}1a; color: {{ c.accent }};">{% icon c.icon 12 %}</span>
+                <span class="truncate {% if c == article.category %}font-medium{% endif %}">{{ c.name }}</span>
+              </span>
+              <span class="text-xs text-muted-foreground tabular-nums">{{ c.published_count }}</span>
+            </a>
+          </li>
+        {% endfor %}
+      </ul>
+    </section>
+  </aside>
+</div>
+{% endblock %}

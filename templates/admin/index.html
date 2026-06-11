@@ -1,0 +1,167 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static apex apex_admin %}
+
+{% block title %}{% trans 'Site administration' %} · Apex{% endblock %}
+{% block bodyclass %}{{ block.super }} dashboard{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="{% trans 'Breadcrumb' %}"
+     class="px-6 pt-4 pb-2 text-sm text-muted-foreground flex items-center gap-1.5 flex-wrap">
+  <a href="{% url 'admin:index' %}" class="hover:text-foreground inline-flex items-center gap-1">
+    {% icon "shield" 14 %}<span>{% trans 'Admin' %}</span>
+  </a>
+</nav>
+{% endblock %}
+
+{% block content %}
+{% apex_admin_dashboard_cards as cards %}
+{% apex_admin_total_models as total_models %}
+
+{# ------ Hero ------ #}
+<header class="mb-2">
+  <h1 class="text-2xl font-semibold tracking-tight text-foreground">{% trans 'Site administration' %}</h1>
+  <p class="text-sm text-muted-foreground mt-1">
+    {% blocktrans count counter=total_models %}
+      Managing {{ counter }} model.
+    {% plural %}
+      Managing {{ counter }} models.
+    {% endblocktrans %}
+  </p>
+</header>
+
+{# ------ Sprinkle 2: stats cards (opt-in via ModelAdmin.show_in_dashboard) ------ #}
+{% if cards %}
+<section aria-labelledby="dashboard-stats-heading" class="mt-6">
+  <h2 id="dashboard-stats-heading" class="sr-only">{% trans 'Quick stats' %}</h2>
+  <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+    {% for card in cards %}
+      <div class="group rounded-lg border border-border bg-card p-4 hover:border-primary/40 transition-colors">
+        <div class="flex items-start justify-between gap-2">
+          <div class="min-w-0">
+            <p class="text-xs uppercase tracking-wider text-muted-foreground font-medium">{{ card.label }}</p>
+            <p class="mt-1 text-2xl font-semibold text-foreground tabular-nums">{{ card.count|default:"0" }}</p>
+          </div>
+          <span class="inline-flex h-9 w-9 items-center justify-center rounded-md bg-primary/10 text-primary shrink-0">
+            {% icon card.icon 18 %}
+          </span>
+        </div>
+        <div class="mt-4 flex items-center gap-3 text-xs">
+          {% if card.changelist_url %}
+            <a href="{{ card.changelist_url }}" class="text-primary hover:underline inline-flex items-center gap-1">
+              {% trans 'View all' %} {% icon "arrow-right" 12 %}
+            </a>
+          {% endif %}
+          {% if card.add_url %}
+            <a href="{{ card.add_url }}" class="text-muted-foreground hover:text-foreground inline-flex items-center gap-1">
+              {% icon "plus" 12 %} {% trans 'Add' %}
+            </a>
+          {% endif %}
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+{# ------ Apps + models list ------ #}
+<section aria-labelledby="apps-heading" class="mt-8">
+  <h2 id="apps-heading" class="text-xs uppercase tracking-wider text-muted-foreground font-semibold mb-3">
+    {% trans 'Apps & models' %}
+  </h2>
+  {% if app_list %}
+    <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+    {% for app in app_list %}
+      <article class="rounded-lg border border-border bg-card overflow-hidden">
+        <header class="flex items-center justify-between gap-2 px-4 py-3 border-b border-border bg-muted/40">
+          <h3 class="text-sm font-semibold text-foreground">
+            {% if app.app_url %}
+              <a href="{{ app.app_url }}" class="hover:text-primary">{{ app.name }}</a>
+            {% else %}
+              {{ app.name }}
+            {% endif %}
+          </h3>
+          <span class="text-xs text-muted-foreground tabular-nums">{{ app.models|length }}</span>
+        </header>
+        <ul class="divide-y divide-border">
+          {% for model in app.models %}
+            <li class="flex items-center justify-between gap-2 px-4 py-2.5 hover:bg-muted/40 transition-colors">
+              <a href="{% if model.admin_url %}{{ model.admin_url }}{% else %}#{% endif %}"
+                 class="flex items-center gap-2.5 min-w-0 text-sm text-foreground hover:text-primary">
+                {% apex_admin_model_icon app.app_label model.object_name|lower as icon_name %}
+                <span class="inline-flex h-7 w-7 items-center justify-center rounded-md bg-muted text-muted-foreground shrink-0">
+                  {% icon icon_name 14 %}
+                </span>
+                <span class="truncate">{{ model.name }}</span>
+              </a>
+              <div class="flex items-center gap-1 shrink-0 text-xs">
+                {% if model.add_url %}
+                  <a href="{{ model.add_url }}" title="{% trans 'Add' %}"
+                     class="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground">
+                    {% icon "plus" 14 %}
+                  </a>
+                {% endif %}
+                {% if model.admin_url and model.view_only %}
+                  <a href="{{ model.admin_url }}" title="{% trans 'View' %}"
+                     class="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground">
+                    {% icon "eye" 14 %}
+                  </a>
+                {% endif %}
+              </div>
+            </li>
+          {% endfor %}
+        </ul>
+      </article>
+    {% endfor %}
+    </div>
+  {% else %}
+    <div class="rounded-lg border border-dashed border-border bg-card p-8 text-center">
+      <div class="mx-auto h-12 w-12 rounded-full bg-muted text-muted-foreground inline-flex items-center justify-center">
+        {% icon "inbox" 20 %}
+      </div>
+      <p class="mt-3 text-sm font-medium text-foreground">{% trans "You don't have permission to view or edit anything." %}</p>
+    </div>
+  {% endif %}
+</section>
+
+{# ------ Recent activity ------ #}
+<section aria-labelledby="recent-actions-heading" class="mt-8">
+  <h2 id="recent-actions-heading" class="text-xs uppercase tracking-wider text-muted-foreground font-semibold mb-3">
+    {% trans 'Recent actions' %}
+  </h2>
+  <div class="rounded-lg border border-border bg-card overflow-hidden">
+    {% load log %}
+    {% get_admin_log 10 as admin_log for_user user %}
+    {% if not admin_log %}
+      <div class="px-4 py-6 text-center text-sm text-muted-foreground">
+        {% trans 'No recent actions.' %}
+      </div>
+    {% else %}
+      <ul class="divide-y divide-border">
+        {% for entry in admin_log %}
+          <li class="flex items-center gap-3 px-4 py-3 text-sm">
+            <span class="inline-flex h-7 w-7 items-center justify-center rounded-md shrink-0
+                         {% if entry.is_addition %}bg-success/15 text-success{% elif entry.is_change %}bg-primary/15 text-primary{% else %}bg-destructive/15 text-destructive{% endif %}">
+              {% if entry.is_addition %}{% icon "plus" 14 %}
+              {% elif entry.is_change %}{% icon "edit-3" 14 %}
+              {% else %}{% icon "trash" 14 %}{% endif %}
+            </span>
+            <div class="min-w-0 flex-1">
+              <p class="text-foreground truncate">
+                {% if entry.is_deletion or not entry.get_admin_url %}
+                  {{ entry.object_repr }}
+                {% else %}
+                  <a href="{{ entry.get_admin_url }}" class="hover:text-primary">{{ entry.object_repr }}</a>
+                {% endif %}
+              </p>
+              <p class="text-xs text-muted-foreground">
+                {% if entry.content_type %}{{ entry.content_type.name|capfirst }}{% else %}{% trans 'Unknown' %}{% endif %}
+                · {{ entry.action_time|timesince }} {% trans 'ago' %}
+              </p>
+            </div>
+          </li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

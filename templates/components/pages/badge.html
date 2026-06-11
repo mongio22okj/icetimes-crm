@@ -1,0 +1,77 @@
+{% extends "components/_detail_layout.html" %}
+{% load apex %}
+
+{% block component_body %}
+<div class="space-y-8">
+
+  <div class="rounded-lg border border-border bg-card p-6">
+    <h2 class="text-sm font-semibold mb-1">Status pills</h2>
+    <p class="text-xs text-muted-foreground mb-6">Use the soft (10% bg + colored text) variant for non-critical state. Use solid for the rare emphatic case.</p>
+    <div class="flex flex-wrap items-center gap-2">
+      <span class="inline-flex items-center px-2 h-6 rounded-md text-xs font-medium bg-success/10 text-success">Active</span>
+      <span class="inline-flex items-center px-2 h-6 rounded-md text-xs font-medium bg-primary/10 text-primary">In progress</span>
+      <span class="inline-flex items-center px-2 h-6 rounded-md text-xs font-medium bg-amber-500/10 text-amber-600">Pending</span>
+      <span class="inline-flex items-center px-2 h-6 rounded-md text-xs font-medium bg-destructive/10 text-destructive">Failed</span>
+      <span class="inline-flex items-center px-2 h-6 rounded-md text-xs font-medium bg-muted text-muted-foreground">Archived</span>
+      <span class="inline-flex items-center px-2 h-6 rounded-md text-xs font-medium bg-purple-500/10 text-purple-600">Beta</span>
+    </div>
+  </div>
+
+  <div class="rounded-lg border border-border bg-card p-6">
+    <h2 class="text-sm font-semibold mb-1">With dot</h2>
+    <p class="text-xs text-muted-foreground mb-6">Live / health-style indicators. Pulse the dot for "really live".</p>
+    <div class="flex flex-wrap items-center gap-2">
+      <span class="inline-flex items-center gap-1.5 px-2 h-6 rounded-md text-xs font-medium bg-success/10 text-success">
+        <span class="h-1.5 w-1.5 rounded-full bg-success animate-pulse"></span>Live
+      </span>
+      <span class="inline-flex items-center gap-1.5 px-2 h-6 rounded-md text-xs font-medium bg-amber-500/10 text-amber-600">
+        <span class="h-1.5 w-1.5 rounded-full bg-amber-500"></span>Degraded
+      </span>
+      <span class="inline-flex items-center gap-1.5 px-2 h-6 rounded-md text-xs font-medium bg-destructive/10 text-destructive">
+        <span class="h-1.5 w-1.5 rounded-full bg-destructive"></span>Outage
+      </span>
+      <span class="inline-flex items-center gap-1.5 px-2 h-6 rounded-md text-xs font-medium bg-muted text-muted-foreground">
+        <span class="h-1.5 w-1.5 rounded-full bg-muted-foreground/40"></span>Offline
+      </span>
+    </div>
+  </div>
+
+  <div class="rounded-lg border border-border bg-card p-6">
+    <h2 class="text-sm font-semibold mb-1">Solid</h2>
+    <p class="text-xs text-muted-foreground mb-6">High-emphasis — for new / unread / call-out moments.</p>
+    <div class="flex flex-wrap items-center gap-2">
+      <span class="inline-flex items-center px-2 h-6 rounded-full text-xs font-medium bg-primary text-primary-foreground">12 new</span>
+      <span class="inline-flex items-center px-2 h-6 rounded-full text-xs font-medium bg-success text-success-foreground">Paid</span>
+      <span class="inline-flex items-center px-2 h-6 rounded-full text-xs font-medium bg-destructive text-destructive-foreground">Overdue</span>
+      <span class="inline-flex items-center px-2 h-6 rounded-full text-xs font-medium bg-foreground text-background">Featured</span>
+    </div>
+  </div>
+
+  <div class="rounded-lg border border-border bg-card p-6">
+    <h2 class="text-sm font-semibold mb-1">Counts &amp; notifications</h2>
+    <p class="text-xs text-muted-foreground mb-6">Tiny circular badges for unread counts. Cap at 99+.</p>
+    <div class="flex flex-wrap items-center gap-3">
+      <span class="inline-flex items-center justify-center min-w-5 h-5 rounded-full text-[10px] font-semibold bg-primary text-primary-foreground px-1.5">3</span>
+      <span class="inline-flex items-center justify-center min-w-5 h-5 rounded-full text-[10px] font-semibold bg-primary text-primary-foreground px-1.5">12</span>
+      <span class="inline-flex items-center justify-center min-w-5 h-5 rounded-full text-[10px] font-semibold bg-destructive text-destructive-foreground px-1.5">99+</span>
+      <span class="relative inline-block">
+        <button type="button" class="h-9 w-9 inline-flex items-center justify-center rounded-md border border-border" aria-label="Notifications">
+          {% icon "bell" 18 %}
+        </button>
+        <span class="absolute -top-1.5 -right-1.5 inline-flex items-center justify-center min-w-5 h-5 rounded-full text-[10px] font-semibold bg-destructive text-destructive-foreground ring-2 ring-card px-1.5">7</span>
+      </span>
+    </div>
+  </div>
+
+  <div class="rounded-lg border border-border bg-card p-6">
+    <h2 class="text-sm font-semibold mb-1">Sizes</h2>
+    <div class="flex flex-wrap items-center gap-3">
+      <span class="inline-flex items-center px-1.5 h-4 rounded text-[9px] font-semibold bg-primary/10 text-primary">XS</span>
+      <span class="inline-flex items-center px-2 h-5 rounded text-[10px] font-medium bg-primary/10 text-primary">SM</span>
+      <span class="inline-flex items-center px-2 h-6 rounded-md text-xs font-medium bg-primary/10 text-primary">MD</span>
+      <span class="inline-flex items-center px-3 h-7 rounded-md text-sm font-medium bg-primary/10 text-primary">LG</span>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

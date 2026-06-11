@@ -1,0 +1,36 @@
+{% comment %}Blog post card. Pass `post`.{% endcomment %}
+{% load apex %}
+<article class="rounded-lg border border-border bg-card overflow-hidden hover:border-primary/40 transition-colors">
+  {% if post.cover_emoji %}
+    <a href="{% url 'blog:detail' post.slug %}"
+       class="flex items-center justify-center h-40 text-5xl"
+       style="background: linear-gradient(135deg, {% if post.topic %}{{ post.topic.accent }}33{% else %}#16a34a33{% endif %} 0%, transparent 100%);">
+      <span aria-hidden="true">{{ post.cover_emoji }}</span>
+    </a>
+  {% else %}
+    <a href="{% url 'blog:detail' post.slug %}"
+       class="block h-40 bg-gradient-to-br from-primary/10 to-card"></a>
+  {% endif %}
+  <div class="p-5">
+    {% if post.topic %}
+      <a href="{% url 'blog:topic' post.topic.slug %}"
+         class="inline-flex items-center px-2 h-5 rounded text-[10px] font-medium mb-3"
+         style="background-color: {{ post.topic.accent }}1a; color: {{ post.topic.accent }};">
+        {{ post.topic.name }}
+      </a>
+    {% endif %}
+    <h3 class="font-semibold mb-1.5 line-clamp-2">
+      <a href="{% url 'blog:detail' post.slug %}" class="hover:text-primary">{{ post.title }}</a>
+    </h3>
+    <p class="text-sm text-muted-foreground line-clamp-2 mb-4">{{ post.summary }}</p>
+    <div class="flex items-center justify-between text-xs text-muted-foreground">
+      <div class="flex items-center gap-2 min-w-0">
+        {% if post.author %}
+          <span class="inline-flex h-6 w-6 items-center justify-center rounded-full text-[9px] font-semibold text-white" style="background-color: {{ post.author|avatar_color }};">{{ post.author|initials }}</span>
+          <span class="truncate">{{ post.author.get_full_name|default:post.author.username }}</span>
+        {% endif %}
+      </div>
+      <span class="shrink-0 inline-flex items-center gap-1">{% icon "book-open" 12 %}{{ post.reading_minutes }} min</span>
+    </div>
+  </div>
+</article>

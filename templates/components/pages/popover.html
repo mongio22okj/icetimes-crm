@@ -1,0 +1,95 @@
+{% extends "components/_detail_layout.html" %}
+{% load apex %}
+
+{% block component_body %}
+<div class="space-y-8">
+
+  <div class="rounded-lg border border-border bg-card p-6">
+    <h2 class="text-sm font-semibold mb-1">Menu</h2>
+    <p class="text-xs text-muted-foreground mb-4">Most common use: anchored action menu. Click outside or press Esc to close.</p>
+    <div class="flex gap-2">
+      <div x-data="apexPopover()" class="relative inline-block">
+        <button type="button" @click="toggle()" :aria-expanded="open"
+                class="h-9 px-3 rounded-md border border-border text-sm hover:bg-accent inline-flex items-center gap-1.5">
+          Actions {% icon "chevron-down" 14 %}
+        </button>
+        <div x-show="open" x-cloak @click.outside="close()" @keydown.escape.window="close()"
+             x-transition:enter="transition ease-out duration-150"
+             x-transition:enter-start="opacity-0 translate-y-1"
+             x-transition:enter-end="opacity-100 translate-y-0"
+             role="menu"
+             class="absolute left-0 top-full mt-1 z-40 w-48 rounded-md border border-border bg-popover shadow-lg p-1">
+          <button type="button" role="menuitem" @click="close()" class="block w-full text-left px-3 py-1.5 text-sm rounded hover:bg-accent">Edit</button>
+          <button type="button" role="menuitem" @click="close()" class="block w-full text-left px-3 py-1.5 text-sm rounded hover:bg-accent">Duplicate</button>
+          <button type="button" role="menuitem" @click="close()" class="block w-full text-left px-3 py-1.5 text-sm rounded hover:bg-accent">Archive</button>
+          <div class="my-1 h-px bg-border"></div>
+          <button type="button" role="menuitem" @click="close()" class="block w-full text-left px-3 py-1.5 text-sm rounded text-destructive hover:bg-destructive/10">Delete</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="rounded-lg border border-border bg-card p-6">
+    <h2 class="text-sm font-semibold mb-1">Info</h2>
+    <p class="text-xs text-muted-foreground mb-4">Anchored block of help text or details.</p>
+    <div x-data="apexPopover()" class="relative inline-block">
+      <button type="button" @click="toggle()" :aria-expanded="open"
+              class="h-9 w-9 inline-flex items-center justify-center rounded-md border border-border hover:bg-accent"
+              aria-label="More info">
+        ?
+      </button>
+      <div x-show="open" x-cloak @click.outside="close()" @keydown.escape.window="close()"
+           role="dialog"
+           class="absolute left-0 top-full mt-1 z-40 w-72 rounded-md border border-border bg-popover shadow-lg p-3 text-sm">
+        <p class="font-medium mb-1">What is MRR?</p>
+        <p class="text-muted-foreground text-xs leading-relaxed">Monthly Recurring Revenue — the predictable income your subscriptions generate each month.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="rounded-lg border border-border bg-card p-6">
+    <h2 class="text-sm font-semibold mb-1">With small form</h2>
+    <p class="text-xs text-muted-foreground mb-4">Inline edit pattern. Submit POSTs to your view; close on success.</p>
+    <div x-data="apexPopover()" class="relative inline-block">
+      <button type="button" @click="toggle()" :aria-expanded="open"
+              class="h-9 px-3 rounded-md border border-border text-sm hover:bg-accent">
+        Rename
+      </button>
+      <div x-show="open" x-cloak @click.outside="close()" @keydown.escape.window="close()"
+           role="dialog"
+           class="absolute left-0 top-full mt-1 z-40 w-72 rounded-md border border-border bg-popover shadow-lg p-3">
+        <label class="block text-xs font-medium mb-1.5">New name</label>
+        <input type="text" value="Acme Corp" class="w-full h-9 px-3 rounded-md border border-input bg-background text-sm" />
+        <div class="mt-3 flex justify-end gap-2">
+          <button type="button" @click="close()" class="h-8 px-3 rounded-md border border-border text-xs hover:bg-accent">Cancel</button>
+          <button type="button" @click="close()" class="h-8 px-3 rounded-md bg-primary text-primary-foreground text-xs font-medium hover:opacity-90">Save</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="rounded-lg border border-border bg-card overflow-hidden">
+    <div class="px-5 py-3 border-b border-border">
+      <h2 class="text-sm font-semibold">Usage</h2>
+    </div>
+    <pre class="text-xs p-5 overflow-x-auto bg-muted/30"><code>&lt;div x-data="apexPopover()" class="relative inline-block"&gt;
+  &lt;button @click="toggle()"&gt;Open&lt;/button&gt;
+  &lt;div x-show="open" x-cloak @click.outside="close()"
+       class="absolute top-full mt-1 …"&gt;
+    {# your content #}
+  &lt;/div&gt;
+&lt;/div&gt;</code></pre>
+  </div>
+
+  <div class="rounded-lg border border-border bg-card p-6 text-sm">
+    <h2 class="text-sm font-semibold mb-3">Accessibility</h2>
+    <ul class="space-y-1.5 text-muted-foreground">
+      <li>• Trigger uses <strong class="text-foreground">aria-expanded</strong> + <strong class="text-foreground">aria-haspopup</strong>.</li>
+      <li>• Popover has <strong class="text-foreground">role="menu"</strong> (action menus) or <strong class="text-foreground">role="dialog"</strong> (info / forms).</li>
+      <li>• Menu items use <strong class="text-foreground">role="menuitem"</strong>.</li>
+      <li>• <strong class="text-foreground">Click outside</strong> and <strong class="text-foreground">Esc</strong> both close.</li>
+    </ul>
+  </div>
+
+</div>
+{% endblock %}

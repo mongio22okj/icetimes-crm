@@ -1,0 +1,79 @@
+# Daphne ASGI server for the Apex Django demo.
+#
+# Install:
+#   sudo cp deploy/systemd/apex-django.service /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now apex-django
+#
+# Tail logs:
+#   sudo journalctl -u apex-django -f
+#
+# Restart after a deploy:
+#   sudo systemctl reload-or-restart apex-django
+#
+# Notes:
+# - Runs Daphne on a unix socket so nginx proxies without going through
+#   the loopback interface. The socket lives in /run/apex-django/ so
+#   it disappears on reboot (RuntimeDirectory takes care of recreating).
+# - A single process with the in-memory channel layer is enough for the
+#   demo. To scale, switch to the channels-redis backend (see prod.py)
+#   and bump `--proxy-headers --workers N` after migrating to a process
+#   manager that supports multi-worker ASGI (e.g. uvicorn-with-workers
+#   or running this unit as a template + load-balancing in nginx).
+
+[Unit]
+Description=Apex Django (Daphne ASGI) — apex-django.dashboardpack.com
+After=network.target
+# Optional Postgres/Redis on the same box — uncomment if applicable so
+# Daphne waits for them at boot.
+# After=network.target postgresql.service redis-server.service
+# Requires=postgresql.service
+
+[Service]
+Type=simple
+# A dedicated unprivileged user is safer than www-data; create with:
+#   sudo useradd --system --create-home --home-dir /var/www/apex-django apex
+# If you'd rather share www-data, change User/Group below.
+User=apex
+Group=www-data
+WorkingDirectory=/var/www/apex-django
+
+# Environment — load secrets from a file so they don't show up in
+# `ps`, `systemctl show`, or journal. Mode 0640, owned by the apex user.
+EnvironmentFile=/etc/apex-django.env
+
+# uv is the recommended runner; this avoids needing to activate a venv.
+# Change `/usr/local/bin/uv` to wherever uv lives on the server
+# (`which uv` after install).
+ExecStart=/usr/local/bin/uv run daphne \
+    --unix-socket /run/apex-django/apex-django.sock \
+    --proxy-headers \
+    --access-log - \
+    apex.asgi:application
+
+# Graceful reload on SIGHUP — Daphne re-execs.
+ExecReload=/bin/kill -HUP $MAINPID
+
+Restart=on-failure
+RestartSec=3
+KillSignal=SIGTERM
+TimeoutStopSec=15
+
+# Socket directory — systemd creates /run/apex-django at start, owned
+# by the service user, mode 0750. nginx must be in `Group=www-data`
+# (default) to read the socket.
+RuntimeDirectory=apex-django
+RuntimeDirectoryMode=0750
+UMask=007
+
+# Hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+# WhiteNoise + collectstatic write here; allow write access.
+ReadWritePaths=/var/www/apex-django
+
+[Install]
+WantedBy=multi-user.target

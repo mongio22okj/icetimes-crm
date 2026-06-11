@@ -1,0 +1,33 @@
+{% comment %}
+FloatingLabelTextarea template — multi-line variant of FloatingLabelInput.
+
+Auto-grow handled via Alpine (`apexAutogrow()`); falls back gracefully
+when JS is off (textarea uses the `rows` attribute).
+{% endcomment %}
+{% with attrs=widget.attrs label=widget.floating_label|default:widget.name %}
+<div class="relative" data-widget="floating-label-textarea"
+     x-data="apexAutogrow({{ widget.max_rows|default:10 }})">
+  <textarea name="{{ widget.name }}"
+            {% for k, v in attrs.items %}{% if k != 'class' and k != 'placeholder' %}{{ k }}="{{ v }}" {% endif %}{% endfor %}
+            placeholder=" "
+            x-ref="ta"
+            @input="resize()"
+            x-init="$nextTick(() => resize())"
+            class="peer w-full {{ widget.size_input_classes }} px-3 pt-5 pb-2 rounded-md border border-input bg-background
+                   placeholder-transparent focus:outline-none focus:ring-2 focus:ring-ring/50 focus:border-ring
+                   transition-colors resize-none {{ attrs.class|default:'' }}">{{ widget.value|default_if_none:'' }}</textarea>
+  <label for="{{ attrs.id }}"
+         class="absolute left-3 top-3 px-1 bg-background text-muted-foreground transition-all pointer-events-none
+                peer-focus:top-0 peer-focus:text-xs peer-focus:text-foreground
+                peer-[:not(:placeholder-shown)]:top-0 peer-[:not(:placeholder-shown)]:text-xs">
+    {{ label }}
+  </label>
+  {% if widget.max_length_counter and attrs.maxlength %}
+    <div class="absolute right-2 bottom-2 text-[10px] text-muted-foreground tabular-nums"
+         x-data="{n: ({{ widget.value|default_if_none:''|length }}|0)}"
+         @input.window="if ($event.target.name === '{{ widget.name }}') n = $event.target.value.length">
+      <span x-text="n"></span>/<span>{{ attrs.maxlength }}</span>
+    </div>
+  {% endif %}
+</div>
+{% endwith %}

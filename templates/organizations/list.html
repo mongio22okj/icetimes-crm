@@ -1,0 +1,60 @@
+{% extends "layouts/dashboard.html" %}
+{% load apex %}
+{% block title %}Organizations · Apex{% endblock %}
+{% block content %}
+<div class="max-w-3xl">
+  <div class="mb-6">
+    <h1 class="text-2xl font-bold tracking-tight">Organizations</h1>
+    <p class="text-sm text-muted-foreground mt-1">Workspaces you belong to. The active one drives data scoping across the dashboard.</p>
+  </div>
+
+  <div class="rounded-lg border border-border bg-card overflow-hidden mb-6">
+    {% if memberships %}
+      <ul class="divide-y divide-border">
+        {% for m in memberships %}
+          <li class="flex items-center gap-4 px-5 py-4">
+            <span class="h-10 w-10 rounded-md bg-primary/10 text-primary inline-flex items-center justify-center text-sm font-bold shrink-0">
+              {{ m.organization.initials }}
+            </span>
+            <div class="flex-1 min-w-0">
+              <p class="font-medium">{{ m.organization.name }}</p>
+              <p class="text-xs text-muted-foreground mt-0.5">
+                {{ m.organization.get_plan_display }} plan · your role: {{ m.get_role_display }}
+              </p>
+            </div>
+            <div class="flex items-center gap-2 shrink-0">
+              {% if m.organization == active_organization %}
+                <span class="inline-flex items-center px-2 h-6 rounded text-[10px] font-medium uppercase tracking-wider bg-success/10 text-success">Active</span>
+              {% else %}
+                <form method="post" action="{% url 'organizations:switch' m.organization.slug %}">
+                  {% csrf_token %}
+                  <button type="submit" class="h-8 px-3 rounded-md border border-border text-xs hover:bg-accent">Switch to</button>
+                </form>
+              {% endif %}
+              {% if m.role == 'owner' or m.role == 'admin' %}
+                <a href="{% url 'organizations:settings' m.organization.slug %}" class="text-xs text-muted-foreground hover:text-foreground px-2 py-1 rounded hover:bg-accent">Settings</a>
+              {% endif %}
+            </div>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      {% include "components/_empty_state.html" with icon="users" headline="No organizations yet" body="Create one below to start collaborating." %}
+    {% endif %}
+  </div>
+
+  <div class="rounded-lg border border-border bg-card p-5">
+    <h2 class="text-base font-semibold mb-1">Create a new organization</h2>
+    <p class="text-xs text-muted-foreground mb-4">You'll be the owner. Invite teammates after.</p>
+    <form method="post" class="flex flex-col sm:flex-row gap-3">
+      {% csrf_token %}
+      <input type="text" name="name" required maxlength="120"
+             placeholder="Acme Corp"
+             class="flex-1 h-10 px-3 rounded-md border border-input bg-background text-sm">
+      <button type="submit" class="h-10 px-4 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:opacity-90">
+        Create organization
+      </button>
+    </form>
+  </div>
+</div>
+{% endblock %}

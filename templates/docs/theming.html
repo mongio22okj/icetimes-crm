@@ -1,0 +1,114 @@
+{% extends "layouts/docs.html" %}
+{% load docs_tags %}
+
+{% block doc_title %}Theming + dark mode{% endblock %}
+{% block doc_subtitle %}OKLCh design tokens in one file. Class-based dark mode with no flash. Charts + status pills + sidebar all read from the same palette.{% endblock %}
+
+{% block doc_body %}
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">Where colors live</h2>
+  <p class="text-sm text-muted-foreground">
+    Every color in Apex is a CSS custom property in
+    <code class="rounded bg-muted px-1 text-xs">static_src/css/input.css</code>,
+    declared once for light and once for dark:
+  </p>
+  {% code lang="css" %}:root {
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --primary: oklch(0.55 0.25 264);          /* indigo */
+  --primary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --border: oklch(0.92 0 0);
+  /* …sidebar-*, card-*, success, warning, destructive, etc. */
+}
+
+.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --primary: oklch(0.65 0.25 264);
+  --primary-foreground: oklch(0.145 0 0);
+  /* …matched dark-mode pair for every light token */
+}{% endcode %}
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">Why OKLCh?</h2>
+  <p class="text-sm text-muted-foreground leading-relaxed">
+    OKLCh is perceptually uniform — changing the <strong>L</strong> (lightness)
+    by the same amount looks like the same change across every hue. This
+    means dark-mode colors that are "the same brightness" actually look that
+    way to the eye, which is impossible to guarantee with hex or HSL. Tools
+    like <a href="https://oklch.com/" class="text-primary hover:underline">oklch.com</a>
+    let you pick by eye and copy the values straight into the CSS.
+  </p>
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">Recoloring step-by-step</h2>
+  <ol class="space-y-2 text-sm text-muted-foreground ml-5 list-decimal">
+    <li>Pick a primary hue (e.g. <code class="rounded bg-muted px-1 text-xs">264</code> = indigo, <code class="rounded bg-muted px-1 text-xs">25</code> = orange-red).</li>
+    <li>Edit <code class="rounded bg-muted px-1 text-xs">--primary</code> in <code class="rounded bg-muted px-1 text-xs">:root</code> with L=0.55, C=0.25, the new H.</li>
+    <li>Edit <code class="rounded bg-muted px-1 text-xs">--primary</code> in <code class="rounded bg-muted px-1 text-xs">.dark</code> with L=0.65 (slightly brighter).</li>
+    <li>Run <code class="rounded bg-muted px-1 text-xs">npm run build</code>.</li>
+  </ol>
+  {% callout type="tip" %}
+    For a thorough recolor, change the L (lightness) and C (chroma) together
+    in matched pairs across both <code class="rounded bg-muted px-1 text-xs">:root</code>
+    and <code class="rounded bg-muted px-1 text-xs">.dark</code> so contrast
+    stays balanced.
+  {% endcallout %}
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">Dark mode toggle (no flash)</h2>
+  <p class="text-sm text-muted-foreground">
+    The trick is applying <code class="rounded bg-muted px-1 text-xs">.dark</code>
+    to <code class="rounded bg-muted px-1 text-xs">&lt;html&gt;</code>
+    <em>before</em> the browser paints. Apex does this with an inline
+    script at the top of <code class="rounded bg-muted px-1 text-xs">&lt;head&gt;</code>:
+  </p>
+  {% code lang="html" %}<script>
+  (function() {
+    const saved = localStorage.getItem("theme");
+    const system = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    const dark = saved === "dark" || (!saved && system);
+    if (dark) document.documentElement.classList.add("dark");
+  })();
+</script>{% endcode %}
+  <p class="text-sm text-muted-foreground">
+    The toggle button in the dashboard header just adds/removes the class +
+    persists to <code class="rounded bg-muted px-1 text-xs">localStorage</code>;
+    next page load picks it up.
+  </p>
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">How charts pick up the theme</h2>
+  <p class="text-sm text-muted-foreground">
+    ApexCharts renders SVG colors at chart-init time, so changing
+    <code class="rounded bg-muted px-1 text-xs">.dark</code> after render
+    doesn't update the chart. Apex chart factories solve this with a
+    <code class="rounded bg-muted px-1 text-xs">MutationObserver</code> on
+    <code class="rounded bg-muted px-1 text-xs">&lt;html&gt;</code>'s
+    <code class="rounded bg-muted px-1 text-xs">class</code> attribute that
+    re-resolves theme colors and re-renders. See
+    <a href="{% url 'docs:charts' %}" class="text-primary hover:underline">Charts</a>
+    for the full pattern.
+  </p>
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">Build the CSS</h2>
+  {% code lang="bash" %}npm run build      # one-shot
+npm run dev        # watch mode while iterating{% endcode %}
+  <p class="text-sm text-muted-foreground">
+    <code class="rounded bg-muted px-1 text-xs">static/css/app.css</code> is
+    gitignored — every deploy regenerates it from
+    <code class="rounded bg-muted px-1 text-xs">input.css</code>.
+  </p>
+</section>
+
+{% endblock %}

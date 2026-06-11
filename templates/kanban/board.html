@@ -1,0 +1,68 @@
+{% extends "layouts/dashboard.html" %}
+{% load apex %}
+{% block title %}Kanban · Apex{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+  <div>
+    <h1 class="text-2xl font-bold tracking-tight">Kanban</h1>
+    <p class="text-sm text-muted-foreground mt-1">Track work across stages — drag cards between columns.</p>
+  </div>
+  <a href="{% url 'kanban:create' %}"
+     class="h-10 px-4 rounded-md bg-primary text-primary-foreground inline-flex items-center font-medium hover:opacity-90 text-sm">
+    New card
+  </a>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+  {% for col in columns %}
+    <section class="rounded-lg border border-border bg-card flex flex-col min-h-50">
+      <header class="flex items-center justify-between px-4 py-3 border-b border-border">
+        <h2 class="font-semibold text-sm">{{ col.label }}</h2>
+        <span class="text-xs text-muted-foreground">{{ col.cards|length }}</span>
+      </header>
+      <div data-kanban-column="{{ col.key }}" class="flex-1 p-3 min-h-50">
+        {% for card in col.cards %}
+          {% include "kanban/_card.html" %}
+        {% endfor %}
+      </div>
+      <footer class="px-3 pb-3">
+        <a href="{% url 'kanban:create' %}?status={{ col.key }}"
+           class="block w-full h-9 rounded-md border border-dashed border-border text-xs text-muted-foreground hover:bg-accent text-center leading-9">
+          + Add card
+        </a>
+      </footer>
+    </section>
+  {% endfor %}
+</div>
+
+<form style="display:none">{% csrf_token %}</form>
+
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+<script nonce="{{ csp_nonce }}">document.addEventListener("DOMContentLoaded", () => {
+  if (typeof Sortable === "undefined") return;
+  const csrf = document.querySelector("[name=csrfmiddlewaretoken]")?.value
+            || document.cookie.match(/csrftoken=([^;]+)/)?.[1] || "";
+  document.querySelectorAll("[data-kanban-column]").forEach((col) => {
+    Sortable.create(col, {
+      group: "kanban",
+      animation: 150,
+      ghostClass: "opacity-30",
+      onEnd: (evt) => {
+        const cardId = evt.item.dataset.cardId;
+        const targetCol = evt.to.dataset.kanbanColumn;
+        const newPosition = evt.newIndex;
+        fetch(`/kanban/cards/${cardId}/move/`, {
+          method: "POST",
+          headers: {
+            "X-CSRFToken": csrf,
+            "HX-Request": "true",
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+          body: new URLSearchParams({ to: targetCol, position: newPosition }),
+        });
+      },
+    });
+  });
+});
+</script>
+{% endblock %}

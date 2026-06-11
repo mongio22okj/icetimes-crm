@@ -1,0 +1,55 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#585cde" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0a0a0a" media="(prefers-color-scheme: dark)">
+  <title>{% block title %}Apex Dashboard{% endblock %}</title>
+
+  {# PWA — manifest drives the install prompt; icons cover every browser. #}
+  <link rel="manifest" href="{% url 'pwa_manifest' %}">
+  <link rel="icon" type="image/svg+xml" href="{% static 'icons/icon.svg' %}">
+  <link rel="icon" type="image/png" sizes="32x32" href="{% static 'icons/favicon.png' %}">
+  <link rel="apple-touch-icon" href="{% static 'icons/apple-touch-icon.png' %}">
+
+  <link rel="stylesheet" href="{% static 'css/app.css' %}">
+  <script nonce="{{ csp_nonce }}">
+    (function() {
+      const saved = localStorage.getItem("theme");
+      const system = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      const dark = saved === "dark" || (!saved && system);
+      if (dark) document.documentElement.classList.add("dark");
+    })();
+  </script>
+  <script src="https://unpkg.com/htmx.org@2.0.3"
+          integrity="sha384-0895/pl2MU10Hqc6jd4RvrthNlDiE9U1tWmX7WRESftEDRosgxNsQG/Ze9YMRzHq"
+          crossorigin="anonymous"
+          defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts@3.54.1/dist/apexcharts.min.js"
+          integrity="sha384-KNaFJ+EK516RuHsoycvreec5pD7BkTKJEkjMrVSQWu9KGTl7En4dhIDv7t1DFJ+g"
+          crossorigin="anonymous"
+          defer></script>
+  <script src="{% static 'js/charts.js' %}" defer></script>
+  {# shell.js must load before Alpine so window.apexShell is defined when x-data evaluates. #}
+  <script src="{% static 'js/shell.js' %}" defer></script>
+  {% comment %}realtime.js exposes apexNotifyStream + apexPresence;
+    auth-only consumers no-op for anon users (server closes with 4401
+    and the client stops).{% endcomment %}
+  <script src="{% static 'js/realtime.js' %}" defer></script>
+  <script src="https://unpkg.com/alpinejs@3.14.1/dist/cdn.min.js"
+          integrity="sha384-l8f0VcPi/M1iHPv8egOnY/15TDwqgbOR1anMIJWvU6nLRgZVLTLSaNqi/TOoT5Fh"
+          crossorigin="anonymous"
+          defer></script>
+  {% comment %}pwa.js registers /sw.js and exposes window.apexInstallPrompt()
+    for the "Install Apex" banner. Loaded with defer so it runs after the
+    document parses but doesn't block first paint.{% endcomment %}
+  <script src="{% static 'js/pwa.js' %}" defer></script>
+  {% block head_extra %}{% endblock %}
+</head>
+<body class="bg-background text-foreground antialiased">
+  {% block body %}{% endblock %}
+  <script src="{% static 'js/app.js' %}" defer></script>
+</body>
+</html>

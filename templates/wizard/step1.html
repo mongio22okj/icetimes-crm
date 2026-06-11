@@ -1,0 +1,28 @@
+{% extends "layouts/dashboard.html" %}
+{% block title %}Onboarding · Account · Apex{% endblock %}
+{% block content %}
+<div class="max-w-2xl">
+  <div class="mb-6">
+    <h1 class="text-2xl font-bold tracking-tight">Welcome — let's get you set up</h1>
+    <p class="text-sm text-muted-foreground mt-1">Step 1 of 4: tell us about yourself.</p>
+  </div>
+  {% include "wizard/_progress.html" %}
+
+  <form method="post" class="rounded-lg border border-border bg-card p-6 space-y-4">
+    {% csrf_token %}
+    <div>
+      <label class="block text-sm font-medium mb-1.5">Name</label>
+      {{ form.name }}
+      {% if form.name.errors %}<p class="text-xs text-destructive mt-1">{{ form.name.errors.0 }}</p>{% endif %}
+    </div>
+    <div>
+      <label class="block text-sm font-medium mb-1.5">Email</label>
+      {{ form.email }}
+      {% if form.email.errors %}<p class="text-xs text-destructive mt-1">{{ form.email.errors.0 }}</p>{% endif %}
+    </div>
+    <div class="flex justify-end">
+      <button type="submit" class="h-10 px-4 rounded-md bg-primary text-primary-foreground font-medium hover:opacity-90 text-sm">Continue</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

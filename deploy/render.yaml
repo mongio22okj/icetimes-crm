@@ -1,0 +1,87 @@
+# Render deploy spec for Apex Django.
+# Click the "Deploy to Render" button in README.md, or:
+#   git clone <fork> && cd <repo>
+#   render blueprint launch
+#
+# Provisions one web service + one Postgres + one Redis. All services
+# default to the free tier; bump `plan:` values for production load.
+#
+# What you'll need to set after first deploy:
+#   - SECRET_KEY        — Render auto-generates one (see envVars below)
+#   - ALLOWED_HOSTS     — defaults to ".onrender.com" so the *.onrender.com
+#                         preview URL works; add your custom domain when wired
+#   - DEMO_MODE         — set to "true" if this is a public demo
+#   - SENTRY_DSN        — optional, copy from your Sentry dashboard
+#
+# After deploy: the build command runs `seed_demo` so the app boots
+# with realistic data. Remove that line for a real production deploy.
+
+services:
+  - type: web
+    name: apex-django
+    runtime: python
+    region: oregon                         # change to fra/sin/etc. as needed
+    plan: free                             # → starter ($7/mo) for production
+    healthCheckPath: /__health/
+    autoDeploy: true                       # deploy on every push to main
+
+    buildCommand: |
+      pip install --quiet uv
+      uv sync --frozen --extra realtime --extra sentry
+      npm ci
+      npm run build
+      uv run python manage.py collectstatic --no-input
+      uv run python manage.py migrate --no-input
+      # Comment the next line out for a real (non-demo) production deploy.
+      uv run python manage.py seed_demo
+
+    # Daphne ASGI server. Render injects $PORT automatically.
+    startCommand: |
+      uv run daphne -b 0.0.0.0 -p $PORT --proxy-headers apex.asgi:application
+
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: apex.settings.prod
+
+      - key: SECRET_KEY
+        generateValue: true                # Render generates a 50-char random string
+
+      - key: ALLOWED_HOSTS
+        value: ".onrender.com"             # add your custom host on first deploy
+
+      - key: DATABASE_URL
+        fromDatabase:
+          name: apex-db
+          property: connectionString
+
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: apex-redis
+          property: connectionString
+
+      - key: DEMO_MODE
+        value: "true"                      # set to "false" for a non-demo deploy
+
+      # Optional — uncomment + set on first deploy:
+      # - { key: SENTRY_DSN,        sync: false }
+      # - { key: SENTRY_ENV,        value: "production" }
+      # - { key: METRICS_ENABLED,   value: "false" }
+      # - { key: DEFAULT_FROM_EMAIL, value: "Apex <hello@yourdomain.com>" }
+      # - { key: EMAIL_HOST,        value: "smtp.yourdomain.com" }
+      # - { key: EMAIL_HOST_USER,   sync: false }
+      # - { key: EMAIL_HOST_PASSWORD, sync: false }
+
+databases:
+  - name: apex-db
+    plan: free                             # → starter ($7/mo) for production
+    postgresMajorVersion: "16"
+    region: oregon                         # must match the web service region
+
+services:
+  - type: redis
+    name: apex-redis
+    plan: free                             # → starter ($10/mo) for production
+    region: oregon
+    ipAllowList: []                        # only the web service can connect
+    maxmemoryPolicy: allkeys-lru

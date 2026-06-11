@@ -1,0 +1,70 @@
+{% extends "layouts/dashboard.html" %}
+{% load apex %}
+{% block title %}{{ organization.name }} settings · Apex{% endblock %}
+{% block content %}
+<div class="max-w-3xl">
+  <div class="mb-6 flex items-center justify-between">
+    <div>
+      <h1 class="text-2xl font-bold tracking-tight">{{ organization.name }}</h1>
+      <p class="text-sm text-muted-foreground mt-1">Organization settings.</p>
+    </div>
+    <a href="{% url 'organizations:members' organization.slug %}"
+       class="h-10 px-3 rounded-md border border-border text-sm hover:bg-accent inline-flex items-center gap-1.5">
+      {% icon "users" 14 %} Members ({{ member_count }})
+    </a>
+  </div>
+
+  <form method="post" class="rounded-lg border border-border bg-card p-6 space-y-4 mb-6">
+    {% csrf_token %}
+    <div>
+      <label class="block text-sm font-medium mb-1.5">Organization name</label>
+      <input type="text" name="name" value="{{ organization.name }}" required maxlength="120"
+             class="w-full h-10 px-3 rounded-md border border-input bg-background text-sm">
+    </div>
+    <div>
+      <label class="block text-sm font-medium mb-1.5">Plan</label>
+      <select name="plan" class="w-full h-10 px-3 rounded-md border border-input bg-background text-sm">
+        {% for slug, label in plan_choices %}
+          <option value="{{ slug }}" {% if organization.plan == slug %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+      <p class="text-xs text-muted-foreground mt-1">Plan is free-form metadata for now; billing wires in via the Billing app (Phase 4-).</p>
+    </div>
+    <div>
+      <label class="block text-sm font-medium mb-1.5">Slug</label>
+      <input type="text" value="{{ organization.slug }}" disabled
+             class="w-full h-10 px-3 rounded-md border border-input bg-muted text-sm text-muted-foreground">
+      <p class="text-xs text-muted-foreground mt-1">URLs use this; not editable after creation.</p>
+    </div>
+    <div class="flex justify-end">
+      <button type="submit" class="h-10 px-4 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:opacity-90">
+        Save changes
+      </button>
+    </div>
+  </form>
+
+  {% if membership.role == 'owner' %}
+    <div class="rounded-lg border border-destructive/40 bg-destructive/5 p-6"
+         x-data="{confirm: false}">
+      <h2 class="text-base font-semibold mb-1 text-destructive">Danger zone</h2>
+      <p class="text-sm text-muted-foreground mb-4">Deleting the organization removes all memberships and invitations. Customers, invoices, and other org-scoped data are NOT deleted (they may belong to your team).</p>
+      <button type="button" @click="confirm = true" x-show="!confirm"
+              class="h-10 px-4 rounded-md border border-destructive/40 text-destructive text-sm hover:bg-destructive/10">
+        Delete this organization
+      </button>
+      <form method="post" x-show="confirm" x-cloak class="flex items-center gap-2">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="delete">
+        <button type="submit"
+                class="h-10 px-4 rounded-md bg-destructive text-destructive-foreground text-sm font-medium hover:opacity-90">
+          Yes, delete
+        </button>
+        <button type="button" @click="confirm = false"
+                class="h-10 px-3 rounded-md border border-border text-sm hover:bg-accent">
+          Cancel
+        </button>
+      </form>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,65 @@
+{% extends "layouts/dashboard.html" %}
+{% load apex %}
+{% block content %}
+<div class="flex flex-col lg:flex-row h-[calc(100vh-8rem)] -m-6 border-t border-border">
+
+  {# === Folder sidebar === #}
+  <aside class="lg:w-56 shrink-0 border-b lg:border-b-0 lg:border-r border-border bg-card flex flex-col">
+    <div class="hidden lg:block p-4 border-b border-border">
+      <a href="{% url 'mail:compose' %}"
+         class="w-full h-10 rounded-md bg-primary text-primary-foreground inline-flex items-center justify-center font-medium hover:opacity-90 text-sm">
+        {% icon "plus" 16 %}
+        <span class="ml-2">Compose</span>
+      </a>
+    </div>
+    {# Mobile compose CTA + folder strip — single horizontal scroll row #}
+    <nav class="flex lg:flex-col gap-1 overflow-x-auto lg:overflow-y-auto p-2 text-sm whitespace-nowrap lg:whitespace-normal shrink-0 lg:flex-1">
+      <a href="{% url 'mail:compose' %}"
+         class="lg:hidden h-9 px-3 rounded-md bg-primary text-primary-foreground inline-flex items-center font-medium text-xs shrink-0">
+        {% icon "plus" 14 %} <span class="ml-1">Compose</span>
+      </a>
+      {% include "mail/_folder_links.html" %}
+    </nav>
+  </aside>
+
+  {# === Middle (message list) === #}
+  {# Hidden on mobile when right pane is active. Always visible lg+. #}
+  <section class="{% if show_right_pane %}hidden lg:flex{% else %}flex{% endif %} lg:w-88 shrink-0 border-r border-border flex-1 lg:flex-none flex-col bg-background">
+    <header class="h-12 px-4 flex items-center justify-between border-b border-border">
+      <h1 class="font-semibold text-sm uppercase tracking-wide text-muted-foreground">{{ folder|title }}</h1>
+      <span class="text-xs text-muted-foreground">
+        {% if folder == "inbox" %}{{ folder_counts.inbox }}
+        {% elif folder == "sent" %}{{ folder_counts.sent }}
+        {% elif folder == "drafts" %}{{ folder_counts.drafts }}
+        {% elif folder == "starred" %}{{ folder_counts.starred }}
+        {% elif folder == "trash" %}{{ folder_counts.trash }}
+        {% endif %}
+      </span>
+    </header>
+    <div class="flex-1 overflow-y-auto">
+      {% block message_list %}{% endblock %}
+    </div>
+  </section>
+
+  {# === Right pane === #}
+  {# Hidden on mobile when no thread/compose. lg+: always visible. #}
+  <section class="{% if not show_right_pane %}hidden lg:flex{% else %}flex{% endif %} flex-1 min-w-0 overflow-y-auto flex-col">
+    {% if show_right_pane %}
+      {# Mobile back link — only shown when right pane is the active pane #}
+      <a href="{% url 'mail:inbox' %}" class="lg:hidden flex items-center gap-1 px-4 py-2 text-xs text-muted-foreground border-b border-border hover:bg-accent">
+        ← Back to {{ folder|default:"inbox"|title }}
+      </a>
+    {% endif %}
+    {% block right_pane %}
+      <div class="h-full flex items-center justify-center p-12">
+        <div class="text-center">
+          <div class="mx-auto h-12 w-12 rounded-full bg-muted/50 inline-flex items-center justify-center mb-3">
+            {% icon "mail" 20 %}
+          </div>
+          <p class="text-sm text-muted-foreground">Select a message to read.</p>
+        </div>
+      </div>
+    {% endblock %}
+  </section>
+</div>
+{% endblock %}

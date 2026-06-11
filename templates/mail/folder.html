@@ -1,0 +1,19 @@
+{% extends "mail/_layout.html" %}
+{% block title %}{{ folder|title }} · Mail · Apex{% endblock %}
+
+{% block message_list %}
+  {% if messages %}
+    {% for message in messages %}
+      {% include "mail/_message_row.html" %}
+    {% endfor %}
+  {% else %}
+    <div class="p-8 text-center text-sm text-muted-foreground">
+      {% if folder == "inbox" %}Inbox is empty.
+      {% elif folder == "sent" %}No sent messages yet.
+      {% elif folder == "drafts" %}No drafts.
+      {% elif folder == "starred" %}No starred messages.
+      {% elif folder == "trash" %}Trash is empty.
+      {% endif %}
+    </div>
+  {% endif %}
+{% endblock %}

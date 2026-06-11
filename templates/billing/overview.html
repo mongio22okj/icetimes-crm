@@ -1,0 +1,160 @@
+{% extends "layouts/dashboard.html" %}
+{% load apex %}
+{% block title %}Billing · Apex{% endblock %}
+{% block content %}
+<div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+  <div>
+    <h1 class="text-2xl font-bold tracking-tight">Billing</h1>
+    <p class="mt-1 text-sm text-muted-foreground">Manage your plan, payment methods, and billing history.</p>
+  </div>
+  <div class="flex items-center gap-2">
+    <a href="{% url 'billing:plans' %}" class="h-10 px-4 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 inline-flex items-center gap-1.5">
+      {% icon "rocket" 14 %}<span>Change plan</span>
+    </a>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 xl:grid-cols-12 gap-6">
+
+  {# ── Current plan card ─────────────────────────────────────────── #}
+  <section class="xl:col-span-8 rounded-lg border border-border bg-card p-6">
+    <div class="flex items-start justify-between gap-4 mb-5">
+      <div>
+        <p class="text-xs uppercase tracking-wide text-muted-foreground mb-1">Current plan</p>
+        <div class="flex items-center gap-3">
+          <h2 class="text-2xl font-bold">{{ subscription.get_plan_display }}</h2>
+          {% if subscription.status == "active" %}<span class="inline-flex items-center px-2 h-6 rounded-md text-xs font-medium bg-success/10 text-success">Active</span>
+          {% elif subscription.status == "trialing" %}<span class="inline-flex items-center px-2 h-6 rounded-md text-xs font-medium bg-primary/10 text-primary">Trialing</span>
+          {% elif subscription.status == "past_due" %}<span class="inline-flex items-center px-2 h-6 rounded-md text-xs font-medium bg-amber-500/10 text-amber-600">Past due</span>
+          {% elif subscription.status == "canceled" %}<span class="inline-flex items-center px-2 h-6 rounded-md text-xs font-medium bg-destructive/10 text-destructive">Canceled</span>{% endif %}
+        </div>
+        <p class="text-sm text-muted-foreground mt-1">
+          {% if subscription.amount %}${{ subscription.amount|floatformat:0 }} / {{ subscription.get_billing_cycle_display|lower }}{% else %}Free forever{% endif %}
+          {% if subscription.renews_at and not subscription.is_canceled %} · Renews {{ subscription.renews_at|date:"M j, Y" }}{% endif %}
+          {% if subscription.canceled_at %} · Cancels at period end{% endif %}
+        </p>
+      </div>
+      <div class="text-right">
+        <p class="text-xs text-muted-foreground">Seats</p>
+        <p class="text-xl font-bold tabular-nums">{{ subscription.usage_seats }} <span class="text-sm text-muted-foreground font-medium">/ {{ limits.seats }}</span></p>
+      </div>
+    </div>
+
+    {# Usage meters #}
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-5 border-t border-border">
+      <div>
+        <div class="flex items-center justify-between text-sm mb-1.5">
+          <span class="font-medium">Seats</span>
+          <span class="text-muted-foreground tabular-nums">{{ subscription.usage_seats }} / {{ limits.seats }}</span>
+        </div>
+        <div class="h-1.5 rounded-full bg-muted overflow-hidden">
+          <div class="h-full rounded-full bg-primary" style="width: {{ subscription.usage_percent_seats }}%;"></div>
+        </div>
+      </div>
+      <div>
+        <div class="flex items-center justify-between text-sm mb-1.5">
+          <span class="font-medium">Storage</span>
+          <span class="text-muted-foreground tabular-nums">{{ subscription.usage_storage_gb }} / {{ limits.storage_gb }} GB</span>
+        </div>
+        <div class="h-1.5 rounded-full bg-muted overflow-hidden">
+          <div class="h-full rounded-full" style="width: {{ subscription.usage_percent_storage_gb }}%; background-color: #0891b2;"></div>
+        </div>
+      </div>
+      <div>
+        <div class="flex items-center justify-between text-sm mb-1.5">
+          <span class="font-medium">API calls</span>
+          <span class="text-muted-foreground tabular-nums">{{ subscription.usage_api_calls|floatformat:0 }} / {{ limits.api_calls|floatformat:0 }}</span>
+        </div>
+        <div class="h-1.5 rounded-full bg-muted overflow-hidden">
+          <div class="h-full rounded-full" style="width: {{ subscription.usage_percent_api_calls }}%; background-color: #6366f1;"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-6 pt-5 border-t border-border flex flex-wrap gap-2">
+      <a href="{% url 'billing:plans' %}" class="h-9 px-3 rounded-md border border-border inline-flex items-center text-sm hover:bg-accent">{% icon "rocket" 14 %}<span class="ml-1.5">Change plan</span></a>
+      <a href="{% url 'billing:payment_methods' %}" class="h-9 px-3 rounded-md border border-border inline-flex items-center text-sm hover:bg-accent">{% icon "dollar-sign" 14 %}<span class="ml-1.5">Manage payment methods</span></a>
+      {% if subscription.is_canceled %}
+        <form method="post" action="{% url 'billing:cancel' %}" class="inline">
+          {% csrf_token %}
+          <button type="submit" class="h-9 px-3 rounded-md border border-success/40 bg-success/5 text-success inline-flex items-center text-sm hover:bg-success/10">{% icon "rocket" 14 %}<span class="ml-1.5">Reactivate</span></button>
+        </form>
+      {% else %}
+        <a href="{% url 'billing:cancel' %}" class="h-9 px-3 rounded-md inline-flex items-center text-sm text-muted-foreground hover:text-destructive">{% icon "trash" 14 %}<span class="ml-1.5">Cancel subscription</span></a>
+      {% endif %}
+    </div>
+  </section>
+
+  {# ── Default payment + billing email ────────────────────────────── #}
+  <aside class="xl:col-span-4 space-y-6">
+    <section class="rounded-lg border border-border bg-card p-5">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="font-semibold">Payment method</h2>
+        <a href="{% url 'billing:payment_methods' %}" class="text-xs text-muted-foreground hover:text-foreground">Manage →</a>
+      </div>
+      {% if default_pm %}
+        <div class="flex items-center gap-3">
+          {% include "billing/_card_brand.html" with brand=default_pm.brand %}
+          <div class="min-w-0">
+            <p class="font-mono text-sm">•••• {{ default_pm.last4 }}</p>
+            <p class="text-xs text-muted-foreground">Expires {{ default_pm.exp_month|stringformat:"02d" }}/{{ default_pm.exp_year }}</p>
+          </div>
+        </div>
+      {% else %}
+        <p class="text-sm text-muted-foreground mb-3">No payment method on file.</p>
+        <a href="{% url 'billing:payment_methods' %}" class="h-9 px-3 rounded-md bg-primary text-primary-foreground inline-flex items-center text-sm font-medium hover:bg-primary/90">Add card</a>
+      {% endif %}
+    </section>
+
+    <section class="rounded-lg border border-border bg-card p-5">
+      <h2 class="font-semibold mb-3">Billing email</h2>
+      <p class="text-sm font-mono break-all">{{ subscription.billing_email|default:"—" }}</p>
+      <p class="text-xs text-muted-foreground mt-2">Receipts and renewal notices go here.</p>
+    </section>
+  </aside>
+
+  {# ── Recent invoices table ─────────────────────────────────────── #}
+  <section class="xl:col-span-12 rounded-lg border border-border bg-card">
+    <div class="px-4 pt-4 pb-3 border-b border-border flex items-center justify-between">
+      <div>
+        <h2 class="font-semibold">Recent invoices</h2>
+        <p class="text-sm text-muted-foreground">Your billing history.</p>
+      </div>
+      <a href="{% url 'invoices:list' %}" class="text-xs text-muted-foreground hover:text-foreground">View all →</a>
+    </div>
+    {% if recent_invoices %}
+      <table class="w-full text-sm">
+        <thead class="text-xs text-muted-foreground uppercase tracking-wide bg-muted/30">
+          <tr>
+            <th class="text-left px-4 py-2 font-medium">Number</th>
+            <th class="text-left px-4 py-2 font-medium">Date</th>
+            <th class="text-left px-4 py-2 font-medium">Status</th>
+            <th class="text-right px-4 py-2 font-medium">Amount</th>
+            <th class="px-4 py-2 pr-6"></th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-border">
+          {% for inv in recent_invoices %}
+            <tr class="hover:bg-muted/30">
+              <td class="px-4 py-3 font-mono text-xs">{{ inv.number }}</td>
+              <td class="px-4 py-3 text-muted-foreground">{{ inv.created_at|date:"M j, Y" }}</td>
+              <td class="px-4 py-3">
+                {% if inv.status == "paid" %}<span class="inline-flex items-center px-2 h-6 rounded-md text-xs font-medium bg-success/10 text-success">Paid</span>
+                {% elif inv.status == "sent" %}<span class="inline-flex items-center px-2 h-6 rounded-md text-xs font-medium bg-primary/10 text-primary">Sent</span>
+                {% elif inv.status == "draft" %}<span class="inline-flex items-center px-2 h-6 rounded-md text-xs font-medium bg-muted text-muted-foreground">Draft</span>
+                {% elif inv.status == "void" %}<span class="inline-flex items-center px-2 h-6 rounded-md text-xs font-medium bg-destructive/10 text-destructive">Void</span>{% endif %}
+              </td>
+              <td class="px-4 py-3 text-right tabular-nums">${{ inv.total|floatformat:2 }}</td>
+              <td class="px-4 py-3 pr-6 text-right">
+                <a href="{% url 'invoices:detail' inv.pk %}" class="text-xs text-muted-foreground hover:text-foreground">Open →</a>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <div class="p-12 text-center text-sm text-muted-foreground">No invoices yet.</div>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

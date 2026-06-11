@@ -1,0 +1,113 @@
+{% extends "layouts/docs.html" %}
+{% load docs_tags %}
+
+{% block doc_title %}Charts{% endblock %}
+{% block doc_subtitle %}Theme-aware ApexCharts that re-render on dark-mode toggle. Add a new chart in three steps.{% endblock %}
+
+{% block doc_body %}
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">The pattern</h2>
+  <p class="text-sm text-muted-foreground">
+    Apex chart factories are Alpine components that own a single ApexCharts
+    instance. They:
+  </p>
+  <ol class="space-y-1.5 text-sm text-muted-foreground ml-5 list-decimal">
+    <li>Resolve theme colors from CSS custom properties at render time.</li>
+    <li>Fetch JSON from a Django endpoint when the page loads.</li>
+    <li>Render the chart.</li>
+    <li>Use a <code class="rounded bg-muted px-1 text-xs">MutationObserver</code> on <code class="rounded bg-muted px-1 text-xs">&lt;html&gt;</code>'s <code class="rounded bg-muted px-1 text-xs">class</code> to detect dark-mode toggles and re-render with the new palette.</li>
+  </ol>
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">Adding a chart</h2>
+
+  <p class="text-sm font-medium">1. The Django endpoint</p>
+  {% code lang="python" %}# apps/dashboard/views.py
+from django.http import JsonResponse
+from django.contrib.auth.decorators import login_required
+
+@login_required
+def reports_chart(request):
+    """Return JSON suitable for an ApexCharts series."""
+    return JsonResponse({
+        "labels": ["Jan", "Feb", "Mar", "Apr"],
+        "series": [
+            {"name": "Revenue", "data": [120, 240, 180, 320]},
+        ],
+    }){% endcode %}
+
+  <p class="text-sm font-medium">2. The URL</p>
+  {% code lang="python" %}# apps/dashboard/urls.py
+path("charts/reports/", views.reports_chart, name="reports_chart"),{% endcode %}
+
+  <p class="text-sm font-medium">3. The Alpine factory</p>
+  {% code lang="javascript" %}// static/js/charts.js
+window.reportsChart = function reportsChart() {
+  let chart;
+
+  function themeColors() {
+    const css = getComputedStyle(document.documentElement);
+    return {
+      primary: css.getPropertyValue("--primary").trim(),
+      muted:   css.getPropertyValue("--muted-foreground").trim(),
+      grid:    css.getPropertyValue("--border").trim(),
+    };
+  }
+
+  function buildOptions(payload) {
+    const colors = themeColors();
+    return {
+      chart: { type: "line", height: 280, toolbar: { show: false } },
+      series: payload.series,
+      xaxis: { categories: payload.labels, labels: { style: { colors: colors.muted } } },
+      colors: [colors.primary],
+      stroke: { curve: "smooth", width: 2 },
+      grid: { borderColor: colors.grid },
+    };
+  }
+
+  return {
+    async init() {
+      const r = await fetch("/dashboard/charts/reports/");
+      const data = await r.json();
+
+      chart = new ApexCharts(this.$el, buildOptions(data));
+      chart.render();
+
+      // Re-render on theme change
+      const obs = new MutationObserver(() => {
+        chart.updateOptions(buildOptions(data));
+      });
+      obs.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+    },
+  };
+};{% endcode %}
+
+  <p class="text-sm font-medium">4. The template</p>
+  {% code lang="html" %}<div x-data="reportsChart()"></div>{% endcode %}
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">Why this pattern?</h2>
+  <p class="text-sm text-muted-foreground leading-relaxed">
+    ApexCharts renders SVG colors at chart-init time, so changing
+    <code class="rounded bg-muted px-1 text-xs">.dark</code> after the chart
+    is rendered doesn't touch the SVG. The MutationObserver pattern fires
+    <code class="rounded bg-muted px-1 text-xs">updateOptions()</code> with
+    a freshly-resolved palette every time the user toggles dark mode — fast,
+    no extra deps, no re-fetch of the data.
+  </p>
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">Existing factories</h2>
+  <p class="text-sm text-muted-foreground">
+    Browse <code class="rounded bg-muted px-1 text-xs">static/js/charts.js</code>
+    for examples — there are factories for every chart on every dashboard
+    variant. Copy the closest match and adjust.
+  </p>
+</section>
+
+{% endblock %}

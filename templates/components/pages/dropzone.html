@@ -1,0 +1,87 @@
+{% extends "components/_detail_layout.html" %}
+{% load apex %}
+
+{% block component_body %}
+<div class="space-y-8">
+
+  <div class="rounded-lg border border-border bg-card p-6">
+    <h2 class="text-sm font-semibold mb-1">Multi-file with previews</h2>
+    <p class="text-xs text-muted-foreground mb-4">Drag files into the zone or click to browse. Image previews render automatically.</p>
+    <div x-data="apexDropzone({maxFiles: 6, maxSizeMB: 5, accept: 'image/*,.pdf,.csv'})">
+      <label
+        @dragover="onDragOver"
+        @dragleave="onDragLeave"
+        @drop="onDrop"
+        class="block rounded-lg border-2 border-dashed p-10 text-center cursor-pointer transition"
+        :class="isDragging ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/40 hover:bg-accent/30'">
+        <div class="mx-auto h-12 w-12 rounded-full bg-primary/10 text-primary inline-flex items-center justify-center mb-3">
+          {% icon "folder" 22 %}
+        </div>
+        <p class="text-sm font-semibold">Drop files here, or <span class="text-primary">browse</span></p>
+        <p class="text-xs text-muted-foreground mt-1">PNG, JPG, PDF, CSV up to 5 MB · max 6 files</p>
+        <input type="file" multiple accept="image/*,.pdf,.csv" @change="onPick" class="sr-only" />
+      </label>
+      <p x-show="error" x-text="error" class="text-xs text-destructive mt-2"></p>
+
+      <div x-show="files.length" x-cloak class="mt-4 space-y-2">
+        <template x-for="f in files" :key="f.id">
+          <div class="flex items-center gap-3 rounded-md border border-border bg-background p-2">
+            <template x-if="f.preview">
+              <img :src="f.preview" alt="" class="h-10 w-10 rounded object-cover" />
+            </template>
+            <template x-if="!f.preview">
+              <span class="h-10 w-10 rounded bg-muted text-muted-foreground inline-flex items-center justify-center">
+                {% icon "file-text" 16 %}
+              </span>
+            </template>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium truncate" x-text="f.name"></p>
+              <p class="text-xs text-muted-foreground" x-text="fmtSize(f.size)"></p>
+            </div>
+            <button type="button" @click="remove(f.id)" class="text-muted-foreground hover:text-destructive p-1" aria-label="Remove">
+              {% icon "x" 16 %}
+            </button>
+          </div>
+        </template>
+        <div class="flex justify-end">
+          <button type="button" @click="clear()" class="h-8 px-3 rounded-md border border-border text-xs hover:bg-accent">Clear all</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="rounded-lg border border-border bg-card p-6">
+    <h2 class="text-sm font-semibold mb-1">Single file · avatar</h2>
+    <p class="text-xs text-muted-foreground mb-4">Common pattern for profile picture upload.</p>
+    <div x-data="apexDropzone({maxFiles: 1, maxSizeMB: 2, accept: 'image/*'})" class="flex items-center gap-4">
+      <div class="h-20 w-20 rounded-full bg-muted text-muted-foreground inline-flex items-center justify-center overflow-hidden">
+        <template x-if="files.length && files[0].preview">
+          <img :src="files[0].preview" alt="" class="h-20 w-20 object-cover" />
+        </template>
+        <template x-if="!files.length || !files[0].preview">
+          <span class="text-2xl font-semibold">DU</span>
+        </template>
+      </div>
+      <div>
+        <label class="inline-block">
+          <span class="h-9 px-3 inline-flex items-center rounded-md border border-border text-sm cursor-pointer hover:bg-accent"
+                x-text="files.length ? 'Change' : 'Upload photo'"></span>
+          <input type="file" accept="image/*" @change="onPick" class="sr-only" />
+        </label>
+        <p class="text-xs text-muted-foreground mt-1">PNG or JPG, max 2 MB</p>
+        <p x-show="error" x-text="error" class="text-xs text-destructive mt-1"></p>
+      </div>
+    </div>
+  </div>
+
+  <div class="rounded-lg border border-border bg-card overflow-hidden">
+    <div class="px-5 py-3 border-b border-border">
+      <h2 class="text-sm font-semibold">Phase 12 note</h2>
+    </div>
+    <div class="px-5 py-4 text-sm text-muted-foreground">
+      This demo collects file references in the browser only. Phase 12 ships <code class="text-[11px] bg-muted px-1 rounded">apps.core.widgets.FileDropzone</code> with XHR upload, per-file progress bars, cancel, and a <code class="text-[11px] bg-muted px-1 rounded">forms.Field</code> integration.
+    </div>
+  </div>
+
+</div>
+{% endblock %}

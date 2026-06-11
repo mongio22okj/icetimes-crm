@@ -1,0 +1,16 @@
+{% extends "layouts/dashboard.html" %}
+{% load apex %}
+{% block title %}Users · Apex{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+  <div>
+    <h1 class="text-2xl font-bold tracking-tight">Users</h1>
+    {% if config.caption %}<p class="text-sm text-muted-foreground mt-1">{{ config.caption }}</p>{% endif %}
+  </div>
+  <a href="{% url 'users:create' %}" class="h-10 px-4 rounded-md bg-primary text-primary-foreground inline-flex items-center font-medium hover:opacity-90">
+    New user
+  </a>
+</div>
+
+{% include "core/tables/_table.html" %}
+{% endblock %}

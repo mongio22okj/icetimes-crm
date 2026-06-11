@@ -1,0 +1,45 @@
+<div class="xl:col-span-8 rounded-lg border border-border bg-card overflow-hidden">
+  <div class="p-4 border-b border-border flex items-center justify-between">
+    <div>
+      <h2 class="font-semibold">Recent Orders</h2>
+      <p class="text-sm text-muted-foreground">Latest 5 orders across the system</p>
+    </div>
+    <a href="{% url 'orders:list' %}" class="text-sm text-primary hover:underline">View all</a>
+  </div>
+  <table class="w-full text-sm">
+    <thead class="bg-muted/30">
+      <tr class="text-left">
+        <th class="px-4 py-3 font-medium">Customer</th>
+        <th class="px-4 py-3 font-medium">Order</th>
+        <th class="px-4 py-3 font-medium text-right">Total</th>
+        <th class="px-4 py-3 font-medium">Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for order in recent_orders %}
+      {% with c=order.customer %}
+      <tr class="border-t border-border hover:bg-muted/30">
+        <td class="px-4 py-3">
+          <div class="flex items-center gap-3">
+            {% include "components/user_avatar.html" with user=c %}
+            <div class="min-w-0">
+              <div class="font-medium truncate">{{ c.name }}</div>
+              <div class="text-xs text-muted-foreground truncate">{{ c.email }}</div>
+            </div>
+          </div>
+        </td>
+        <td class="px-4 py-3">
+          <a href="{% url 'orders:detail' order.pk %}" class="font-medium hover:text-primary">{{ order.number }}</a>
+        </td>
+        <td class="px-4 py-3 text-right tabular-nums">${{ order.total }}</td>
+        <td class="px-4 py-3">
+          {% include "components/order_status_pill.html" with status=order.status label=order.get_status_display %}
+        </td>
+      </tr>
+      {% endwith %}
+      {% empty %}
+      <tr><td colspan="4" class="px-4 py-8 text-center text-muted-foreground">No orders yet. <a href="{% url 'orders:create' %}" class="text-primary hover:underline">Create one →</a></td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>

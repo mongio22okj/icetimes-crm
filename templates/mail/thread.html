@@ -1,0 +1,82 @@
+{% extends "mail/_layout.html" %}
+{% load apex %}
+{% block title %}{{ message.subject }} · Mail · Apex{% endblock %}
+
+{% block message_list %}
+  {# Re-render the folder-context list of messages so middle pane has continuity. #}
+  {% if folder == "sent" %}
+    {% for m in user.sent_messages.all|slice:":50" %}
+      {% include "mail/_message_row.html" with message=m folder="sent" %}
+    {% endfor %}
+  {% else %}
+    {% for m in user.received_messages.all|slice:":50" %}
+      {% if m.sent_at and not m.is_trashed %}
+        {% include "mail/_message_row.html" with message=m folder="inbox" %}
+      {% endif %}
+    {% endfor %}
+  {% endif %}
+{% endblock %}
+
+{% block right_pane %}
+<article class="h-full flex flex-col">
+  {# Header #}
+  <header class="px-6 py-4 border-b border-border">
+    <div class="flex items-start justify-between gap-3">
+      <div>
+        <h1 class="text-xl font-semibold tracking-tight">{{ message.subject }}</h1>
+        <p class="text-xs text-muted-foreground mt-1">
+          {{ thread|length }} message{{ thread|length|pluralize }} in thread
+        </p>
+      </div>
+      <div class="flex items-center gap-1">
+        {% if request.user == message.recipient %}
+          <form method="post" action="{% url 'mail:star' message.pk %}">{% csrf_token %}
+            <button type="submit"
+                    class="h-9 w-9 rounded-md border border-border inline-flex items-center justify-center hover:bg-accent"
+                    title="{% if message.is_starred %}Unstar{% else %}Star{% endif %}">
+              {% icon "star" 16 %}
+            </button>
+          </form>
+          <form method="post" action="{% url 'mail:trash_toggle' message.pk %}">{% csrf_token %}
+            <button type="submit"
+                    class="h-9 w-9 rounded-md border border-border inline-flex items-center justify-center hover:bg-accent"
+                    title="{% if message.is_trashed %}Restore{% else %}Move to trash{% endif %}">
+              {% icon "trash" 16 %}
+            </button>
+          </form>
+        {% endif %}
+      </div>
+    </div>
+  </header>
+
+  {# Message chain #}
+  <div class="flex-1 overflow-y-auto px-6 py-4 space-y-6">
+    {% for m in thread %}
+      <div class="rounded-lg border border-border bg-card p-4">
+        <div class="flex items-center justify-between gap-2 text-xs text-muted-foreground mb-3">
+          <div>
+            <span class="font-semibold text-foreground">{{ m.sender.get_full_name|default:m.sender.username }}</span>
+            → {{ m.recipient.get_full_name|default:m.recipient.username }}
+          </div>
+          <time datetime="{{ m.sent_at|date:'c' }}">{{ m.sent_at|date:"M j, Y · g:i a" }}</time>
+        </div>
+        <div class="text-sm whitespace-pre-line">{{ m.body|linebreaksbr }}</div>
+      </div>
+    {% endfor %}
+  </div>
+
+  {# Reply form #}
+  <footer class="border-t border-border p-4 bg-card">
+    <form method="post" action="{% url 'mail:reply' message.pk %}" class="space-y-2">
+      {% csrf_token %}
+      {{ reply_form.body }}
+      <div class="flex justify-end">
+        <button type="submit"
+                class="h-10 px-4 rounded-md bg-primary text-primary-foreground inline-flex items-center font-medium hover:opacity-90 text-sm">
+          Send reply
+        </button>
+      </div>
+    </form>
+  </footer>
+</article>
+{% endblock %}

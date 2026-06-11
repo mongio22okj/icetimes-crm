@@ -1,0 +1,15 @@
+{% extends "marketing/base.html" %}
+{% block title %}SaaS · Apex{% endblock %}
+
+{% block content %}
+{% include "marketing/_hero.html" with hero_eyebrow="SaaS" hero_headline="Ship features, not infrastructure" hero_subhead="Multi-tenant workspaces, native billing, and audit trails ship with the dashboard. Stop rebuilding the same boilerplate." hero_cta_label="Try the demo" hero_cta_url="#features" hero_accent="text-indigo-600" %}
+
+{% include "marketing/_logos.html" %}
+{% include "marketing/_stats.html" %}
+
+{% include "marketing/_features.html" with features=features_list features_heading="Built for product teams" features_subhead="Everything a B2B SaaS needs, in one Django codebase." feature_accent_bg="bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300" %}
+
+{% include "marketing/_testimonials.html" with testimonials=testimonials_list %}
+
+{% include "marketing/_cta.html" %}
+{% endblock %}

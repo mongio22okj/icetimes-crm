@@ -1,0 +1,77 @@
+{% extends "layouts/dashboard.html" %}
+{% load apex %}
+{% block title %}Blog · Apex{% endblock %}
+{% block content %}
+<div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+  <div>
+    <h1 class="text-3xl font-bold tracking-tight">Blog</h1>
+    <p class="mt-1 text-sm text-muted-foreground">Product updates, tutorials, and engineering deep dives.</p>
+  </div>
+  <form method="get" class="w-full sm:max-w-xs">
+    <div class="relative">
+      <span class="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">{% icon "search" 14 %}</span>
+      <input type="search" name="q" value="{{ q }}" placeholder="Search posts…"
+             class="h-10 w-full rounded-md border border-border bg-background pl-9 pr-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+    </div>
+  </form>
+</div>
+
+{# ── Topic chips ───────────────────────────────────────────── #}
+{% if topics_nav %}
+  <div class="mb-8 flex flex-wrap gap-2">
+    <a href="{% url 'blog:list' %}"
+       class="inline-flex items-center px-3 h-7 rounded-full text-xs font-medium {% if not active_topic and not q %}bg-primary text-primary-foreground{% else %}border border-border text-muted-foreground hover:border-primary/40{% endif %}">
+      All
+    </a>
+    {% for t in topics_nav %}
+      <a href="{% url 'blog:list' %}?topic={{ t.slug }}"
+         class="inline-flex items-center px-3 h-7 rounded-full text-xs font-medium {% if active_topic and active_topic.pk == t.pk %}text-white{% else %}border border-border text-muted-foreground hover:border-primary/40{% endif %}"
+         {% if active_topic and active_topic.pk == t.pk %}style="background-color: {{ t.accent }};"{% endif %}>
+        {{ t.name }}
+      </a>
+    {% endfor %}
+  </div>
+{% endif %}
+
+{# ── Featured hero ─────────────────────────────────────────── #}
+{% if featured %}
+  <a href="{% url 'blog:detail' featured.slug %}"
+     class="block mb-10 rounded-xl border border-border bg-card overflow-hidden group hover:border-primary/40 transition-colors">
+    <div class="grid grid-cols-1 lg:grid-cols-2">
+      <div class="relative h-60 lg:h-full lg:min-h-[280px] flex items-center justify-center"
+           style="background: linear-gradient(135deg, {% if featured.topic %}{{ featured.topic.accent }}66{% else %}#16a34a66{% endif %} 0%, transparent 100%);">
+        {% if featured.cover_emoji %}<span class="text-7xl" aria-hidden="true">{{ featured.cover_emoji }}</span>{% endif %}
+        <span class="absolute top-4 left-4 inline-flex items-center px-2 h-6 rounded-md text-[10px] font-semibold uppercase tracking-wide bg-primary text-primary-foreground">Featured</span>
+      </div>
+      <div class="p-8">
+        {% if featured.topic %}
+          <span class="inline-flex items-center px-2 h-5 rounded text-[10px] font-medium mb-3" style="background-color: {{ featured.topic.accent }}1a; color: {{ featured.topic.accent }};">{{ featured.topic.name }}</span>
+        {% endif %}
+        <h2 class="text-2xl sm:text-3xl font-bold tracking-tight mb-3 group-hover:text-primary">{{ featured.title }}</h2>
+        <p class="text-base text-muted-foreground mb-6 line-clamp-3">{{ featured.summary }}</p>
+        <div class="flex items-center gap-3 text-sm text-muted-foreground">
+          {% if featured.author %}
+            <span class="inline-flex h-7 w-7 items-center justify-center rounded-full text-[10px] font-semibold text-white" style="background-color: {{ featured.author|avatar_color }};">{{ featured.author|initials }}</span>
+            <span>{{ featured.author.get_full_name|default:featured.author.username }}</span>
+          {% endif %}
+          <span>·</span>
+          <span>{{ featured.published_at|date:"M j, Y" }}</span>
+          <span>·</span>
+          <span>{{ featured.reading_minutes }} min read</span>
+        </div>
+      </div>
+    </div>
+  </a>
+{% endif %}
+
+{# ── Post grid ─────────────────────────────────────────────── #}
+{% if posts %}
+  <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+    {% for post in posts %}
+      {% include "blog/_card.html" with post=post %}
+    {% endfor %}
+  </div>
+{% else %}
+  {% include "components/_empty_state.html" with icon="book-open" headline="No posts found" body="Try a broader search or browse all topics." cta_url="/blog/" cta_label="View all posts" %}
+{% endif %}
+{% endblock %}

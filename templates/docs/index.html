@@ -1,0 +1,144 @@
+{% extends "layouts/docs.html" %}
+{% load docs_tags %}
+
+{% block doc_title %}Introduction{% endblock %}
+{% block doc_subtitle %}A production-grade Django dashboard template — server-rendered, no SPA, ~1000 tests, deploys to a $6/mo VPS in 15 minutes.{% endblock %}
+
+{% block doc_body %}
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">What is Apex Django?</h2>
+  <p class="text-sm text-muted-foreground leading-relaxed">
+    Apex Django is a feature-complete admin dashboard template designed for
+    teams that ship product instead of rebuilding boilerplate. Five dashboard
+    variants, multi-tenant Organizations with RBAC, realtime notifications via
+    Django Channels, a full Django Ninja API, PDF invoicing, settings depth
+    that matches Stripe's dashboard, and a public marketing site — all
+    server-rendered with Tailwind v4, Alpine.js, and HTMX. No React, no
+    bundle pipeline beyond Tailwind, no SPA.
+  </p>
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">Features</h2>
+  <ul class="space-y-2.5 text-sm">
+    {% feature title="Django 5.1 + Python 3.12+ + Tailwind v4 + Alpine.js + HTMX" %}
+      Server-rendered, OKLCh design tokens, dark mode without flash, command
+      palette (Cmd+K), no build step beyond Tailwind.
+    {% endfeature %}
+    {% feature title="5 dashboard variants" %}
+      Overview, Analytics, CRM, eCommerce, SaaS — each with theme-aware
+      ApexCharts that re-render on dark-mode toggle.
+    {% endfeature %}
+    {% feature title="Productivity apps" %}
+      Mail (with reply chains, drafts, labels), Chat, Calendar, drag-and-drop
+      Kanban, Files (folder tree + uploads), Projects (tasks + milestones),
+      Activity (signal-fed timeline).
+    {% endfeature %}
+    {% feature title="Commerce" %}
+      Customers, Orders, Invoices (with WeasyPrint PDF rendering),
+      Products, Pro subscription with payment methods.
+    {% endfeature %}
+    {% feature title="Multi-tenant Organizations + 5-tier RBAC" %}
+      Workspace switcher, owner / admin / billing / member / viewer roles,
+      email invitations with TTL, public accept page, opt-in
+      <code class="rounded bg-muted px-1 text-xs">OrgScopedMixin</code> for
+      list views.
+    {% endfeature %}
+    {% feature title="Realtime via Django Channels" %}
+      Per-user notification fan-out, presence pill, in-memory layer in dev /
+      Redis in prod, <code class="rounded bg-muted px-1 text-xs">/realtime/</code>
+      demo with two-tab sync.
+    {% endfeature %}
+    {% feature title="Django Ninja API" %}
+      Auto-OpenAPI at <code class="rounded bg-muted px-1 text-xs">/api/v1/docs</code>,
+      cursor pagination, bearer-token auth (SHA-256 hash storage),
+      HMAC-SHA256 webhook signing.
+    {% endfeature %}
+    {% feature title="Settings depth" %}
+      4-section nav: profile + appearance, password + 2FA + active sessions
+      with sign-out-others + audit log, API tokens with one-time reveal,
+      webhook delivery log, GDPR data export ZIP, account deletion with 30-day grace.
+    {% endfeature %}
+    {% feature title="Marketing surfaces" %}
+      Landing pages, pricing, support, blog, help center, hosted docs (this
+      site), sitemap.xml, robots.txt, OG + Twitter cards.
+    {% endfeature %}
+    {% feature title="i18n" %}
+      English + Spanish bundled, header language picker,
+      <code class="rounded bg-muted px-1 text-xs">gettext_lazy</code>
+      across navigation. Drop in a new locale with one
+      <code class="rounded bg-muted px-1 text-xs">django-admin makemessages</code>.
+    {% endfeature %}
+    {% feature title="Demo mode + ops" %}
+      Login auto-fill banner gated on
+      <code class="rounded bg-muted px-1 text-xs">DEMO_MODE</code>, per-IP +
+      per-username login throttle, JSON health endpoint, optional Sentry SDK,
+      hourly demo-data reseed, daily Postgres backup.
+    {% endfeature %}
+    {% feature title="~1000 unit tests + Playwright E2E" %}
+      Including async WebSocket consumer tests, API endpoints, org RBAC,
+      login throttle, health checks, and form widgets — all run under 90s.
+    {% endfeature %}
+  </ul>
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">Quick start</h2>
+  <p class="text-sm text-muted-foreground">
+    Five commands, ~5 minutes. SQLite + the in-memory channel layer cover
+    everything in dev — no Postgres, no Redis required.
+  </p>
+  {% code lang="bash" %}git clone https://github.com/puikinsh/dashboardpack-apex-django.git
+cd dashboardpack-apex-django
+uv sync --all-groups
+npm install && npm run build
+uv run python manage.py migrate
+uv run python manage.py seed_demo
+uv run python manage.py runserver{% endcode %}
+  <p class="text-sm text-muted-foreground">
+    Open <code class="rounded bg-muted px-1 text-xs">http://localhost:8000/</code>
+    and sign in with the auto-filled
+    <code class="rounded bg-muted px-1 text-xs">demo</code> /
+    <code class="rounded bg-muted px-1 text-xs">ApexShowcase!2026</code>.
+  </p>
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">Tech stack</h2>
+  <div class="flex flex-wrap gap-2">
+    {% badge "Django 5.1" %}
+    {% badge "Python 3.12+" %}
+    {% badge "Tailwind v4" %}
+    {% badge "Alpine.js" %}
+    {% badge "HTMX" %}
+    {% badge "ApexCharts" %}
+    {% badge "Channels 4" %}
+    {% badge "Daphne (ASGI)" %}
+    {% badge "Postgres" %}
+    {% badge "Redis" %}
+    {% badge "Django Ninja" %}
+    {% badge "WeasyPrint" %}
+    {% badge "EasyMDE" %}
+    {% badge "Lucide" %}
+    {% badge "openpyxl" %}
+    {% badge "pytest + pytest-asyncio" %}
+    {% badge "Playwright" %}
+  </div>
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">Where to next</h2>
+  <p class="text-sm text-muted-foreground">
+    Continue with the
+    <a href="{% url 'docs:installation' %}" class="font-medium text-primary hover:underline">Installation guide</a>
+    for detailed setup instructions, or jump to
+    <a href="{% url 'docs:customize' %}" class="font-medium text-primary hover:underline">Customize</a>
+    if you've already cloned and want to change the brand. Heading to
+    production?
+    <a href="{% url 'docs:deployment' %}" class="font-medium text-primary hover:underline">Deploy to Linux</a>
+    is the end-to-end VPS walkthrough.
+  </p>
+</section>
+
+{% endblock %}

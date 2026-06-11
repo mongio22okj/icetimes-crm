@@ -1,0 +1,22 @@
+{% load apex %}
+<article data-card-id="{{ card.pk }}"
+         class="rounded-md border border-border border-l-4 {{ card.priority_border_class }} bg-background hover:bg-accent/30 cursor-grab p-3 mb-2 shadow-sm">
+  <a href="{% url 'kanban:detail' card.pk %}" class="block">
+    <p class="text-sm font-medium leading-tight">{{ card.title }}</p>
+    {% if card.description %}
+      <p class="text-xs text-muted-foreground mt-1 line-clamp-2">{{ card.description }}</p>
+    {% endif %}
+    <div class="flex items-center justify-between gap-2 mt-2">
+      <div class="flex items-center gap-2">
+        {% if card.assignee %}
+          <span class="text-[10px] text-muted-foreground">{{ card.assignee.get_full_name|default:card.assignee.username }}</span>
+        {% endif %}
+      </div>
+      {% if card.due_date %}
+        <span class="text-[10px] {% if card.is_overdue %}text-destructive font-medium{% else %}text-muted-foreground{% endif %}">
+          {{ card.due_date|date:"M j" }}
+        </span>
+      {% endif %}
+    </div>
+  </a>
+</article>

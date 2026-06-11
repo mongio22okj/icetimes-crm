@@ -1,0 +1,27 @@
+{% load apex %}
+<nav aria-label="Documentation" class="flex flex-col gap-6 py-6 px-4">
+  {% for group in docs_nav %}
+    <div>
+      <h4 class="mb-2 px-2 text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+        {{ group.title }}
+      </h4>
+      <ul class="space-y-0.5">
+        {% for item in group.items %}
+          {% url item.url_name as item_url %}
+          <li>
+            <a href="{{ item_url }}"
+               {% if item.url_name == current_doc_url_name %}aria-current="page"{% endif %}
+               class="block rounded-md px-2 py-1.5 text-sm transition-colors
+                      {% if item.url_name == current_doc_url_name %}
+                        bg-primary/10 font-medium text-primary
+                      {% else %}
+                        text-muted-foreground hover:bg-muted hover:text-foreground
+                      {% endif %}">
+              {{ item.title }}
+            </a>
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
+  {% endfor %}
+</nav>

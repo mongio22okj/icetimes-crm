@@ -1,0 +1,11 @@
+{% comment %}
+Empty state — picks the right copy based on `empty_mode` from the view
+plus the per-table overrides (config.empty_headline / config.empty_body).
+{% endcomment %}
+{% if empty_mode == "no_data" %}
+  {% include "components/_empty_state.html" with icon=config.empty_icon|default:"inbox" headline=config.empty_headline|default:"No rows yet" body=config.empty_body|default:"Add your first record to get started." %}
+{% elif any_filter_active %}
+  {% include "components/_empty_state.html" with icon="search" headline="No matches" body="No rows match the current filter or search." cta_url=request.path cta_label="Clear filters" %}
+{% else %}
+  {% include "components/_empty_state.html" with icon=config.empty_icon|default:"inbox" headline=config.empty_headline|default:"No rows" body=config.empty_body|default:"Nothing to show here." %}
+{% endif %}

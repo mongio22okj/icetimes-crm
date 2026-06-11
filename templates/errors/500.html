@@ -1,0 +1,14 @@
+{% extends "layouts/auth.html" %}
+{% block title %}500 · Server error · Apex{% endblock %}
+{% block auth_content %}
+<div class="text-center">
+  <p class="text-6xl font-bold text-destructive mb-2">500</p>
+  <h1 class="text-2xl font-bold tracking-tight mb-2">Something went wrong</h1>
+  <p class="text-sm text-muted-foreground mb-6">
+    An unexpected error occurred on our end. We've been notified and are looking into it.
+  </p>
+  <a href="/" class="block w-full h-10 rounded-md bg-primary text-primary-foreground font-medium text-center leading-10">
+    Back to dashboard
+  </a>
+</div>
+{% endblock %}

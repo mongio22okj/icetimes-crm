@@ -1,0 +1,87 @@
+{% extends "layouts/dashboard.html" %}
+{% load apex %}
+{% block title %}Change plan · Apex{% endblock %}
+{% block content %}
+<div class="mb-6 text-center">
+  <h1 class="text-3xl font-bold tracking-tight">Change your plan</h1>
+  <p class="mt-2 text-sm text-muted-foreground">Upgrade or downgrade — changes take effect at the start of the next cycle.</p>
+
+  {# Cycle toggle #}
+  <div class="mt-6 inline-flex items-center rounded-md border border-border bg-card p-1 text-sm">
+    <a href="?cycle=monthly" class="px-4 h-9 rounded inline-flex items-center {% if cycle == 'monthly' %}bg-primary text-primary-foreground{% else %}text-muted-foreground hover:bg-muted{% endif %}">Monthly</a>
+    <a href="?cycle=annual" class="px-4 h-9 rounded inline-flex items-center {% if cycle == 'annual' %}bg-primary text-primary-foreground{% else %}text-muted-foreground hover:bg-muted{% endif %}">
+      Annual
+      <span class="ml-2 inline-flex items-center px-1.5 h-5 rounded text-[10px] font-medium bg-success/10 text-success">Save 20%</span>
+    </a>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+  {% for tier in tiers %}
+    <article class="rounded-lg border {% if tier.highlight %}border-primary ring-1 ring-primary{% else %}border-border{% endif %} bg-card p-6 flex flex-col">
+      <div class="flex items-center justify-between mb-2">
+        <h2 class="font-semibold">{{ tier.name }}</h2>
+        {% if tier.highlight %}<span class="inline-flex items-center px-2 h-5 rounded text-[10px] font-medium bg-primary text-primary-foreground">Popular</span>{% endif %}
+      </div>
+      <div class="mb-4">
+        <p class="text-3xl font-bold tracking-tight">${{ tier.price|floatformat:0 }}<span class="text-sm font-medium text-muted-foreground">/mo</span></p>
+        {% if tier.cycle == "annual" and tier.monthly %}
+          <p class="text-xs text-muted-foreground line-through">${{ tier.monthly|floatformat:0 }}/mo billed monthly</p>
+        {% endif %}
+      </div>
+
+      <ul class="space-y-2 text-sm mb-6 flex-1">
+        <li class="flex items-start gap-2">
+          {% icon "check" 14 cls="text-success mt-0.5 shrink-0" %}
+          <span>{{ tier.limits.seats }} {{ tier.limits.seats|pluralize:"seat,seats" }}</span>
+        </li>
+        <li class="flex items-start gap-2">
+          {% icon "check" 14 cls="text-success mt-0.5 shrink-0" %}
+          <span>{{ tier.limits.storage_gb }} GB storage</span>
+        </li>
+        <li class="flex items-start gap-2">
+          {% icon "check" 14 cls="text-success mt-0.5 shrink-0" %}
+          <span>{% if tier.limits.api_calls >= 1000000 %}Unlimited{% else %}{{ tier.limits.api_calls|floatformat:0 }}{% endif %} API calls</span>
+        </li>
+        <li class="flex items-start gap-2">
+          {% icon "check" 14 cls="text-success mt-0.5 shrink-0" %}
+          <span>{% if tier.key == "free" %}Community support{% elif tier.key == "starter" %}Email support{% elif tier.key == "pro" %}Priority email + chat{% else %}Dedicated success manager{% endif %}</span>
+        </li>
+        {% if tier.key == "pro" or tier.key == "enterprise" %}
+          <li class="flex items-start gap-2">
+            {% icon "check" 14 cls="text-success mt-0.5 shrink-0" %}
+            <span>Audit log + 2FA enforcement</span>
+          </li>
+        {% endif %}
+        {% if tier.key == "enterprise" %}
+          <li class="flex items-start gap-2">
+            {% icon "check" 14 cls="text-success mt-0.5 shrink-0" %}
+            <span>SSO / SAML</span>
+          </li>
+          <li class="flex items-start gap-2">
+            {% icon "check" 14 cls="text-success mt-0.5 shrink-0" %}
+            <span>99.9% SLA</span>
+          </li>
+        {% endif %}
+      </ul>
+
+      {% if tier.is_current %}
+        <button disabled class="h-10 w-full rounded-md border border-border text-sm text-muted-foreground cursor-not-allowed">Current plan</button>
+      {% else %}
+        <form method="post" action="{% url 'billing:change_plan' %}">
+          {% csrf_token %}
+          <input type="hidden" name="plan" value="{{ tier.key }}">
+          <input type="hidden" name="cycle" value="{{ cycle }}">
+          <button type="submit" class="h-10 w-full rounded-md text-sm font-medium {% if tier.highlight %}bg-primary text-primary-foreground hover:bg-primary/90{% else %}border border-border hover:bg-accent{% endif %}">
+            {% if tier.key == "enterprise" %}Contact sales{% else %}Switch to {{ tier.name }}{% endif %}
+          </button>
+        </form>
+      {% endif %}
+    </article>
+  {% endfor %}
+</div>
+
+<p class="mt-8 text-center text-xs text-muted-foreground">
+  Need help choosing? <a href="{% url 'marketing:support' %}" class="text-primary hover:underline">Get in touch</a> with our team.
+</p>
+{% endblock %}

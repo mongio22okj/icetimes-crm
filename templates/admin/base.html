@@ -1,0 +1,130 @@
+{% load i18n static apex %}<!DOCTYPE html>
+{% comment %}
+  Apex-themed Django admin base template.
+
+  Replaces Django's stock admin chrome (gradient bars, fieldset gradients, the
+  whole 1996 vibe) with the Apex dashboard shell: same sidebar, header,
+  command palette, dark-mode toggle, and toast system as the rest of the app.
+  Admin pages still use Django's blocks (content, extrahead, breadcrumbs, ...)
+  so individual change_list / change_form templates extend transparently.
+
+  Note: Each Django admin block (pretitle/content_title/content/...) is
+  declared exactly once. Django forbids duplicate block names even in
+  mutually-exclusive {% if %} branches. Popup pages (related-object add/edit)
+  get the same shell — slightly cramped in a small window, but consistent;
+  refining popups is a Tier-3 follow-up.
+{% endcomment %}
+<html lang="{{ LANGUAGE_CODE|default:"en-us" }}" dir="{{ LANGUAGE_BIDI|yesno:"rtl,ltr" }}" {% if is_popup %}data-popup="true"{% endif %}>
+<head>
+<title>{% block title %}{% endblock %}</title>
+
+<link rel="manifest" href="{% url 'pwa_manifest' %}">
+<link rel="icon" type="image/svg+xml" href="{% static 'icons/icon.svg' %}">
+<link rel="icon" type="image/png" sizes="32x32" href="{% static 'icons/favicon.png' %}">
+<link rel="apple-touch-icon" href="{% static 'icons/apple-touch-icon.png' %}">
+
+<link rel="stylesheet" href="{% static 'css/app.css' %}">
+
+{# Theme bootstrap — must run before paint to avoid flash of light theme. #}
+<script nonce="{{ request.csp_nonce }}">
+  (function() {
+    var saved = localStorage.getItem("theme");
+    var system = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    var dark = saved === "dark" || (!saved && system);
+    if (dark) document.documentElement.classList.add("dark");
+  })();
+</script>
+
+{# Apex shell deps (Alpine + HTMX + supporting JS). #}
+<script src="https://unpkg.com/htmx.org@2.0.3"
+        integrity="sha384-0895/pl2MU10Hqc6jd4RvrthNlDiE9U1tWmX7WRESftEDRosgxNsQG/Ze9YMRzHq"
+        crossorigin="anonymous" defer></script>
+<script src="{% static 'js/shell.js' %}" defer></script>
+<script src="{% static 'js/realtime.js' %}" defer></script>
+<script src="https://unpkg.com/alpinejs@3.14.1/dist/cdn.min.js"
+        integrity="sha384-l8f0VcPi/M1iHPv8egOnY/15TDwqgbOR1anMIJWvU6nLRgZVLTLSaNqi/TOoT5Fh"
+        crossorigin="anonymous" defer></script>
+
+{% block dark-mode-vars %}{% endblock %}
+{% block extrastyle %}{% endblock %}
+{% block extrahead %}{% endblock %}
+{% block responsive %}
+<meta name="viewport" content="user-scalable=no, width=device-width, initial-scale=1.0, maximum-scale=1.0">
+{% endblock %}
+{% block blockbots %}<meta name="robots" content="NONE,NOARCHIVE">{% endblock %}
+</head>
+
+<body class="bg-background text-foreground antialiased apex-admin {% if is_popup %}popup {% endif %}{% block bodyclass %}{% endblock %}"
+      data-admin-utc-offset="{% now "Z" %}">
+{% comment %}
+  Popup windows (related-object add/edit, opened from a "+" button next to a
+  FK field) are tiny — typically ~850×500 px. The full Apex shell at that
+  size is cramped, so we skip the sidebar / header / breadcrumbs / command
+  palette and just render the content centred on the page. The Django admin
+  popup JS still posts the saved object back to the parent window's window
+  opener — no change to behaviour, just the chrome.
+{% endcomment %}
+{% if not is_popup %}
+  <a href="#main-content"
+     class="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:px-4 focus:py-2 focus:rounded-md focus:bg-primary focus:text-primary-foreground focus:font-medium focus:shadow-lg focus:ring-2 focus:ring-ring focus:outline-none">
+    {% trans "Skip to main content" %}
+  </a>
+{% endif %}
+<div {% if not is_popup %}x-data="apexShell()" class="flex min-h-screen"{% else %}class="min-h-screen"{% endif %}>
+  {% if not is_popup %}
+    {% include "partials/sidebar.html" %}
+
+    <div x-show="drawer.open" x-transition.opacity
+         @click="drawer.open = false"
+         class="fixed inset-0 z-30 bg-black/50 lg:hidden"
+         aria-hidden="true" style="display: none;"></div>
+  {% endif %}
+
+  <div class="{% if not is_popup %}flex-1 lg:ml-[260px]{% endif %} min-w-0">
+    {% if not is_popup %}
+      {% include "partials/header.html" %}
+    {% endif %}
+
+    {% block breadcrumbs %}
+    {% if not is_popup %}
+    <nav aria-label="{% trans 'Breadcrumb' %}"
+         class="px-6 pt-4 pb-2 text-sm text-muted-foreground flex items-center gap-1.5 flex-wrap">
+      <a href="{% url 'admin:index' %}" class="hover:text-foreground inline-flex items-center gap-1">
+        {% icon "shield" 14 %}<span>{% trans 'Admin' %}</span>
+      </a>
+    </nav>
+    {% endif %}
+    {% endblock %}
+
+    <main id="main-content" tabindex="-1"
+          class="{% if is_popup %}p-5 max-w-3xl mx-auto{% else %}p-6{% endif %} space-y-4">
+      {% comment %}
+        Sprinkle 3 — admin messages render through apex_toasts at the bottom
+        of <body>. Don't duplicate them here: messages are consumed on first
+        iteration, and a duplicate inline block would leave the toast
+        container empty.
+      {% endcomment %}
+      {% block pretitle %}{% endblock %}
+      {% block content_title %}{% endblock %}
+      {% block content_subtitle %}{% endblock %}
+      {% block content %}
+        {% block object-tools %}{% endblock %}
+        {{ content }}
+      {% endblock %}
+      {% block sidebar %}{% endblock %}
+    </main>
+  </div>
+
+  {% if not is_popup %}
+    {# Nav payload for the command palette (Cmd/Ctrl-K everywhere, including admin). #}
+    {{ nav_items_json|json_script:"nav-items" }}
+    {% include "partials/command_palette.html" %}
+  {% endif %}
+</div>
+{% if not is_popup %}
+  {% apex_toasts %}
+{% endif %}
+
+<script src="{% static 'js/app.js' %}" defer></script>
+</body>
+</html>

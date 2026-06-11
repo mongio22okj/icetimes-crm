@@ -1,0 +1,184 @@
+{% extends "layouts/docs.html" %}
+{% load docs_tags %}
+
+{% block doc_title %}Changelog{% endblock %}
+{% block doc_subtitle %}Recent releases. Full history in CHANGELOG.md in the repo root.{% endblock %}
+
+{% block doc_body %}
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">0.18.2 — Admin prominence + slimmer distribution</h2>
+  <p class="text-sm text-muted-foreground">
+    Header chip linking to <code class="rounded bg-muted px-1 text-xs">/admin/</code>
+    for staff users — a shield-icon button next to the theme toggle,
+    visible on every page. Sidebar "Administration" entry kept for the
+    command palette. Pruned 42 unused screenshots
+    (<code class="rounded bg-muted px-1 text-xs">screenshots/responsive/</code>
+    spot-check artifacts + 19 stale root PNGs superseded by other
+    variants), trimming the distribution zip from ~9.6 MB to ~6 MB.
+    Every remaining screenshot is referenced by README, CHANGELOG, or a
+    template; the capture script stays so anyone can regenerate.
+  </p>
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">0.18.1 — First-customer polish</h2>
+  <p class="text-sm text-muted-foreground">
+    Same-day patch addressing three small reports from the first
+    customer on 0.18.0. Added a dedicated <strong>Administration</strong>
+    sidebar entry under the Account group (shield icon, links to
+    <code class="rounded bg-muted px-1 text-xs">/admin/</code>) so the
+    themed admin is discoverable. Fixed the distribution zip to include
+    <code class="rounded bg-muted px-1 text-xs">screenshots/</code> so
+    the bundled README renders with images. Promoted the demo user to
+    superuser in <code class="rounded bg-muted px-1 text-xs">seed_demo</code>
+    (the hourly <code class="rounded bg-muted px-1 text-xs">reset_demo</code>
+    cron reverts any visitor edits). Plus three changelist tweaks:
+    rendered clock-icon glyph on time pickers, left-aligned the primary
+    column cells (browsers default
+    <code class="rounded bg-muted px-1 text-xs">&lt;th&gt;</code> to
+    center+bold), and themed the multi-column sort header controls
+    (Lucide × / priority badge / direction toggle).
+  </p>
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">0.18.0 — Apex-themed Django Admin</h2>
+  <p class="text-sm text-muted-foreground">
+    Django's <code class="rounded bg-muted px-1 text-xs">/admin/</code> is
+    now fully re-skinned to match the rest of Apex — same sidebar, header,
+    dark mode, command palette, toast notifications, OKLCh colour tokens.
+    New <code class="rounded bg-muted px-1 text-xs">apex.admin.ModelAdmin</code>
+    base class with <code class="rounded bg-muted px-1 text-xs">show_in_dashboard</code>
+    + <code class="rounded bg-muted px-1 text-xs">apex_icon</code> hooks for
+    opt-in stat cards and Lucide icons. Themed login, password change,
+    change list with empty states, change form with proper label/input
+    grid, delete confirmation, history, popup windows for related-object
+    add/edit, file inputs with thumbnail preview for images,
+    Select2 autocomplete, M2M filter_horizontal selector, calendar popup
+    with Lucide chevrons, date/time shortcut chips, 404 / 500 error
+    pages, and parity coverage of every other stock Django admin
+    feature. Existing <code class="rounded bg-muted px-1 text-xs">admin.ModelAdmin</code>
+    registrations pick up the theme automatically via template overrides.
+  </p>
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">0.17.2 — Higher-contrast dark mode</h2>
+  <p class="text-sm text-muted-foreground">
+    Reworked the <code class="rounded bg-muted px-1 text-xs">.dark</code>
+    palette in <code class="rounded bg-muted px-1 text-xs">static_src/css/input.css</code>
+    to mirror the Apex Next.js reference: pure neutral grays (chroma 0)
+    instead of the subtly teal-tinted (hue 170) grays, with bigger
+    lightness steps between background → card → muted → border. Cards
+    now visibly lift off the background and input borders read clearly.
+    Background L 0.09 → 0.075, card 0.125 → 0.19, popover → 0.21,
+    secondary / muted / accent 0.19 → 0.235, border / input 0.20 →
+    0.28. Sidebar 0.075 → 0.11, sidebar-accent 0.14 → 0.20,
+    sidebar-border 0.16 → 0.26. Light mode untouched.
+  </p>
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">0.17.1 — Microsoft SQL Server support</h2>
+  <p class="text-sm text-muted-foreground">
+    Apex now officially supports SQL Server 2017+ as a production
+    database alongside Postgres. Postgres remains the default. Install
+    with <code class="rounded bg-muted px-1 text-xs">uv sync --extra mssql</code>
+    and set <code class="rounded bg-muted px-1 text-xs">DATABASE_URL</code>
+    to an <code class="rounded bg-muted px-1 text-xs">mssql://</code> or
+    <code class="rounded bg-muted px-1 text-xs">sqlserver://</code> scheme.
+  </p>
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">0.17.0 — Realtime via Channels</h2>
+  <p class="text-sm text-muted-foreground">
+    Channels 4 + Daphne ASGI; per-user notification fan-out + global
+    presence pill; in-memory layer in dev, Redis in prod via
+    <code class="rounded bg-muted px-1 text-xs">REDIS_URL</code>;
+    <code class="rounded bg-muted px-1 text-xs">/realtime/</code> demo page;
+    16 new tests.
+  </p>
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">0.16.0 — Organizations + RBAC</h2>
+  <p class="text-sm text-muted-foreground">
+    Multi-tenant workspaces with header switcher; per-org settings + member
+    roster + role change/remove; 5-tier RBAC (owner / admin / billing /
+    member / viewer); email invitations with 14-day TTL + public accept page;
+    <code class="rounded bg-muted px-1 text-xs">OrgRequiredMixin</code> /
+    <code class="rounded bg-muted px-1 text-xs">HasRoleMixin</code> /
+    <code class="rounded bg-muted px-1 text-xs">OrgScopedMixin</code> for
+    opt-in tenant-scoping; 46 new tests.
+  </p>
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">0.15.0 — Marketing polish</h2>
+  <p class="text-sm text-muted-foreground">
+    Public changelog renderer (custom hand-rolled markdown subset); roadmap
+    (Now / Next / Later); side-by-side comparison; one-page showcase index;
+    sitemap.xml + robots.txt; OG + Twitter cards on every marketing page.
+  </p>
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">0.14.0 — API layer (Django Ninja)</h2>
+  <p class="text-sm text-muted-foreground">
+    Auto-generated OpenAPI at <code class="rounded bg-muted px-1 text-xs">/api/v1/docs</code>;
+    cursor pagination; bearer-token auth with SHA-256 hash storage (Stripe
+    pattern); HMAC-SHA256 webhook signing with canonical JSON; one-time
+    secret reveal pattern.
+  </p>
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">0.13.0 — Notification center</h2>
+  <p class="text-sm text-muted-foreground">
+    Categories + preferences (in-app / email / push); per-category toggle;
+    bell context processor; <code class="rounded bg-muted px-1 text-xs">KIND_TO_CATEGORY</code>
+    backfill; Web Push subscription scaffold (browser permission + service worker).
+  </p>
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">0.12.0 — Forms 2.0</h2>
+  <p class="text-sm text-muted-foreground">
+    Custom widgets in <code class="rounded bg-muted px-1 text-xs">apps/core/widgets/</code>;
+    floating-label inputs; multi-select chips; date pickers; file dropzones
+    with previews; EasyMDE markdown editor (vendored); accessibility-first
+    focus management.
+  </p>
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">0.11.0 — HTMX datatable</h2>
+  <p class="text-sm text-muted-foreground">
+    Reusable <code class="rounded bg-muted px-1 text-xs">TableView</code>
+    mixin; sortable columns; per-column filters (text, date range, choice);
+    URL-state persistence; saved views; bulk actions; CSV + XLSX export via
+    openpyxl; cursor pagination.
+  </p>
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">0.10.0 — Component library</h2>
+  <p class="text-sm text-muted-foreground">
+    <code class="rounded bg-muted px-1 text-xs">/components/</code> showcase
+    with live demos and code snippets; primitive partials (modal, drawer,
+    dropdown, popover, toast, tabs, accordion, empty state, dropzone, status
+    pill); accessibility documented per primitive.
+  </p>
+</section>
+
+<section class="pt-4">
+  <a href="https://github.com/puikinsh/dashboardpack-apex-django/blob/main/CHANGELOG.md"
+     target="_blank" rel="noopener"
+     class="inline-flex items-center gap-2 h-10 px-4 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:opacity-90">
+    Full history on GitHub
+  </a>
+</section>
+
+{% endblock %}

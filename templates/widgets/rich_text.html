@@ -1,0 +1,38 @@
+{% comment %}
+RichText widget. Renders a plain <textarea> that EasyMDE upgrades on
+DOMContentLoaded. The toolbar preset controls which buttons appear.
+
+Pages using this widget must include the EasyMDE assets — typically
+via {% form.media %} in the form's template, or by extending
+head_extra:
+
+    {% block head_extra %}
+      {{ form.media }}
+    {% endblock %}
+{% endcomment %}
+{% with attrs=widget.attrs %}
+<div data-widget="rich-text"
+     data-toolbar="{{ widget.toolbar }}"
+     x-init="(() => {
+       if (typeof EasyMDE === 'undefined') return;
+       const presets = {
+         minimal: ['bold', 'italic', 'link'],
+         basic:   ['bold', 'italic', '|', 'heading', 'unordered-list', 'ordered-list', 'quote', 'code', '|', 'link'],
+         full:    ['bold', 'italic', 'strikethrough', '|', 'heading', 'unordered-list', 'ordered-list', 'quote', 'code', '|', 'link', 'image', 'table', '|', 'preview', 'side-by-side', 'fullscreen'],
+       };
+       const preset = $el.dataset.toolbar || 'basic';
+       new EasyMDE({
+         element: $el.querySelector('textarea'),
+         toolbar: presets[preset],
+         spellChecker: false,
+         status: false,
+         autoDownloadFontAwesome: false,
+       });
+     })()">
+  <textarea name="{{ widget.name }}"
+            {% for k, v in attrs.items %}{% if k != 'class' %}{{ k }}="{{ v }}" {% endif %}{% endfor %}
+            class="w-full min-h-32 px-3 py-2 rounded-md border border-input bg-background text-sm
+                   focus:outline-none focus:ring-2 focus:ring-ring/50 focus:border-ring
+                   {{ attrs.class|default:'' }}">{{ widget.value|default_if_none:'' }}</textarea>
+</div>
+{% endwith %}

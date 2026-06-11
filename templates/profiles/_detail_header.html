@@ -1,0 +1,44 @@
+{% load apex %}
+<header class="rounded-lg border border-border bg-card p-6 mb-6">
+  <div class="flex flex-col sm:flex-row sm:items-start gap-5">
+    <div class="shrink-0">
+      {% if person.avatar %}
+        <img src="{{ person.avatar.url }}" alt="" class="h-24 w-24 rounded-full object-cover ring-4 ring-card">
+      {% else %}
+        <span class="inline-flex h-24 w-24 items-center justify-center rounded-full text-2xl font-semibold text-white ring-4 ring-card" style="background-color: {{ person|avatar_color }};">{{ person|initials }}</span>
+      {% endif %}
+    </div>
+    <div class="min-w-0 flex-1">
+      <div class="flex flex-wrap items-center gap-2 mb-1">
+        <h1 class="text-2xl font-bold tracking-tight">{{ person.get_full_name|default:person.username }}</h1>
+        {% if person.role == "admin" %}<span class="inline-flex items-center px-2 h-6 rounded-md text-xs font-medium bg-success/10 text-success">Admin</span>
+        {% elif person.role == "manager" %}<span class="inline-flex items-center px-2 h-6 rounded-md text-xs font-medium bg-primary/10 text-primary">Manager</span>
+        {% else %}<span class="inline-flex items-center px-2 h-6 rounded-md text-xs font-medium bg-muted text-muted-foreground">Staff</span>{% endif %}
+      </div>
+      {% if person.title %}<p class="text-sm font-medium text-foreground/80 mb-2">{{ person.title }}</p>{% endif %}
+      {% if person.bio %}<p class="text-sm text-muted-foreground max-w-2xl mb-3">{{ person.bio }}</p>{% endif %}
+      <dl class="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-xs text-muted-foreground">
+        <div class="inline-flex items-center gap-1.5">{% icon "mail" 14 %}<a href="mailto:{{ person.email }}" class="hover:text-foreground">{{ person.email }}</a></div>
+        {% if person.location %}<div class="inline-flex items-center gap-1.5">{% icon "user" 14 %}{{ person.location }}</div>{% endif %}
+        {% if person.website %}<div class="inline-flex items-center gap-1.5">{% icon "rocket" 14 %}<a href="{{ person.website }}" target="_blank" rel="noopener" class="hover:text-foreground">{{ person.website|cut:"https://"|cut:"http://" }}</a></div>{% endif %}
+        <div class="inline-flex items-center gap-1.5">{% icon "calendar" 14 %}Joined {{ person.date_joined|date:"M Y" }}</div>
+      </dl>
+    </div>
+    <div class="grid grid-cols-3 gap-4 sm:flex sm:flex-col sm:gap-3 shrink-0">
+      <div class="text-center sm:text-left">
+        <p class="text-xl font-bold tabular-nums">{{ project_count }}</p>
+        <p class="text-xs text-muted-foreground">Projects</p>
+      </div>
+      <div class="text-center sm:text-left">
+        <p class="text-xl font-bold tabular-nums">{{ task_count }}</p>
+        <p class="text-xs text-muted-foreground">Tasks</p>
+      </div>
+      <div class="text-center sm:text-left">
+        <p class="text-xl font-bold tabular-nums">{{ team_count }}</p>
+        <p class="text-xs text-muted-foreground">Connections</p>
+      </div>
+    </div>
+  </div>
+</header>
+
+{% include "profiles/_tabs.html" with person=person active_tab=active_tab %}

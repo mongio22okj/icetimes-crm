@@ -1,0 +1,17 @@
+{% load apex %}
+{% comment %}Sortable column header. Pass `key`, `label`, `cls`.{% endcomment %}
+<th class="font-medium {{ cls|default:'text-left' }}" x-show="visible('{{ key }}')">
+  {% if direction == "asc" and sort == key %}
+    <a href="?{% include 'pages/_dt_qs.html' with sort=key dir='desc' %}" class="inline-flex items-center gap-1 hover:text-foreground">
+      <span>{{ label }}</span>{% icon "chevron-down" 12 cls="rotate-180" %}
+    </a>
+  {% elif direction == "desc" and sort == key %}
+    <a href="?{% include 'pages/_dt_qs.html' with sort=key dir='asc' %}" class="inline-flex items-center gap-1 hover:text-foreground">
+      <span>{{ label }}</span>{% icon "chevron-down" 12 %}
+    </a>
+  {% else %}
+    <a href="?{% include 'pages/_dt_qs.html' with sort=key dir='asc' %}" class="inline-flex items-center gap-1 hover:text-foreground">
+      <span>{{ label }}</span><span class="opacity-30">{% icon "chevron-down" 12 %}</span>
+    </a>
+  {% endif %}
+</th>

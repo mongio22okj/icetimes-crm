@@ -1,0 +1,161 @@
+{% extends "marketing/base.html" %}
+{% load apex %}
+{% block title %}Pricing · Apex{% endblock %}
+
+{% block content %}
+<section x-data="{ annual: false }" class="relative overflow-hidden">
+  <div class="absolute inset-0 -z-10 bg-linear-to-b from-muted/30 via-background to-background"></div>
+  <div class="absolute inset-x-0 top-0 -z-10 h-120 bg-[radial-gradient(60%_50%_at_50%_0%,oklch(0.7_0.18_240/.15),transparent)]"></div>
+
+  <div class="mx-auto max-w-6xl px-6 pt-20 pb-20">
+    <div class="text-center max-w-2xl mx-auto">
+      <p class="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-primary bg-card border border-border rounded-full px-3 py-1 mb-5">
+        <span class="h-1.5 w-1.5 rounded-full bg-current"></span>
+        Pricing
+      </p>
+      <h1 class="text-4xl lg:text-6xl font-bold tracking-tight leading-[1.05]">Simple, fair pricing</h1>
+      <p class="mt-6 text-lg text-muted-foreground">Pick the plan that fits your team. Switch, upgrade, or cancel any time.</p>
+
+      <div class="mt-8 inline-flex items-center gap-1 rounded-full border border-border bg-card p-1 text-sm shadow-sm">
+        <button type="button" @click="annual = false"
+                :class="annual ? 'text-muted-foreground' : 'bg-primary text-primary-foreground shadow-sm'"
+                class="h-9 px-5 rounded-full font-medium transition-all">Monthly</button>
+        <button type="button" @click="annual = true"
+                :class="annual ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground'"
+                class="h-9 px-5 rounded-full font-medium transition-all flex items-center gap-2">
+          Annual
+          <span class="text-[10px] font-semibold uppercase tracking-wider rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300 px-1.5 py-0.5">Save 20%</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="mt-14 grid md:grid-cols-3 gap-6">
+      {% for tier in tiers %}
+        <div class="rounded-2xl border {% if tier.highlight %}border-primary shadow-xl ring-1 ring-primary/10 lg:scale-105{% else %}border-border{% endif %} bg-card p-8 relative flex flex-col">
+          {% if tier.highlight %}
+            <span class="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-primary text-primary-foreground text-[11px] font-semibold uppercase tracking-wider px-3 py-1 shadow-sm">Most popular</span>
+          {% endif %}
+          <h2 class="text-2xl font-bold tracking-tight">{{ tier.name }}</h2>
+          <p class="text-sm text-muted-foreground mt-2">{{ tier.blurb }}</p>
+          <div class="mt-6 flex items-baseline gap-2">
+            <span x-show="!annual" class="text-5xl font-bold tracking-tight">${{ tier.price_monthly }}</span>
+            <span x-show="annual" x-cloak class="text-5xl font-bold tracking-tight">${{ tier.price_annual }}</span>
+            <span class="text-muted-foreground text-sm">/ month</span>
+          </div>
+          <p x-show="annual" x-cloak class="text-xs text-emerald-600 mt-1">Billed annually</p>
+          <ul class="mt-7 space-y-3 text-sm flex-1">
+            {% for feature in tier.features %}
+              <li class="flex items-start gap-3">
+                <span class="shrink-0 h-5 w-5 rounded-full bg-primary/10 text-primary inline-flex items-center justify-center mt-0.5">
+                  <svg width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 11 8 15 16 6"/></svg>
+                </span>
+                <span>{{ feature }}</span>
+              </li>
+            {% endfor %}
+          </ul>
+          <button class="mt-8 w-full h-11 rounded-md {% if tier.highlight %}bg-primary text-primary-foreground shadow-sm{% else %}border border-border bg-background hover:bg-accent{% endif %} font-medium hover:opacity-90 text-sm">
+            {{ tier.cta }}
+          </button>
+        </div>
+      {% endfor %}
+    </div>
+
+    <p class="mt-10 text-center text-sm text-muted-foreground">All plans include 14-day free trial · No credit card required · Cancel anytime</p>
+  </div>
+</section>
+
+{# Comparison table #}
+<section class="border-y border-border bg-muted/20">
+  <div class="mx-auto max-w-5xl px-6 py-20">
+    <div class="text-center max-w-2xl mx-auto">
+      <h2 class="text-3xl font-bold tracking-tight">Compare plans</h2>
+      <p class="mt-2 text-muted-foreground">Everything you get, side by side.</p>
+    </div>
+    <div class="mt-10 rounded-2xl border border-border bg-card overflow-hidden">
+      <table class="w-full text-sm">
+        <thead class="border-b border-border bg-muted/40">
+          <tr class="text-left">
+            <th class="px-6 py-4 font-semibold">Feature</th>
+            <th class="px-4 py-4 font-semibold text-center">Starter</th>
+            <th class="px-4 py-4 font-semibold text-center bg-primary/5">Pro</th>
+            <th class="px-4 py-4 font-semibold text-center">Enterprise</th>
+          </tr>
+        </thead>
+        <tbody class="text-sm">
+          <tr class="border-t border-border">
+            <td class="px-6 py-3.5">Users included</td>
+            <td class="px-4 py-3.5 text-center text-muted-foreground">1</td>
+            <td class="px-4 py-3.5 text-center bg-primary/5">10</td>
+            <td class="px-4 py-3.5 text-center">Unlimited</td>
+          </tr>
+          <tr class="border-t border-border">
+            <td class="px-6 py-3.5">File storage</td>
+            <td class="px-4 py-3.5 text-center text-muted-foreground">1 GB</td>
+            <td class="px-4 py-3.5 text-center bg-primary/5">10 GB</td>
+            <td class="px-4 py-3.5 text-center">100 GB</td>
+          </tr>
+          <tr class="border-t border-border">
+            <td class="px-6 py-3.5">Two-factor auth</td>
+            <td class="px-4 py-3.5 text-center">{% include "marketing/_check.html" with on=False %}</td>
+            <td class="px-4 py-3.5 text-center bg-primary/5">{% include "marketing/_check.html" with on=True %}</td>
+            <td class="px-4 py-3.5 text-center">{% include "marketing/_check.html" with on=True %}</td>
+          </tr>
+          <tr class="border-t border-border">
+            <td class="px-6 py-3.5">Audit log</td>
+            <td class="px-4 py-3.5 text-center">{% include "marketing/_check.html" with on=False %}</td>
+            <td class="px-4 py-3.5 text-center bg-primary/5">{% include "marketing/_check.html" with on=True %}</td>
+            <td class="px-4 py-3.5 text-center">{% include "marketing/_check.html" with on=True %}</td>
+          </tr>
+          <tr class="border-t border-border">
+            <td class="px-6 py-3.5">PDF export</td>
+            <td class="px-4 py-3.5 text-center">{% include "marketing/_check.html" with on=False %}</td>
+            <td class="px-4 py-3.5 text-center bg-primary/5">{% include "marketing/_check.html" with on=True %}</td>
+            <td class="px-4 py-3.5 text-center">{% include "marketing/_check.html" with on=True %}</td>
+          </tr>
+          <tr class="border-t border-border">
+            <td class="px-6 py-3.5">Custom domain</td>
+            <td class="px-4 py-3.5 text-center">{% include "marketing/_check.html" with on=False %}</td>
+            <td class="px-4 py-3.5 text-center bg-primary/5">{% include "marketing/_check.html" with on=False %}</td>
+            <td class="px-4 py-3.5 text-center">{% include "marketing/_check.html" with on=True %}</td>
+          </tr>
+          <tr class="border-t border-border">
+            <td class="px-6 py-3.5">SSO / SAML</td>
+            <td class="px-4 py-3.5 text-center">{% include "marketing/_check.html" with on=False %}</td>
+            <td class="px-4 py-3.5 text-center bg-primary/5">{% include "marketing/_check.html" with on=False %}</td>
+            <td class="px-4 py-3.5 text-center">{% include "marketing/_check.html" with on=True %}</td>
+          </tr>
+          <tr class="border-t border-border">
+            <td class="px-6 py-3.5">Dedicated support</td>
+            <td class="px-4 py-3.5 text-center">{% include "marketing/_check.html" with on=False %}</td>
+            <td class="px-4 py-3.5 text-center bg-primary/5">{% include "marketing/_check.html" with on=False %}</td>
+            <td class="px-4 py-3.5 text-center">{% include "marketing/_check.html" with on=True %}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="mx-auto max-w-3xl px-6 py-20">
+    <div class="text-center max-w-2xl mx-auto">
+      <h2 class="text-3xl font-bold tracking-tight">Frequently asked</h2>
+      <p class="mt-2 text-muted-foreground">Can't find what you need? <a href="{% url 'marketing:support' %}" class="text-primary underline underline-offset-2 hover:no-underline">Ask us anything.</a></p>
+    </div>
+    <div class="mt-10 space-y-3">
+      {% for item in faq %}
+        <div x-data="{ open: false }" class="rounded-xl border border-border bg-card hover:border-primary/30 transition-colors">
+          <button type="button" @click="open = !open"
+                  class="w-full flex items-center justify-between p-5 text-left">
+            <span class="font-medium pr-4">{{ item.q }}</span>
+            <span :class="open ? 'rotate-180' : ''" class="text-muted-foreground transition-transform shrink-0">{% icon "chevron-down" 16 %}</span>
+          </button>
+          <div x-show="open" x-cloak x-collapse class="px-5 pb-5 text-sm text-muted-foreground leading-relaxed">{{ item.a }}</div>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+{% include "marketing/_cta.html" %}
+{% endblock %}

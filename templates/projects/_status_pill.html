@@ -1,0 +1,12 @@
+{% comment %}Project status pill. Pass `status` (planning/active/on_hold/completed).{% endcomment %}
+{% if status == "active" %}
+  <span class="inline-flex items-center px-2 h-6 rounded-md text-xs font-medium bg-success/10 text-success">Active</span>
+{% elif status == "planning" %}
+  <span class="inline-flex items-center px-2 h-6 rounded-md text-xs font-medium bg-primary/10 text-primary">Planning</span>
+{% elif status == "on_hold" %}
+  <span class="inline-flex items-center px-2 h-6 rounded-md text-xs font-medium bg-amber-500/10 text-amber-600">On Hold</span>
+{% elif status == "completed" %}
+  <span class="inline-flex items-center px-2 h-6 rounded-md text-xs font-medium bg-muted text-muted-foreground">Completed</span>
+{% else %}
+  <span class="inline-flex items-center px-2 h-6 rounded-md text-xs font-medium bg-muted text-muted-foreground">{{ status }}</span>
+{% endif %}

@@ -1,0 +1,53 @@
+{% load apex %}
+{% comment %}
+MultiSelect widget — chip-style picker over a fixed option set.
+
+Posts the field as repeated `name` entries (one hidden input per
+selected value) so Django's standard form parsing receives a list.
+{% endcomment %}
+{% with attrs=widget.attrs %}
+<div data-widget="multi-select"
+     x-data='apexMultiSelect({all: {{ widget.options_json|safe }}.map(o => o.value), selected: {{ widget.selected_json|safe }}})'>
+
+  {# Hidden inputs feed Django's form: one <input name=name> per selected value. #}
+  <template x-for="value in selected" :key="value">
+    <input type="hidden" name="{{ widget.name }}" :value="value">
+  </template>
+
+  <div @click="open = true; $nextTick(() => $refs.q.focus())"
+       class="min-h-10 px-2 py-1.5 rounded-md border border-input bg-background flex flex-wrap gap-1.5 items-center cursor-text"
+       :class="open ? 'ring-2 ring-ring/50 border-ring' : ''">
+    <template x-for="value in selected" :key="value">
+      <span class="inline-flex items-center gap-1 h-7 px-2 rounded-md bg-primary/10 text-primary text-xs font-medium">
+        <span x-text="({{ widget.options_json|safe }}.find(o => o.value === value) || {label: value}).label"></span>
+        <button type="button" @click.stop="remove(value)" class="hover:opacity-70" aria-label="Remove">
+          {% icon "x" 12 %}
+        </button>
+      </span>
+    </template>
+    <input type="text" x-model="query" x-ref="q"
+           @keydown.backspace="if(!query) removeLast()"
+           @keydown.escape="open = false"
+           @focus="open = true"
+           class="flex-1 min-w-24 h-7 bg-transparent text-sm focus:outline-none"
+           placeholder="{{ widget.placeholder }}" />
+  </div>
+
+  <div x-show="open" x-cloak @click.outside="open = false"
+       class="relative">
+    <div class="absolute z-30 left-0 right-0 mt-1 max-h-60 overflow-y-auto rounded-md border border-border bg-popover shadow-lg p-1">
+      <template x-for="opt in {{ widget.options_json|safe }}.filter(o =>
+                  (!query.trim() || o.label.toLowerCase().includes(query.toLowerCase()))
+                )" :key="opt.value">
+        <button type="button" @click="add(opt.value)"
+                class="w-full text-left px-3 py-1.5 text-sm rounded hover:bg-accent flex items-center gap-2"
+                :class="selected.includes(opt.value) ? 'opacity-50' : ''"
+                :disabled="selected.includes(opt.value)">
+          <span x-text="opt.label"></span>
+          <span x-show="selected.includes(opt.value)" class="ml-auto">{% icon "check" 14 %}</span>
+        </button>
+      </template>
+    </div>
+  </div>
+</div>
+{% endwith %}

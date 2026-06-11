@@ -1,0 +1,81 @@
+{% extends "marketing/base.html" %}
+{% load apex %}
+{% block title %}Compare · Apex{% endblock %}
+{% block content %}
+<section class="mx-auto max-w-6xl px-6 py-16">
+  <header class="mb-10 text-center">
+    <p class="text-xs uppercase tracking-wider text-primary font-semibold mb-2">How we stack up</p>
+    <h1 class="text-4xl font-bold tracking-tight">Apex vs the alternatives</h1>
+    <p class="mt-3 text-base text-muted-foreground max-w-2xl mx-auto">
+      A side-by-side of what's included out of the box, what you'd build from
+      scratch, and what most premium dashboard kits ship.
+    </p>
+  </header>
+
+  <div class="rounded-lg border border-border bg-card overflow-hidden">
+    <table class="w-full text-sm">
+      <thead class="bg-muted/30 text-xs uppercase tracking-wider text-muted-foreground">
+        <tr>
+          <th class="text-left px-5 py-3 font-semibold w-2/5">Capability</th>
+          <th class="px-5 py-3 font-semibold text-center bg-primary/5">Apex</th>
+          <th class="px-5 py-3 font-semibold text-center">Roll your own</th>
+          <th class="px-5 py-3 font-semibold text-center">Premium templates</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-border">
+        {% for kind, label, apex, roll, premium in rows %}
+          {% if kind == "category" %}
+            <tr class="bg-muted/20">
+              <td colspan="4" class="px-5 py-2 text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
+                {{ label }}
+              </td>
+            </tr>
+          {% else %}
+            <tr>
+              <td class="px-5 py-3 font-medium">{{ label }}</td>
+              <td class="px-5 py-3 text-center bg-primary/5">
+                {% if apex == True %}
+                  <span class="inline-flex h-7 w-7 rounded-full items-center justify-center bg-success/10 text-success">
+                    {% icon "check" 14 %}
+                  </span>
+                {% else %}
+                  <span class="text-xs text-muted-foreground">{{ apex }}</span>
+                {% endif %}
+              </td>
+              <td class="px-5 py-3 text-center text-xs text-muted-foreground">{{ roll }}</td>
+              <td class="px-5 py-3 text-center text-xs text-muted-foreground">{{ premium }}</td>
+            </tr>
+          {% endif %}
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="mt-10 grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+    <div class="rounded-md border border-border bg-card p-4">
+      <p class="font-semibold mb-1">Backend included</p>
+      <p class="text-xs text-muted-foreground">Most premium kits ship static HTML or React-with-mock-data. Apex persists every list, chart, and form to a real database.</p>
+    </div>
+    <div class="rounded-md border border-border bg-card p-4">
+      <p class="font-semibold mb-1">Tests included</p>
+      <p class="text-xs text-muted-foreground">900+ unit tests + 20+ end-to-end tests. Premium kits never ship tests; rolling your own means writing them yourself.</p>
+    </div>
+    <div class="rounded-md border border-border bg-card p-4">
+      <p class="font-semibold mb-1">No JS framework</p>
+      <p class="text-xs text-muted-foreground">Server-rendered with HTMX + Alpine. No build step required for features — just for CSS. Reads like Django, deploys like Django.</p>
+    </div>
+  </div>
+
+  <div class="mt-12 rounded-lg border border-border bg-muted/30 p-8 text-center">
+    <h2 class="text-2xl font-bold tracking-tight mb-2">Skip the months of plumbing</h2>
+    <p class="text-sm text-muted-foreground mb-5 max-w-xl mx-auto">
+      Apex starts at v1 of a real product, not v0 of an empty repo. Wire in
+      your domain models and ship.
+    </p>
+    <div class="flex justify-center gap-2">
+      <a href="{% url 'marketing:pricing' %}" class="h-10 px-5 rounded-md bg-primary text-primary-foreground inline-flex items-center font-medium hover:opacity-90">See pricing</a>
+      <a href="{% url 'marketing:showcase' %}" class="h-10 px-5 rounded-md border border-border inline-flex items-center hover:bg-accent">Tour everything</a>
+    </div>
+  </div>
+</section>
+{% endblock %}

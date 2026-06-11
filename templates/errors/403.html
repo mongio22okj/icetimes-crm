@@ -1,0 +1,14 @@
+{% extends "layouts/auth.html" %}
+{% block title %}403 · Forbidden · Apex{% endblock %}
+{% block auth_content %}
+<div class="text-center">
+  <p class="text-6xl font-bold text-primary mb-2">403</p>
+  <h1 class="text-2xl font-bold tracking-tight mb-2">Access forbidden</h1>
+  <p class="text-sm text-muted-foreground mb-6">
+    You don't have permission to view this page. If you think this is a mistake, contact your administrator.
+  </p>
+  <a href="/" class="block w-full h-10 rounded-md bg-primary text-primary-foreground font-medium text-center leading-10">
+    Back to dashboard
+  </a>
+</div>
+{% endblock %}

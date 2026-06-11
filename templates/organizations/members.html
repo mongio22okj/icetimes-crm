@@ -1,0 +1,129 @@
+{% extends "layouts/dashboard.html" %}
+{% load apex %}
+{% block title %}{{ organization.name }} members · Apex{% endblock %}
+{% block content %}
+<div class="max-w-4xl">
+  <div class="mb-6 flex items-center justify-between">
+    <div>
+      <h1 class="text-2xl font-bold tracking-tight">{{ organization.name }}</h1>
+      <p class="text-sm text-muted-foreground mt-1">Members and pending invitations.</p>
+    </div>
+    <a href="{% url 'organizations:settings' organization.slug %}"
+       class="h-10 px-3 rounded-md border border-border text-sm hover:bg-accent inline-flex items-center gap-1.5">
+      {% icon "settings" 14 %} Settings
+    </a>
+  </div>
+
+  {% if can_manage %}
+    <div class="rounded-lg border border-border bg-card p-5 mb-6">
+      <h2 class="text-base font-semibold mb-1">Invite a teammate</h2>
+      <p class="text-xs text-muted-foreground mb-4">They'll get a single-use link valid for 14 days.</p>
+      <form method="post" action="{% url 'organizations:invite' organization.slug %}"
+            class="flex flex-col sm:flex-row gap-3">
+        {% csrf_token %}
+        <input type="email" name="email" required placeholder="teammate@example.com"
+               class="flex-1 h-10 px-3 rounded-md border border-input bg-background text-sm">
+        <select name="role" class="h-10 px-3 rounded-md border border-input bg-background text-sm sm:w-40">
+          {% for slug, label in role_choices %}
+            {% if slug != 'owner' %}
+              <option value="{{ slug }}" {% if slug == 'member' %}selected{% endif %}>{{ label }}</option>
+            {% endif %}
+          {% endfor %}
+        </select>
+        <button type="submit" class="h-10 px-4 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:opacity-90">
+          Send invite
+        </button>
+      </form>
+    </div>
+  {% endif %}
+
+  <div class="rounded-lg border border-border bg-card overflow-hidden mb-6">
+    <div class="px-5 py-3 border-b border-border flex items-center justify-between">
+      <h2 class="text-sm font-semibold">Members ({{ members|length }})</h2>
+    </div>
+    <ul class="divide-y divide-border">
+      {% for m in members %}
+        <li class="flex items-center gap-4 px-5 py-3">
+          <span class="h-9 w-9 rounded-full bg-primary/10 text-primary inline-flex items-center justify-center text-xs font-bold shrink-0">
+            {{ m.user.username|slice:":2"|upper }}
+          </span>
+          <div class="flex-1 min-w-0">
+            <p class="text-sm font-medium truncate">
+              {{ m.user.get_full_name|default:m.user.username }}
+              {% if m.user == request.user %}
+                <span class="text-[10px] uppercase tracking-wider text-muted-foreground ml-1">(you)</span>
+              {% endif %}
+            </p>
+            <p class="text-xs text-muted-foreground truncate">{{ m.user.email }}</p>
+          </div>
+          {% if can_manage and m.role != 'owner' %}
+            <form method="post" action="{% url 'organizations:change_role' organization.slug m.pk %}"
+                  class="shrink-0">
+              {% csrf_token %}
+              <select name="role" onchange="this.form.submit()"
+                      class="h-8 px-2 rounded-md border border-input bg-background text-xs">
+                {% for slug, label in role_choices %}
+                  {% if slug != 'owner' %}
+                    <option value="{{ slug }}" {% if m.role == slug %}selected{% endif %}>{{ label }}</option>
+                  {% endif %}
+                {% endfor %}
+              </select>
+            </form>
+            <form method="post" action="{% url 'organizations:remove_member' organization.slug m.pk %}"
+                  class="shrink-0"
+                  onsubmit="return confirm('Remove {{ m.user.username }} from {{ organization.name }}?');">
+              {% csrf_token %}
+              <button type="submit"
+                      class="h-8 w-8 inline-flex items-center justify-center rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                      title="Remove">
+                {% icon "trash" 14 %}
+              </button>
+            </form>
+          {% else %}
+            <span class="inline-flex items-center px-2 h-6 rounded text-[10px] font-medium uppercase tracking-wider bg-muted text-muted-foreground shrink-0">
+              {{ m.get_role_display }}
+            </span>
+          {% endif %}
+        </li>
+      {% endfor %}
+    </ul>
+  </div>
+
+  {% if pending_invitations %}
+    <div class="rounded-lg border border-border bg-card overflow-hidden">
+      <div class="px-5 py-3 border-b border-border">
+        <h2 class="text-sm font-semibold">Pending invitations ({{ pending_invitations|length }})</h2>
+      </div>
+      <ul class="divide-y divide-border">
+        {% for inv in pending_invitations %}
+          <li class="flex items-center gap-4 px-5 py-3">
+            <span class="h-9 w-9 rounded-full bg-muted text-muted-foreground inline-flex items-center justify-center shrink-0">
+              {% icon "mail" 16 %}
+            </span>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium truncate">{{ inv.email }}</p>
+              <p class="text-xs text-muted-foreground">
+                Role: {{ inv.get_role_display }} ·
+                {% if inv.is_expired %}
+                  <span class="text-destructive">expired {{ inv.expires_at|timesince }} ago</span>
+                {% else %}
+                  expires in {{ inv.expires_at|timeuntil }}
+                {% endif %}
+              </p>
+            </div>
+            {% if can_manage %}
+              <form method="post" action="{% url 'organizations:cancel_invitation' organization.slug inv.pk %}">
+                {% csrf_token %}
+                <button type="submit"
+                        class="h-8 px-3 rounded-md border border-border text-xs hover:bg-accent">
+                  Cancel
+                </button>
+              </form>
+            {% endif %}
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

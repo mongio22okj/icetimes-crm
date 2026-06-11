@@ -1,0 +1,31 @@
+{% load apex %}
+{% comment %}Branded empty-state component.
+  Caller sets:
+    icon         (templatetag icon name, e.g. "package")
+    headline     (heading text)
+    body         (one-line subtitle)
+    cta_url      (optional, link target)
+    cta_label    (optional, link text)
+    secondary_url, secondary_label (optional second CTA)
+{% endcomment %}
+<div class="rounded-lg border border-border bg-card p-12 text-center">
+  <div class="mx-auto h-14 w-14 rounded-full bg-primary/10 text-primary inline-flex items-center justify-center mb-4 ring-8 ring-primary/5">
+    {% icon icon|default:"package" 24 %}
+  </div>
+  <h3 class="text-base font-semibold mb-1">{{ headline }}</h3>
+  {% if body %}
+    <p class="text-sm text-muted-foreground max-w-sm mx-auto leading-relaxed">{{ body }}</p>
+  {% endif %}
+  {% if cta_url and cta_label %}
+    <div class="mt-6 flex flex-wrap justify-center gap-2">
+      <a href="{{ cta_url }}" class="h-10 px-4 rounded-md bg-primary text-primary-foreground inline-flex items-center font-medium hover:opacity-90 text-sm">
+        {{ cta_label }}
+      </a>
+      {% if secondary_url and secondary_label %}
+        <a href="{{ secondary_url }}" class="h-10 px-4 rounded-md border border-border inline-flex items-center text-sm hover:bg-accent">
+          {{ secondary_label }}
+        </a>
+      {% endif %}
+    </div>
+  {% endif %}
+</div>

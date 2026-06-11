@@ -1,0 +1,19 @@
+{% load apex %}
+{% if crumbs %}
+<nav aria-label="Breadcrumb" class="w-full border-b border-border bg-card/30">
+  <ol class="flex items-center gap-1.5 h-10 px-4 lg:px-6 text-sm text-muted-foreground">
+    {% for title, href in crumbs %}
+      <li class="flex items-center gap-1.5">
+        {% if href %}
+          <a href="{{ href }}" class="hover:text-foreground transition-colors">{{ title }}</a>
+        {% else %}
+          <span class="text-foreground font-medium" aria-current="page">{{ title }}</span>
+        {% endif %}
+        {% if not forloop.last %}
+          <span class="text-muted-foreground/50">{% icon "chevron-right" 14 %}</span>
+        {% endif %}
+      </li>
+    {% endfor %}
+  </ol>
+</nav>
+{% endif %}

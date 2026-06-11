@@ -1,0 +1,136 @@
+{% extends "layouts/docs.html" %}
+{% load docs_tags %}
+
+{% block doc_title %}FAQ{% endblock %}
+{% block doc_subtitle %}Common questions before and after a purchase.{% endblock %}
+
+{% block doc_body %}
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">Why no React / Vue / Svelte?</h2>
+  <p class="text-sm text-muted-foreground leading-relaxed">
+    Apex is built for product teams that ship features over rebuilds.
+    Server-rendered Django + HTMX + Alpine gets you ~95% of what an SPA gives
+    a typical dashboard, with ~10% of the moving parts: no build step beyond
+    Tailwind, no state synchronization between server and client, no bundle
+    size budget. Each page ships ~30KB of JS total for the entire framework set.
+  </p>
+  <p class="text-sm text-muted-foreground leading-relaxed">
+    If you're building a real-time collaborative editor, this isn't your
+    template. For ~99% of dashboards, it is.
+  </p>
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">Does the realtime layer scale beyond a single Daphne process?</h2>
+  <p class="text-sm text-muted-foreground leading-relaxed">
+    Yes — set <code class="rounded bg-muted px-1 text-xs">REDIS_URL</code> in
+    the env and the channel layer transparently upgrades from in-memory to
+    <code class="rounded bg-muted px-1 text-xs">channels-redis</code>.
+    Notification fan-out and presence broadcasts then work across processes.
+    A single Daphne handles thousands of concurrent visitors comfortably;
+    scale horizontally only when you see real load.
+  </p>
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">Can I run this on Cloudflare Workers / Pages / Vercel?</h2>
+  <p class="text-sm text-muted-foreground leading-relaxed">
+    No — Apex is a real Python app with a real Postgres backing store and
+    WebSockets. None of those platforms run Python long-running processes
+    (Workers is V8-only, Pages is static + Functions which is also V8). You
+    need a Linux VPS or PaaS that runs ASGI.
+  </p>
+  <p class="text-sm text-muted-foreground leading-relaxed">
+    Cheapest paths: a $6/mo Hetzner / Digital Ocean droplet, Fly.io, or
+    Render. The <a href="{% url 'docs:deployment' %}" class="text-primary hover:underline">deploy guide</a>
+    covers the VPS recipe end-to-end.
+  </p>
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">What about the Cloudflare CDN?</h2>
+  <p class="text-sm text-muted-foreground leading-relaxed">
+    Cloudflare in <strong>proxy mode</strong> (orange cloud) in front of your
+    origin absolutely works — and is what the live demo uses. Cloudflare gives
+    you the CDN, DDoS shield, and free SSL termination; the origin runs the
+    Django app. The vhost in <code class="rounded bg-muted px-1 text-xs">deploy/nginx/</code>
+    is pre-configured for this — it trusts <code class="rounded bg-muted px-1 text-xs">CF-Connecting-IP</code>
+    for visitor IP and enforces HTTP→HTTPS redirect.
+  </p>
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">Why Daphne and not gunicorn / uvicorn?</h2>
+  <p class="text-sm text-muted-foreground leading-relaxed">
+    Daphne is the reference ASGI server for Django Channels — it's the one
+    path the Channels team tests against. Uvicorn works too (and is faster
+    on pure HTTP), but it has subtle WS lifecycle quirks under heavy load
+    that Daphne handles cleanly.
+  </p>
+  <p class="text-sm text-muted-foreground leading-relaxed">
+    If you don't use Channels at all (no realtime), gunicorn + the WSGI app
+    from <code class="rounded bg-muted px-1 text-xs">apex/wsgi.py</code> is
+    a totally valid swap. You'll lose the
+    <code class="rounded bg-muted px-1 text-xs">/ws/</code> endpoints and
+    the live notification fan-out.
+  </p>
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">How do I disable Channels entirely?</h2>
+  <ol class="space-y-1.5 text-sm text-muted-foreground ml-5 list-decimal">
+    <li>Remove <code class="rounded bg-muted px-1 text-xs">daphne</code> and <code class="rounded bg-muted px-1 text-xs">channels</code> from <code class="rounded bg-muted px-1 text-xs">INSTALLED_APPS</code> in <code class="rounded bg-muted px-1 text-xs">apex/settings/base.py</code>.</li>
+    <li>Remove <code class="rounded bg-muted px-1 text-xs">ASGI_APPLICATION</code> and <code class="rounded bg-muted px-1 text-xs">CHANNEL_LAYERS</code> from base.py.</li>
+    <li>Switch the systemd unit's <code class="rounded bg-muted px-1 text-xs">ExecStart=</code> from <code class="rounded bg-muted px-1 text-xs">daphne</code> to <code class="rounded bg-muted px-1 text-xs">gunicorn apex.wsgi:application --bind unix:/run/...</code></li>
+  </ol>
+  <p class="text-sm text-muted-foreground">
+    You can leave the consumers + dispatcher in place — they just won't have
+    any clients, and the realtime fan-out becomes a no-op (the try/except
+    swallows the missing channel layer).
+  </p>
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">Can I rip out an app I don't need?</h2>
+  <p class="text-sm text-muted-foreground">
+    Yes, each <code class="rounded bg-muted px-1 text-xs">apps/*</code> app is self-contained:
+  </p>
+  <ol class="space-y-1.5 text-sm text-muted-foreground ml-5 list-decimal">
+    <li>Remove from <code class="rounded bg-muted px-1 text-xs">INSTALLED_APPS</code>.</li>
+    <li>Remove the URL include from <code class="rounded bg-muted px-1 text-xs">apex/urls.py</code>.</li>
+    <li>Remove the matching <code class="rounded bg-muted px-1 text-xs">NavItem</code> from <code class="rounded bg-muted px-1 text-xs">apps/core/navigation.py</code>.</li>
+  </ol>
+  <p class="text-sm text-muted-foreground">
+    Apps that other apps depend on:
+    <code class="rounded bg-muted px-1 text-xs">accounts</code> (User model),
+    <code class="rounded bg-muted px-1 text-xs">core</code> (navigation, breadcrumbs, tables),
+    <code class="rounded bg-muted px-1 text-xs">notifications</code> (used by signals
+    in many apps for fan-out). Everything else is removable.
+  </p>
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">Why don't tests use a real Postgres?</h2>
+  <p class="text-sm text-muted-foreground leading-relaxed">
+    The unit suite uses SQLite for speed (~90s for ~1000 tests). The two
+    Postgres-specific things — JSONField queries and ArrayField — aren't used
+    in the codebase, so SQLite parity holds. If you add Postgres-specific
+    features (e.g. <code class="rounded bg-muted px-1 text-xs">pg_trgm</code>
+    search), you'll want to switch the test DB to Postgres in
+    <code class="rounded bg-muted px-1 text-xs">pyproject.toml</code>'s pytest
+    config.
+  </p>
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">What's the license?</h2>
+  <p class="text-sm text-muted-foreground leading-relaxed">
+    The repo ships under the license in
+    <a href="https://github.com/puikinsh/dashboardpack-apex-django/blob/main/LICENSE" class="text-primary hover:underline">LICENSE</a>
+    (MIT). You can use, modify, fork, sell, and rebrand it freely; there's
+    no attribution requirement, though we'd love a star ⭐ on the repo.
+  </p>
+</section>
+
+{% endblock %}

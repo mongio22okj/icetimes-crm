@@ -1,0 +1,112 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: apex-dashboard\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-04-25 10:52+0000\n"
+"Language: es\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: apps/core/navigation.py
+msgid "Overview"
+msgstr "Resumen"
+
+msgid "Commerce"
+msgstr "Comercio"
+
+msgid "Apps"
+msgstr "Aplicaciones"
+
+msgid "Marketing"
+msgstr "Marketing"
+
+msgid "Showcase"
+msgstr "Galería"
+
+msgid "Account"
+msgstr "Cuenta"
+
+msgid "Dashboard"
+msgstr "Tablero"
+
+msgid "Orders"
+msgstr "Pedidos"
+
+msgid "Customers"
+msgstr "Clientes"
+
+msgid "Invoices"
+msgstr "Facturas"
+
+msgid "Mail"
+msgstr "Correo"
+
+msgid "Chat"
+msgstr "Chat"
+
+msgid "Calendar"
+msgstr "Calendario"
+
+msgid "Kanban"
+msgstr "Kanban"
+
+msgid "Files"
+msgstr "Archivos"
+
+msgid "Landings"
+msgstr "Páginas de destino"
+
+msgid "Pricing"
+msgstr "Precios"
+
+msgid "Support"
+msgstr "Soporte"
+
+msgid "Onboarding"
+msgstr "Bienvenida"
+
+msgid "Charts"
+msgstr "Gráficos"
+
+msgid "Products"
+msgstr "Productos"
+
+msgid "Users"
+msgstr "Usuarios"
+
+msgid "Settings"
+msgstr "Ajustes"
+
+#: templates/partials/header.html
+msgid "Search..."
+msgstr "Buscar..."
+
+#: templates/registration/login.html, templates/marketing/base.html
+msgid "Sign in"
+msgstr "Iniciar sesión"
+
+msgid "Welcome back. Enter your credentials."
+msgstr "Bienvenido de nuevo. Introduce tus credenciales."
+
+msgid "Username"
+msgstr "Usuario"
+
+msgid "Password"
+msgstr "Contraseña"
+
+msgid "Invalid username or password."
+msgstr "Usuario o contraseña inválidos."
+
+msgid "Forgot password?"
+msgstr "¿Olvidaste tu contraseña?"
+
+msgid "Create account"
+msgstr "Crear cuenta"
+
+msgid "Language"
+msgstr "Idioma"
+
+msgid "Sign out"
+msgstr "Cerrar sesión"

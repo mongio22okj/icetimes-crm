@@ -1,0 +1,50 @@
+{% load apex %}
+{# Swappable partial: outer element is the HTMX target. Alpine state on the parent wrapper stays intact. #}
+<div id="notification-bell-content"
+     hx-get="{% url 'notifications:bell' %}"
+     hx-trigger="every 30s"
+     hx-swap="outerHTML">
+  <button type="button"
+          @click="open = !open"
+          aria-label="Notifications"
+          class="relative h-9 w-9 rounded-md border border-border inline-flex items-center justify-center hover:bg-accent">
+    {% icon "bell" 18 %}
+    {% if notification_unread_count %}
+      <span data-bell-badge
+            class="absolute -top-1 -right-1 h-5 min-w-5 px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-semibold inline-flex items-center justify-center ring-2 ring-card">
+        {% if notification_unread_count > 99 %}99+{% else %}{{ notification_unread_count }}{% endif %}
+      </span>
+    {% endif %}
+  </button>
+
+  <div x-show="open"
+       x-cloak
+       @click.outside="open = false"
+       x-transition.opacity
+       class="absolute right-0 mt-2 w-80 rounded-md border border-border bg-card shadow-lg z-30">
+    <div class="flex items-center justify-between px-4 py-2 border-b border-border">
+      <p class="text-sm font-semibold">Notifications</p>
+      {% if notification_unread_count %}
+        <form method="post" action="{% url 'notifications:mark_all' %}"
+              hx-post="{% url 'notifications:mark_all' %}"
+              hx-target="#notification-bell-content"
+              hx-swap="outerHTML">
+          {% csrf_token %}
+          <button type="submit" class="text-xs text-muted-foreground hover:text-foreground">Mark all read</button>
+        </form>
+      {% endif %}
+    </div>
+    <div class="max-h-96 overflow-y-auto divide-y divide-border">
+      {% for notification in recent_notifications %}
+        {% include "notifications/_item.html" %}
+      {% empty %}
+        <p class="px-4 py-6 text-center text-sm text-muted-foreground">No notifications yet.</p>
+      {% endfor %}
+    </div>
+    {% if recent_notifications %}
+      <div class="border-t border-border px-4 py-2">
+        <a href="{% url 'notifications:list' %}" class="text-xs text-muted-foreground hover:text-foreground" @click="open = false">View all</a>
+      </div>
+    {% endif %}
+  </div>
+</div>

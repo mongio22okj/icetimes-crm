@@ -1,0 +1,58 @@
+{% load apex %}
+{% comment %}
+The actual <table> element + mobile fallback. Split out from _table.html
+so the bulk-action form wrapper can include just the body without
+re-rendering the toolbar.
+{% endcomment %}
+<div class="rounded-lg border border-border bg-card overflow-hidden">
+  {# Desktop table #}
+  <div class="hidden md:block overflow-x-auto">
+    <table class="w-full text-sm" data-slot="table">
+      <thead class="bg-muted/40 text-xs uppercase tracking-wider text-muted-foreground sticky top-0 z-10">
+        <tr data-slot="table-row">
+          {% if config.bulk_actions %}
+            <th data-slot="table-head" class="px-3 w-10 text-left">
+              <input type="checkbox" aria-label="Select all on page"
+                     :checked="allOnPageSelected()"
+                     :indeterminate="someOnPageSelected()"
+                     @change="toggleAllOnPage($event.target.checked)"
+                     class="h-4 w-4 rounded border-input">
+            </th>
+          {% endif %}
+          {% for col in config.columns %}
+            {% if col.key in visible_columns %}
+              <th data-slot="table-head"
+                  class="px-3 text-left font-semibold whitespace-nowrap
+                         {% if col.align == 'right' %}text-right{% elif col.align == 'center' %}text-center{% endif %}
+                         {% if col.priority >= 2 %}hidden md:table-cell{% endif %}
+                         {% if col.priority >= 3 %}hidden lg:table-cell{% endif %}"
+                  {% if col.width %}style="width: {{ col.width }}"{% endif %}>
+                {% if col.sortable %}
+                  {% sort_link col.key col.label %}
+                {% else %}
+                  {{ col.label }}
+                {% endif %}
+              </th>
+            {% endif %}
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-border">
+        {% for row in object_list %}
+          {% include "core/tables/_row.html" %}
+        {% empty %}
+          <tr><td colspan="{{ visible_columns|length|add:1 }}" class="p-0">{% include "core/tables/_empty.html" %}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {# Mobile cards #}
+  <div class="md:hidden divide-y divide-border">
+    {% for row in object_list %}
+      {% include "core/tables/_row_card.html" %}
+    {% empty %}
+      {% include "core/tables/_empty.html" %}
+    {% endfor %}
+  </div>
+</div>

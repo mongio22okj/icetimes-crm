@@ -1,0 +1,46 @@
+{% load i18n %}
+{% comment %}
+  Bulk action bar. Sits above and/or below the changelist table.
+
+  We keep Django's actions.js behavior intact (action counter, select-all
+  link) by preserving the action-counter element and its data-actions-icnt
+  attribute. CSS in admin.css handles button + select styling.
+{% endcomment %}
+<div class="actions flex flex-wrap items-center gap-2 p-2 mb-2 rounded-md border border-border bg-muted/40">
+  {% block actions %}
+    {% block actions-form %}
+      {% for field in action_form %}
+        {% if field.label %}
+          <label class="flex items-center gap-1.5 text-xs text-muted-foreground">
+            {{ field.label }}
+            <span class="text-foreground">{{ field }}</span>
+          </label>
+        {% else %}{{ field }}{% endif %}
+      {% endfor %}
+    {% endblock %}
+    {% block actions-submit %}
+      <button type="submit" name="index" value="{{ action_index|default:0 }}"
+              class="h-8 inline-flex items-center px-3 rounded-md bg-primary text-primary-foreground text-xs font-medium hover:opacity-90">
+        {% trans "Run" %}
+      </button>
+    {% endblock %}
+    {% block actions-counter %}
+      {% if actions_selection_counter %}
+        <span class="action-counter text-xs text-muted-foreground ml-auto"
+              data-actions-icnt="{{ cl.result_list|length }}">{{ selection_note }}</span>
+        {% if cl.result_count != cl.result_list|length %}
+          <span class="all hidden text-xs text-muted-foreground">{{ selection_note_all }}</span>
+          <span class="question hidden text-xs">
+            <a role="button" href="#" class="text-primary hover:underline"
+               title="{% trans 'Click here to select the objects across all pages' %}">
+              {% blocktrans with cl.result_count as total_count %}Select all {{ total_count }} {{ module_name }}{% endblocktrans %}
+            </a>
+          </span>
+          <span class="clear hidden text-xs">
+            <a role="button" href="#" class="text-muted-foreground hover:text-primary">{% trans 'Clear selection' %}</a>
+          </span>
+        {% endif %}
+      {% endif %}
+    {% endblock %}
+  {% endblock %}
+</div>

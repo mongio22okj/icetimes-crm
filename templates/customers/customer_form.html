@@ -1,0 +1,50 @@
+{% extends "layouts/dashboard.html" %}
+{% load apex %}
+{% block title %}{% if form.instance.pk %}Edit {{ form.instance.name }}{% else %}New customer{% endif %} · Apex{% endblock %}
+{% block content %}
+<div class="mb-6">
+  <h1 class="text-2xl font-bold tracking-tight">{% if form.instance.pk %}Edit customer{% else %}New customer{% endif %}</h1>
+  <p class="text-sm text-muted-foreground mt-1">{% if form.instance.pk %}Update profile information.{% else %}Create a new customer record.{% endif %}</p>
+</div>
+
+<form method="post" enctype="multipart/form-data" class="max-w-3xl space-y-6">
+  {% csrf_token %}
+  {% if form.non_field_errors %}
+    <div class="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">{{ form.non_field_errors }}</div>
+  {% endif %}
+
+  <section class="rounded-lg border border-border bg-card p-6 space-y-4">
+    <h2 class="text-base font-semibold">Profile</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div>{% apex_field form.name %}</div>
+      <div>{% apex_field form.email %}</div>
+      <div>{% apex_field form.phone %}</div>
+      <div>{% apex_field form.company %}</div>
+      <div class="md:col-span-2">{% apex_field form.avatar %}</div>
+    </div>
+  </section>
+
+  <section class="rounded-lg border border-border bg-card p-6 space-y-4">
+    <h2 class="text-base font-semibold">Address</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="md:col-span-2">{% apex_field form.address %}</div>
+      <div>{% apex_field form.city %}</div>
+      <div>{% apex_field form.country %}</div>
+    </div>
+  </section>
+
+  <section class="rounded-lg border border-border bg-card p-6 space-y-4">
+    <h2 class="text-base font-semibold">Status &amp; notes</h2>
+    <div>{% apex_field form.status %}</div>
+    <div>{% apex_field form.notes %}</div>
+  </section>
+
+  <div class="flex justify-end gap-2">
+    <a href="{% if form.instance.pk %}{% url 'customers:detail' form.instance.pk %}{% else %}{% url 'customers:list' %}{% endif %}"
+       class="h-10 px-4 rounded-md border border-border inline-flex items-center text-sm hover:bg-accent">Cancel</a>
+    <button type="submit" class="h-10 px-4 rounded-md bg-primary text-primary-foreground inline-flex items-center font-medium hover:opacity-90">
+      {% if form.instance.pk %}Save changes{% else %}Create customer{% endif %}
+    </button>
+  </div>
+</form>
+{% endblock %}

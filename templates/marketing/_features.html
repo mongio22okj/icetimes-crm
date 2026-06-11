@@ -1,0 +1,21 @@
+{# Caller passes a `features` list of {title, body, icon} dicts. #}
+{% load apex %}
+<section id="features" class="border-b border-border">
+  <div class="mx-auto max-w-6xl px-6 py-20">
+    <div class="text-center max-w-2xl mx-auto">
+      <h2 class="text-3xl font-bold tracking-tight">{{ features_heading|default:"What you get" }}</h2>
+      <p class="mt-2 text-muted-foreground">{{ features_subhead }}</p>
+    </div>
+    <div class="mt-12 grid md:grid-cols-3 gap-6">
+      {% for f in features %}
+        <div class="rounded-lg border border-border bg-card p-6">
+          <div class="h-10 w-10 rounded-md {{ feature_accent_bg|default:'bg-primary/10 text-primary' }} inline-flex items-center justify-center mb-4">
+            {% icon f.icon 18 %}
+          </div>
+          <h3 class="font-semibold">{{ f.title }}</h3>
+          <p class="mt-2 text-sm text-muted-foreground">{{ f.body }}</p>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>

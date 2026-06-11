@@ -1,0 +1,160 @@
+{% load apex %}
+{% comment %}
+Toolbar above the table: search box, active filter chips (Phase 11
+commit 4 wires filters into chips), column visibility menu, export menu
+(commit 6), saved-view switcher (commit 5), bulk-action toolbar (commit 4).
+
+Phase 11 commit 3 ships:
+  - Search input (HTMX-swapped, debounced via hx-trigger="keyup changed delay:300ms")
+  - Per-column filter form (drawer-based)
+  - Column visibility dropdown menu
+{% endcomment %}
+<div class="flex flex-wrap items-center justify-between gap-2">
+
+  {# Left: search input #}
+  <form class="flex-1 min-w-0 max-w-sm" autocomplete="off"
+        hx-get="{% table_url %}"
+        hx-trigger="keyup changed delay:300ms from:#table-{{ config.key }}-q, search from:#table-{{ config.key }}-q"
+        hx-vals='{"_partial":"table"}'
+        hx-target="#table-{{ config.key }}"
+        hx-swap="outerHTML"
+        hx-push-url="true">
+    {# Re-emit current params so a search swap preserves filters/sort. #}
+    {% for k, vs in request.GET.lists %}{% if k != 'q' and k != 'page' and k != '_partial' %}{% for v in vs %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endfor %}{% endif %}{% endfor %}
+    <label class="sr-only" for="table-{{ config.key }}-q">Search</label>
+    <input id="table-{{ config.key }}-q"
+           type="search" name="q"
+           value="{{ request.GET.q|default:'' }}"
+           placeholder="Search…"
+           class="w-full h-9 px-3 rounded-md border border-input bg-background text-sm" />
+  </form>
+
+  {# Right: saved views, column visibility, exports (commit 6) #}
+  <div class="flex items-center gap-2">
+    {% if any_filter_active %}
+      <a href="{{ request.path }}"
+         hx-get="{{ request.path }}?_partial=table"
+         hx-target="#table-{{ config.key }}"
+         hx-swap="outerHTML"
+         hx-push-url="{{ request.path }}"
+         class="h-9 px-3 inline-flex items-center rounded-md border border-border text-xs hover:bg-accent">
+        Clear filters
+      </a>
+    {% endif %}
+
+    {# Saved views menu #}
+    {% if request.user.is_authenticated %}
+      <div x-data="apexPopover()" class="relative inline-block">
+        <button type="button" @click="toggle()" :aria-expanded="open"
+                class="h-9 px-3 rounded-md border border-border text-xs hover:bg-accent inline-flex items-center gap-1.5">
+          Views
+          {% if saved_views %}<span class="inline-flex items-center justify-center min-w-4 h-4 rounded-full bg-primary/15 text-primary text-[9px] font-semibold px-1">{{ saved_views|length }}</span>{% endif %}
+          {% icon "chevron-down" 12 %}
+        </button>
+        <div x-show="open" x-cloak @click.outside="close()" @keydown.escape.window="close()"
+             role="dialog"
+             class="absolute z-30 right-0 top-full mt-1 w-72 rounded-md border border-border bg-popover shadow-lg p-1">
+          {% if saved_views %}
+            <p class="px-3 py-1.5 text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">Apply</p>
+            {% for v in saved_views %}
+              <div class="flex items-center gap-1 px-1">
+                {% table_url as base_url %}
+                <a href="{{ request.path }}?{{ v.params|urlencode_dict }}"
+                   class="flex-1 px-2 py-1.5 text-sm rounded hover:bg-accent inline-flex items-center gap-2">
+                  <span class="flex-1 truncate">{{ v.name }}</span>
+                  {% if v.is_default %}<span class="text-[10px] uppercase tracking-wider text-primary">Default</span>{% endif %}
+                </a>
+                {% if not v.is_default %}
+                  <a href="{{ request.path }}?_view_action=default&_view_id={{ v.pk }}"
+                     class="px-2 py-1 text-[11px] text-muted-foreground hover:text-foreground rounded hover:bg-accent"
+                     title="Set as default">★</a>
+                {% else %}
+                  <a href="{{ request.path }}?_view_action=clear_default"
+                     class="px-2 py-1 text-[11px] text-primary rounded hover:bg-accent"
+                     title="Clear default">★</a>
+                {% endif %}
+                <a href="{{ request.path }}?_view_action=delete&_view_id={{ v.pk }}"
+                   class="px-2 py-1 text-[11px] text-muted-foreground hover:text-destructive rounded hover:bg-accent"
+                   title="Delete view">×</a>
+              </div>
+            {% endfor %}
+            <div class="my-1 h-px bg-border"></div>
+          {% endif %}
+          {% if any_filter_active %}
+            <form method="get" action="{{ request.path }}" class="px-2 py-2 flex items-center gap-1.5">
+              <input type="hidden" name="_view_action" value="save">
+              {% for k, vs in request.GET.lists %}{% if k != '_view_action' and k != '_view_name' and k != '_view_id' and k != '_partial' and k != 'page' %}{% for v in vs %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endfor %}{% endif %}{% endfor %}
+              <input type="text" name="_view_name" placeholder="Name this view…" required maxlength="80"
+                     class="flex-1 h-8 px-2 rounded-md border border-input bg-background text-xs">
+              <button type="submit"
+                      class="h-8 px-3 rounded-md bg-primary text-primary-foreground text-xs font-medium hover:opacity-90">
+                Save
+              </button>
+            </form>
+          {% else %}
+            <p class="px-3 py-2 text-xs text-muted-foreground">Apply filters or sort to enable saving a view.</p>
+          {% endif %}
+        </div>
+      </div>
+    {% endif %}
+
+    {# Export menu #}
+    {% if config.exports %}
+      <div x-data="apexPopover()" class="relative inline-block">
+        <button type="button" @click="toggle()" :aria-expanded="open"
+                class="h-9 px-3 rounded-md border border-border text-xs hover:bg-accent inline-flex items-center gap-1.5">
+          {% icon "download" 14 %}
+          Export
+          {% icon "chevron-down" 12 %}
+        </button>
+        <div x-show="open" x-cloak @click.outside="close()" @keydown.escape.window="close()"
+             role="menu"
+             class="absolute z-30 right-0 top-full mt-1 w-44 rounded-md border border-border bg-popover shadow-lg p-1">
+          {% for fmt in config.exports %}
+            {% table_url _export=fmt as export_url %}
+            <a href="{{ export_url }}" role="menuitem"
+               class="flex items-center justify-between px-3 py-1.5 text-sm rounded hover:bg-accent">
+              <span>{{ fmt|upper }}</span>
+              <span class="text-[10px] text-muted-foreground uppercase">
+                {% if fmt == "pdf" %}≤500 rows{% else %}all rows{% endif %}
+              </span>
+            </a>
+          {% endfor %}
+        </div>
+      </div>
+    {% endif %}
+
+    {# Column visibility menu — persists choice via _save_columns redirect #}
+    <div x-data="apexPopover()" class="relative inline-block">
+      <button type="button" @click="toggle()" :aria-expanded="open"
+              class="h-9 px-3 rounded-md border border-border text-xs hover:bg-accent inline-flex items-center gap-1.5">
+        Columns
+        {% icon "chevron-down" 12 %}
+      </button>
+      <div x-show="open" x-cloak @click.outside="close()" @keydown.escape.window="close()"
+           role="dialog"
+           class="absolute z-30 right-0 top-full mt-1 w-56 rounded-md border border-border bg-popover shadow-lg p-1">
+        <form method="get" action="{{ request.path }}">
+          <input type="hidden" name="_save_columns" value="1">
+          {# Preserve current filters/sort/search in the form too. #}
+          {% for k, vs in request.GET.lists %}{% if k != 'columns' and k != '_save_columns' and k != '_partial' and k != 'page' %}{% for v in vs %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endfor %}{% endif %}{% endfor %}
+          {% for col in config.columns %}
+            <label class="flex items-center gap-2 px-2 py-1.5 text-sm rounded hover:bg-accent cursor-pointer">
+              <input type="checkbox" name="columns" value="{{ col.key }}"
+                     {% if col.key in visible_columns %}checked{% endif %}
+                     {% if col.pinned %}disabled{% endif %}
+                     class="h-4 w-4 rounded border-input">
+              <span class="flex-1">{{ col.label }}</span>
+              {% if col.pinned %}<span class="text-[10px] text-muted-foreground uppercase">Pinned</span>{% endif %}
+            </label>
+          {% endfor %}
+          <div class="px-2 py-2 border-t border-border mt-1">
+            <button type="submit" class="w-full h-8 rounded-md bg-primary text-primary-foreground text-xs font-medium hover:opacity-90">
+              Save view
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>

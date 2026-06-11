@@ -1,0 +1,12 @@
+{
+  "scripts": {
+    "dev": "tailwindcss -i ./static_src/css/input.css -o ./static/css/app.css --watch",
+    "build": "tailwindcss -i ./static_src/css/input.css -o ./static/css/app.css --minify",
+    "vendor:easymde": "cp node_modules/easymde/dist/easymde.min.js static/js/vendor/easymde.js && cp node_modules/easymde/dist/easymde.min.css static/css/vendor/easymde.css"
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.0.0",
+    "easymde": "^2.20.0",
+    "tailwindcss": "^4.0.0"
+  }
+}

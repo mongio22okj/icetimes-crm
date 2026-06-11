@@ -1,0 +1,377 @@
+{% extends "marketing/base.html" %}
+{% load apex %}
+{% block title %}Apex · Production-ready Django dashboard{% endblock %}
+
+{% block content %}
+{# ===== HERO ===== #}
+<section class="relative overflow-hidden">
+  <div class="absolute inset-0 -z-10 bg-linear-to-b from-muted/30 via-background to-background"></div>
+  <div class="absolute inset-x-0 top-0 -z-10 h-120 bg-[radial-gradient(60%_50%_at_50%_0%,oklch(0.7_0.18_240/.15),transparent)]"></div>
+
+  <div class="mx-auto max-w-6xl px-6 pt-20 pb-16 grid lg:grid-cols-12 gap-12 items-center">
+    <div class="lg:col-span-6">
+      <p class="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-primary bg-card border border-border rounded-full px-3 py-1 mb-5">
+        <span class="h-1.5 w-1.5 rounded-full bg-current"></span>
+        Built on Django 5 · Tailwind v4 · No SPA
+      </p>
+      <h1 class="text-4xl lg:text-6xl font-bold tracking-tight leading-[1.05]">
+        Pick your industry.<br/>
+        <span class="text-primary">Ship in days.</span>
+      </h1>
+      <p class="mt-6 text-lg text-muted-foreground max-w-xl leading-relaxed">
+        A production-ready dashboard with everything you'd otherwise spend a quarter building — auth, billing, mail, chat, calendar, kanban, files, charts, and four marketing variants.
+      </p>
+      <div class="mt-8 flex flex-wrap gap-3">
+        <a href="{% url 'login' %}" class="h-12 px-6 rounded-md bg-primary text-primary-foreground inline-flex items-center font-medium hover:opacity-90 shadow-sm">
+          Try the demo
+        </a>
+        <a href="{% url 'marketing:pricing' %}" class="h-12 px-6 rounded-md border border-border bg-card inline-flex items-center font-medium hover:bg-accent">
+          See pricing →
+        </a>
+      </div>
+      <div class="mt-8 flex items-center gap-4 text-xs text-muted-foreground">
+        <div class="flex -space-x-2">
+          <span class="h-7 w-7 rounded-full bg-emerald-500 border-2 border-background"></span>
+          <span class="h-7 w-7 rounded-full bg-blue-500 border-2 border-background"></span>
+          <span class="h-7 w-7 rounded-full bg-amber-500 border-2 border-background"></span>
+          <span class="h-7 w-7 rounded-full bg-rose-500 border-2 border-background"></span>
+        </div>
+        <span>Trusted by 10,000+ teams shipping every day.</span>
+      </div>
+    </div>
+
+    <div class="lg:col-span-6 relative">
+      <div class="relative rounded-2xl border border-border bg-card shadow-2xl overflow-hidden">
+        <div class="flex items-center gap-2 px-4 py-3 border-b border-border bg-muted/40">
+          <span class="h-2.5 w-2.5 rounded-full bg-rose-400"></span>
+          <span class="h-2.5 w-2.5 rounded-full bg-amber-400"></span>
+          <span class="h-2.5 w-2.5 rounded-full bg-emerald-400"></span>
+          <span class="ml-3 text-[10px] text-muted-foreground font-mono">apex.dashboard</span>
+        </div>
+        <div class="p-5 space-y-4">
+          <div class="grid grid-cols-3 gap-3">
+            <div class="rounded-lg border border-border bg-background p-3">
+              <p class="text-[10px] uppercase tracking-wider text-muted-foreground">Revenue</p>
+              <p class="text-lg font-semibold mt-0.5">$45,231</p>
+              <p class="text-[10px] text-emerald-600">+20.1%</p>
+            </div>
+            <div class="rounded-lg border border-border bg-background p-3">
+              <p class="text-[10px] uppercase tracking-wider text-muted-foreground">Users</p>
+              <p class="text-lg font-semibold mt-0.5">12,847</p>
+              <p class="text-[10px] text-emerald-600">+18.0%</p>
+            </div>
+            <div class="rounded-lg border border-border bg-background p-3">
+              <p class="text-[10px] uppercase tracking-wider text-muted-foreground">Active</p>
+              <p class="text-lg font-semibold mt-0.5">+573</p>
+              <p class="text-[10px] text-emerald-600">+201</p>
+            </div>
+          </div>
+          <div class="rounded-lg border border-border bg-background p-4">
+            <div class="flex items-center justify-between mb-3">
+              <p class="text-xs font-medium">Revenue over time</p>
+              <p class="text-[10px] text-muted-foreground">Last 7 days</p>
+            </div>
+            <svg viewBox="0 0 320 120" class="w-full h-28" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="hubcf" x1="0" x2="0" y1="0" y2="1">
+                  <stop offset="0%" stop-color="oklch(0.65 0.2 240)" stop-opacity="0.35"/>
+                  <stop offset="100%" stop-color="oklch(0.65 0.2 240)" stop-opacity="0"/>
+                </linearGradient>
+              </defs>
+              <path d="M0,90 L40,75 L80,82 L120,55 L160,60 L200,40 L240,45 L280,25 L320,30 L320,120 L0,120 Z" fill="url(#hubcf)"/>
+              <path d="M0,90 L40,75 L80,82 L120,55 L160,60 L200,40 L240,45 L280,25 L320,30" fill="none" stroke="oklch(0.65 0.2 240)" stroke-width="2.5"/>
+              <g fill="oklch(0.65 0.2 240)">
+                <circle cx="40" cy="75" r="3"/>
+                <circle cx="120" cy="55" r="3"/>
+                <circle cx="200" cy="40" r="3"/>
+                <circle cx="280" cy="25" r="3"/>
+              </g>
+            </svg>
+          </div>
+          <div class="grid grid-cols-7 gap-2 items-end h-14">
+            <div class="rounded-sm bg-primary/40" style="height: 35%"></div>
+            <div class="rounded-sm bg-primary/55" style="height: 55%"></div>
+            <div class="rounded-sm bg-primary/65" style="height: 45%"></div>
+            <div class="rounded-sm bg-primary/80" style="height: 70%"></div>
+            <div class="rounded-sm bg-primary/70" style="height: 60%"></div>
+            <div class="rounded-sm bg-primary/90" style="height: 90%"></div>
+            <div class="rounded-sm bg-primary" style="height: 100%"></div>
+          </div>
+        </div>
+      </div>
+      <div class="absolute -bottom-6 -right-4 rounded-xl border border-border bg-card shadow-xl p-3 hidden md:block">
+        <div class="flex items-center gap-2">
+          <span class="h-9 w-9 rounded-full bg-emerald-100 text-emerald-700 inline-flex items-center justify-center text-base font-bold dark:bg-emerald-900/40 dark:text-emerald-300">↑</span>
+          <div>
+            <p class="text-[10px] text-muted-foreground">Conversion rate</p>
+            <p class="text-sm font-semibold">+12.4%</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+{# ===== LOGOS ===== #}
+{% include "marketing/_logos.html" %}
+
+{# ===== STATS ===== #}
+{% include "marketing/_stats.html" %}
+
+{# ===== INDUSTRY CARDS ===== #}
+<section id="variants" class="border-b border-border">
+  <div class="mx-auto max-w-6xl px-6 py-20">
+    <div class="text-center max-w-2xl mx-auto mb-12">
+      <p class="text-xs font-semibold uppercase tracking-widest text-primary mb-3">Four verticals · One stack</p>
+      <h2 class="text-3xl lg:text-4xl font-bold tracking-tight">Pick the variant that fits</h2>
+      <p class="mt-3 text-muted-foreground">Each landing is a single template — fork and adapt to your brand.</p>
+    </div>
+
+    <div class="grid md:grid-cols-2 gap-6">
+      <a href="{% url 'marketing:analytics' %}" class="group rounded-2xl border border-border bg-card p-8 hover:border-blue-500 hover:shadow-lg transition-all">
+        <div class="flex items-start justify-between">
+          <p class="text-xs font-semibold uppercase tracking-widest text-blue-600">Analytics</p>
+          <span class="opacity-0 group-hover:opacity-100 transition-opacity text-blue-600">→</span>
+        </div>
+        <h3 class="text-2xl font-bold mt-3 tracking-tight">Decisions backed by data</h3>
+        <p class="text-sm text-muted-foreground mt-2">Dashboards, KPIs, drill-downs — for teams that measure to ship.</p>
+        <div class="mt-6 grid grid-cols-3 gap-1.5">
+          <div class="h-1.5 rounded-full bg-blue-500/20"></div>
+          <div class="h-1.5 rounded-full bg-blue-500/40"></div>
+          <div class="h-1.5 rounded-full bg-blue-500"></div>
+        </div>
+      </a>
+      <a href="{% url 'marketing:saas' %}" class="group rounded-2xl border border-border bg-card p-8 hover:border-indigo-500 hover:shadow-lg transition-all">
+        <div class="flex items-start justify-between">
+          <p class="text-xs font-semibold uppercase tracking-widest text-indigo-600">SaaS</p>
+          <span class="opacity-0 group-hover:opacity-100 transition-opacity text-indigo-600">→</span>
+        </div>
+        <h3 class="text-2xl font-bold mt-3 tracking-tight">Ship features, not infrastructure</h3>
+        <p class="text-sm text-muted-foreground mt-2">Multi-tenant, billing, observability — the boring parts, done.</p>
+        <div class="mt-6 grid grid-cols-3 gap-1.5">
+          <div class="h-1.5 rounded-full bg-indigo-500/20"></div>
+          <div class="h-1.5 rounded-full bg-indigo-500/40"></div>
+          <div class="h-1.5 rounded-full bg-indigo-500"></div>
+        </div>
+      </a>
+      <a href="{% url 'marketing:crm' %}" class="group rounded-2xl border border-border bg-card p-8 hover:border-emerald-500 hover:shadow-lg transition-all">
+        <div class="flex items-start justify-between">
+          <p class="text-xs font-semibold uppercase tracking-widest text-emerald-600">CRM</p>
+          <span class="opacity-0 group-hover:opacity-100 transition-opacity text-emerald-600">→</span>
+        </div>
+        <h3 class="text-2xl font-bold mt-3 tracking-tight">Every conversation, captured</h3>
+        <p class="text-sm text-muted-foreground mt-2">Contacts, pipelines, follow-ups — relationships that compound.</p>
+        <div class="mt-6 grid grid-cols-3 gap-1.5">
+          <div class="h-1.5 rounded-full bg-emerald-500/20"></div>
+          <div class="h-1.5 rounded-full bg-emerald-500/40"></div>
+          <div class="h-1.5 rounded-full bg-emerald-500"></div>
+        </div>
+      </a>
+      <a href="{% url 'marketing:ecommerce' %}" class="group rounded-2xl border border-border bg-card p-8 hover:border-amber-500 hover:shadow-lg transition-all">
+        <div class="flex items-start justify-between">
+          <p class="text-xs font-semibold uppercase tracking-widest text-amber-600">eCommerce</p>
+          <span class="opacity-0 group-hover:opacity-100 transition-opacity text-amber-600">→</span>
+        </div>
+        <h3 class="text-2xl font-bold mt-3 tracking-tight">From cart to fulfillment</h3>
+        <p class="text-sm text-muted-foreground mt-2">Catalog, orders, inventory — the loop that pays the bills.</p>
+        <div class="mt-6 grid grid-cols-3 gap-1.5">
+          <div class="h-1.5 rounded-full bg-amber-500/20"></div>
+          <div class="h-1.5 rounded-full bg-amber-500/40"></div>
+          <div class="h-1.5 rounded-full bg-amber-500"></div>
+        </div>
+      </a>
+    </div>
+  </div>
+</section>
+
+{# ===== PLATFORM FEATURES ===== #}
+<section id="platform" class="border-b border-border">
+  <div class="mx-auto max-w-6xl px-6 py-20">
+    <div class="text-center max-w-2xl mx-auto mb-14">
+      <p class="text-xs font-semibold uppercase tracking-widest text-primary mb-3">In the box</p>
+      <h2 class="text-3xl lg:text-4xl font-bold tracking-tight">Everything a real team needs</h2>
+      <p class="mt-3 text-muted-foreground">Not screenshots — production-grade implementations you can ship today.</p>
+    </div>
+    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {% for f in platform_features %}
+        <div class="rounded-xl border border-border bg-card p-6 hover:border-primary/40 transition-colors">
+          <div class="h-11 w-11 rounded-lg bg-primary/10 text-primary inline-flex items-center justify-center mb-4">
+            {% icon f.icon 20 %}
+          </div>
+          <h3 class="font-semibold text-base">{{ f.title }}</h3>
+          <p class="mt-2 text-sm text-muted-foreground leading-relaxed">{{ f.body }}</p>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+{# ===== ALTERNATING HIGHLIGHT BLOCKS ===== #}
+{% for h in highlights %}
+  <section class="border-b border-border {% if forloop.counter|divisibleby:2 %}bg-muted/20{% endif %}">
+    <div class="mx-auto max-w-6xl px-6 py-20 grid lg:grid-cols-2 gap-12 items-center">
+      <div class="{% if forloop.counter|divisibleby:2 %}lg:order-2{% endif %}">
+        <p class="text-xs font-semibold uppercase tracking-widest text-primary mb-3">{{ h.eyebrow }}</p>
+        <h3 class="text-3xl font-bold tracking-tight">{{ h.title }}</h3>
+        <p class="mt-4 text-muted-foreground leading-relaxed">{{ h.body }}</p>
+        <ul class="mt-6 space-y-2 text-sm">
+          {% for b in h.bullets %}
+            <li class="flex items-start gap-2.5">
+              <span class="shrink-0 mt-0.5 h-5 w-5 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300 inline-flex items-center justify-center">
+                <svg width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 11 8 15 16 6"/></svg>
+              </span>
+              {{ b }}
+            </li>
+          {% endfor %}
+        </ul>
+        <a href="{% url h.url_name %}" class="mt-6 inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline">
+          {{ h.cta }}
+        </a>
+      </div>
+      <div class="{% if forloop.counter|divisibleby:2 %}lg:order-1{% endif %}">
+        <div class="rounded-2xl border border-border bg-card shadow-xl overflow-hidden">
+          <div class="flex items-center gap-1.5 px-4 py-2.5 border-b border-border bg-muted/30">
+            <span class="h-2 w-2 rounded-full bg-rose-400"></span>
+            <span class="h-2 w-2 rounded-full bg-amber-400"></span>
+            <span class="h-2 w-2 rounded-full bg-emerald-400"></span>
+          </div>
+          {% if forloop.counter == 1 %}
+            {# Workflow / orders + invoices preview #}
+            <div class="p-5 space-y-3">
+              <div class="flex items-center justify-between text-xs">
+                <span class="font-mono font-semibold">INV-2026-0042</span>
+                <span class="rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300 px-2 py-0.5 text-[10px] font-semibold">PAID</span>
+              </div>
+              <div class="text-xs text-muted-foreground">Vellum Logistics · Mar 12, 2026</div>
+              <div class="border-t border-border pt-3 space-y-1.5 text-xs">
+                <div class="flex justify-between"><span>3 × Consulting hours</span><span>$450.00</span></div>
+                <div class="flex justify-between"><span>1 × Setup fee</span><span>$200.00</span></div>
+                <div class="flex justify-between text-muted-foreground"><span>Tax (10%)</span><span>$65.00</span></div>
+                <div class="flex justify-between font-semibold border-t border-border pt-2 mt-2"><span>Total</span><span>$715.00</span></div>
+              </div>
+              <div class="flex gap-2 pt-2">
+                <span class="h-8 px-3 rounded-md bg-primary text-primary-foreground inline-flex items-center text-xs font-medium">Send</span>
+                <span class="h-8 px-3 rounded-md border border-border inline-flex items-center text-xs">Download PDF</span>
+                <span class="h-8 px-3 rounded-md border border-border inline-flex items-center text-xs">Share link</span>
+              </div>
+            </div>
+          {% elif forloop.counter == 2 %}
+            {# Communication / mail+chat preview #}
+            <div class="grid grid-cols-3 divide-x divide-border min-h-65">
+              <div class="p-3 space-y-2 bg-muted/10">
+                <p class="text-[10px] uppercase font-semibold tracking-wider text-muted-foreground px-1">Inbox</p>
+                <div class="rounded-md bg-primary/10 px-2 py-1.5 border-l-2 border-primary text-xs">
+                  <p class="font-semibold truncate">Sara Chen</p>
+                  <p class="text-muted-foreground truncate">Q4 review draft</p>
+                </div>
+                <div class="px-2 py-1.5 text-xs">
+                  <p class="font-medium truncate">Marcus Patel</p>
+                  <p class="text-muted-foreground truncate">Re: Vendor list</p>
+                </div>
+                <div class="px-2 py-1.5 text-xs">
+                  <p class="font-medium truncate">Laila Okafor</p>
+                  <p class="text-muted-foreground truncate">Thank you note</p>
+                </div>
+              </div>
+              <div class="col-span-2 p-4 space-y-3 text-xs">
+                <p class="font-semibold">Q4 review draft</p>
+                <div class="rounded-lg border border-border bg-background p-3">
+                  <p class="text-[10px] text-muted-foreground mb-1">Sara Chen → demo</p>
+                  <p>Take a look at the draft and let me know your thoughts before Thursday.</p>
+                </div>
+                <div class="rounded-lg border border-border bg-background p-3 ml-6">
+                  <p class="text-[10px] text-muted-foreground mb-1">demo → Sara Chen</p>
+                  <p>Looks good. I'll add the new metrics tonight.</p>
+                </div>
+                <div class="flex gap-2 pt-1">
+                  <span class="h-7 flex-1 rounded-md border border-border bg-background"></span>
+                  <span class="h-7 px-3 rounded-md bg-primary text-primary-foreground inline-flex items-center text-[11px]">Send</span>
+                </div>
+              </div>
+            </div>
+          {% else %}
+            {# Productivity / kanban preview #}
+            <div class="p-4 grid grid-cols-3 gap-2 min-h-65">
+              <div class="rounded-md bg-muted/30 p-2 space-y-2">
+                <p class="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground px-1">To Do · 3</p>
+                <div class="rounded bg-background border border-border border-l-4 border-l-rose-500 p-2 text-[11px]">Migrate auth</div>
+                <div class="rounded bg-background border border-border border-l-4 border-l-blue-500 p-2 text-[11px]">Polish landings</div>
+                <div class="rounded bg-background border border-border border-l-4 border-l-zinc-400 p-2 text-[11px]">Write changelog</div>
+              </div>
+              <div class="rounded-md bg-muted/30 p-2 space-y-2">
+                <p class="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground px-1">Doing · 2</p>
+                <div class="rounded bg-background border border-border border-l-4 border-l-blue-500 p-2 text-[11px]">i18n sweep</div>
+                <div class="rounded bg-background border border-border border-l-4 border-l-blue-500 p-2 text-[11px]">PDF export</div>
+              </div>
+              <div class="rounded-md bg-muted/30 p-2 space-y-2">
+                <p class="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground px-1">Done · 4</p>
+                <div class="rounded bg-background border border-border border-l-4 border-l-zinc-400 p-2 text-[11px] line-through opacity-60">Customers</div>
+                <div class="rounded bg-background border border-border border-l-4 border-l-zinc-400 p-2 text-[11px] line-through opacity-60">Invoices</div>
+                <div class="rounded bg-background border border-border border-l-4 border-l-zinc-400 p-2 text-[11px] line-through opacity-60">Mail</div>
+              </div>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </section>
+{% endfor %}
+
+{# ===== TESTIMONIALS ===== #}
+{% include "marketing/_testimonials.html" with testimonials=testimonials_list %}
+
+{# ===== PRICING TEASER ===== #}
+<section class="border-b border-border">
+  <div class="mx-auto max-w-4xl px-6 py-20 text-center">
+    <p class="text-xs font-semibold uppercase tracking-widest text-primary mb-3">Pricing</p>
+    <h2 class="text-3xl lg:text-4xl font-bold tracking-tight">Free to try. Paid when you scale.</h2>
+    <p class="mt-3 text-muted-foreground max-w-xl mx-auto">Start on the Starter plan with no credit card. Upgrade to Pro for teams, Enterprise for SSO and a named support engineer.</p>
+    <div class="mt-10 grid sm:grid-cols-3 gap-3 text-left">
+      <div class="rounded-xl border border-border bg-card p-5">
+        <p class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Starter</p>
+        <p class="text-2xl font-bold mt-1">$0<span class="text-sm font-normal text-muted-foreground">/mo</span></p>
+        <p class="text-xs text-muted-foreground mt-2">For solo builders.</p>
+      </div>
+      <div class="rounded-xl border border-primary bg-card p-5 ring-1 ring-primary/10 shadow-sm">
+        <p class="text-xs font-semibold uppercase tracking-wider text-primary">Pro · Popular</p>
+        <p class="text-2xl font-bold mt-1">$29<span class="text-sm font-normal text-muted-foreground">/mo</span></p>
+        <p class="text-xs text-muted-foreground mt-2">For small teams.</p>
+      </div>
+      <div class="rounded-xl border border-border bg-card p-5">
+        <p class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Enterprise</p>
+        <p class="text-2xl font-bold mt-1">$99<span class="text-sm font-normal text-muted-foreground">/mo</span></p>
+        <p class="text-xs text-muted-foreground mt-2">SSO + dedicated support.</p>
+      </div>
+    </div>
+    <a href="{% url 'marketing:pricing' %}" class="mt-8 inline-flex h-11 px-6 rounded-md bg-primary text-primary-foreground items-center font-medium hover:opacity-90 shadow-sm">
+      See full pricing →
+    </a>
+  </div>
+</section>
+
+{# ===== FAQ ===== #}
+<section class="border-b border-border">
+  <div class="mx-auto max-w-3xl px-6 py-20">
+    <div class="text-center max-w-2xl mx-auto mb-10">
+      <p class="text-xs font-semibold uppercase tracking-widest text-primary mb-3">FAQ</p>
+      <h2 class="text-3xl font-bold tracking-tight">Common questions</h2>
+      <p class="mt-2 text-muted-foreground">Need something else? <a href="{% url 'marketing:support' %}" class="text-primary underline underline-offset-2 hover:no-underline">Ask the team.</a></p>
+    </div>
+    <div class="space-y-3">
+      {% for item in faq %}
+        <div x-data="{ open: false }" class="rounded-xl border border-border bg-card hover:border-primary/30 transition-colors">
+          <button type="button" @click="open = !open"
+                  class="w-full flex items-center justify-between p-5 text-left">
+            <span class="font-medium pr-4">{{ item.q }}</span>
+            <span :class="open ? 'rotate-180' : ''" class="text-muted-foreground transition-transform shrink-0">{% icon "chevron-down" 16 %}</span>
+          </button>
+          <div x-show="open" x-cloak x-collapse class="px-5 pb-5 text-sm text-muted-foreground leading-relaxed">{{ item.a }}</div>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+{# ===== FINAL CTA ===== #}
+{% include "marketing/_cta.html" %}
+{% endblock %}

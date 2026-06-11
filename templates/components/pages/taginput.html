@@ -1,0 +1,63 @@
+{% extends "components/_detail_layout.html" %}
+{% load apex %}
+
+{% block component_body %}
+<div class="space-y-8">
+
+  <div class="rounded-lg border border-border bg-card p-6">
+    <h2 class="text-sm font-semibold mb-1">Free-form tags</h2>
+    <p class="text-xs text-muted-foreground mb-4">Type and press Enter or comma to add a tag. Backspace removes the last tag. Paste a comma-separated string to bulk add.</p>
+    <div x-data='apexTagInput({initial: ["urgent", "follow-up"]})' class="min-h-10 px-2 py-1.5 rounded-md border border-input bg-background flex flex-wrap gap-1.5 items-center">
+      <template x-for="(tag, i) in tags" :key="i">
+        <span class="inline-flex items-center gap-1 h-7 px-2 rounded-md bg-primary/10 text-primary text-xs font-medium">
+          <span x-text="tag"></span>
+          <button type="button" @click="removeAt(i)" class="hover:opacity-70" aria-label="Remove">
+            {% icon "x" 12 %}
+          </button>
+        </span>
+      </template>
+      <input type="text" x-model="draft"
+             @keydown.enter.prevent="commit()"
+             @keydown.,.prevent="commit()"
+             @keydown.backspace="if(!draft) removeLast()"
+             @paste.prevent="onPaste($event)"
+             @blur="commit()"
+             class="flex-1 min-w-24 h-7 bg-transparent text-sm focus:outline-none"
+             placeholder="Add a tag…" />
+    </div>
+  </div>
+
+  <div class="rounded-lg border border-border bg-card p-6">
+    <h2 class="text-sm font-semibold mb-1">With suggestions</h2>
+    <p class="text-xs text-muted-foreground mb-4">Click a suggestion to add it; same Enter / comma keyboard pattern still works.</p>
+    <div x-data='apexTagInput({initial: ["billing"], suggestions: ["billing","churn","onboarding","pricing","retention","support"]})'>
+      <div class="min-h-10 px-2 py-1.5 rounded-md border border-input bg-background flex flex-wrap gap-1.5 items-center">
+        <template x-for="(tag, i) in tags" :key="i">
+          <span class="inline-flex items-center gap-1 h-7 px-2 rounded-md bg-primary/10 text-primary text-xs font-medium">
+            <span x-text="tag"></span>
+            <button type="button" @click="removeAt(i)" class="hover:opacity-70" aria-label="Remove">
+              {% icon "x" 12 %}
+            </button>
+          </span>
+        </template>
+        <input type="text" x-model="draft"
+               @keydown.enter.prevent="commit()"
+               @keydown.,.prevent="commit()"
+               @keydown.backspace="if(!draft) removeLast()"
+               class="flex-1 min-w-24 h-7 bg-transparent text-sm focus:outline-none"
+               placeholder="Add a tag…" />
+      </div>
+      <div class="mt-2 flex flex-wrap gap-1.5">
+        <template x-for="s in suggestions.filter(s => !tags.includes(s))" :key="s">
+          <button type="button" @click="add(s)"
+                  class="h-6 px-2 rounded-md border border-border text-xs text-muted-foreground hover:bg-accent">
+            <span x-text="s"></span>
+            <span class="ml-1 text-primary">+</span>
+          </button>
+        </template>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

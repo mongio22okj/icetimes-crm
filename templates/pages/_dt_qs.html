@@ -1,0 +1,1 @@
+{% spaceless %}{% if q %}q={{ q }}&{% endif %}{% if plan_filter %}plan={{ plan_filter }}&{% endif %}{% if status_filter %}status={{ status_filter }}&{% endif %}{% if per_page %}per_page={{ per_page }}&{% endif %}sort={{ sort }}&dir={{ dir|default:direction }}&page={{ page|default:1 }}{% endspaceless %}

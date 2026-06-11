@@ -1,0 +1,15 @@
+{% extends "marketing/base.html" %}
+{% block title %}Analytics · Apex{% endblock %}
+
+{% block content %}
+{% include "marketing/_hero.html" with hero_eyebrow="Analytics" hero_headline="Decisions backed by data" hero_subhead="Real-time dashboards, KPI tracking, and drill-down reports — without building visualization infrastructure from scratch." hero_cta_label="Start free trial" hero_cta_url="#features" hero_accent="text-blue-600" %}
+
+{% include "marketing/_logos.html" %}
+{% include "marketing/_stats.html" %}
+
+{% include "marketing/_features.html" with features=features_list features_heading="Insights at a glance" features_subhead="From raw events to executive summaries — all in one place." feature_accent_bg="bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300" %}
+
+{% include "marketing/_testimonials.html" with testimonials=testimonials_list %}
+
+{% include "marketing/_cta.html" %}
+{% endblock %}

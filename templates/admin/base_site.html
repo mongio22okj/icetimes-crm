@@ -1,0 +1,12 @@
+{% extends "admin/base.html" %}
+{% load i18n %}
+
+{% block title %}{% if subtitle %}{{ subtitle }} | {% endif %}{{ title }} | {{ site_title|default:_('Apex admin') }}{% endblock %}
+
+{% comment %}
+  Apex shell already renders the brand/wordmark in the sidebar, so {% block branding %}
+  intentionally stays empty. Django's nav-global is empty by default — we
+  keep it that way; the Apex sidebar is the global nav.
+{% endcomment %}
+{% block branding %}{% endblock %}
+{% block nav-global %}{% endblock %}

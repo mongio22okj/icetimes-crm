@@ -1,0 +1,108 @@
+{% extends "layouts/docs.html" %}
+{% load docs_tags %}
+
+{% block doc_title %}API (Django Ninja){% endblock %}
+{% block doc_subtitle %}Auto-generated OpenAPI at /api/v1/docs. Cursor pagination, bearer-token auth (SHA-256 hash), HMAC-SHA256 webhook signing.{% endblock %}
+
+{% block doc_body %}
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">Browse the API</h2>
+  <p class="text-sm text-muted-foreground">
+    Apex uses <a href="https://django-ninja.dev/" class="text-primary hover:underline">Django Ninja</a>
+    for its REST API. Open the running app at:
+  </p>
+  <ul class="space-y-1.5 text-sm text-muted-foreground ml-5 list-disc">
+    <li><code class="rounded bg-muted px-1 text-xs">/api/v1/docs</code> — Swagger UI for live exploration</li>
+    <li><code class="rounded bg-muted px-1 text-xs">/api/v1/openapi.json</code> — raw OpenAPI 3 spec</li>
+  </ul>
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">Authentication</h2>
+  <p class="text-sm text-muted-foreground">
+    Bearer tokens issued via the Settings → Integrations → API tokens page.
+    Stored as SHA-256 hashes (Stripe pattern) — the plaintext token is shown
+    <strong>once</strong> on creation and never again. Pass on every request:
+  </p>
+  {% code lang="bash" %}curl https://apex-django.example.com/api/v1/customers/ \
+  -H "Authorization: Bearer apex_live_AbC1234..."{% endcode %}
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">Cursor pagination</h2>
+  <p class="text-sm text-muted-foreground">
+    All list endpoints use opaque cursor pagination — stable across inserts,
+    no off-by-one risk. Response shape:
+  </p>
+  {% code lang="json" %}{
+  "items": [...],
+  "next_cursor": "eyJpZCI6MTIzfQ=="   // null when no more pages
+}{% endcode %}
+  <p class="text-sm text-muted-foreground">
+    Pass <code class="rounded bg-muted px-1 text-xs">?cursor=...</code> on the
+    next request to fetch the next page.
+  </p>
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">Adding an endpoint</h2>
+  <p class="text-sm text-muted-foreground">
+    Routers live in <code class="rounded bg-muted px-1 text-xs">apps/api/api.py</code>.
+    Pattern:
+  </p>
+  {% code lang="python" %}from ninja import Router, Schema
+from apps.customers.models import Customer
+
+router = Router(tags=["customers"])
+
+class CustomerOut(Schema):
+    id: int
+    name: str
+    email: str
+
+@router.get("/customers/{id}", response=CustomerOut)
+def get_customer(request, id: int):
+    return Customer.objects.get(pk=id){% endcode %}
+  <p class="text-sm text-muted-foreground">
+    Register the router with the main API instance — Swagger UI picks it up
+    automatically.
+  </p>
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">Webhooks (HMAC-SHA256)</h2>
+  <p class="text-sm text-muted-foreground">
+    Apex can both send and receive HMAC-signed webhooks. Outgoing payloads
+    use canonical JSON (sorted keys, no whitespace) so consumers can verify
+    the signature deterministically:
+  </p>
+  {% code lang="python" %}# How consumers verify Apex's webhooks:
+import hmac, hashlib
+
+def verify(payload: bytes, signature: str, secret: str) -> bool:
+    expected = hmac.new(
+        secret.encode(),
+        payload,
+        hashlib.sha256,
+    ).hexdigest()
+    return hmac.compare_digest(expected, signature){% endcode %}
+  <p class="text-sm text-muted-foreground">
+    Webhook configurations + delivery log live under
+    Settings → Integrations → Webhooks. Failed deliveries are retried with
+    exponential backoff and surfaced in the delivery log for inspection.
+  </p>
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">Rate limits</h2>
+  <p class="text-sm text-muted-foreground">
+    No global rate limit ships out of the box, but the
+    <code class="rounded bg-muted px-1 text-xs">LoginThrottleMiddleware</code>
+    pattern in <code class="rounded bg-muted px-1 text-xs">apps/accounts/throttle.py</code>
+    is easy to copy-adapt for API endpoints — see it for the cache-backed
+    sliding-window approach.
+  </p>
+</section>
+
+{% endblock %}

@@ -1,0 +1,22 @@
+{% load apex %}
+{# Single message row in the middle pane. Differs slightly per folder. #}
+{% if folder == "drafts" %}
+  {% url 'mail:draft_edit' message.pk as link_url %}
+{% else %}
+  {% url 'mail:thread' message.pk as link_url %}
+{% endif %}
+<a href="{{ link_url }}"
+   class="block px-4 py-3 border-b border-border hover:bg-accent/30 {% if folder == 'inbox' and not message.is_read %}border-l-4 border-l-primary{% else %}border-l-4 border-l-transparent{% endif %}">
+  <div class="flex items-center justify-between gap-2">
+    <p class="text-sm {% if folder == 'inbox' and not message.is_read %}font-semibold{% endif %} truncate">
+      {% if folder in 'sent,drafts' %}
+        {{ message.recipient.get_full_name|default:message.recipient.username }}
+      {% else %}
+        {{ message.sender.get_full_name|default:message.sender.username }}
+      {% endif %}
+    </p>
+    <span class="text-[11px] text-muted-foreground shrink-0">{{ message.sent_at|default:message.created_at|date:"M j" }}</span>
+  </div>
+  <p class="text-xs {% if folder == 'inbox' and not message.is_read %}text-foreground{% else %}text-muted-foreground{% endif %} truncate">{{ message.subject }}</p>
+  <p class="text-xs text-muted-foreground truncate mt-1">{{ message.body|truncatechars:80 }}</p>
+</a>

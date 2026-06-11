@@ -1,0 +1,90 @@
+{% extends "layouts/dashboard.html" %}
+{% load apex %}
+{% block title %}Notifications · Apex{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+  <div>
+    <h1 class="text-2xl font-bold tracking-tight">Notifications</h1>
+    <p class="text-sm text-muted-foreground mt-1">Recent activity across invoices, mail, chat, and the rest.</p>
+  </div>
+  <div class="flex items-center gap-2">
+    <a href="{% url 'notifications:preferences' %}"
+       class="h-10 px-3 rounded-md border border-border inline-flex items-center text-sm hover:bg-accent gap-1.5">
+      {% icon "settings" 14 %} Preferences
+    </a>
+    {% if notification_unread_count %}
+      <form method="post" action="{% url 'notifications:mark_all' %}">
+        {% csrf_token %}
+        <button type="submit" class="h-10 px-3 rounded-md border border-border inline-flex items-center text-sm hover:bg-accent">Mark all read</button>
+      </form>
+    {% endif %}
+  </div>
+</div>
+
+{# ── Filter pills ───────────────────────────────────────────────── #}
+<div class="flex flex-wrap items-center gap-2 mb-4">
+  <a href="?{% if scope == 'archived' %}scope=archived{% endif %}"
+     class="h-8 px-3 rounded-full text-xs font-medium inline-flex items-center gap-1.5 border
+            {% if not category %}bg-primary text-primary-foreground border-primary{% else %}border-border hover:bg-accent{% endif %}">
+    All <span class="opacity-70 tabular-nums">{{ counts.all }}</span>
+  </a>
+  {% for key, label in category_choices %}
+    <a href="?category={{ key }}{% if scope == 'archived' %}&scope=archived{% endif %}"
+       class="h-8 px-3 rounded-full text-xs font-medium inline-flex items-center gap-1.5 border
+              {% if category == key %}bg-primary text-primary-foreground border-primary{% else %}border-border hover:bg-accent{% endif %}">
+      {{ label }}
+      <span class="opacity-70 tabular-nums">{{ counts_by_category|dotted_attr:key }}</span>
+    </a>
+  {% endfor %}
+
+  <span aria-hidden="true" class="mx-2 h-5 w-px bg-border"></span>
+
+  <a href="?{% if category %}category={{ category }}{% endif %}"
+     class="h-8 px-3 rounded-full text-xs font-medium inline-flex items-center border
+            {% if scope != 'archived' %}bg-primary text-primary-foreground border-primary{% else %}border-border hover:bg-accent{% endif %}">
+    Active
+  </a>
+  <a href="?scope=archived{% if category %}&category={{ category }}{% endif %}"
+     class="h-8 px-3 rounded-full text-xs font-medium inline-flex items-center border
+            {% if scope == 'archived' %}bg-primary text-primary-foreground border-primary{% else %}border-border hover:bg-accent{% endif %}">
+    Archived
+  </a>
+</div>
+
+<section class="rounded-lg border border-border bg-card">
+  {% if notifications %}
+    <div class="divide-y divide-border">
+      {% for bucket, items in grouped %}
+        <div class="px-4 py-2 bg-muted/30 text-xs uppercase tracking-wider text-muted-foreground font-semibold">
+          {{ bucket }}
+        </div>
+        {% for notification in items %}
+          {% include "notifications/_item.html" %}
+        {% endfor %}
+      {% endfor %}
+    </div>
+
+    {% if is_paginated %}
+      <div class="flex items-center justify-between px-4 py-3 border-t border-border text-sm">
+        <span class="text-muted-foreground">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+        <div class="flex gap-2">
+          {% if page_obj.has_previous %}
+            <a href="?page={{ page_obj.previous_page_number }}{% if category %}&category={{ category }}{% endif %}{% if scope == 'archived' %}&scope=archived{% endif %}" class="h-9 px-3 rounded-md border border-border inline-flex items-center hover:bg-accent">Previous</a>
+          {% endif %}
+          {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}{% if category %}&category={{ category }}{% endif %}{% if scope == 'archived' %}&scope=archived{% endif %}" class="h-9 px-3 rounded-md border border-border inline-flex items-center hover:bg-accent">Next</a>
+          {% endif %}
+        </div>
+      </div>
+    {% endif %}
+  {% else %}
+    {% if scope == 'archived' %}
+      {% include "components/_empty_state.html" with icon="inbox" headline="No archived notifications" body="Archived notifications appear here." %}
+    {% elif category %}
+      {% include "components/_empty_state.html" with icon="bell" headline="No matches" body="No notifications match this filter." cta_url=request.path cta_label="Clear filter" %}
+    {% else %}
+      {% include "components/_empty_state.html" with icon="bell" headline="You're all caught up" body="New activity from invoices, orders, mail, and chat will show up here." %}
+    {% endif %}
+  {% endif %}
+</section>
+{% endblock %}

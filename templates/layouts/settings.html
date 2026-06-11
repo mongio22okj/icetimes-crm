@@ -1,0 +1,61 @@
+{% extends "layouts/dashboard.html" %}
+{% load apex %}
+{% block title %}Settings · Apex{% endblock %}
+{% block content %}
+<div class="max-w-6xl">
+  <h1 class="text-2xl font-bold tracking-tight mb-1">Settings</h1>
+  <p class="text-sm text-muted-foreground mb-6">Manage your profile, security, integrations, and account.</p>
+
+  <div class="flex flex-col lg:flex-row gap-8">
+    <aside class="w-full lg:w-56 shrink-0">
+      <nav aria-label="Settings" class="space-y-4">
+        <div>
+          <p class="px-3 mb-1 text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">Account</p>
+          <div class="flex flex-col gap-0.5">
+            <a href="{% url 'settings:profile' %}"
+               class="px-3 py-1.5 rounded-md text-sm hover:bg-accent {% if active_tab == 'profile' %}bg-accent text-accent-foreground font-medium{% endif %}">Profile</a>
+            <a href="{% url 'settings:appearance' %}"
+               class="px-3 py-1.5 rounded-md text-sm hover:bg-accent {% if active_tab == 'appearance' %}bg-accent text-accent-foreground font-medium{% endif %}">Appearance</a>
+          </div>
+        </div>
+        <div>
+          <p class="px-3 mb-1 text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">Security</p>
+          <div class="flex flex-col gap-0.5">
+            <a href="{% url 'settings:password' %}"
+               class="px-3 py-1.5 rounded-md text-sm hover:bg-accent {% if active_tab == 'password' %}bg-accent text-accent-foreground font-medium{% endif %}">Password</a>
+            <a href="{% url 'settings:two_factor' %}"
+               class="px-3 py-1.5 rounded-md text-sm hover:bg-accent {% if active_tab == 'two_factor' %}bg-accent text-accent-foreground font-medium{% endif %}">Two-factor</a>
+            <a href="{% url 'settings:sessions' %}"
+               class="px-3 py-1.5 rounded-md text-sm hover:bg-accent {% if active_tab == 'sessions' %}bg-accent text-accent-foreground font-medium{% endif %}">Active sessions</a>
+            <a href="{% url 'settings:audit_log' %}"
+               class="px-3 py-1.5 rounded-md text-sm hover:bg-accent {% if active_tab == 'audit_log' %}bg-accent text-accent-foreground font-medium{% endif %}">Audit log</a>
+          </div>
+        </div>
+        <div>
+          <p class="px-3 mb-1 text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">Integrations</p>
+          <div class="flex flex-col gap-0.5">
+            <a href="{% url 'settings:api_tokens' %}"
+               class="px-3 py-1.5 rounded-md text-sm hover:bg-accent {% if active_tab == 'api_tokens' %}bg-accent text-accent-foreground font-medium{% endif %}">API tokens</a>
+            <a href="{% url 'settings:webhooks' %}"
+               class="px-3 py-1.5 rounded-md text-sm hover:bg-accent {% if active_tab == 'webhooks' %}bg-accent text-accent-foreground font-medium{% endif %}">Webhooks</a>
+            <a href="{% url 'notifications:preferences' %}"
+               class="px-3 py-1.5 rounded-md text-sm hover:bg-accent">Notifications</a>
+          </div>
+        </div>
+        <div>
+          <p class="px-3 mb-1 text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">Privacy</p>
+          <div class="flex flex-col gap-0.5">
+            <a href="{% url 'settings:data_export' %}"
+               class="px-3 py-1.5 rounded-md text-sm hover:bg-accent {% if active_tab == 'data_export' %}bg-accent text-accent-foreground font-medium{% endif %}">Export your data</a>
+            <a href="{% url 'settings:account_deletion' %}"
+               class="px-3 py-1.5 rounded-md text-sm hover:bg-accent text-destructive {% if active_tab == 'account_deletion' %}bg-destructive/10 font-medium{% endif %}">Delete account</a>
+          </div>
+        </div>
+      </nav>
+    </aside>
+    <div class="flex-1 min-w-0">
+      {% block settings_content %}{% endblock %}
+    </div>
+  </div>
+</div>
+{% endblock %}

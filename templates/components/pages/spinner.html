@@ -1,0 +1,74 @@
+{% extends "components/_detail_layout.html" %}
+{% load apex %}
+
+{% block component_body %}
+<div class="space-y-8">
+
+  <div class="rounded-lg border border-border bg-card p-6">
+    <h2 class="text-sm font-semibold mb-1">Sizes</h2>
+    <p class="text-xs text-muted-foreground mb-6">Pure CSS spinner. No icon dependency.</p>
+    <div class="flex items-end gap-8">
+      <div class="text-center">
+        <span class="apex-spinner block mx-auto" style="width:1rem;height:1rem;border-width:2px"></span>
+        <p class="text-[11px] text-muted-foreground mt-2">sm · 16px</p>
+      </div>
+      <div class="text-center">
+        <span class="apex-spinner block mx-auto" style="width:1.5rem;height:1.5rem;border-width:2px"></span>
+        <p class="text-[11px] text-muted-foreground mt-2">md · 24px</p>
+      </div>
+      <div class="text-center">
+        <span class="apex-spinner block mx-auto" style="width:2.25rem;height:2.25rem;border-width:3px"></span>
+        <p class="text-[11px] text-muted-foreground mt-2">lg · 36px</p>
+      </div>
+      <div class="text-center">
+        <span class="apex-spinner block mx-auto" style="width:3rem;height:3rem;border-width:4px"></span>
+        <p class="text-[11px] text-muted-foreground mt-2">xl · 48px</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="rounded-lg border border-border bg-card p-6">
+    <h2 class="text-sm font-semibold mb-1">Inside a button</h2>
+    <p class="text-xs text-muted-foreground mb-4">Disabled state with spinner — for async actions like form submit.</p>
+    <div class="flex flex-wrap gap-2">
+      <button type="button" disabled
+              class="h-9 px-3 rounded-md bg-primary text-primary-foreground text-sm font-medium opacity-80 cursor-wait inline-flex items-center gap-2">
+        <span class="apex-spinner" style="width:0.875rem;height:0.875rem;border-width:2px;border-color:currentColor;border-right-color:transparent"></span>
+        Saving…
+      </button>
+      <button type="button" disabled
+              class="h-9 px-3 rounded-md border border-border text-sm cursor-wait inline-flex items-center gap-2">
+        <span class="apex-spinner" style="width:0.875rem;height:0.875rem;border-width:2px"></span>
+        Loading
+      </button>
+    </div>
+  </div>
+
+  <div class="rounded-lg border border-border bg-card p-6">
+    <h2 class="text-sm font-semibold mb-1">With label</h2>
+    <p class="text-xs text-muted-foreground mb-4">Stack with descriptive text — used as full-page loading state.</p>
+    <div class="flex flex-col items-center gap-3 py-6">
+      <span class="apex-spinner" style="width:2.25rem;height:2.25rem;border-width:3px"></span>
+      <p class="text-sm text-muted-foreground" role="status" aria-live="polite">Loading customers…</p>
+    </div>
+  </div>
+
+</div>
+
+<style>
+  .apex-spinner {
+    display: inline-block;
+    border-style: solid;
+    border-color: var(--muted);
+    border-right-color: var(--primary);
+    border-radius: 9999px;
+    animation: apex-spin 0.7s linear infinite;
+  }
+  @keyframes apex-spin {
+    to { transform: rotate(360deg); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .apex-spinner { animation-duration: 2s; }
+  }
+</style>
+{% endblock %}

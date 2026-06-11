@@ -1,0 +1,39 @@
+{% load apex %}
+{% comment %}
+Reusable Popover primitive — anchored container for menus/info/forms.
+Triggered by clicking the rendered trigger button. Click-outside closes.
+
+Args:
+  id            required — unique DOM id (used for ARIA)
+  trigger_text  text shown for the trigger button (default "Open")
+  trigger_class trigger button CSS classes
+  align         left | right    (default left — popover starts at trigger's left edge)
+  width_class   tailwind width   (default w-64)
+
+Body content cannot be passed via {% include %} — copy the markup inline
+when you need rich body content. The include is the simplest form.
+{% endcomment %}
+{% with align=align|default:"left" %}
+<div x-data="apexPopover()" class="relative inline-block">
+  <button type="button"
+          @click="toggle()"
+          :aria-expanded="open"
+          aria-haspopup="dialog"
+          aria-controls="{{ id }}"
+          class="{{ trigger_class|default:'h-9 px-3 rounded-md border border-border text-sm hover:bg-accent inline-flex items-center gap-1.5' }}">
+    {{ trigger_text|default:"Open" }}
+    {% icon "chevron-down" 14 %}
+  </button>
+  <div x-show="open" x-cloak
+       @click.outside="close()"
+       @keydown.escape.window="close()"
+       x-transition:enter="transition ease-out duration-150"
+       x-transition:enter-start="opacity-0 translate-y-1"
+       x-transition:enter-end="opacity-100 translate-y-0"
+       id="{{ id }}" role="dialog"
+       class="absolute top-full mt-1 z-40 {{ width_class|default:'w-64' }} rounded-md border border-border bg-popover text-popover-foreground shadow-lg p-2
+              {% if align == 'right' %}right-0{% else %}left-0{% endif %}">
+    {{ body|safe|default:"" }}
+  </div>
+</div>
+{% endwith %}

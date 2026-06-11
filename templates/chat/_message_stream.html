@@ -1,0 +1,12 @@
+{# HTMX-targetable partial: full message stream for the active conversation. #}
+<div id="chat-stream"
+     hx-get="{% url 'chat:stream' partner.pk %}"
+     hx-trigger="every 3s"
+     hx-swap="outerHTML"
+     class="flex-1 overflow-y-auto px-6 py-4 space-y-3">
+  {% for message in messages %}
+    {% include "chat/_message_bubble.html" %}
+  {% empty %}
+    <p class="text-center text-sm text-muted-foreground py-12">No messages yet — say hello.</p>
+  {% endfor %}
+</div>

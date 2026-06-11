@@ -1,0 +1,15 @@
+{% extends "marketing/base.html" %}
+{% block title %}eCommerce · Apex{% endblock %}
+
+{% block content %}
+{% include "marketing/_hero.html" with hero_eyebrow="eCommerce" hero_headline="From cart to fulfillment" hero_subhead="A complete commerce stack — products, orders, invoices, customers — wired together so the demo runs end-to-end out of the box." hero_cta_label="Open the storefront" hero_cta_url="#features" hero_accent="text-amber-600" %}
+
+{% include "marketing/_logos.html" %}
+{% include "marketing/_stats.html" %}
+
+{% include "marketing/_features.html" with features=features_list features_heading="Sell, ship, repeat" features_subhead="The commerce surfaces are battle-tested across the dashboard." feature_accent_bg="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300" %}
+
+{% include "marketing/_testimonials.html" with testimonials=testimonials_list %}
+
+{% include "marketing/_cta.html" %}
+{% endblock %}

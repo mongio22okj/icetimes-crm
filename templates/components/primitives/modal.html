@@ -1,0 +1,70 @@
+{% load apex %}
+{% comment %}
+Reusable Modal primitive. Trigger from anywhere via:
+  @click="$dispatch('apex:open', 'modal-id')"
+
+Args:
+  id            required — unique DOM id, also the dispatch target name
+  title         heading text (optional)
+  size          sm | md | lg | full   (default md)
+  body          optional plain-text body
+  primary_label / primary_action   optional confirm button
+  secondary_label                  optional cancel button (always closes)
+  destructive   bool — styles primary as destructive
+{% endcomment %}
+{% with size=size|default:"md" %}
+<div x-data="apexModal('{{ id }}')"
+     x-show="open"
+     x-cloak
+     @keydown.escape.window="close()"
+     @apex:open.window="if ($event.detail === '{{ id }}') open = true"
+     class="fixed inset-0 z-50 flex items-center justify-center p-4"
+     role="dialog" aria-modal="true" aria-labelledby="{{ id }}-title">
+
+  {# Backdrop #}
+  <div x-show="open"
+       x-transition.opacity
+       @click="close()"
+       class="fixed inset-0 bg-black/50"
+       aria-hidden="true"></div>
+
+  {# Panel #}
+  <div x-show="open"
+       x-transition:enter="transition ease-out duration-200"
+       x-transition:enter-start="opacity-0 scale-95"
+       x-transition:enter-end="opacity-100 scale-100"
+       x-transition:leave="transition ease-in duration-150"
+       x-transition:leave-start="opacity-100 scale-100"
+       x-transition:leave-end="opacity-0 scale-95"
+       class="relative w-full
+              {% if size == 'sm' %}max-w-sm{% elif size == 'lg' %}max-w-2xl{% elif size == 'full' %}max-w-5xl{% else %}max-w-md{% endif %}
+              rounded-lg border border-border bg-card shadow-xl">
+    <div class="flex items-start justify-between p-5 border-b border-border">
+      <h2 id="{{ id }}-title" class="text-base font-semibold">{{ title|default:"" }}</h2>
+      <button type="button" @click="close()" class="text-muted-foreground hover:text-foreground" aria-label="Close">
+        {% icon "x" 18 %}
+      </button>
+    </div>
+    <div class="p-5 text-sm">
+      {% if body %}{{ body }}{% endif %}
+    </div>
+    {% if primary_label or secondary_label %}
+      <div class="flex justify-end gap-2 p-5 pt-0">
+        {% if secondary_label %}
+          <button type="button" @click="close()" class="h-9 px-3 rounded-md border border-border text-sm hover:bg-accent">
+            {{ secondary_label }}
+          </button>
+        {% endif %}
+        {% if primary_label %}
+          <button type="button"
+                  {% if primary_action %}@click="{{ primary_action }}"{% else %}@click="close()"{% endif %}
+                  class="h-9 px-3 rounded-md text-sm font-medium
+                         {% if destructive %}bg-destructive text-destructive-foreground hover:opacity-90{% else %}bg-primary text-primary-foreground hover:opacity-90{% endif %}">
+            {{ primary_label }}
+          </button>
+        {% endif %}
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endwith %}

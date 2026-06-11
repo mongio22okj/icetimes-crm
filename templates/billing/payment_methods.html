@@ -1,0 +1,92 @@
+{% extends "layouts/dashboard.html" %}
+{% load apex %}
+{% block title %}Payment methods · Apex{% endblock %}
+{% block content %}
+<div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+  <div>
+    <h1 class="text-2xl font-bold tracking-tight">Payment methods</h1>
+    <p class="mt-1 text-sm text-muted-foreground">Manage cards used to pay your subscription.</p>
+  </div>
+  <a href="{% url 'billing:overview' %}" class="h-10 px-4 rounded-md border border-border inline-flex items-center text-sm hover:bg-accent">Back to billing</a>
+</div>
+
+<div class="grid grid-cols-1 xl:grid-cols-12 gap-6">
+  {# ── Existing cards ─────────────────────────────────────────────── #}
+  <section class="xl:col-span-7 rounded-lg border border-border bg-card">
+    <div class="px-4 pt-4 pb-3 border-b border-border">
+      <h2 class="font-semibold">Your cards</h2>
+    </div>
+    {% if payment_methods %}
+      <ul class="divide-y divide-border">
+        {% for pm in payment_methods %}
+          <li class="px-4 py-4 flex items-center justify-between gap-4">
+            <div class="flex items-center gap-4 min-w-0">
+              {% include "billing/_card_brand.html" with brand=pm.brand %}
+              <div class="min-w-0">
+                <p class="font-mono text-sm">{{ pm.get_brand_display }} •••• {{ pm.last4 }}</p>
+                <p class="text-xs text-muted-foreground">
+                  {% if pm.cardholder %}{{ pm.cardholder }} · {% endif %}Expires {{ pm.exp_month|stringformat:"02d" }}/{{ pm.exp_year }}
+                  {% if pm.is_default %} · <span class="text-success font-medium">Default</span>{% endif %}
+                </p>
+              </div>
+            </div>
+            <div class="flex items-center gap-2 shrink-0">
+              {% if not pm.is_default %}
+                <form method="post" action="{% url 'billing:set_default_pm' pm.pk %}" class="inline">
+                  {% csrf_token %}
+                  <button type="submit" class="h-9 px-3 rounded-md border border-border text-xs hover:bg-accent">Make default</button>
+                </form>
+              {% endif %}
+              <form method="post" action="{% url 'billing:delete_pm' pm.pk %}" class="inline" onsubmit="return confirm('Remove this card?');">
+                {% csrf_token %}
+                <button type="submit" class="h-9 px-3 rounded-md text-xs text-muted-foreground hover:text-destructive inline-flex items-center gap-1">{% icon "trash" 12 %}<span>Remove</span></button>
+              </form>
+            </div>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <div class="p-12 text-center text-sm text-muted-foreground">
+        No cards on file. Add one to enable subscription billing.
+      </div>
+    {% endif %}
+  </section>
+
+  {# ── Add card form ─────────────────────────────────────────────── #}
+  <section class="xl:col-span-5 rounded-lg border border-border bg-card p-5">
+    <h2 class="font-semibold mb-1">Add a card</h2>
+    <p class="text-sm text-muted-foreground mb-5">Demo form — wire to Stripe / Paddle for real charges.</p>
+    <form method="post" class="space-y-4">
+      {% csrf_token %}
+      <div>
+        <label for="{{ form.cardholder.id_for_label }}" class="block text-sm font-medium mb-1.5">Cardholder name</label>
+        {{ form.cardholder }}
+      </div>
+      <div>
+        <label for="{{ form.brand.id_for_label }}" class="block text-sm font-medium mb-1.5">Brand</label>
+        {{ form.brand }}
+      </div>
+      <div>
+        <label for="{{ form.last4.id_for_label }}" class="block text-sm font-medium mb-1.5">Last 4 digits</label>
+        {{ form.last4 }}
+        {% if form.last4.errors %}<p class="text-xs text-destructive mt-1">{{ form.last4.errors.0 }}</p>{% endif %}
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label for="{{ form.exp_month.id_for_label }}" class="block text-sm font-medium mb-1.5">Exp. month</label>
+          {{ form.exp_month }}
+        </div>
+        <div>
+          <label for="{{ form.exp_year.id_for_label }}" class="block text-sm font-medium mb-1.5">Exp. year</label>
+          {{ form.exp_year }}
+        </div>
+      </div>
+      <label class="flex items-center gap-2 text-sm">
+        {{ form.is_default }}
+        <span>Set as default</span>
+      </label>
+      <button type="submit" class="w-full h-10 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90">Add card</button>
+    </form>
+  </section>
+</div>
+{% endblock %}

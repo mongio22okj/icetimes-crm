@@ -1,0 +1,104 @@
+{% extends "layouts/docs.html" %}
+{% load docs_tags %}
+
+{% block doc_title %}Testing{% endblock %}
+{% block doc_subtitle %}~1000 unit tests run in under 90 seconds. Async WebSocket consumer tests included. Playwright E2E for the full clickthrough.{% endblock %}
+
+{% block doc_body %}
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">Run the suite</h2>
+  {% code lang="bash" %}uv run pytest                # unit tests, ~90s
+uv run pytest -m e2e         # Playwright E2E (spawns Chromium)
+./run-e2e.sh                 # both, sequentially{% endcode %}
+  <p class="text-sm text-muted-foreground">
+    The unit suite is the default; E2E is excluded by default
+    (<code class="rounded bg-muted px-1 text-xs">addopts = "-m 'not e2e'"</code>
+    in <code class="rounded bg-muted px-1 text-xs">pyproject.toml</code>).
+  </p>
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">Test layout</h2>
+  <p class="text-sm text-muted-foreground">Tests live under each app:</p>
+  {% code lang="text" %}apps/<app>/tests/
+├── factories.py        # factory-boy factories
+├── test_models.py
+├── test_views.py
+└── test_forms.py{% endcode %}
+  <p class="text-sm text-muted-foreground">
+    Cross-cutting tests (errors, navigation, smoke, seed_demo, health,
+    throttle) live in <code class="rounded bg-muted px-1 text-xs">apps/core/tests/</code>.
+    E2E tests live in <code class="rounded bg-muted px-1 text-xs">tests/e2e/</code>.
+  </p>
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">Factories</h2>
+  <p class="text-sm text-muted-foreground">
+    factory-boy factories in each app's
+    <code class="rounded bg-muted px-1 text-xs">tests/factories.py</code> are
+    also imported by <code class="rounded bg-muted px-1 text-xs">seed_demo</code>
+    to populate the demo DB — keep them realistic.
+  </p>
+  {% code lang="python" %}# Example: apps/customers/tests/factories.py
+import factory
+from apps.customers.models import Customer
+
+class CustomerFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = Customer
+
+    name = factory.Faker("company")
+    email = factory.LazyAttribute(lambda o: f"{o.name.lower().replace(' ', '')}@example.com"){% endcode %}
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">Async tests (WebSocket consumers)</h2>
+  <p class="text-sm text-muted-foreground">
+    Channels' <code class="rounded bg-muted px-1 text-xs">WebsocketCommunicator</code>
+    speaks ASGI directly — no HTTP server required. The in-memory channel
+    layer (settings default in dev/test) handles fan-out so we don't need
+    Redis.
+  </p>
+  {% code lang="python" %}import pytest
+from channels.testing import WebsocketCommunicator
+from apps.realtime.consumers import NotificationConsumer
+
+@pytest.mark.django_db(transaction=True)
+@pytest.mark.asyncio
+async def test_notification_consumer_accepts_authenticated_user():
+    user = await _make_user(...)
+    comm = WebsocketCommunicator(NotificationConsumer.as_asgi(),
+                                  "/ws/notifications/")
+    comm.scope["user"] = user
+    connected, _ = await comm.connect()
+    assert connected is True
+    await comm.disconnect(){% endcode %}
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">E2E tests (Playwright)</h2>
+  <p class="text-sm text-muted-foreground">
+    Playwright runs a real Chromium against
+    <code class="rounded bg-muted px-1 text-xs">live_server</code> with the
+    demo DB. Tests re-seed per-test via
+    <code class="rounded bg-muted px-1 text-xs">tests/e2e/conftest.py</code>
+    (<code class="rounded bg-muted px-1 text-xs">transactional_db</code>
+    fixture).
+  </p>
+  {% code lang="bash" %}uv run pytest -m e2e tests/e2e/test_components.py{% endcode %}
+  {% callout type="note" %}
+    E2E tests set <code class="rounded bg-muted px-1 text-xs">DJANGO_ALLOW_ASYNC_UNSAFE=true</code>
+    because Playwright runs an event loop, which trips Django's sync guard.
+  {% endcallout %}
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">Single-test runs</h2>
+  {% code lang="bash" %}uv run pytest apps/orders/tests/test_views.py
+uv run pytest apps/orders/tests/test_views.py::TestName::test_method
+uv run pytest -k "not test_invoice"        # skip a class of tests{% endcode %}
+</section>
+
+{% endblock %}

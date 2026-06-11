@@ -1,0 +1,63 @@
+{% extends "layouts/settings.html" %}
+{% block settings_content %}
+<div class="mb-6">
+  <h2 class="text-lg font-semibold">Two-factor authentication</h2>
+  <p class="text-sm text-muted-foreground">Add a second step to every sign-in using a TOTP authenticator app.</p>
+</div>
+
+{% include "settings/_recovery_codes_panel.html" %}
+
+{% if confirmed %}
+  <section class="rounded-lg border border-border bg-card p-6 mt-6 max-w-2xl">
+    <div class="flex items-center gap-2 mb-2">
+      <span class="text-xs uppercase tracking-wider rounded-full px-2 py-0.5 bg-success/15 text-success font-semibold">Active</span>
+    </div>
+    <p class="text-sm text-muted-foreground">Two-factor authentication is enabled. Keep your recovery codes somewhere safe.</p>
+
+    <div class="mt-6 flex flex-wrap gap-3">
+      <form method="post" action="{% url 'settings:two_factor_regenerate' %}">
+        {% csrf_token %}
+        <button type="submit"
+                class="h-10 px-3 rounded-md border border-border inline-flex items-center text-sm hover:bg-accent">
+          Regenerate codes
+        </button>
+      </form>
+      <form method="post" action="{% url 'settings:two_factor_disable' %}">
+        {% csrf_token %}
+        <button type="submit"
+                class="h-10 px-3 rounded-md border border-destructive text-destructive inline-flex items-center text-sm hover:bg-destructive hover:text-destructive-foreground transition-colors">
+          Disable 2FA
+        </button>
+      </form>
+    </div>
+    <p class="mt-4 text-xs text-muted-foreground">You'll be asked to re-enter your password before disabling or regenerating codes.</p>
+  </section>
+{% elif has_unconfirmed %}
+  <section class="rounded-lg border border-border bg-card p-6 mt-6 max-w-2xl">
+    <p class="text-sm">You started setup but didn't finish.</p>
+    <a href="{% url 'settings:two_factor_setup' %}" class="mt-3 inline-flex h-10 px-4 rounded-md bg-primary text-primary-foreground items-center font-medium">Finish setup</a>
+  </section>
+{% else %}
+  <section class="rounded-lg border border-border bg-card p-6 mt-6 max-w-2xl">
+    <div class="flex items-center gap-2 mb-2">
+      <span class="text-xs uppercase tracking-wider rounded-full px-2 py-0.5 bg-muted text-muted-foreground font-semibold">Off</span>
+    </div>
+    <p class="text-sm text-muted-foreground mb-4">Enable 2FA to require a code from your authenticator app at every sign-in.</p>
+    <form method="post" action="{% url 'settings:two_factor_enable' %}" class="flex items-end gap-3">
+      {% csrf_token %}
+      <div class="flex-1">
+        <label class="block text-sm font-medium mb-1.5">Confirm password</label>
+        <input type="password" name="password" required autocomplete="current-password"
+               class="w-full h-10 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring/50">
+      </div>
+      <button type="submit" class="h-10 px-4 rounded-md bg-primary text-primary-foreground inline-flex items-center font-medium">Enable 2FA</button>
+    </form>
+  </section>
+{% endif %}
+
+{% if messages %}
+  {% for message in messages %}
+    <div class="mt-4 max-w-2xl rounded-md border border-border bg-muted p-3 text-sm">{{ message }}</div>
+  {% endfor %}
+{% endif %}
+{% endblock %}

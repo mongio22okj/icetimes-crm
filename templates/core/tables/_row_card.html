@@ -1,0 +1,25 @@
+{% load apex %}
+{% comment %}
+Mobile fallback for a table row — renders the row as a stacked label/value
+list. Hides any column whose `priority >= 3` (those are desktop-only).
+
+Phase 11 commit 3 ships the click-to-detail wiring. For now, just renders.
+{% endcomment %}
+<div class="p-4 hover:bg-accent/30">
+  <dl class="space-y-1.5 text-sm">
+    {% for col in config.columns %}
+      {% if col.key in visible_columns and col.priority < 3 %}
+        <div class="flex items-baseline justify-between gap-3">
+          <dt class="text-xs uppercase tracking-wider text-muted-foreground font-semibold">{{ col.label }}</dt>
+          <dd class="text-right">
+            {% if col.template %}
+              {% include col.template with row=row col=col %}
+            {% else %}
+              {{ row|dotted_attr:col.key|default_if_none:"—" }}
+            {% endif %}
+          </dd>
+        </div>
+      {% endif %}
+    {% endfor %}
+  </dl>
+</div>

@@ -1,0 +1,22 @@
+{% extends "layouts/dashboard.html" %}
+{% block title %}New folder · Apex{% endblock %}
+{% block content %}
+<div class="mb-6">
+  <h1 class="text-2xl font-bold tracking-tight">New folder</h1>
+</div>
+
+<form method="post" class="max-w-md space-y-4">
+  {% csrf_token %}
+  {% if parent_pk %}<input type="hidden" name="parent" value="{{ parent_pk }}">{% endif %}
+  <div>
+    <label class="block text-sm font-medium mb-1.5">Name</label>
+    {{ form.name }}
+    {% if form.name.errors %}<p class="text-xs text-destructive mt-1">{{ form.name.errors.0 }}</p>{% endif %}
+  </div>
+  <div class="flex justify-end gap-2">
+    <a href="{% if parent_pk %}{% url 'files:folder' parent_pk %}{% else %}{% url 'files:root' %}{% endif %}"
+       class="h-10 px-4 rounded-md border border-border inline-flex items-center text-sm hover:bg-accent">Cancel</a>
+    <button type="submit" class="h-10 px-4 rounded-md bg-primary text-primary-foreground inline-flex items-center font-medium text-sm">Create folder</button>
+  </div>
+</form>
+{% endblock %}

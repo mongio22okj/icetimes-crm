@@ -1,0 +1,20 @@
+{% load apex %}
+<div class="xl:col-span-4 rounded-lg border border-border bg-card p-4">
+  <div class="mb-4">
+    <h2 class="font-semibold">Recent Activity</h2>
+    <p class="text-sm text-muted-foreground">Last 24 hours</p>
+  </div>
+  <ul class="space-y-4">
+    {% for a in activities %}
+    <li class="flex gap-3">
+      <div class="h-8 w-8 rounded-full bg-muted flex items-center justify-center shrink-0">
+        {% icon a.icon 16 %}
+      </div>
+      <div class="flex-1 min-w-0">
+        <p class="text-sm"><span class="font-medium">{{ a.user }}</span> {{ a.action }}</p>
+        <p class="text-xs text-muted-foreground">{{ a.when }}</p>
+      </div>
+    </li>
+    {% endfor %}
+  </ul>
+</div>

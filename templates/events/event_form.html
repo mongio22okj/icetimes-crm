@@ -1,0 +1,67 @@
+{% extends "layouts/dashboard.html" %}
+{% block title %}{% if object %}Edit{% else %}New{% endif %} event · Apex{% endblock %}
+{% block content %}
+<div class="mb-6">
+  <h1 class="text-2xl font-bold tracking-tight">{% if object %}Edit event{% else %}New event{% endif %}</h1>
+  <p class="text-sm text-muted-foreground mt-1">{% if object %}Update event details.{% else %}Schedule a new event on your calendar.{% endif %}</p>
+</div>
+
+<form method="post" class="max-w-2xl space-y-6">
+  {% csrf_token %}
+  {% if form.non_field_errors %}
+    <div class="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">{{ form.non_field_errors }}</div>
+  {% endif %}
+
+  <section class="rounded-lg border border-border bg-card p-6 space-y-4">
+    <div>
+      <label for="{{ form.title.id_for_label }}" class="block text-sm font-medium mb-1.5">Title</label>
+      {{ form.title }}
+      {% if form.title.errors %}<p class="text-xs text-destructive mt-1">{{ form.title.errors.0 }}</p>{% endif %}
+    </div>
+    <div>
+      <label for="{{ form.description.id_for_label }}" class="block text-sm font-medium mb-1.5">Description</label>
+      {{ form.description }}
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div>
+        <label for="{{ form.start.id_for_label }}" class="block text-sm font-medium mb-1.5">Start</label>
+        {{ form.start }}
+        {% if form.start.errors %}<p class="text-xs text-destructive mt-1">{{ form.start.errors.0 }}</p>{% endif %}
+      </div>
+      <div>
+        <label for="{{ form.end.id_for_label }}" class="block text-sm font-medium mb-1.5">End</label>
+        {{ form.end }}
+        {% if form.end.errors %}<p class="text-xs text-destructive mt-1">{{ form.end.errors.0 }}</p>{% endif %}
+      </div>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div>
+        <label for="{{ form.category.id_for_label }}" class="block text-sm font-medium mb-1.5">Category</label>
+        {{ form.category }}
+      </div>
+      <div class="flex items-center gap-2 pt-7">
+        {{ form.all_day }}
+        <label for="{{ form.all_day.id_for_label }}" class="text-sm">All day</label>
+      </div>
+    </div>
+  </section>
+
+  <div class="flex justify-between gap-2">
+    <div>
+      {% if object %}
+        <button type="submit" formaction="{% url 'events:delete' object.pk %}" formmethod="post"
+                onclick="return confirm('Delete this event?')"
+                class="h-10 px-4 rounded-md border border-destructive/40 text-destructive inline-flex items-center text-sm hover:bg-destructive/10">
+          Delete
+        </button>
+      {% endif %}
+    </div>
+    <div class="flex gap-2">
+      <a href="{% url 'events:calendar' %}" class="h-10 px-4 rounded-md border border-border inline-flex items-center text-sm hover:bg-accent">Cancel</a>
+      <button type="submit" class="h-10 px-4 rounded-md bg-primary text-primary-foreground inline-flex items-center font-medium hover:opacity-90 text-sm">
+        {% if object %}Save changes{% else %}Create event{% endif %}
+      </button>
+    </div>
+  </div>
+</form>
+{% endblock %}

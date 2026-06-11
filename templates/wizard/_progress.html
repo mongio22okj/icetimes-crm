@@ -1,0 +1,22 @@
+{% with steps="1,2,3,4"|stringformat:"s" %}
+<div class="flex items-center justify-between mb-8 max-w-xl">
+  {% for n in "1234" %}
+    {% with i=forloop.counter %}
+      <div class="flex items-center {% if not forloop.last %}flex-1{% endif %}">
+        <div class="flex flex-col items-center">
+          <span class="h-9 w-9 rounded-full inline-flex items-center justify-center font-semibold text-sm
+            {% if step >= i %}bg-primary text-primary-foreground{% else %}bg-muted text-muted-foreground{% endif %}">
+            {{ i }}
+          </span>
+          <span class="mt-1 text-[10px] uppercase tracking-wider text-muted-foreground">
+            {% if i == 1 %}Account{% elif i == 2 %}Company{% elif i == 3 %}Preferences{% else %}Review{% endif %}
+          </span>
+        </div>
+        {% if not forloop.last %}
+          <div class="flex-1 h-0.5 mx-2 -mt-4 {% if step > i %}bg-primary{% else %}bg-border{% endif %}"></div>
+        {% endif %}
+      </div>
+    {% endwith %}
+  {% endfor %}
+</div>
+{% endwith %}

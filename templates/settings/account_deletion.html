@@ -1,0 +1,60 @@
+{% extends "layouts/settings.html" %}
+{% load apex %}
+{% block settings_content %}
+<div class="rounded-lg border border-destructive/40 bg-destructive/5 p-6 max-w-2xl">
+  <div class="flex items-start gap-3 mb-4">
+    <span class="inline-flex h-10 w-10 rounded-full bg-destructive/10 text-destructive items-center justify-center shrink-0">
+      {% icon "trash" 18 %}
+    </span>
+    <div>
+      <h2 class="text-base font-semibold">Delete your account</h2>
+      <p class="text-sm text-muted-foreground mt-1">
+        Permanent and irreversible after the 30-day grace period. We immediately
+        sign you out and disable login; data is hard-deleted by a scheduled job
+        after 30 days unless you cancel.
+      </p>
+    </div>
+  </div>
+
+  {% if pending %}
+    <div class="rounded-md border border-amber-500/40 bg-amber-500/5 p-4 mb-4 flex items-start gap-3">
+      <span class="text-amber-600 mt-0.5">{% icon "clock" 16 %}</span>
+      <div class="flex-1">
+        <p class="text-sm font-semibold text-amber-700">Deletion pending</p>
+        <p class="text-xs text-muted-foreground mt-0.5">
+          Your account is scheduled for hard deletion. Cancel below to keep it.
+        </p>
+      </div>
+    </div>
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="cancel">
+      <button type="submit" class="h-10 px-4 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:opacity-90">
+        Cancel deletion
+      </button>
+    </form>
+  {% else %}
+    <ul class="text-sm text-muted-foreground space-y-1.5 mb-5 ml-1">
+      <li>• Your profile, notifications, audit log, API keys, and webhooks will be deleted</li>
+      <li>• Customers, orders, and invoices you created remain (they may belong to your team)</li>
+      <li>• You'll be signed out immediately and unable to log in during the grace period</li>
+    </ul>
+    <form method="post" class="space-y-3">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="request">
+      <div>
+        <label class="block text-sm font-medium mb-1.5">
+          Type <code class="text-[11px] bg-muted px-1 rounded">{{ confirm_phrase }}</code> to confirm
+        </label>
+        <input type="text" name="confirm" required autocomplete="off"
+               placeholder="{{ confirm_phrase }}"
+               class="w-full max-w-md h-10 px-3 rounded-md border border-input bg-background text-sm">
+      </div>
+      <button type="submit"
+              class="h-10 px-4 rounded-md bg-destructive text-destructive-foreground text-sm font-medium hover:opacity-90">
+        Delete my account
+      </button>
+    </form>
+  {% endif %}
+</div>
+{% endblock %}

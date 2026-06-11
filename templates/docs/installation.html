@@ -1,0 +1,104 @@
+{% extends "layouts/docs.html" %}
+{% load docs_tags %}
+
+{% block doc_title %}Installation{% endblock %}
+{% block doc_subtitle %}Five-minute install on macOS or Linux. SQLite + in-memory channel layer cover everything in dev — Postgres + Redis only needed in production.{% endblock %}
+
+{% block doc_body %}
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">Prerequisites</h2>
+  <ul class="space-y-2 text-sm text-muted-foreground">
+    <li><strong class="text-foreground">Python 3.12 or 3.13</strong> — NOT 3.14 (Django 5.1 incompatibility)</li>
+    <li><strong class="text-foreground">Node.js 20+</strong> — for the Tailwind CLI</li>
+    <li><strong class="text-foreground">uv</strong> — <a href="https://docs.astral.sh/uv/getting-started/installation/" class="text-primary hover:underline">install</a> (or use pip)</li>
+    <li><strong class="text-foreground">WeasyPrint native libs</strong> — only if you want PDF invoice rendering</li>
+  </ul>
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">Clone + install dependencies</h2>
+  {% code lang="bash" %}git clone https://github.com/puikinsh/dashboardpack-apex-django.git
+cd dashboardpack-apex-django
+
+uv sync --all-groups       # Python deps including dev/test
+npm install                # Tailwind CLI + EasyMDE
+npm run build              # Compile static/css/app.css{% endcode %}
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">Initialize the database</h2>
+  {% code lang="bash" %}uv run python manage.py migrate
+uv run python manage.py seed_demo{% endcode %}
+  <p class="text-sm text-muted-foreground">
+    The seed creates 15 users, 3 organizations, 100 customers, 25 products,
+    30 orders, 15 invoices spanning every status, 6 projects with milestones,
+    19 help-center articles, 9 blog posts, demo files, calendar events,
+    kanban cards, mail threads, and chat history. The demo user is
+    <code class="rounded bg-muted px-1 text-xs">demo</code> /
+    <code class="rounded bg-muted px-1 text-xs">ApexShowcase!2026</code>.
+  </p>
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">Run the dev server</h2>
+  {% code lang="bash" %}uv run python manage.py runserver{% endcode %}
+  <p class="text-sm text-muted-foreground">
+    Open <code class="rounded bg-muted px-1 text-xs">http://localhost:8000/</code>.
+    The login form pre-fills the demo credentials in dev mode — click
+    <strong class="text-foreground">Sign in</strong> and you're in. To turn that
+    off: <code class="rounded bg-muted px-1 text-xs">DEMO_MODE = False</code>
+    in <code class="rounded bg-muted px-1 text-xs">apex/settings/dev.py</code>.
+  </p>
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">Tailwind watch mode</h2>
+  <p class="text-sm text-muted-foreground">
+    For fast iteration on styles, run Tailwind in a second terminal:
+  </p>
+  {% code lang="bash" %}npm run dev{% endcode %}
+  {% callout type="note" %}
+    <code class="rounded bg-muted px-1 text-xs">static/css/app.css</code> is a
+    build artifact and gitignored. Edit
+    <code class="rounded bg-muted px-1 text-xs">static_src/css/input.css</code>
+    where all design tokens live.
+  {% endcallout %}
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">WeasyPrint native libs (optional)</h2>
+  <p class="text-sm text-muted-foreground">
+    Only needed if you want the invoice PDF download endpoint to actually work.
+    Tests skip the PDF render path automatically when WeasyPrint can't load.
+  </p>
+  <div class="grid sm:grid-cols-2 gap-3 text-sm">
+    <div class="rounded-lg border border-border p-4">
+      <p class="font-medium mb-2">macOS</p>
+      <code class="text-xs text-muted-foreground">brew install pango</code>
+    </div>
+    <div class="rounded-lg border border-border p-4">
+      <p class="font-medium mb-2">Ubuntu / Debian</p>
+      <code class="text-xs text-muted-foreground">sudo apt install libpango-1.0-0 libpangoft2-1.0-0 libcairo2</code>
+    </div>
+  </div>
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">Run tests</h2>
+  {% code lang="bash" %}uv run pytest                # ~1000 unit tests, under 90s
+uv run pytest -m e2e         # Playwright E2E (spawns Chromium)
+./run-e2e.sh                 # both, sequentially{% endcode %}
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">Common gotchas</h2>
+  <ul class="space-y-2 text-sm text-muted-foreground">
+    <li><strong class="text-foreground"><code class="rounded bg-muted px-1 text-xs">No module named 'channels'</code></strong> — use <code class="rounded bg-muted px-1 text-xs">uv sync</code> not <code class="rounded bg-muted px-1 text-xs">pip install</code>; Channels is locked through <code class="rounded bg-muted px-1 text-xs">uv.lock</code>.</li>
+    <li><strong class="text-foreground"><code class="rounded bg-muted px-1 text-xs">HTTP/2 support not enabled</code></strong> at Daphne start — benign notice. Daphne uses HTTP/1.1 to upstream; HTTP/2 works fine via nginx or Cloudflare.</li>
+    <li><strong class="text-foreground">Test DB stuck after a crash</strong> — <code class="rounded bg-muted px-1 text-xs">rm db.sqlite3 && uv run python manage.py migrate && uv run python manage.py seed_demo</code></li>
+    <li><strong class="text-foreground">Stale CSS in browser</strong> — hard-refresh after <code class="rounded bg-muted px-1 text-xs">npm run build</code>. In prod, WhiteNoise's manifest hashing cache-busts automatically.</li>
+  </ul>
+</section>
+
+{% endblock %}

@@ -1,0 +1,26 @@
+{% extends "layouts/dashboard.html" %}
+{% load apex %}
+{% block title %}Activity · Apex{% endblock %}
+{% block content %}
+<div class="mb-6">
+  <h1 class="text-2xl font-bold tracking-tight">Activity</h1>
+  {% if config.caption %}<p class="mt-1 text-sm text-muted-foreground">{{ config.caption }}</p>{% endif %}
+</div>
+
+<div class="grid grid-cols-3 gap-3 mb-6">
+  <a href="?" class="rounded-lg border border-border bg-card p-4 hover:border-primary/40">
+    <p class="text-xs text-muted-foreground">Total events</p>
+    <p class="text-2xl font-bold mt-1">{{ counts.total }}</p>
+  </a>
+  <a href="?" class="rounded-lg border border-border bg-card p-4 hover:border-primary/40">
+    <p class="text-xs text-muted-foreground">Today</p>
+    <p class="text-2xl font-bold mt-1 text-success">{{ counts.today }}</p>
+  </a>
+  <a href="?scope=mine" class="rounded-lg border border-border bg-card p-4 hover:border-primary/40 {% if scope == 'mine' %}border-primary/40{% endif %}">
+    <p class="text-xs text-muted-foreground">Yours</p>
+    <p class="text-2xl font-bold mt-1 text-primary">{{ counts.mine }}</p>
+  </a>
+</div>
+
+{% include "core/tables/_table.html" %}
+{% endblock %}

@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% load static apex %}
+{% block body %}
+<div class="min-h-screen bg-background text-foreground">
+  <header class="border-b border-border bg-card">
+    <div class="mx-auto flex max-w-4xl items-center justify-between px-6 py-4">
+      <a href="/" class="font-semibold">Apex</a>
+      <span class="text-xs text-muted-foreground">Shared document</span>
+    </div>
+  </header>
+  <main class="mx-auto max-w-4xl px-6 py-10">
+    {% block content %}{% endblock %}
+  </main>
+  <footer class="border-t border-border py-6 text-center text-xs text-muted-foreground">
+    Powered by Apex
+  </footer>
+</div>
+{% apex_toasts %}
+{% endblock %}

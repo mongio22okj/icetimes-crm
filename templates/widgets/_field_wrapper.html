@@ -1,0 +1,41 @@
+{% comment %}
+Canonical wrapper for any Apex form field.
+
+Composition:
+  [optional label above]
+  [the widget — rendered by Django via {{ field }}]
+  [helper text OR error message(s)]
+
+Context (provided by `{% apex_field %}` tag):
+  field         — Django BoundField
+  label         — label text (or None to suppress)
+  label_above   — bool, where to put the label
+  helper        — helper text or None
+  state         — "default" | "success" | "warning" | "error"
+  state_classes — Tailwind classes for the active state's ring/border
+  errors        — list of error strings (empty when state != "error")
+  id            — auto_id for label-for association
+  required      — bool, drives the "*" suffix on the label
+
+Phase 12 commit 2: this wrapper assumes the widget itself injects
+state_classes into its own rendered HTML via its template. Per-widget
+templates land in commits 3–6.
+{% endcomment %}
+<div class="space-y-1.5" data-apex-field data-state="{{ state }}">
+  {% if label_above and label %}
+    <label for="{{ id }}" class="block text-sm font-medium text-foreground">
+      {{ label }}
+      {% if required %}<span class="text-destructive ml-0.5" aria-hidden="true">*</span>{% endif %}
+    </label>
+  {% endif %}
+
+  {{ field }}
+
+  {% if errors %}
+    {% for err in errors %}
+      <p class="text-xs text-destructive" role="alert">{{ err }}</p>
+    {% endfor %}
+  {% elif helper %}
+    <p class="text-xs text-muted-foreground">{{ helper }}</p>
+  {% endif %}
+</div>

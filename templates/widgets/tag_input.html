@@ -1,0 +1,44 @@
+{% load apex %}
+{% comment %}
+TagInput widget — free-form chip entry. Stores submitted value as a
+single hidden input containing comma-joined tags.
+{% endcomment %}
+<div data-widget="tag-input"
+     x-data='apexTagInput({initial: {{ widget.initial_json|safe }}, suggestions: {{ widget.suggestions_json|safe }}})'>
+
+  {# Single hidden input holds the joined value for Django's form parser. #}
+  <input type="hidden" name="{{ widget.name }}" :value="tags.join(',')">
+
+  <div @click="$refs.q.focus()"
+       class="min-h-10 px-2 py-1.5 rounded-md border border-input bg-background flex flex-wrap gap-1.5 items-center cursor-text"
+       :class="$root.contains(document.activeElement) ? 'ring-2 ring-ring/50 border-ring' : ''">
+    <template x-for="(tag, i) in tags" :key="i + ':' + tag">
+      <span class="inline-flex items-center gap-1 h-7 px-2 rounded-md bg-primary/10 text-primary text-xs font-medium">
+        <span x-text="tag"></span>
+        <button type="button" @click="removeAt(i)" class="hover:opacity-70" aria-label="Remove">
+          {% icon "x" 12 %}
+        </button>
+      </span>
+    </template>
+    <input type="text" x-model="draft" x-ref="q"
+           @keydown.enter.prevent="commit()"
+           @keydown.,.prevent="commit()"
+           @keydown.backspace="if(!draft) removeLast()"
+           @paste.prevent="onPaste($event)"
+           @blur="commit()"
+           class="flex-1 min-w-24 h-7 bg-transparent text-sm focus:outline-none"
+           placeholder="{{ widget.placeholder }}" />
+  </div>
+
+  {% if widget.suggestions_json != "[]" %}
+    <div class="mt-2 flex flex-wrap gap-1.5">
+      <template x-for="s in suggestions.filter(s => !tags.includes(s))" :key="s">
+        <button type="button" @click="add(s)"
+                class="h-6 px-2 rounded-md border border-border text-xs text-muted-foreground hover:bg-accent">
+          <span x-text="s"></span>
+          <span class="ml-1 text-primary">+</span>
+        </button>
+      </template>
+    </div>
+  {% endif %}
+</div>

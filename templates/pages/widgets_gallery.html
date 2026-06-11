@@ -1,0 +1,158 @@
+{% extends "layouts/dashboard.html" %}
+{% load apex %}
+{% block title %}Widgets · Apex{% endblock %}
+{% block content %}
+<div class="mb-6">
+  <h1 class="text-2xl font-bold tracking-tight">Widgets gallery</h1>
+  <p class="mt-1 text-sm text-muted-foreground">Stat cards, lists, timelines, badges, and progress bars — every reusable surface in one place.</p>
+</div>
+
+<div class="space-y-8">
+
+  {# ── Stat cards ───────────────────────────────────────────────── #}
+  <section>
+    <h2 class="text-base font-semibold mb-3">Stat cards with sparkline</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+      {% for stat in stat_cards %}
+        {% include "components/stat_card.html" with label=stat.label value=stat.value delta=stat.delta trend=stat.trend icon=stat.icon accent=stat.accent spark=stat.spark %}
+      {% endfor %}
+    </div>
+  </section>
+
+  {# ── Badges + pills ─────────────────────────────────────────────── #}
+  <section>
+    <h2 class="text-base font-semibold mb-3">Badges &amp; pills</h2>
+    <div class="rounded-lg border border-border bg-card p-5">
+      <div class="flex flex-wrap items-center gap-2">
+        <span class="inline-flex items-center px-2 h-6 rounded-md text-xs font-medium bg-success/10 text-success">Active</span>
+        <span class="inline-flex items-center px-2 h-6 rounded-md text-xs font-medium bg-primary/10 text-primary">In progress</span>
+        <span class="inline-flex items-center px-2 h-6 rounded-md text-xs font-medium bg-amber-500/10 text-amber-600">Pending</span>
+        <span class="inline-flex items-center px-2 h-6 rounded-md text-xs font-medium bg-destructive/10 text-destructive">Failed</span>
+        <span class="inline-flex items-center px-2 h-6 rounded-md text-xs font-medium bg-muted text-muted-foreground">Archived</span>
+        <span class="inline-flex items-center gap-1.5 px-2 h-6 rounded-md text-xs font-medium bg-success/10 text-success"><span class="h-1.5 w-1.5 rounded-full bg-success animate-pulse"></span>Live</span>
+        <span class="inline-flex items-center gap-1 px-2 h-6 rounded-md text-xs font-medium bg-destructive/10 text-destructive"><span class="h-1.5 w-1.5 rounded-full bg-destructive"></span>High priority</span>
+        <span class="inline-flex items-center px-2 h-6 rounded-full text-xs font-medium bg-primary text-primary-foreground">12 new</span>
+        <span class="inline-flex items-center justify-center min-w-5 h-5 rounded-full text-[10px] font-semibold bg-destructive text-destructive-foreground px-1">99+</span>
+      </div>
+    </div>
+  </section>
+
+  {# ── Avatars ────────────────────────────────────────────────────── #}
+  <section>
+    <h2 class="text-base font-semibold mb-3">Avatars &amp; groups</h2>
+    <div class="rounded-lg border border-border bg-card p-5 flex flex-wrap items-center gap-6">
+      <span class="inline-flex h-12 w-12 items-center justify-center rounded-full text-sm font-semibold text-white" style="background-color: #15803d;">DU</span>
+      <span class="inline-flex h-12 w-12 items-center justify-center rounded-full text-sm font-semibold text-white" style="background-color: #0e7490;">AC</span>
+      <span class="inline-flex h-12 w-12 items-center justify-center rounded-full text-sm font-semibold text-white" style="background-color: #4f46e5;">MP</span>
+      <span class="inline-flex h-12 w-12 items-center justify-center rounded-full text-sm font-semibold text-white relative" style="background-color: #b45309;">
+        SC
+        <span class="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-success ring-2 ring-card"></span>
+      </span>
+      <div class="flex -space-x-3">
+        <span class="inline-flex h-9 w-9 items-center justify-center rounded-full ring-2 ring-card text-xs font-semibold text-white" style="background-color: #15803d;">DU</span>
+        <span class="inline-flex h-9 w-9 items-center justify-center rounded-full ring-2 ring-card text-xs font-semibold text-white" style="background-color: #0e7490;">AC</span>
+        <span class="inline-flex h-9 w-9 items-center justify-center rounded-full ring-2 ring-card text-xs font-semibold text-white" style="background-color: #4f46e5;">MP</span>
+        <span class="inline-flex h-9 w-9 items-center justify-center rounded-full ring-2 ring-card text-xs font-semibold bg-muted text-muted-foreground">+5</span>
+      </div>
+    </div>
+  </section>
+
+  {# ── Leaderboard list + Progress targets ───────────────────────── #}
+  <div class="grid grid-cols-1 xl:grid-cols-12 gap-4">
+    <section class="xl:col-span-7 rounded-lg border border-border bg-card">
+      <div class="px-4 pt-4 pb-3 border-b border-border">
+        <h2 class="font-semibold">Leaderboard</h2>
+        <p class="text-sm text-muted-foreground">Top performers by revenue.</p>
+      </div>
+      <ol class="divide-y divide-border">
+        {% for r in leaderboard %}
+          <li class="px-4 py-3 flex items-center justify-between gap-3">
+            <div class="flex items-center gap-3 min-w-0">
+              <span class="inline-flex h-7 w-7 items-center justify-center rounded-full bg-muted text-xs font-semibold">{{ forloop.counter }}</span>
+              <span class="inline-flex h-9 w-9 items-center justify-center rounded-full text-xs font-semibold text-white" style="background-color: {{ r.name|avatar_color }};">{{ r.initials }}</span>
+              <span class="font-medium truncate">{{ r.name }}</span>
+            </div>
+            <div class="flex items-center gap-3 shrink-0">
+              <span class="text-sm font-medium tabular-nums">{{ r.value }}</span>
+              <span class="text-xs text-success tabular-nums">{{ r.delta }}</span>
+            </div>
+          </li>
+        {% endfor %}
+      </ol>
+    </section>
+
+    <section class="xl:col-span-5 rounded-lg border border-border bg-card p-4">
+      <h2 class="font-semibold mb-1">Progress targets</h2>
+      <p class="text-sm text-muted-foreground mb-4">Quarterly goal tracker.</p>
+      <div class="space-y-5">
+        {% for t in progress_targets %}
+          <div>
+            <div class="flex items-center justify-between text-sm mb-1.5">
+              <span class="font-medium">{{ t.label }}</span>
+              <span class="text-muted-foreground">
+                {% if t.is_money %}${{ t.current|floatformat:0 }}{% else %}{{ t.current }}{{ t.suffix|default:"" }}{% endif %}
+                <span class="text-xs">/
+                  {% if t.is_money %}${{ t.target|floatformat:0 }}{% else %}{{ t.target }}{{ t.suffix|default:"" }}{% endif %}
+                </span>
+              </span>
+            </div>
+            <div class="h-2 rounded-full bg-muted overflow-hidden">
+              {% widthratio t.current t.target 100 as pct %}
+              <div class="h-full rounded-full" style="width: {{ pct }}%; background-color: {{ t.accent }};"></div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </section>
+  </div>
+
+  {# ── Timeline ───────────────────────────────────────────────────── #}
+  <section>
+    <h2 class="text-base font-semibold mb-3">Activity timeline</h2>
+    <div class="rounded-lg border border-border bg-card">
+      <ol class="divide-y divide-border">
+        {% for e in timeline_events %}
+          <li class="px-4 py-3 flex items-start gap-3">
+            <span class="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full
+                         {% if e.tone == 'success' %}bg-success/10 text-success
+                         {% elif e.tone == 'primary' %}bg-primary/10 text-primary
+                         {% elif e.tone == 'warning' %}bg-amber-500/10 text-amber-600
+                         {% else %}bg-muted text-muted-foreground{% endif %}">
+              {% icon e.icon 16 %}
+            </span>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm"><span class="font-medium">{{ e.actor }}</span> <span class="text-muted-foreground">{{ e.title|lower }}</span></p>
+              <p class="text-xs text-muted-foreground">{{ e.when }}</p>
+            </div>
+          </li>
+        {% endfor %}
+      </ol>
+    </div>
+  </section>
+
+  {# ── Buttons ────────────────────────────────────────────────────── #}
+  <section>
+    <h2 class="text-base font-semibold mb-3">Buttons</h2>
+    <div class="rounded-lg border border-border bg-card p-5 flex flex-wrap items-center gap-3">
+      <button class="h-10 px-4 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90">Primary</button>
+      <button class="h-10 px-4 rounded-md border border-border text-sm hover:bg-accent">Secondary</button>
+      <button class="h-10 px-4 rounded-md bg-destructive text-destructive-foreground text-sm font-medium hover:bg-destructive/90">Destructive</button>
+      <button class="h-10 px-4 rounded-md text-sm hover:bg-accent">Ghost</button>
+      <button class="h-10 px-4 rounded-md bg-primary text-primary-foreground text-sm font-medium inline-flex items-center gap-1.5">{% icon "plus" 14 %}With icon</button>
+      <button class="h-10 w-10 rounded-md border border-border inline-flex items-center justify-center hover:bg-accent" aria-label="Settings">{% icon "settings" 16 %}</button>
+      <button class="h-8 px-3 rounded-md bg-primary text-primary-foreground text-xs font-medium">Small</button>
+      <button class="h-12 px-5 rounded-md bg-primary text-primary-foreground text-base font-medium">Large</button>
+    </div>
+  </section>
+
+  {# ── Empty states ──────────────────────────────────────────────── #}
+  <section>
+    <h2 class="text-base font-semibold mb-3">Empty states</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {% include "components/_empty_state.html" with icon="package" headline="No products yet" body="Create your first product to start selling." cta_url="/products/new/" cta_label="Add product" %}
+      {% include "components/_empty_state.html" with icon="bell" headline="You're all caught up" body="New activity will show up here." %}
+    </div>
+  </section>
+
+</div>
+{% endblock %}

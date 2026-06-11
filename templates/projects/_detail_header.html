@@ -1,0 +1,33 @@
+{% load apex %}
+<div class="mb-6 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+  <div class="min-w-0">
+    <div class="flex items-center gap-3 mb-2">
+      <h1 class="text-2xl font-bold tracking-tight truncate">{{ project.name }}</h1>
+      {% include "projects/_status_pill.html" with status=project.status %}
+      {% include "projects/_priority_pill.html" with priority=project.priority %}
+    </div>
+    <p class="text-sm text-muted-foreground max-w-3xl">{{ project.description|default:"No description yet." }}</p>
+    <div class="mt-3 flex flex-wrap items-center gap-x-5 gap-y-1.5 text-xs text-muted-foreground">
+      {% if project.customer %}
+        <span class="inline-flex items-center gap-1.5">{% icon "user" 14 %}<a href="{% url 'customers:detail' project.customer.pk %}" class="hover:text-foreground">{{ project.customer.name }}</a></span>
+      {% endif %}
+      {% if project.due_date %}
+        <span class="inline-flex items-center gap-1.5">{% icon "calendar" 14 %}Due {{ project.due_date|date:"M j, Y" }}</span>
+      {% endif %}
+      {% if project.budget %}
+        <span class="inline-flex items-center gap-1.5">{% icon "dollar-sign" 14 %}${{ project.budget|floatformat:0 }} budget</span>
+      {% endif %}
+      <span class="inline-flex items-center gap-1.5">{% icon "users" 14 %}{{ project.team.count }} member{{ project.team.count|pluralize }}</span>
+    </div>
+  </div>
+  <div class="flex items-center gap-2 shrink-0">
+    <a href="{% url 'projects:edit' project.slug %}" class="inline-flex items-center gap-1.5 h-9 px-3 rounded-md border border-border text-sm hover:bg-accent">{% icon "settings" 14 %}<span>Edit</span></a>
+    <form method="post" action="{% url 'projects:archive' project.slug %}">
+      {% csrf_token %}
+      <button type="submit" class="inline-flex items-center gap-1.5 h-9 px-3 rounded-md border border-border text-sm hover:bg-accent">
+        {% if project.archived_at %}{% icon "rocket" 14 %}<span>Restore</span>{% else %}{% icon "trash" 14 %}<span>Archive</span>{% endif %}
+      </button>
+    </form>
+  </div>
+</div>
+{% include "projects/_tabs.html" with project=project active_tab=active_tab %}

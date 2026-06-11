@@ -1,0 +1,92 @@
+{% extends "layouts/dashboard.html" %}
+{% load apex %}
+{% block title %}{{ project.name }} · Tasks · Apex{% endblock %}
+{% block content %}
+{% include "projects/_detail_header.html" with project=project active_tab=active_tab %}
+
+<details class="mb-6 rounded-lg border border-border bg-card" {% if task_form.errors %}open{% endif %}>
+  <summary class="cursor-pointer px-4 py-3 text-sm font-medium flex items-center justify-between">
+    <span class="inline-flex items-center gap-2">{% icon "plus" 16 %}New task</span>
+    <span class="text-xs text-muted-foreground">Click to expand</span>
+  </summary>
+  <form method="post" action="{% url 'projects:task_create' project.slug %}" class="px-4 pb-4 pt-2 grid grid-cols-1 md:grid-cols-2 gap-3">
+    {% csrf_token %}
+    <div class="md:col-span-2">
+      <label class="block text-xs font-medium mb-1">Title</label>
+      {{ task_form.title }}
+    </div>
+    <div class="md:col-span-2">
+      <label class="block text-xs font-medium mb-1">Description</label>
+      {{ task_form.description }}
+    </div>
+    <div>
+      <label class="block text-xs font-medium mb-1">Status</label>
+      {{ task_form.status }}
+    </div>
+    <div>
+      <label class="block text-xs font-medium mb-1">Priority</label>
+      {{ task_form.priority }}
+    </div>
+    <div>
+      <label class="block text-xs font-medium mb-1">Assignee</label>
+      {{ task_form.assignee }}
+    </div>
+    <div>
+      <label class="block text-xs font-medium mb-1">Due date</label>
+      {{ task_form.due_date }}
+    </div>
+    <div class="md:col-span-2 flex justify-end">
+      <button type="submit" class="h-10 px-4 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90">Add task</button>
+    </div>
+  </form>
+</details>
+
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+  {% for col in columns %}
+    <section class="rounded-lg border border-border bg-card flex flex-col min-h-[420px]">
+      <header class="px-4 py-3 border-b border-border flex items-center justify-between">
+        <h3 class="text-sm font-semibold">{{ col.label }}</h3>
+        <span class="text-xs text-muted-foreground tabular-nums">{{ col.tasks|length }}</span>
+      </header>
+      <div class="p-3 flex-1 space-y-2 overflow-y-auto">
+        {% for task in col.tasks %}
+          <article class="rounded-md border border-border bg-background p-3 hover:border-primary/40">
+            <div class="flex items-start justify-between gap-2 mb-2">
+              <p class="text-sm font-medium leading-snug line-clamp-2">{{ task.title }}</p>
+              {% include "projects/_priority_pill.html" with priority=task.priority %}
+            </div>
+            {% if task.description %}<p class="text-xs text-muted-foreground line-clamp-2 mb-2">{{ task.description }}</p>{% endif %}
+            <div class="flex items-center justify-between text-xs">
+              <div class="flex items-center gap-2 min-w-0">
+                {% if task.assignee %}
+                  <span class="inline-flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-semibold text-white" style="background-color: {{ task.assignee|avatar_color }};">{{ task.assignee|initials }}</span>
+                  <span class="text-muted-foreground truncate">{{ task.assignee.get_full_name|default:task.assignee.username }}</span>
+                {% else %}
+                  <span class="text-muted-foreground">Unassigned</span>
+                {% endif %}
+              </div>
+              {% if task.due_date %}<span class="text-muted-foreground inline-flex items-center gap-1 shrink-0">{% icon "calendar" 12 %}{{ task.due_date|date:"M j" }}</span>{% endif %}
+            </div>
+            <div class="mt-2 pt-2 border-t border-border flex items-center justify-between">
+              <form method="post" action="{% url 'projects:task_toggle' project.slug task.pk %}">
+                {% csrf_token %}
+                <button type="submit" class="text-xs text-muted-foreground hover:text-foreground inline-flex items-center gap-1">
+                  {% icon "chevron-right" 12 %}<span>Move</span>
+                </button>
+              </form>
+              <form method="post" action="{% url 'projects:task_delete' project.slug task.pk %}" onsubmit="return confirm('Delete this task?');">
+                {% csrf_token %}
+                <button type="submit" class="text-xs text-muted-foreground hover:text-destructive inline-flex items-center gap-1">
+                  {% icon "trash" 12 %}<span>Delete</span>
+                </button>
+              </form>
+            </div>
+          </article>
+        {% empty %}
+          <p class="text-xs text-muted-foreground text-center py-6">No tasks</p>
+        {% endfor %}
+      </div>
+    </section>
+  {% endfor %}
+</div>
+{% endblock %}

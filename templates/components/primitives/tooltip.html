@@ -1,0 +1,36 @@
+{% comment %}
+Reusable Tooltip primitive — wraps any trigger element.
+
+Use the include only for the simplest case (text-only content). For richer
+triggers, copy the markup inline since {% include %} can't carry block
+content.
+
+Args:
+  text       required — tooltip body
+  side       top | right | bottom | left   (default top)
+  trigger_text  text shown for the trigger (when using the include)
+  trigger_class CSS classes for the trigger button (default: pill style)
+{% endcomment %}
+{% with side=side|default:"top" %}
+<span x-data="{open: false}" class="inline-block relative align-middle">
+  <button type="button"
+          @mouseenter="open = true" @mouseleave="open = false"
+          @focus="open = true" @blur="open = false"
+          class="{{ trigger_class|default:'h-8 px-2 rounded-md border border-border text-sm hover:bg-accent' }}"
+          aria-describedby="apex-tt-{{ forloop.counter|default:'0' }}{{ text|slugify|truncatechars:12 }}">
+    {{ trigger_text|default:"Hover me" }}
+  </button>
+  <span x-show="open" x-cloak
+        x-transition:enter="transition ease-out duration-100"
+        x-transition:enter-start="opacity-0 scale-95"
+        x-transition:enter-end="opacity-100 scale-100"
+        role="tooltip"
+        class="pointer-events-none absolute z-40 px-2 py-1 rounded text-xs whitespace-nowrap bg-foreground text-background shadow
+               {% if side == 'bottom' %}top-full left-1/2 -translate-x-1/2 mt-1.5
+               {% elif side == 'left' %}right-full top-1/2 -translate-y-1/2 mr-1.5
+               {% elif side == 'right' %}left-full top-1/2 -translate-y-1/2 ml-1.5
+               {% else %}bottom-full left-1/2 -translate-x-1/2 mb-1.5{% endif %}">
+    {{ text }}
+  </span>
+</span>
+{% endwith %}

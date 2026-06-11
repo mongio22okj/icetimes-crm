@@ -1,0 +1,64 @@
+{% extends "layouts/dashboard.html" %}
+{% block title %}Calendar · Apex{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+  <div>
+    <h1 class="text-2xl font-bold tracking-tight">Calendar</h1>
+    <p class="text-sm text-muted-foreground mt-1">Your personal events.</p>
+  </div>
+  <a href="{% url 'events:create' %}"
+     class="h-10 px-4 rounded-md bg-primary text-primary-foreground inline-flex items-center font-medium hover:opacity-90 text-sm">
+    New event
+  </a>
+</div>
+
+<div class="rounded-lg border border-border bg-card p-4">
+  <div id="cal-root"></div>
+</div>
+
+<style>
+  .fc .fc-button { background: hsl(var(--accent)); color: hsl(var(--foreground)); border: 1px solid hsl(var(--border)); padding: 0.4rem 0.75rem; font-size: 0.875rem; }
+  .fc .fc-button:hover { background: hsl(var(--muted)); }
+  .fc .fc-button-primary:not(:disabled).fc-button-active { background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); border-color: hsl(var(--primary)); }
+  .fc .fc-toolbar-title { font-size: 1.125rem; font-weight: 600; }
+  .fc-event { cursor: pointer; }
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
+<script nonce="{{ csp_nonce }}">document.addEventListener("DOMContentLoaded", () => {
+  const root = document.getElementById("cal-root");
+  if (!root || typeof FullCalendar === "undefined") return;
+  const cal = new FullCalendar.Calendar(root, {
+    initialView: "dayGridMonth",
+    height: "auto",
+    headerToolbar: {
+      left: "prev,next today",
+      center: "title",
+      right: "dayGridMonth,timeGridWeek,timeGridDay",
+    },
+    events: "{% url 'events:event_json' %}",
+    selectable: true,
+    select: (info) => {
+      const params = new URLSearchParams({
+        start: info.startStr,
+        end: info.endStr,
+        allDay: info.allDay,
+      });
+      window.location.href = "{% url 'events:create' %}?" + params.toString();
+    },
+    eventClick: (info) => {
+      window.location.href = "/calendar/events/" + info.event.id + "/edit/";
+    },
+  });
+  cal.render();
+  // FullCalendar's inner chevron spans have role="img" without an alt text,
+  // but the parent <button> already carries an aria-label. Mark the inner
+  // icon spans as decorative so axe-core stops flagging them.
+  document.querySelectorAll(".fc-icon").forEach((el) => {
+    el.setAttribute("aria-hidden", "true");
+    el.removeAttribute("role");
+  });
+});
+</script>
+{% endblock %}

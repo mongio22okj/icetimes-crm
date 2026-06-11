@@ -1,0 +1,66 @@
+{% load apex %}
+<div x-data="{ open: false }"
+     @click.outside="open = false"
+     @keydown.escape="open = false; $refs.orgTrigger.focus()"
+     class="relative hidden sm:block">
+  <button type="button"
+          x-ref="orgTrigger"
+          @click="open = !open"
+          :aria-expanded="open"
+          aria-haspopup="true"
+          aria-label="Switch organization"
+          class="h-9 flex items-center gap-2 rounded-md border border-border hover:bg-accent px-2.5 max-w-[180px]">
+    {% if active_organization %}
+      <span class="h-6 w-6 rounded bg-primary/10 text-primary inline-flex items-center justify-center text-[10px] font-bold shrink-0">
+        {{ active_organization.initials }}
+      </span>
+      <span class="text-sm font-medium truncate">{{ active_organization.name }}</span>
+    {% else %}
+      <span class="h-6 w-6 rounded bg-muted text-muted-foreground inline-flex items-center justify-center shrink-0">
+        {% icon "users" 12 %}
+      </span>
+      <span class="text-sm text-muted-foreground">No org</span>
+    {% endif %}
+    {% icon "chevron-down" 14 "text-muted-foreground" %}
+  </button>
+
+  <div x-show="open"
+       x-cloak
+       x-transition
+       class="absolute right-0 mt-2 w-72 rounded-md border border-border bg-popover text-popover-foreground shadow-lg overflow-hidden z-40"
+       style="display: none;">
+    <div class="px-3 py-2 border-b border-border">
+      <p class="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Switch organization</p>
+    </div>
+    <ul class="max-h-64 overflow-y-auto py-1">
+      {% for m in active_memberships %}
+        <li>
+          <form method="post" action="{% url 'organizations:switch' m.organization.slug %}">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.path }}">
+            <button type="submit"
+                    class="w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-accent hover:text-accent-foreground">
+              <span class="h-7 w-7 rounded bg-primary/10 text-primary inline-flex items-center justify-center text-[11px] font-bold shrink-0">
+                {{ m.organization.initials }}
+              </span>
+              <span class="flex-1 min-w-0">
+                <span class="block text-sm font-medium truncate">{{ m.organization.name }}</span>
+                <span class="block text-[11px] text-muted-foreground truncate">{{ m.get_role_display }}</span>
+              </span>
+              {% if m.organization == active_organization %}
+                <span class="text-success shrink-0">{% icon "check" 14 %}</span>
+              {% endif %}
+            </button>
+          </form>
+        </li>
+      {% endfor %}
+    </ul>
+    <div class="border-t border-border">
+      <a href="{% url 'organizations:list' %}"
+         class="flex items-center gap-2 px-3 py-2 text-sm hover:bg-accent hover:text-accent-foreground">
+        {% icon "settings" 14 "text-muted-foreground" %}
+        <span>Manage organizations</span>
+      </a>
+    </div>
+  </div>
+</div>

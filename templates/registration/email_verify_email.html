@@ -1,0 +1,10 @@
+{% extends "email/_base.html" %}
+{% block subject %}Verify your {{ site_name|default:"Apex" }} email{% endblock %}
+{% block preheader %}Click the button below to confirm your email address and finish setting up your account.{% endblock %}
+{% block heading %}Verify your email{% endblock %}
+{% block body %}
+  <p style="margin:0 0 12px;">Hi {{ user.first_name|default:user.username }},</p>
+  <p style="margin:0;">Confirm your email address to finish setting up your {{ site_name|default:"Apex" }} account.</p>
+{% endblock %}
+{% block reason %}signed up for {{ site_name|default:"Apex" }}{% endblock %}
+{% block footer_extra %}If you didn't create an account, you can safely ignore this email.{% endblock %}

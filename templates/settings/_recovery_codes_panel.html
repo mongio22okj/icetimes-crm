@@ -1,0 +1,20 @@
+{% if flash_codes %}
+<section aria-live="polite"
+         class="rounded-lg border border-success/30 bg-success/5 p-5 max-w-2xl">
+  <h3 class="text-base font-semibold text-success">Recovery codes</h3>
+  <p class="text-sm text-muted-foreground mt-1 mb-4">
+    Save these in a safe place. Each one can be used once if you lose access to your authenticator app.
+  </p>
+  <ul x-data class="grid grid-cols-2 gap-2 font-mono text-sm">
+    {% for code in flash_codes %}
+      <li class="rounded bg-muted px-3 py-1.5 select-all">{{ code }}</li>
+    {% endfor %}
+  </ul>
+  <button type="button"
+          x-data
+          @click="navigator.clipboard.writeText($el.parentElement.querySelector('ul').innerText)"
+          class="mt-4 h-9 px-3 rounded-md border border-border inline-flex items-center text-sm hover:bg-accent">
+    Copy all
+  </button>
+</section>
+{% endif %}

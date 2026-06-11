@@ -1,0 +1,7 @@
+{% comment %}Tiny brand-mark for credit cards. Pass `brand`.{% endcomment %}
+{% if brand == "visa" %}<span class="inline-flex items-center justify-center h-7 w-11 rounded bg-[#1a1f71] text-white text-[10px] font-bold tracking-wider italic">VISA</span>
+{% elif brand == "mastercard" %}<span class="inline-flex items-center justify-center h-7 w-11 rounded bg-card border border-border"><span class="h-3.5 w-3.5 rounded-full bg-[#eb001b] -mr-1 opacity-90"></span><span class="h-3.5 w-3.5 rounded-full bg-[#f79e1b] opacity-90"></span></span>
+{% elif brand == "amex" %}<span class="inline-flex items-center justify-center h-7 w-11 rounded bg-[#2671b9] text-white text-[9px] font-bold tracking-wider">AMEX</span>
+{% elif brand == "discover" %}<span class="inline-flex items-center justify-center h-7 w-11 rounded bg-[#ff6000] text-white text-[9px] font-bold">DISC</span>
+{% else %}<span class="inline-flex items-center justify-center h-7 w-11 rounded bg-muted text-muted-foreground text-[10px] font-bold">CARD</span>
+{% endif %}

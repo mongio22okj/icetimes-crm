@@ -1,0 +1,90 @@
+{% load static %}<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>{{ invoice.number }}</title>
+<style>
+  @page { size: A4; margin: 1.5cm; }
+  * { font-family: "Helvetica", "Arial", sans-serif; color: #222; }
+  body { font-size: 11pt; }
+  h1 { font-size: 22pt; margin: 0; letter-spacing: -0.02em; }
+  .muted { color: #666; font-size: 9pt; }
+  table { width: 100%; border-collapse: collapse; margin-top: 1em; }
+  th, td { padding: 6px 8px; text-align: left; }
+  th { border-bottom: 2px solid #222; font-size: 9pt; text-transform: uppercase; letter-spacing: 0.05em; }
+  td { border-bottom: 1px solid #ddd; }
+  .right { text-align: right; }
+  .totals { margin-top: 1.5em; margin-left: auto; width: 40%; }
+  .totals div { display: flex; justify-content: space-between; padding: 4px 0; }
+  .totals .grand { border-top: 2px solid #222; padding-top: 8px; font-size: 13pt; font-weight: bold; }
+  .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 9pt; font-weight: 600; }
+  .pill-draft { background: #eee; color: #555; }
+  .pill-sent { background: #dbeafe; color: #1e40af; }
+  .pill-paid { background: #dcfce7; color: #166534; }
+  .pill-void { background: #f4f4f5; color: #71717a; text-decoration: line-through; }
+  .pill-overdue { background: #fee2e2; color: #991b1b; }
+  header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2em; }
+  .parties { display: flex; gap: 2em; }
+  .parties > div { flex: 1; }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>Invoice</h1>
+    <p class="muted">{{ invoice.number }}</p>
+  </div>
+  <div class="right">
+    <span class="pill pill-{{ invoice.display_status }}">{{ invoice.display_status|upper }}</span>
+  </div>
+</header>
+
+<div class="parties">
+  <div>
+    <p class="muted">Bill to</p>
+    <p><strong>{{ invoice.customer.name }}</strong></p>
+    {% if invoice.customer.company %}<p>{{ invoice.customer.company }}</p>{% endif %}
+    <p class="muted">{{ invoice.customer.email }}</p>
+    {% if invoice.customer.address %}<p>{{ invoice.customer.address }}{% if invoice.customer.city %}, {{ invoice.customer.city }}{% endif %}</p>{% endif %}
+  </div>
+  <div class="right">
+    <p class="muted">Issue date</p>
+    <p>{{ invoice.issue_date|date:"F j, Y" }}</p>
+    <p class="muted">Due date</p>
+    <p>{{ invoice.due_date|date:"F j, Y" }}</p>
+  </div>
+</div>
+
+<table>
+  <thead>
+    <tr>
+      <th>Description</th>
+      <th class="right">Qty</th>
+      <th class="right">Unit price</th>
+      <th class="right">Amount</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for item in items %}
+    <tr>
+      <td>{{ item.description }}</td>
+      <td class="right">{{ item.quantity }}</td>
+      <td class="right">${{ item.unit_price|floatformat:2 }}</td>
+      <td class="right">${{ item.amount|floatformat:2 }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<div class="totals">
+  <div><span class="muted">Subtotal</span><span>${{ invoice.subtotal|floatformat:2 }}</span></div>
+  <div><span class="muted">Tax ({{ invoice.tax_rate|floatformat:"-2" }}%)</span><span>${{ invoice.tax_amount|floatformat:2 }}</span></div>
+  <div class="grand"><span>Total</span><span>${{ invoice.total|floatformat:2 }}</span></div>
+</div>
+
+{% if invoice.notes %}
+<p class="muted" style="margin-top:3em;">Notes</p>
+<p>{{ invoice.notes|linebreaksbr }}</p>
+{% endif %}
+</body>
+</html>

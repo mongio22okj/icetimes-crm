@@ -1,0 +1,35 @@
+{% extends "layouts/dashboard.html" %}
+{% load apex %}
+{% block title %}{{ category.name }} · Help · Apex{% endblock %}
+{% block content %}
+<header class="mb-6 flex items-start gap-4">
+  <span class="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-md" style="background-color: {{ category.accent }}1a; color: {{ category.accent }};">
+    {% icon category.icon 22 %}
+  </span>
+  <div class="min-w-0 flex-1">
+    <h1 class="text-2xl font-bold tracking-tight">{{ category.name }}</h1>
+    {% if category.description %}<p class="mt-1 text-sm text-muted-foreground">{{ category.description }}</p>{% endif %}
+    <p class="mt-1 text-xs text-muted-foreground">{{ articles.count }} {{ articles.count|pluralize:"article,articles" }}</p>
+  </div>
+  <a href="{% url 'help_center:home' %}" class="h-9 px-3 rounded-md border border-border inline-flex items-center text-sm hover:bg-accent shrink-0">{% icon "arrow-up-right" 14 %}<span class="ml-1.5">All categories</span></a>
+</header>
+
+{% if articles %}
+  <div class="rounded-lg border border-border bg-card divide-y divide-border">
+    {% for a in articles %}
+      <a href="{% url 'help_center:article' a.slug %}" class="block px-5 py-4 hover:bg-muted/30 flex items-start justify-between gap-4">
+        <div class="min-w-0 flex-1">
+          <h2 class="font-medium line-clamp-1">{{ a.title }}</h2>
+          <p class="text-sm text-muted-foreground line-clamp-1 mt-0.5">{{ a.summary }}</p>
+        </div>
+        <div class="text-xs text-muted-foreground shrink-0 inline-flex items-center gap-3">
+          <span class="inline-flex items-center gap-1">{% icon "book-open" 12 %}{{ a.reading_minutes }} min</span>
+          {% if a.is_featured %}<span class="inline-flex items-center px-1.5 h-5 rounded text-[10px] font-medium bg-primary/10 text-primary">Featured</span>{% endif %}
+        </div>
+      </a>
+    {% endfor %}
+  </div>
+{% else %}
+  {% include "components/_empty_state.html" with icon="book-open" headline="No articles yet" body="This category doesn't have any published articles." %}
+{% endif %}
+{% endblock %}

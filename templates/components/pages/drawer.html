@@ -1,0 +1,55 @@
+{% extends "components/_detail_layout.html" %}
+{% load apex %}
+
+{% block component_body %}
+<div class="space-y-8">
+
+  <div class="rounded-lg border border-border bg-card p-6">
+    <h2 class="text-sm font-semibold mb-1">Open variants</h2>
+    <p class="text-xs text-muted-foreground mb-4">Each trigger opens a drawer from a different edge. Esc closes; backdrop click closes.</p>
+    <div class="flex flex-wrap gap-2">
+      <button type="button" @click="$dispatch('apex:open', 'drawer-right')"
+              class="h-9 px-3 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:opacity-90">
+        Right (default)
+      </button>
+      <button type="button" @click="$dispatch('apex:open', 'drawer-left')"
+              class="h-9 px-3 rounded-md border border-border text-sm hover:bg-accent">
+        Left
+      </button>
+      <button type="button" @click="$dispatch('apex:open', 'drawer-bottom')"
+              class="h-9 px-3 rounded-md border border-border text-sm hover:bg-accent">
+        Bottom
+      </button>
+      <button type="button" @click="$dispatch('apex:open', 'drawer-large')"
+              class="h-9 px-3 rounded-md border border-border text-sm hover:bg-accent">
+        Right · Large
+      </button>
+    </div>
+  </div>
+
+  <div class="rounded-lg border border-border bg-card overflow-hidden">
+    <div class="px-5 py-3 border-b border-border">
+      <h2 class="text-sm font-semibold">Usage</h2>
+    </div>
+    <pre class="text-xs p-5 overflow-x-auto bg-muted/30"><code>{% templatetag openblock %} include "components/primitives/drawer.html" with id="my-drawer" title="Filters" side="right" body="…content…" {% templatetag closeblock %}
+
+&lt;button @click="$dispatch('apex:open', 'my-drawer')"&gt;Open&lt;/button&gt;</code></pre>
+  </div>
+
+  <div class="rounded-lg border border-border bg-card p-6 text-sm">
+    <h2 class="text-sm font-semibold mb-3">Accessibility</h2>
+    <ul class="space-y-1.5 text-muted-foreground">
+      <li>• <strong class="text-foreground">role="dialog"</strong> + <strong class="text-foreground">aria-modal="true"</strong> + labelled-by the title.</li>
+      <li>• <strong class="text-foreground">Esc</strong> and backdrop-click close the panel.</li>
+      <li>• Focus restores to the triggering element on close (<code class="text-[11px] bg-muted px-1 rounded">apexDrawer()</code> factory).</li>
+      <li>• Slide animations gated on <code class="text-[11px] bg-muted px-1 rounded">prefers-reduced-motion</code>.</li>
+    </ul>
+  </div>
+
+</div>
+
+{% include "components/primitives/drawer.html" with id="drawer-right" title="Filters" side="right" body="Right-side drawer — common for filter panels and detail views." %}
+{% include "components/primitives/drawer.html" with id="drawer-left" title="Navigation" side="left" body="Left-side drawer — typical mobile menu pattern." %}
+{% include "components/primitives/drawer.html" with id="drawer-bottom" title="More options" side="bottom" body="Bottom drawer — best for mobile-first sheets and quick actions." %}
+{% include "components/primitives/drawer.html" with id="drawer-large" title="Customer details" side="right" size="lg" body="Larger drawer — fits a small form or a record summary without leaving the current page." %}
+{% endblock %}

@@ -1,0 +1,32 @@
+{% extends "layouts/settings.html" %}
+{% block settings_content %}
+<div class="mb-6">
+  <h2 class="text-lg font-semibold">Set up two-factor</h2>
+  <p class="text-sm text-muted-foreground">Scan the QR with your authenticator app, then enter the code below.</p>
+</div>
+
+<div class="grid md:grid-cols-2 gap-6 max-w-3xl">
+  <section class="rounded-lg border border-border bg-card p-6">
+    <div class="mx-auto max-w-[240px]">{{ qr_svg|safe }}</div>
+    <p class="mt-4 text-xs text-muted-foreground text-center">Scan with Google Authenticator, 1Password, Authy, or any TOTP app.</p>
+  </section>
+
+  <section class="rounded-lg border border-border bg-card p-6">
+    <p class="text-sm font-medium mb-2">Can't scan? Enter this key manually:</p>
+    <p class="font-mono text-sm break-all bg-muted rounded px-3 py-2 mb-6 select-all">{{ device.secret }}</p>
+
+    <form method="post" class="space-y-4">
+      {% csrf_token %}
+      <div>
+        <label for="{{ form.code.id_for_label }}" class="block text-sm font-medium mb-1.5">Verification code</label>
+        {{ form.code }}
+        {% if form.code.errors %}<p class="text-xs text-destructive mt-1">{{ form.code.errors.0 }}</p>{% endif %}
+      </div>
+      <div class="flex gap-2">
+        <button type="submit" class="h-10 px-4 rounded-md bg-primary text-primary-foreground inline-flex items-center font-medium">Verify and enable</button>
+        <a href="{% url 'settings:two_factor' %}" class="h-10 px-4 rounded-md border border-border inline-flex items-center text-sm hover:bg-accent">Cancel</a>
+      </div>
+    </form>
+  </section>
+</div>
+{% endblock %}

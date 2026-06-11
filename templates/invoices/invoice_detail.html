@@ -1,0 +1,85 @@
+{% extends "layouts/dashboard.html" %}
+{% load apex %}
+{% block title %}{{ invoice.number }} · Apex{% endblock %}
+{% block content %}
+<div class="flex items-start justify-between mb-6">
+  <div>
+    <div class="flex items-center gap-3">
+      <h1 class="font-mono text-2xl font-bold tracking-tight">{{ invoice.number }}</h1>
+      {% include "invoices/_invoice_status_pill.html" with status=invoice.display_status %}
+    </div>
+    <p class="mt-1 text-sm text-muted-foreground">
+      Issued {{ invoice.issue_date|date:"M j, Y" }} · Due {{ invoice.due_date|date:"M j, Y" }}
+    </p>
+  </div>
+  <div class="flex gap-2">
+    <a href="{% url 'invoices:pdf' invoice.pk %}"
+       class="h-10 px-4 rounded-md border border-border inline-flex items-center gap-2 text-sm hover:bg-accent">
+      {% icon "download" %} PDF
+    </a>
+    {% block invoice_actions %}
+      {% if invoice.status == "draft" %}
+        <a href="{% url 'invoices:edit' invoice.pk %}"
+           class="h-10 px-4 rounded-md border border-border inline-flex items-center text-sm hover:bg-accent">Edit</a>
+        <form method="post" action="{% url 'invoices:send' invoice.pk %}">{% csrf_token %}
+          <button class="h-10 px-4 rounded-md bg-primary text-primary-foreground inline-flex items-center font-medium hover:opacity-90 text-sm">Send</button>
+        </form>
+        <form method="post" action="{% url 'invoices:delete' invoice.pk %}"
+              onsubmit="return confirm('Delete draft {{ invoice.number }}?');">{% csrf_token %}
+          <button class="h-10 px-4 rounded-md border border-destructive/40 text-destructive inline-flex items-center text-sm hover:bg-destructive/10">Delete</button>
+        </form>
+      {% elif invoice.status == "sent" %}
+        <form method="post" action="{% url 'invoices:pay' invoice.pk %}">{% csrf_token %}
+          <button class="h-10 px-4 rounded-md bg-green-600 text-white inline-flex items-center font-medium hover:bg-green-700 text-sm">Mark paid</button>
+        </form>
+        <form method="post" action="{% url 'invoices:void' invoice.pk %}"
+              onsubmit="return confirm('Void {{ invoice.number }}? This cannot be undone.');">{% csrf_token %}
+          <button class="h-10 px-4 rounded-md border border-border inline-flex items-center text-sm hover:bg-accent">Void</button>
+        </form>
+      {% endif %}
+    {% endblock %}
+  </div>
+</div>
+
+<div class="grid gap-6 lg:grid-cols-3">
+  <section class="lg:col-span-2 rounded-lg border border-border bg-card p-6">
+    <h2 class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Bill to</h2>
+    <p class="mt-1 font-medium">{{ invoice.customer.name }}</p>
+    {% if invoice.customer.company %}<p class="text-sm">{{ invoice.customer.company }}</p>{% endif %}
+    <p class="text-sm text-muted-foreground">{{ invoice.customer.email }}</p>
+
+    <h2 class="mt-6 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Line items</h2>
+    <table class="mt-2 w-full text-sm">
+      <thead class="border-b border-border text-left text-xs uppercase text-muted-foreground">
+        <tr>
+          <th class="py-2">Description</th>
+          <th class="py-2 w-20 text-right">Qty</th>
+          <th class="py-2 w-28 text-right">Unit price</th>
+          <th class="py-2 w-28 text-right">Amount</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in items %}
+          <tr class="border-b border-border/60 last:border-0">
+            <td class="py-2">{{ item.description }}</td>
+            <td class="py-2 text-right">{{ item.quantity }}</td>
+            <td class="py-2 text-right">${{ item.unit_price|floatformat:2 }}</td>
+            <td class="py-2 text-right">${{ item.amount|floatformat:2 }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    {% if invoice.notes %}
+      <div class="mt-6 rounded-md bg-muted/40 p-4 text-sm">
+        <p class="font-semibold text-muted-foreground">Notes</p>
+        <p class="mt-1 whitespace-pre-line">{{ invoice.notes }}</p>
+      </div>
+    {% endif %}
+  </section>
+
+  <aside class="rounded-lg border border-border bg-card p-6">
+    {% include "invoices/_invoice_totals.html" %}
+  </aside>
+</div>
+{% endblock %}

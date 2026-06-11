@@ -1,0 +1,45 @@
+{% load i18n apex %}
+{% if cl.search_fields %}
+<div id="toolbar">
+  <h2 id="changelist-search-form" class="sr-only">
+    {% blocktrans with name=cl.opts.verbose_name_plural %}Search {{ name }}{% endblocktrans %}
+  </h2>
+  <form id="changelist-search" method="get" role="search" aria-labelledby="changelist-search-form"
+        class="flex flex-wrap items-center gap-2">
+    <label for="searchbar" class="relative flex-1 min-w-[200px] max-w-md">
+      <span class="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none">
+        {% icon "search" 14 %}
+      </span>
+      <input type="text" name="{{ search_var }}" value="{{ cl.query }}" id="searchbar"
+             placeholder="{% blocktrans with name=cl.opts.verbose_name_plural %}Search {{ name }}…{% endblocktrans %}"
+             {% if cl.search_help_text %}aria-describedby="searchbar_helptext"{% endif %}
+             class="w-full h-9 pl-9 pr-3 rounded-md border border-input bg-background text-sm
+                    focus:outline-none focus:ring-2 focus:ring-ring/40 focus:border-ring">
+    </label>
+    <button type="submit"
+            class="h-9 inline-flex items-center gap-1.5 rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground hover:opacity-90">
+      {% trans 'Search' %}
+    </button>
+    {% if show_result_count and cl.query %}
+      <span class="text-xs text-muted-foreground">
+        {% blocktrans count counter=cl.result_count %}{{ counter }} result{% plural %}{{ counter }} results{% endblocktrans %}
+        ·
+        <a href="?{% if cl.is_popup %}{{ is_popup_var }}=1{% if cl.add_facets %}&{% endif %}{% endif %}{% if cl.add_facets %}{{ is_facets_var }}{% endif %}"
+           class="text-primary hover:underline">
+          {% if cl.show_full_result_count %}
+            {% blocktrans with full_result_count=cl.full_result_count %}{{ full_result_count }} total{% endblocktrans %}
+          {% else %}
+            {% trans 'Show all' %}
+          {% endif %}
+        </a>
+      </span>
+    {% endif %}
+    {% for pair in cl.params.items %}
+      {% if pair.0 != search_var %}<input type="hidden" name="{{ pair.0 }}" value="{{ pair.1 }}">{% endif %}
+    {% endfor %}
+  </form>
+  {% if cl.search_help_text %}
+    <p class="mt-1.5 text-xs text-muted-foreground" id="searchbar_helptext">{{ cl.search_help_text }}</p>
+  {% endif %}
+</div>
+{% endif %}

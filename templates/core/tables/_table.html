@@ -1,0 +1,39 @@
+{% load apex %}
+{% comment %}
+Main datatable partial. The wrapping #table-<key> div is the HTMX swap
+target. When `config.bulk_actions` is non-empty, the table body is
+wrapped in a <form> that POSTs `action=<slug>&ids=<pk>...` to the same
+view, and an Alpine `apexBulk()` factory tracks selection state.
+
+Context (provided by TableView):
+  config, page_obj, object_list, visible_columns, is_partial,
+  empty_mode, any_filter_active.
+{% endcomment %}
+<div id="table-{{ config.key }}" class="space-y-3">
+
+  {% include "core/tables/_toolbar.html" %}
+
+  {# Page IDs payload — apexBulk reads this to power "select all on page". #}
+  {% if config.bulk_actions %}
+    {% page_ids_script object_list config.key %}
+  {% endif %}
+
+  {% if config.bulk_actions %}
+    <form method="post" action="{{ request.path }}"
+          x-data='apexBulk({pageIds: JSON.parse(document.getElementById("table-pageids-{{ config.key }}").textContent || "[]")})'>
+      {% csrf_token %}
+      <input type="hidden" name="action" :value="pendingAction">
+      <template x-for="id in selected" :key="id">
+        <input type="hidden" name="ids" :value="id">
+      </template>
+      {% include "core/tables/_bulk_toolbar.html" %}
+      {% include "core/tables/_table_body.html" %}
+    </form>
+  {% else %}
+    {% include "core/tables/_table_body.html" %}
+  {% endif %}
+
+  {% if page_obj and page_obj.paginator.num_pages > 1 %}
+    {% include "core/tables/_pagination.html" %}
+  {% endif %}
+</div>

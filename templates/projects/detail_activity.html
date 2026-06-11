@@ -1,0 +1,37 @@
+{% extends "layouts/dashboard.html" %}
+{% load apex %}
+{% block title %}{{ project.name }} · Activity · Apex{% endblock %}
+{% block content %}
+{% include "projects/_detail_header.html" with project=project active_tab=active_tab %}
+
+<div class="rounded-lg border border-border bg-card">
+  <div class="px-4 pt-4 pb-3 border-b border-border">
+    <h2 class="font-semibold">Activity timeline</h2>
+    <p class="text-sm text-muted-foreground">Recent task updates and milestones.</p>
+  </div>
+  {% if events %}
+    <ol class="divide-y divide-border">
+      {% for e in events %}
+        <li class="px-4 py-4 flex items-start gap-3">
+          <span class="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full
+                       {% if e.kind == 'task_done' or e.kind == 'milestone_done' %}bg-success/10 text-success
+                       {% elif e.kind == 'task_created' %}bg-primary/10 text-primary
+                       {% else %}bg-muted text-muted-foreground{% endif %}">
+            {% icon e.icon 16 %}
+          </span>
+          <div class="flex-1 min-w-0">
+            <p class="text-sm font-medium">{{ e.title }}</p>
+            <p class="text-xs text-muted-foreground">
+              {% if e.by %}{{ e.by.get_full_name|default:e.by.username }} · {% endif %}{{ e.when|date:"M j, Y · H:i" }}
+            </p>
+          </div>
+        </li>
+      {% endfor %}
+    </ol>
+  {% else %}
+    <div class="p-12 text-center">
+      <p class="text-sm text-muted-foreground">No activity yet — create some tasks to fill this timeline.</p>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

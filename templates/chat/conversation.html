@@ -1,0 +1,27 @@
+{% extends "chat/_layout.html" %}
+{% load apex %}
+{% block title %}{{ partner.get_full_name|default:partner.username }} · Chat · Apex{% endblock %}
+
+{% block stream_pane %}
+<header class="h-12 px-6 flex items-center border-b border-border">
+  <h2 class="font-semibold text-sm">{{ partner.get_full_name|default:partner.username }}</h2>
+</header>
+
+{% include "chat/_message_stream.html" %}
+
+<footer class="border-t border-border px-4 py-3 bg-card">
+  <form method="post" action="{% url 'chat:send' partner.pk %}" class="flex gap-2">
+    {% csrf_token %}
+    <input type="text"
+           name="body"
+           required
+           autofocus
+           placeholder="Type a message…"
+           class="flex-1 h-10 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring/50 focus:border-ring placeholder:text-muted-foreground transition-colors">
+    <button type="submit"
+            class="h-10 px-4 rounded-md bg-primary text-primary-foreground inline-flex items-center font-medium hover:opacity-90 text-sm">
+      Send
+    </button>
+  </form>
+</footer>
+{% endblock %}

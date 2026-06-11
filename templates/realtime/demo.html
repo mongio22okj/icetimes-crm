@@ -1,0 +1,86 @@
+{% extends "layouts/dashboard.html" %}
+{% load apex %}
+{% block title %}Realtime · Apex{% endblock %}
+{% block content %}
+<div class="max-w-4xl">
+  <div class="mb-6">
+    <h1 class="text-2xl font-bold tracking-tight">Realtime</h1>
+    <p class="text-sm text-muted-foreground mt-1">
+      WebSocket-backed presence and notifications. Open this page in two tabs
+      (or share with a teammate) and watch the counts react.
+    </p>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+    {# Presence card — live count of online users via /ws/presence/ #}
+    <div x-data="apexPresence()"
+         class="rounded-lg border border-border bg-card p-5">
+      <div class="flex items-center gap-3 mb-2">
+        <span class="h-9 w-9 rounded-full bg-success/10 text-success inline-flex items-center justify-center">
+          {% icon "users" 18 %}
+        </span>
+        <div>
+          <p class="text-xs font-medium uppercase tracking-wider text-muted-foreground">Online now</p>
+          <p class="text-2xl font-bold tabular-nums" x-text="count">…</p>
+        </div>
+      </div>
+      <p class="text-xs text-muted-foreground"
+         x-show="lastJoined"
+         x-cloak>
+        <span x-text="lastJoined"></span> just joined.
+      </p>
+      <p class="text-xs text-muted-foreground"
+         x-show="lastLeft"
+         x-cloak>
+        <span x-text="lastLeft"></span> left.
+      </p>
+    </div>
+
+    {# Live notifications card — dispatch fans out via /ws/notifications/ #}
+    <div class="rounded-lg border border-border bg-card p-5">
+      <div class="flex items-center gap-3 mb-3">
+        <span class="h-9 w-9 rounded-full bg-primary/10 text-primary inline-flex items-center justify-center">
+          {% icon "bell" 18 %}
+        </span>
+        <div>
+          <p class="text-xs font-medium uppercase tracking-wider text-muted-foreground">Push test</p>
+          <p class="text-sm">Send yourself a notification</p>
+        </div>
+      </div>
+      <p class="text-xs text-muted-foreground mb-3">
+        Click below — the bell badge updates in every open tab and a toast
+        appears, all without an HTTP refresh.
+      </p>
+      <form method="post" action="{% url 'realtime:fire_test' %}">
+        {% csrf_token %}
+        <button type="submit"
+                class="h-10 px-4 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 inline-flex items-center gap-2">
+          {% icon "rocket" 16 %} Fire test notification
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <div class="rounded-lg border border-border bg-card p-6">
+    <h2 class="text-base font-semibold mb-3">How it works</h2>
+    <ul class="space-y-2 text-sm text-muted-foreground">
+      <li class="flex gap-2">
+        <span class="text-primary">{% icon "check" 14 %}</span>
+        <span><strong class="text-foreground">Channels 4 + Daphne</strong> — ASGI replaces gunicorn for WebSocket support. HTTP requests still go through Django's normal stack.</span>
+      </li>
+      <li class="flex gap-2">
+        <span class="text-primary">{% icon "check" 14 %}</span>
+        <span><strong class="text-foreground">In-memory channel layer</strong> in dev (zero infra). Set <code class="text-xs bg-muted px-1 rounded">REDIS_URL</code> + install the <code class="text-xs bg-muted px-1 rounded">realtime</code> extra in prod for cross-process fan-out.</span>
+      </li>
+      <li class="flex gap-2">
+        <span class="text-primary">{% icon "check" 14 %}</span>
+        <span><strong class="text-foreground">Per-user fan-out</strong> via channel groups (<code class="text-xs bg-muted px-1 rounded">notify.user.&lt;id&gt;</code>). The notification dispatcher pushes to the layer after every <code class="text-xs bg-muted px-1 rounded">Notification.objects.create()</code>.</span>
+      </li>
+      <li class="flex gap-2">
+        <span class="text-primary">{% icon "check" 14 %}</span>
+        <span><strong class="text-foreground">Auto-reconnect with exponential backoff</strong> on the client. Anonymous connections close with code 4401 and don't retry.</span>
+      </li>
+    </ul>
+  </div>
+</div>
+{% endblock %}

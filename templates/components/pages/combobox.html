@@ -1,0 +1,53 @@
+{% extends "components/_detail_layout.html" %}
+{% load apex %}
+
+{% block component_body %}
+<div class="space-y-8">
+
+  <div class="rounded-lg border border-border bg-card p-6">
+    <h2 class="text-sm font-semibold mb-1">Static options</h2>
+    <p class="text-xs text-muted-foreground mb-4">Type to filter; ↑/↓ to navigate; Enter to pick; Esc to close.</p>
+    <div x-data='apexCombobox({all: ["Acme Inc","Bright Labs","Crescent Co","Delta Group","Echo Industries","Fjord LLC","Gravity Works","Hudson &amp; Co","Iridium","Juno Systems","Kepler Inc","Lumen","Mosaic","Neo","Orion","Polaris","Quantum","Riveron","Sable","Trifecta"]})' class="relative max-w-sm">
+      <button type="button" @click="open = !open" :aria-expanded="open"
+              role="combobox"
+              class="w-full h-10 px-3 rounded-md border border-input bg-background text-sm flex items-center justify-between">
+        <span x-text="value || 'Select a customer…'" :class="value ? '' : 'text-muted-foreground'"></span>
+        {% icon "chevron-down" 14 cls="text-muted-foreground" %}
+      </button>
+      <div x-show="open" x-cloak @click.outside="close()" @keydown.escape.window="close()"
+           class="absolute z-30 left-0 right-0 top-full mt-1 rounded-md border border-border bg-popover shadow-lg p-1">
+        <div class="px-2 py-1.5">
+          <input type="text" x-model="query" x-ref="searchInput"
+                 @keydown.down.prevent="moveDown()"
+                 @keydown.up.prevent="moveUp()"
+                 @keydown.enter.prevent="pickActive()"
+                 placeholder="Type to search…"
+                 class="w-full h-9 px-2 rounded-md border border-input bg-background text-sm" />
+        </div>
+        <div role="listbox" class="max-h-60 overflow-y-auto">
+          <template x-for="(opt, i) in filtered()" :key="opt">
+            <button type="button" @click="pick(opt)" @mouseenter="activeIndex = i"
+                    role="option" :aria-selected="value === opt"
+                    class="w-full text-left px-3 py-1.5 text-sm rounded flex items-center justify-between"
+                    :class="i === activeIndex ? 'bg-accent text-foreground' : ''">
+              <span x-text="opt"></span>
+              <span x-show="value === opt">{% icon "check" 14 %}</span>
+            </button>
+          </template>
+          <p x-show="filtered().length === 0" class="text-xs text-muted-foreground px-3 py-2">No matches.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="rounded-lg border border-border bg-card overflow-hidden">
+    <div class="px-5 py-3 border-b border-border">
+      <h2 class="text-sm font-semibold">Phase 12 note</h2>
+    </div>
+    <div class="px-5 py-4 text-sm text-muted-foreground">
+      This demo uses a static option list. Phase 12 ships <code class="text-[11px] bg-muted px-1 rounded">apps.core.widgets.Combobox</code> with HTMX-powered async typeahead from any URL endpoint via the <code class="text-[11px] bg-muted px-1 rounded">TypeaheadMixin</code>.
+    </div>
+  </div>
+
+</div>
+{% endblock %}

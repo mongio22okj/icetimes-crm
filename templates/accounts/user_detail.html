@@ -1,0 +1,49 @@
+{% extends "layouts/dashboard.html" %}
+{% block title %}{{ target_user.username }} · Apex{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+  <div>
+    <nav class="text-sm text-muted-foreground mb-1">
+      <a href="{% url 'users:list' %}" class="hover:text-primary">Users</a> <span class="mx-1">/</span>
+      <span>{{ target_user.username }}</span>
+    </nav>
+    <h1 class="text-2xl font-bold tracking-tight">{{ target_user.get_full_name|default:target_user.username }}</h1>
+    <p class="text-sm text-muted-foreground">{{ target_user.email }}</p>
+  </div>
+  <a href="{% url 'users:edit' target_user.pk %}" class="h-10 px-4 rounded-md border border-border inline-flex items-center font-medium hover:bg-muted">Edit</a>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+  <div class="lg:col-span-2 rounded-lg border border-border bg-card p-6 space-y-4">
+    <h2 class="font-semibold">Profile</h2>
+    <div class="grid grid-cols-2 gap-4 text-sm">
+      <div><p class="text-xs text-muted-foreground">Username</p><p>{{ target_user.username }}</p></div>
+      <div><p class="text-xs text-muted-foreground">Email</p><p>{{ target_user.email }}</p></div>
+      <div><p class="text-xs text-muted-foreground">First name</p><p>{{ target_user.first_name|default:"—" }}</p></div>
+      <div><p class="text-xs text-muted-foreground">Last name</p><p>{{ target_user.last_name|default:"—" }}</p></div>
+      <div><p class="text-xs text-muted-foreground">Role</p><p>{{ target_user.get_role_display }}</p></div>
+      <div><p class="text-xs text-muted-foreground">Joined</p><p>{{ target_user.date_joined|date:"M d, Y" }}</p></div>
+    </div>
+    {% if target_user.bio %}
+    <div>
+      <h3 class="font-semibold mb-2">Bio</h3>
+      <p class="text-sm text-muted-foreground">{{ target_user.bio }}</p>
+    </div>
+    {% endif %}
+  </div>
+  <div class="rounded-lg border border-border bg-card p-6 space-y-4">
+    <div>
+      <p class="text-xs text-muted-foreground">Status</p>
+      <p>{% if target_user.is_active %}<span class="text-success">Active</span>{% else %}<span class="text-muted-foreground">Inactive</span>{% endif %}</p>
+    </div>
+    <div>
+      <p class="text-xs text-muted-foreground">Staff</p>
+      <p>{{ target_user.is_staff|yesno:"Yes,No" }}</p>
+    </div>
+    <div>
+      <p class="text-xs text-muted-foreground">Last login</p>
+      <p class="text-sm">{{ target_user.last_login|date:"M d, Y H:i"|default:"Never" }}</p>
+    </div>
+  </div>
+</div>
+{% endblock %}

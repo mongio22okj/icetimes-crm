@@ -1,0 +1,51 @@
+{% extends "layouts/dashboard.html" %}
+{% load apex %}
+{% comment %}Parent template for any /components/<slug>/ page.
+
+  Pages extend this and override `component_body`. Context passed by
+  ComponentDetailView:
+    primitive   — the Primitive dataclass
+    groups      — left-rail TOC data
+{% endcomment %}
+{% block title %}{{ primitive.label }} · Components · Apex{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 lg:grid-cols-[220px_1fr] gap-8">
+  {# ── Left rail TOC ──────────────────────────────────────────────── #}
+  <aside class="hidden lg:block">
+    <nav class="sticky top-6 text-sm space-y-6" aria-label="Components">
+      {% for group in groups %}
+        <div>
+          <p class="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold mb-2">{{ group.label }}</p>
+          <ul class="space-y-0.5">
+            {% for p in group.items %}
+              <li>
+                <a href="{% url 'components:detail' p.slug %}"
+                   class="block px-2 py-1 rounded-md text-sm
+                          {% if p.slug == primitive.slug %}bg-primary/10 text-primary font-medium{% else %}text-muted-foreground hover:bg-accent hover:text-foreground{% endif %}">
+                  {{ p.label }}
+                </a>
+              </li>
+            {% endfor %}
+          </ul>
+        </div>
+      {% endfor %}
+    </nav>
+  </aside>
+
+  {# ── Main column ───────────────────────────────────────────────── #}
+  <div class="min-w-0">
+    <div class="mb-6 flex items-start gap-4">
+      <span class="inline-flex h-12 w-12 items-center justify-center rounded-md bg-primary/10 text-primary shrink-0">
+        {% icon primitive.icon 24 %}
+      </span>
+      <div>
+        <h1 class="text-2xl font-bold tracking-tight">{{ primitive.label }}</h1>
+        <p class="mt-1 text-sm text-muted-foreground">{{ primitive.description }}</p>
+      </div>
+    </div>
+
+    {% block component_body %}{% endblock %}
+  </div>
+</div>
+{% endblock %}

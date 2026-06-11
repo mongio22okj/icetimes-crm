@@ -1,0 +1,44 @@
+{% extends "components/_detail_layout.html" %}
+{% load apex %}
+
+{% block component_body %}
+<div class="space-y-8">
+
+  <div class="rounded-lg border border-border bg-card p-6">
+    <h2 class="text-sm font-semibold mb-1">No data yet</h2>
+    <p class="text-xs text-muted-foreground mb-4">First-time use of a feature — invite the user to take the first action.</p>
+    {% include "components/_empty_state.html" with icon="package" headline="No products yet" body="Start by adding your first product. You can edit and re-organize them later." cta_url="#" cta_label="Add product" %}
+  </div>
+
+  <div class="rounded-lg border border-border bg-card p-6">
+    <h2 class="text-sm font-semibold mb-1">No results from filter</h2>
+    <p class="text-xs text-muted-foreground mb-4">Filter or search returned nothing — offer a way back.</p>
+    {% include "components/_empty_state.html" with icon="search" headline="No matches" body="No customers match your current filters." cta_url="#" cta_label="Clear filters" secondary_url="#" secondary_label="Add customer" %}
+  </div>
+
+  <div class="rounded-lg border border-border bg-card p-6">
+    <h2 class="text-sm font-semibold mb-1">No permission</h2>
+    <p class="text-xs text-muted-foreground mb-4">User reached a feature their role doesn't grant.</p>
+    {% include "components/_empty_state.html" with icon="eye" headline="You don't have access" body="Ask an admin to grant you the Billing role to view this page." cta_url="#" cta_label="Contact admin" %}
+  </div>
+
+  <div class="rounded-lg border border-border bg-card p-6">
+    <h2 class="text-sm font-semibold mb-1">Error / something went wrong</h2>
+    <p class="text-xs text-muted-foreground mb-4">A request failed — let the user retry without leaving the page.</p>
+    {% include "components/_empty_state.html" with icon="x" headline="Couldn't load activity" body="The activity feed didn't respond. Check your connection and try again." cta_url="#" cta_label="Retry" %}
+  </div>
+
+  <div class="rounded-lg border border-border bg-card p-6">
+    <h2 class="text-sm font-semibold mb-1">Success / completed</h2>
+    <p class="text-xs text-muted-foreground mb-4">Inbox-zero / task-complete state.</p>
+    {% include "components/_empty_state.html" with icon="check" headline="All caught up" body="You've reviewed every notification. Nice work." %}
+  </div>
+
+  <div class="rounded-lg border border-border bg-card p-6">
+    <h2 class="text-sm font-semibold mb-1">First-run with two CTAs</h2>
+    <p class="text-xs text-muted-foreground mb-4">Big primary action plus a secondary "import" or "use sample data" path.</p>
+    {% include "components/_empty_state.html" with icon="folder" headline="No files in this folder" body="Upload your first file or pick a sample to explore the app." cta_url="#" cta_label="Upload" secondary_url="#" secondary_label="Use sample files" %}
+  </div>
+
+</div>
+{% endblock %}

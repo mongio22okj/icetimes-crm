@@ -1,0 +1,25 @@
+{% extends "layouts/auth.html" %}
+{% block title %}Two-factor code · Apex{% endblock %}
+{% block auth_content %}
+<h1 class="text-2xl font-bold tracking-tight mb-1">Two-factor code</h1>
+<p class="text-sm text-muted-foreground mb-6">Enter the 6-digit code from your authenticator app, or a recovery code.</p>
+
+<form method="post" class="space-y-4">
+  {% csrf_token %}
+  {% if form.non_field_errors %}
+    <p class="text-xs text-destructive">{{ form.non_field_errors }}</p>
+  {% endif %}
+
+  <div>
+    <label for="{{ form.code.id_for_label }}" class="sr-only">Code</label>
+    {{ form.code }}
+    {% if form.code.errors %}<p class="text-xs text-destructive mt-1">{{ form.code.errors.0 }}</p>{% endif %}
+  </div>
+
+  <button type="submit" class="w-full h-10 rounded-md bg-primary text-primary-foreground font-medium">Verify</button>
+</form>
+
+<div class="mt-4 text-sm text-center">
+  <a href="{% url 'login' %}" class="text-muted-foreground hover:text-primary">Back to sign in</a>
+</div>
+{% endblock %}

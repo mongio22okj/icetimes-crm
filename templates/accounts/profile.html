@@ -1,0 +1,68 @@
+{% extends "layouts/settings.html" %}
+{% load apex %}
+
+{% block settings_content %}
+<div class="mb-6">
+  <h2 class="text-lg font-semibold">Profile</h2>
+  <p class="text-sm text-muted-foreground">Update your profile information.</p>
+</div>
+
+<form method="post" enctype="multipart/form-data" class="space-y-6">
+  {% csrf_token %}
+  {% if form.non_field_errors %}
+    <div class="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">{{ form.non_field_errors }}</div>
+  {% endif %}
+
+  <section class="rounded-lg border border-border bg-card p-6">
+    <h3 class="text-base font-semibold">Profile photo</h3>
+    <p class="text-sm text-muted-foreground mb-4">PNG or JPG, up to 2 MB.</p>
+    <div class="flex items-center gap-4">
+      {% if user.avatar %}
+        <img src="{{ user.avatar.url }}" alt="" class="h-16 w-16 rounded-full object-cover" />
+      {% else %}
+        <span class="h-16 w-16 rounded-full inline-flex items-center justify-center text-lg font-semibold text-white"
+              style="background-color: {{ user|avatar_color }};">{{ user|initials }}</span>
+      {% endif %}
+      <label class="inline-flex h-9 px-3 items-center rounded-md border border-input bg-background text-sm font-medium hover:bg-accent cursor-pointer">
+        <span>Change photo</span>
+        <span class="sr-only">Upload avatar</span>
+        <span class="hidden">{{ form.avatar }}</span>
+      </label>
+    </div>
+    {% if form.avatar.errors %}<p class="text-xs text-destructive mt-2">{{ form.avatar.errors.0 }}</p>{% endif %}
+  </section>
+
+  <section class="rounded-lg border border-border bg-card p-6 space-y-4">
+    <div>
+      <h3 class="text-base font-semibold">Account</h3>
+      <p class="text-sm text-muted-foreground">Your username is <span class="font-mono">{{ user.username }}</span> (cannot be changed).</p>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div>
+        <label for="{{ form.first_name.id_for_label }}" class="block text-sm font-medium mb-1.5">First name</label>
+        {{ form.first_name }}
+        {% if form.first_name.errors %}<p class="text-xs text-destructive mt-1">{{ form.first_name.errors.0 }}</p>{% endif %}
+      </div>
+      <div>
+        <label for="{{ form.last_name.id_for_label }}" class="block text-sm font-medium mb-1.5">Last name</label>
+        {{ form.last_name }}
+        {% if form.last_name.errors %}<p class="text-xs text-destructive mt-1">{{ form.last_name.errors.0 }}</p>{% endif %}
+      </div>
+    </div>
+    <div>
+      <label for="{{ form.email.id_for_label }}" class="block text-sm font-medium mb-1.5">Email address</label>
+      {{ form.email }}
+      {% if form.email.errors %}<p class="text-xs text-destructive mt-1">{{ form.email.errors.0 }}</p>{% endif %}
+    </div>
+    <div>
+      <label for="{{ form.bio.id_for_label }}" class="block text-sm font-medium mb-1.5">Bio</label>
+      {{ form.bio }}
+      {% if form.bio.errors %}<p class="text-xs text-destructive mt-1">{{ form.bio.errors.0 }}</p>{% endif %}
+    </div>
+  </section>
+
+  <div class="flex justify-end gap-2">
+    <button type="submit" class="h-10 px-4 rounded-md bg-primary text-primary-foreground inline-flex items-center font-medium hover:opacity-90 transition-opacity">Save changes</button>
+  </div>
+</form>
+{% endblock %}

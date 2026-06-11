@@ -1,0 +1,80 @@
+{% load apex i18n %}
+<div x-data="{ open: false }"
+     @click.outside="open = false"
+     @keydown.escape="open = false; $refs.trigger.focus()"
+     class="relative">
+  <button type="button"
+          x-ref="trigger"
+          @click="open = !open"
+          :aria-expanded="open"
+          aria-haspopup="true"
+          aria-label="User menu for {{ user.get_full_name|default:user.username }}"
+          class="h-9 flex items-center gap-2 rounded-md hover:bg-accent px-2">
+    {% if user.avatar %}
+      <img src="{{ user.avatar.url }}" alt="" class="h-7 w-7 rounded-full object-cover" />
+    {% else %}
+      <span class="h-7 w-7 rounded-full inline-flex items-center justify-center text-xs font-semibold text-white"
+            style="background-color: {{ user|avatar_color }};">{{ user|initials }}</span>
+    {% endif %}
+    <span class="hidden sm:inline text-sm font-medium">{{ user.username }}</span>
+    {% icon "chevron-down" 14 "text-muted-foreground" %}
+  </button>
+
+  <div x-show="open"
+       x-cloak
+       x-transition
+       class="absolute right-0 mt-2 w-56 rounded-md border border-border bg-popover text-popover-foreground shadow-lg overflow-hidden z-40"
+       style="display: none;">
+    <div class="px-3 py-2.5 border-b border-border">
+      <div class="text-sm font-medium truncate">{{ user.get_full_name|default:user.username }}</div>
+      {% if user.email %}
+        <div class="text-xs text-muted-foreground truncate">{{ user.email }}</div>
+      {% else %}
+        <div class="text-xs text-muted-foreground truncate capitalize">{{ user.get_role_display|default:"Member" }}</div>
+      {% endif %}
+    </div>
+    <nav aria-label="User menu">
+      <ul class="py-1 text-sm">
+        <li>
+          <a href="{% url 'settings:profile' %}"
+             class="flex items-center gap-2 px-3 py-2 hover:bg-accent hover:text-accent-foreground">
+            {% icon "settings" 14 "text-muted-foreground" %}
+            <span>Settings</span>
+          </a>
+        </li>
+        <li>
+          <a href="{% url 'lock' %}"
+             class="flex items-center gap-2 px-3 py-2 hover:bg-accent hover:text-accent-foreground">
+            {% icon "search" 14 "text-muted-foreground" %}
+            <span>Lock screen</span>
+          </a>
+        </li>
+      </ul>
+      <div class="border-t border-border px-3 py-2">
+        <form method="post" action="{% url 'set_language' %}">
+          {% csrf_token %}
+          <input type="hidden" name="next" value="{{ request.path }}">
+          <label class="block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">{% trans "Language" %}</label>
+          {% get_current_language as LANG %}
+          {% get_available_languages as LANGUAGES %}
+          <select name="language" onchange="this.form.submit()"
+                  class="w-full h-8 rounded-md border border-input bg-background px-2 text-xs">
+            {% for code, name in LANGUAGES %}
+              <option value="{{ code }}" {% if code == LANG %}selected{% endif %}>{{ name }}</option>
+            {% endfor %}
+          </select>
+        </form>
+      </div>
+      <div class="border-t border-border">
+        <form method="post" action="{% url 'logout' %}">
+          {% csrf_token %}
+          <button type="submit"
+                  class="w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-accent hover:text-accent-foreground">
+            {% icon "log-out" 14 "text-muted-foreground" %}
+            <span>{% trans "Sign out" %}</span>
+          </button>
+        </form>
+      </div>
+    </nav>
+  </div>
+</div>

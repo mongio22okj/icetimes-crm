@@ -1,0 +1,51 @@
+{% extends "layouts/dashboard.html" %}
+{% block title %}{{ product.name }} · Apex{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+  <div>
+    <nav class="text-sm text-muted-foreground mb-1">
+      <a href="{% url 'products:list' %}" class="hover:text-primary">Products</a> <span class="mx-1">/</span>
+      <span>{{ product.name }}</span>
+    </nav>
+    <h1 class="text-2xl font-bold tracking-tight">{{ product.name }}</h1>
+    <p class="text-sm text-muted-foreground">SKU: {{ product.sku }}</p>
+  </div>
+  <a href="{% url 'products:edit' product.pk %}" class="h-10 px-4 rounded-md border border-border inline-flex items-center font-medium hover:bg-muted">
+    Edit
+  </a>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+  <div class="lg:col-span-2 rounded-lg border border-border bg-card p-6 space-y-4">
+    {% if product.image %}
+      <img src="{{ product.image.url }}" alt="{{ product.name }}" class="w-full h-64 object-cover rounded-md">
+    {% endif %}
+    <div>
+      <h2 class="font-semibold mb-2">Description</h2>
+      <p class="text-sm text-muted-foreground">{{ product.description|default:"No description." }}</p>
+    </div>
+  </div>
+  <div class="rounded-lg border border-border bg-card p-6 space-y-4">
+    <div>
+      <p class="text-xs text-muted-foreground">Price</p>
+      <p class="text-2xl font-bold">${{ product.price }}</p>
+    </div>
+    <div>
+      <p class="text-xs text-muted-foreground">Stock</p>
+      <p class="text-lg">{{ product.stock }} units</p>
+    </div>
+    <div>
+      <p class="text-xs text-muted-foreground">Status</p>
+      <span class="inline-block text-xs rounded px-2 py-1 bg-muted">{{ product.get_status_display }}</span>
+    </div>
+    <div>
+      <p class="text-xs text-muted-foreground">Category</p>
+      <p class="text-sm">{{ product.category.name }}</p>
+    </div>
+    <div>
+      <p class="text-xs text-muted-foreground">Created</p>
+      <p class="text-sm">{{ product.created_at|date:"M d, Y" }}</p>
+    </div>
+  </div>
+</div>
+{% endblock %}

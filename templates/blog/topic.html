@@ -1,0 +1,24 @@
+{% extends "layouts/dashboard.html" %}
+{% load apex %}
+{% block title %}{{ topic.name }} · Apex blog{% endblock %}
+{% block content %}
+<header class="mb-8">
+  <a href="{% url 'blog:list' %}" class="text-sm text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 mb-4">
+    {% icon "chevron-down" 14 cls="rotate-90" %}<span>All posts</span>
+  </a>
+  <span class="inline-flex items-center px-2 h-6 rounded-md text-xs font-medium mb-3" style="background-color: {{ topic.accent }}1a; color: {{ topic.accent }};">{{ topic.name }}</span>
+  <h1 class="text-3xl font-bold tracking-tight">{{ topic.name }}</h1>
+  {% if topic.description %}<p class="mt-1 text-sm text-muted-foreground">{{ topic.description }}</p>{% endif %}
+  <p class="mt-2 text-xs text-muted-foreground">{{ posts.count }} {{ posts.count|pluralize:"post,posts" }}</p>
+</header>
+
+{% if posts %}
+  <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+    {% for post in posts %}
+      {% include "blog/_card.html" with post=post %}
+    {% endfor %}
+  </div>
+{% else %}
+  {% include "components/_empty_state.html" with icon="book-open" headline="No posts in this topic yet" body="Check back soon for new content." cta_url="/blog/" cta_label="Browse all posts" %}
+{% endif %}
+{% endblock %}

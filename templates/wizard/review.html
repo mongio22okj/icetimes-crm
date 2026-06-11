@@ -1,0 +1,27 @@
+{% extends "layouts/dashboard.html" %}
+{% block title %}Onboarding · Review · Apex{% endblock %}
+{% block content %}
+<div class="max-w-2xl">
+  <div class="mb-6">
+    <h1 class="text-2xl font-bold tracking-tight">Review and submit</h1>
+    <p class="text-sm text-muted-foreground mt-1">Step 4 of 4. Looks good? Submit to finish.</p>
+  </div>
+  {% include "wizard/_progress.html" %}
+
+  <section class="rounded-lg border border-border bg-card p-6 space-y-3 text-sm">
+    <div class="grid grid-cols-3 gap-2"><dt class="text-muted-foreground">Name</dt><dd class="col-span-2">{{ data.name }}</dd></div>
+    <div class="grid grid-cols-3 gap-2"><dt class="text-muted-foreground">Email</dt><dd class="col-span-2">{{ data.email }}</dd></div>
+    <div class="grid grid-cols-3 gap-2"><dt class="text-muted-foreground">Company</dt><dd class="col-span-2">{{ data.company|default:"—" }}</dd></div>
+    <div class="grid grid-cols-3 gap-2"><dt class="text-muted-foreground">Role</dt><dd class="col-span-2">{{ data.role|default:"—" }}</dd></div>
+    <div class="grid grid-cols-3 gap-2"><dt class="text-muted-foreground">Team size</dt><dd class="col-span-2">{{ data.team_size }}</dd></div>
+    <div class="grid grid-cols-3 gap-2"><dt class="text-muted-foreground">Theme</dt><dd class="col-span-2">{{ data.theme }}</dd></div>
+    <div class="grid grid-cols-3 gap-2"><dt class="text-muted-foreground">Notifications</dt><dd class="col-span-2">{{ data.notifications_enabled|yesno:"On,Off" }}</dd></div>
+  </section>
+
+  <form method="post" class="mt-6 flex justify-between">
+    {% csrf_token %}
+    <a href="{% url 'wizard:step3' %}" class="h-10 px-4 rounded-md border border-border inline-flex items-center text-sm hover:bg-accent">Back</a>
+    <button type="submit" class="h-10 px-6 rounded-md bg-primary text-primary-foreground font-medium hover:opacity-90 text-sm">Submit onboarding</button>
+  </form>
+</div>
+{% endblock %}

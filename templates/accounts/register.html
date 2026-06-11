@@ -1,0 +1,23 @@
+{% extends "layouts/auth.html" %}
+{% block title %}Create your account · Apex{% endblock %}
+{% block auth_content %}
+<h1 class="text-2xl font-bold tracking-tight mb-1">Create your account</h1>
+<p class="text-sm text-muted-foreground mb-6">Start your 14-day trial. No credit card required.</p>
+<form method="post" class="space-y-4">
+  {% csrf_token %}
+  {% if form.non_field_errors %}
+    <div class="text-sm text-destructive mb-3">{{ form.non_field_errors }}</div>
+  {% endif %}
+  {% for field in form %}
+    <div>
+      <label for="{{ field.id_for_label }}" class="block text-sm font-medium mb-1">{{ field.label }}</label>
+      {{ field }}
+      {% if field.errors %}<p class="text-xs text-destructive mt-1">{{ field.errors.0 }}</p>{% endif %}
+    </div>
+  {% endfor %}
+  <button type="submit" class="w-full h-10 rounded-md bg-primary text-primary-foreground font-medium">Create account</button>
+</form>
+<p class="mt-4 text-sm text-muted-foreground text-center">
+  Already have an account? <a href="{% url 'login' %}" class="text-primary font-medium">Sign in</a>
+</p>
+{% endblock %}

@@ -1,0 +1,102 @@
+{% extends "layouts/docs.html" %}
+{% load docs_tags %}
+
+{% block doc_title %}Brand + tokens{% endblock %}
+{% block doc_subtitle %}Your first 10 minutes after cloning. Brand name, logo, palette, site URL, email defaults — in priority order.{% endblock %}
+
+{% block doc_body %}
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">1. Brand name everywhere "Apex" appears</h2>
+  <p class="text-sm text-muted-foreground">
+    Search-and-replace covers most of it:
+  </p>
+  {% code lang="bash" %}# GNU sed (Linux):
+grep -rl --include='*.html' --include='*.py' --include='*.md' \
+  --exclude-dir=node_modules --exclude-dir=.venv 'Apex' . \
+  | xargs sed -i 's/Apex/Yourbrand/g'
+
+# macOS / BSD sed: change `-i` to `-i ''`{% endcode %}
+  <p class="text-sm text-muted-foreground">After the bulk replace, verify these files manually:</p>
+  <ul class="space-y-1.5 text-sm text-muted-foreground ml-5 list-disc">
+    <li><code class="rounded bg-muted px-1 text-xs">templates/base.html</code> — <code class="rounded bg-muted px-1 text-xs">&lt;title&gt;</code> block default</li>
+    <li><code class="rounded bg-muted px-1 text-xs">templates/partials/sidebar.html</code> — sidebar logo word</li>
+    <li><code class="rounded bg-muted px-1 text-xs">apex/settings/base.py</code> — <code class="rounded bg-muted px-1 text-xs">DEMO_USERNAME</code> / <code class="rounded bg-muted px-1 text-xs">DEMO_PASSWORD</code></li>
+    <li><code class="rounded bg-muted px-1 text-xs">apps/marketing/templates/marketing/*.html</code> — hero copy, footer, OG tags</li>
+    <li><code class="rounded bg-muted px-1 text-xs">templates/registration/password_reset_email.{txt,html}</code> — email subject + signoff</li>
+  </ul>
+  {% callout type="warn" %}
+    Don't rename the Python package <code class="rounded bg-muted px-1 text-xs">apex/</code>
+    itself unless you have a reason — the directory name is internal-only and
+    renaming it cascades into <code class="rounded bg-muted px-1 text-xs">DJANGO_SETTINGS_MODULE</code>,
+    <code class="rounded bg-muted px-1 text-xs">WSGI_APPLICATION</code>,
+    <code class="rounded bg-muted px-1 text-xs">ASGI_APPLICATION</code>, and the systemd unit.
+  {% endcallout %}
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">2. Logo + favicon</h2>
+  <p class="text-sm text-muted-foreground">
+    The sidebar logo is an inline SVG square with a Lucide
+    <code class="rounded bg-muted px-1 text-xs">package</code> icon and the
+    brand wordmark. Two ways to swap:
+  </p>
+  <p class="text-sm font-medium">A — Keep the icon-in-square, change the icon</p>
+  {% code lang="html" %}{# templates/partials/sidebar.html #}
+<span class="h-8 w-8 rounded-md bg-primary text-primary-foreground inline-flex items-center justify-center">
+  {% verbatim %}{% icon "rocket" 18 %}{% endverbatim %}   {# was "package" #}
+</span>{% endcode %}
+  <p class="text-sm font-medium">B — Drop in your own SVG/PNG</p>
+  {% code lang="html" %}<img src="{% verbatim %}{% static 'img/logo.svg' %}{% endverbatim %}" alt="Yourbrand" class="h-8 w-8" />{% endcode %}
+  <p class="text-sm text-muted-foreground">
+    For the favicon, save under
+    <code class="rounded bg-muted px-1 text-xs">static/img/</code> and add to
+    <code class="rounded bg-muted px-1 text-xs">templates/base.html</code>:
+  </p>
+  {% code lang="html" %}<link rel="icon" type="image/svg+xml" href="{% verbatim %}{% static 'img/favicon.svg' %}{% endverbatim %}">
+<link rel="icon" type="image/png" href="{% verbatim %}{% static 'img/favicon.png' %}{% endverbatim %}">
+<link rel="apple-touch-icon" href="{% verbatim %}{% static 'img/apple-touch-icon.png' %}{% endverbatim %}">{% endcode %}
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">3. Color palette (design tokens)</h2>
+  <p class="text-sm text-muted-foreground">
+    All brand colors live in <strong class="text-foreground">one file</strong>:
+    <code class="rounded bg-muted px-1 text-xs">static_src/css/input.css</code>,
+    under <code class="rounded bg-muted px-1 text-xs">:root</code> (light) and
+    <code class="rounded bg-muted px-1 text-xs">.dark</code> (dark). They use
+    OKLCh so any change keeps perceptual contrast clean across both modes.
+    See the dedicated <a href="{% url 'docs:theming' %}" class="text-primary hover:underline">Theming guide</a>.
+  </p>
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">4. Site URL + email defaults</h2>
+  <p class="text-sm text-muted-foreground">The two most critical production env vars:</p>
+  {% code lang="env" %}# /etc/yourapp.env on the server
+ALLOWED_HOSTS=app.yourbrand.com
+DEFAULT_FROM_EMAIL=Yourbrand <hello@yourbrand.com>
+
+# SMTP if you actually want password resets / invites to deliver:
+EMAIL_HOST=smtp.yourbrand.com
+EMAIL_PORT=587
+EMAIL_HOST_USER=...
+EMAIL_HOST_PASSWORD=...
+EMAIL_USE_TLS=true{% endcode %}
+  <p class="text-sm text-muted-foreground">
+    Without these, password reset emails go to the console (fine for dev,
+    useless in prod).
+  </p>
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">5. Cleanup before launch</h2>
+  <ul class="space-y-2 text-sm text-muted-foreground">
+    <li><strong class="text-foreground">Demo mode</strong> — set <code class="rounded bg-muted px-1 text-xs">DEMO_MODE=false</code> (or unset) in your env file.</li>
+    <li><strong class="text-foreground">seed_demo</strong> — keep for dev sample data, but never run on production. It creates a <code class="rounded bg-muted px-1 text-xs">demo</code> user with a known password.</li>
+    <li><strong class="text-foreground">CHANGELOG history</strong> — clear it out and start your own <code class="rounded bg-muted px-1 text-xs">## [1.0.0]</code> line.</li>
+    <li><strong class="text-foreground">docs/superpowers/</strong> — phase planning docs for how the template was built; not relevant to your fork.</li>
+  </ul>
+</section>
+
+{% endblock %}

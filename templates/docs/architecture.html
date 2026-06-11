@@ -1,0 +1,140 @@
+{% extends "layouts/docs.html" %}
+{% load docs_tags %}
+
+{% block doc_title %}Architecture{% endblock %}
+{% block doc_subtitle %}Server-rendered Django, no SPA. Single source of truth for navigation. Auth via composable mixins. Theme-aware charts via design tokens + MutationObserver.{% endblock %}
+
+{% block doc_body %}
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">No SPA</h2>
+  <p class="text-sm text-muted-foreground leading-relaxed">
+    Apex is built for product teams that ship features over rebuilds.
+    Server-rendered Django + HTMX + Alpine gets you ~95% of what an SPA gives
+    a typical dashboard, with ~10% of the moving parts. There is no React,
+    no Vue, no Svelte, no build step beyond Tailwind. HTMX handles the
+    swappable bits (datatable filters, kanban drag, mail thread reply) via
+    attributes; Alpine handles the local interactive bits (dropdowns,
+    modals, toasts) via <code class="rounded bg-muted px-1 text-xs">x-data</code>.
+    Total client-side JS is ~30KB across every page.
+  </p>
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">Navigation = single source of truth</h2>
+  <p class="text-sm text-muted-foreground">
+    Don't add sidebar items by editing templates. All nav lives in
+    <code class="rounded bg-muted px-1 text-xs">apps/core/navigation.py</code>
+    as a <code class="rounded bg-muted px-1 text-xs">NAV_ITEMS</code> tuple
+    of <code class="rounded bg-muted px-1 text-xs">NavItem</code> dataclasses
+    (label, url_name, icon, group, requires_staff). The
+    <code class="rounded bg-muted px-1 text-xs">navigation</code> context
+    processor feeds both:
+  </p>
+  <ul class="space-y-2 text-sm text-muted-foreground ml-5 list-disc">
+    <li>The grouped sidebar (<code class="rounded bg-muted px-1 text-xs">partials/sidebar.html</code>)</li>
+    <li>The command palette (Cmd/Ctrl+K) via <code class="rounded bg-muted px-1 text-xs">json_script</code></li>
+  </ul>
+  <p class="text-sm text-muted-foreground">
+    <code class="rounded bg-muted px-1 text-xs">requires_staff=True</code>
+    filters items out for non-staff users in both surfaces.
+  </p>
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">Auth mixin stack (order matters)</h2>
+  <p class="text-sm text-muted-foreground">
+    Protected CBVs typically compose mixins in this order:
+  </p>
+  {% code lang="python" %}class FooView(BreadcrumbsMixin, LoginRequiredMixin,
+              EmailVerifiedRequiredMixin, StaffRequiredMixin,
+              PasswordConfirmationRequiredMixin, UpdateView):
+    ...{% endcode %}
+  <ul class="space-y-2 text-sm text-muted-foreground">
+    <li><strong class="text-foreground"><code class="rounded bg-muted px-1 text-xs">LoginRequiredMixin</code> first</strong> — unauthenticated users redirect to login.</li>
+    <li><strong class="text-foreground"><code class="rounded bg-muted px-1 text-xs">EmailVerifiedRequiredMixin</code></strong> — unverified users redirect to email-verify.</li>
+    <li><strong class="text-foreground"><code class="rounded bg-muted px-1 text-xs">StaffRequiredMixin</code></strong> — non-staff users get 403 (vs. redirect).</li>
+    <li><strong class="text-foreground"><code class="rounded bg-muted px-1 text-xs">PasswordConfirmationRequiredMixin</code></strong> — re-prompts for password on sensitive actions; 3-hour grace via session.</li>
+    <li><strong class="text-foreground"><code class="rounded bg-muted px-1 text-xs">BreadcrumbsMixin</code></strong> — injects a <code class="rounded bg-muted px-1 text-xs">breadcrumbs</code> context var.</li>
+  </ul>
+  <p class="text-sm text-muted-foreground">
+    For org-scoped routes, add <code class="rounded bg-muted px-1 text-xs">OrgRequiredMixin</code>
+    and/or <code class="rounded bg-muted px-1 text-xs">HasRoleMixin</code> from
+    <code class="rounded bg-muted px-1 text-xs">apps.organizations.mixins</code>
+    before the data-fetching mixins.
+  </p>
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">Design tokens (Tailwind v4)</h2>
+  <p class="text-sm text-muted-foreground">
+    All colors are OKLCh custom properties in
+    <code class="rounded bg-muted px-1 text-xs">static_src/css/input.css</code>
+    under <code class="rounded bg-muted px-1 text-xs">:root</code> (light) and
+    <code class="rounded bg-muted px-1 text-xs">.dark</code> (dark) blocks. The
+    <code class="rounded bg-muted px-1 text-xs">@theme inline</code> block
+    exposes them as Tailwind utilities (<code class="rounded bg-muted px-1 text-xs">bg-background</code>,
+    <code class="rounded bg-muted px-1 text-xs">text-sidebar-accent-foreground</code>,
+    etc.). Dark mode is class-based; an inline script in
+    <code class="rounded bg-muted px-1 text-xs">templates/base.html</code>
+    applies <code class="rounded bg-muted px-1 text-xs">.dark</code> before
+    paint to prevent flash.
+  </p>
+  {% callout type="tip" %}
+    Edit <code class="rounded bg-muted px-1 text-xs">input.css</code>, then
+    <code class="rounded bg-muted px-1 text-xs">npm run build</code> —
+    <code class="rounded bg-muted px-1 text-xs">static/css/app.css</code> is
+    the gitignored build artifact.
+  {% endcallout %}
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">Charts (theme-aware)</h2>
+  <p class="text-sm text-muted-foreground">
+    <code class="rounded bg-muted px-1 text-xs">static/js/charts.js</code>
+    defines Alpine factories like
+    <code class="rounded bg-muted px-1 text-xs">revenueChart()</code>.
+    Each chart resolves theme colors at render time and uses a
+    <code class="rounded bg-muted px-1 text-xs">MutationObserver</code> on
+    <code class="rounded bg-muted px-1 text-xs">&lt;html&gt;</code>'s
+    <code class="rounded bg-muted px-1 text-xs">class</code> attribute to
+    re-render when the theme toggles. New charts should follow the same
+    factory + observer pattern.
+  </p>
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">Realtime (Channels)</h2>
+  <p class="text-sm text-muted-foreground">
+    <code class="rounded bg-muted px-1 text-xs">apex/asgi.py</code> routes
+    HTTP through Django and WebSocket through
+    <code class="rounded bg-muted px-1 text-xs">apps/realtime/routing.py</code>
+    consumers, wrapped in
+    <code class="rounded bg-muted px-1 text-xs">AuthMiddlewareStack</code> +
+    <code class="rounded bg-muted px-1 text-xs">AllowedHostsOriginValidator</code>.
+    Two consumers ship out of the box:
+  </p>
+  <ul class="space-y-2 text-sm text-muted-foreground ml-5 list-disc">
+    <li><code class="rounded bg-muted px-1 text-xs">NotificationConsumer</code> (<code class="rounded bg-muted px-1 text-xs">/ws/notifications/</code>) — per-user fan-out.</li>
+    <li><code class="rounded bg-muted px-1 text-xs">PresenceConsumer</code> (<code class="rounded bg-muted px-1 text-xs">/ws/presence/</code>) — global online users count.</li>
+  </ul>
+  <p class="text-sm text-muted-foreground">
+    Server-side code calls
+    <code class="rounded bg-muted px-1 text-xs">apps.realtime.dispatch.push_notification(user_id, payload)</code>
+    and the channel layer fans it out to every open tab the user has.
+  </p>
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">Where to read more</h2>
+  <p class="text-sm text-muted-foreground">
+    The repo's
+    <a href="https://github.com/puikinsh/dashboardpack-apex-django/blob/main/CLAUDE.md" class="font-medium text-primary hover:underline">CLAUDE.md</a>
+    is the most accurate, up-to-date map of how everything hangs together
+    (yes, the same file we feed to AI agents). The phase plans in
+    <code class="rounded bg-muted px-1 text-xs">docs/superpowers/specs/</code>
+    document the "why" behind each feature batch.
+  </p>
+</section>
+
+{% endblock %}

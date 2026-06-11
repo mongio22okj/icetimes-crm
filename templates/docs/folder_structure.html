@@ -1,0 +1,128 @@
+{% extends "layouts/docs.html" %}
+{% load docs_tags %}
+
+{% block doc_title %}Folder structure{% endblock %}
+{% block doc_subtitle %}Where everything lives. Apex follows Django's "many small apps" convention — each surface in its own self-contained folder.{% endblock %}
+
+{% block doc_body %}
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">Top level</h2>
+  {% code lang="text" %}.
+├── apex/                  # Project package — settings, urls, asgi, wsgi
+│   ├── settings/
+│   │   ├── base.py        # Shared settings
+│   │   ├── dev.py         # SQLite, DEBUG=True, demo mode on
+│   │   └── prod.py        # Postgres, env-driven, security headers
+│   ├── urls.py            # Top-level URL router
+│   ├── asgi.py            # ASGI app for Daphne (HTTP + WebSocket)
+│   └── wsgi.py            # WSGI app (only if you don't use Channels)
+│
+├── apps/                  # Feature apps — see "Apps" section below
+│   ├── accounts/          # User model, auth, 2FA, sessions
+│   ├── activity/          # Signal-fed event timeline
+│   ├── api/               # Django Ninja router
+│   ├── billing/           # Subscriptions + payment methods
+│   ├── blog/              # Public marketing posts
+│   ├── chat/              # Per-recipient threads
+│   ├── components/        # /components/ showcase
+│   ├── core/              # Navigation, breadcrumbs, search, health, tables
+│   ├── customers/         # CRM
+│   ├── dashboard/         # 5 dashboard variants + chart endpoints
+│   ├── docs/              # This site
+│   ├── events/            # Calendar
+│   ├── files/             # File browser
+│   ├── help/              # Knowledge base
+│   ├── invoices/          # PDF rendering via WeasyPrint
+│   ├── kanban/            # Drag-and-drop board
+│   ├── mail/              # Inbox + drafts + labels
+│   ├── marketing/         # Landing, pricing, support
+│   ├── notifications/     # Bell + preferences + push
+│   ├── orders/            # Sales
+│   ├── organizations/     # Multi-tenant + RBAC
+│   ├── products/          # Catalog
+│   ├── profiles/          # Team directory
+│   ├── projects/          # Tasks + milestones
+│   ├── realtime/          # WebSocket consumers + dispatch helpers
+│   └── wizard/            # Onboarding
+│
+├── templates/             # All HTML templates (project-level + per-app)
+│   ├── base.html
+│   ├── layouts/           # dashboard.html, auth.html, docs.html, public.html
+│   ├── partials/          # sidebar, header, breadcrumbs, toasts, command_palette
+│   └── <app>/             # Per-app templates
+│
+├── static/                # Project-level static
+│   ├── js/                # shell.js, charts.js, realtime.js, app.js
+│   └── img/
+├── static_src/            # Tailwind input.css (the source of all design tokens)
+│
+├── deploy/                # Production deploy artifacts
+│   ├── nginx/             # vhost config
+│   ├── systemd/           # apex-django.service
+│   ├── scripts/           # deploy.sh, reset_demo_cron.sh
+│   ├── .env.example       # Template for /etc/apex-django.env
+│   └── README.md          # Step-by-step server install
+│
+├── docs/getting-started.md  # Local-dev quickstart
+├── tests/e2e/               # Playwright E2E tests
+├── manage.py
+├── pyproject.toml
+├── package.json
+├── README.md
+├── CUSTOMIZE.md             # Buyer's first-10-minutes guide
+├── CHANGELOG.md
+└── CLAUDE.md                # The most accurate map of how things hang together{% endcode %}
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">Inside an app</h2>
+  <p class="text-sm text-muted-foreground">
+    Each <code class="rounded bg-muted px-1 text-xs">apps/&lt;name&gt;/</code>
+    follows the same shape — predictable to navigate after seeing one or two:
+  </p>
+  {% code lang="text" %}apps/customers/
+├── __init__.py
+├── apps.py            # AppConfig
+├── models.py          # ORM models
+├── views.py           # Class-based views (ListView, DetailView, etc.)
+├── forms.py           # ModelForm subclasses with our widget overrides
+├── urls.py            # app_name + urlpatterns
+├── admin.py           # Django admin registrations (optional)
+├── signals.py         # Signal handlers (optional — see activity/)
+├── migrations/
+│   └── 0001_initial.py
+├── templates/customers/
+│   ├── customer_list.html
+│   ├── customer_detail.html
+│   └── customer_form.html
+└── tests/
+    ├── factories.py       # factory-boy factories
+    ├── test_models.py
+    ├── test_views.py
+    └── test_forms.py{% endcode %}
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">Where to look for X</h2>
+  <div class="overflow-hidden rounded-lg border border-border">
+    <table class="w-full text-sm">
+      <thead class="bg-muted/50 text-left text-xs uppercase tracking-wider text-muted-foreground">
+        <tr><th class="px-4 py-2.5">If you want to…</th><th class="px-4 py-2.5">Look at</th></tr>
+      </thead>
+      <tbody class="divide-y divide-border">
+        <tr><td class="px-4 py-2.5">Add a sidebar item</td><td class="px-4 py-2.5"><code class="text-xs">apps/core/navigation.py</code></td></tr>
+        <tr><td class="px-4 py-2.5">Change a color</td><td class="px-4 py-2.5"><code class="text-xs">static_src/css/input.css</code></td></tr>
+        <tr><td class="px-4 py-2.5">Add an icon</td><td class="px-4 py-2.5"><code class="text-xs">apps/core/templatetags/apex.py</code> (ICONS dict)</td></tr>
+        <tr><td class="px-4 py-2.5">Add a chart</td><td class="px-4 py-2.5"><code class="text-xs">static/js/charts.js</code> + <code class="text-xs">apps/dashboard/views.py</code></td></tr>
+        <tr><td class="px-4 py-2.5">Send a notification</td><td class="px-4 py-2.5"><code class="text-xs">apps/notifications/dispatch.py</code> (<code class="text-xs">notify()</code>)</td></tr>
+        <tr><td class="px-4 py-2.5">Push realtime to a user</td><td class="px-4 py-2.5"><code class="text-xs">apps/realtime/dispatch.py</code> (<code class="text-xs">push_notification()</code>)</td></tr>
+        <tr><td class="px-4 py-2.5">Add an API endpoint</td><td class="px-4 py-2.5"><code class="text-xs">apps/api/api.py</code> (Django Ninja router)</td></tr>
+        <tr><td class="px-4 py-2.5">Add a settings tab</td><td class="px-4 py-2.5"><code class="text-xs">apps/accounts/settings_urls.py</code> + a view in <code class="text-xs">settings_views.py</code></td></tr>
+        <tr><td class="px-4 py-2.5">Add a translation</td><td class="px-4 py-2.5"><code class="text-xs">locale/&lt;code&gt;/LC_MESSAGES/django.po</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+{% endblock %}

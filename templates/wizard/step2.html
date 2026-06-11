@@ -1,0 +1,32 @@
+{% extends "layouts/dashboard.html" %}
+{% block title %}Onboarding · Company · Apex{% endblock %}
+{% block content %}
+<div class="max-w-2xl">
+  <div class="mb-6">
+    <h1 class="text-2xl font-bold tracking-tight">About your company</h1>
+    <p class="text-sm text-muted-foreground mt-1">Step 2 of 4. All optional.</p>
+  </div>
+  {% include "wizard/_progress.html" %}
+
+  <form method="post" class="rounded-lg border border-border bg-card p-6 space-y-4">
+    {% csrf_token %}
+    <div>
+      <label class="block text-sm font-medium mb-1.5">Company</label>
+      {{ form.company }}
+    </div>
+    <div>
+      <label class="block text-sm font-medium mb-1.5">Your role</label>
+      {{ form.role }}
+    </div>
+    <div>
+      <label class="block text-sm font-medium mb-1.5">Team size</label>
+      {{ form.team_size }}
+      {% if form.team_size.errors %}<p class="text-xs text-destructive mt-1">{{ form.team_size.errors.0 }}</p>{% endif %}
+    </div>
+    <div class="flex justify-between">
+      <a href="{% url 'wizard:step1' %}" class="h-10 px-4 rounded-md border border-border inline-flex items-center text-sm hover:bg-accent">Back</a>
+      <button type="submit" class="h-10 px-4 rounded-md bg-primary text-primary-foreground font-medium hover:opacity-90 text-sm">Continue</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

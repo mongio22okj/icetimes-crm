@@ -1,0 +1,161 @@
+{% extends "components/_detail_layout.html" %}
+{% load apex %}
+
+{% block component_body %}
+<div class="space-y-8">
+
+  {# ── Underline (default) ───────────────────────────────────────── #}
+  <div class="rounded-lg border border-border bg-card p-6">
+    <h2 class="text-sm font-semibold mb-1">Underline</h2>
+    <p class="text-xs text-muted-foreground mb-4">Default style. Use ← / → to switch tabs with the keyboard.</p>
+    <div x-data="apexTabs('overview')">
+      <div role="tablist" aria-label="Sections" class="flex border-b border-border">
+        <button role="tab" data-tab="overview" :aria-selected="active==='overview'" :tabindex="active==='overview' ? 0 : -1"
+                @click="set('overview')" @keydown.right.prevent="next()" @keydown.left.prevent="prev()" @keydown.home.prevent="first()" @keydown.end.prevent="last()"
+                class="px-4 h-10 text-sm font-medium border-b-2 -mb-px transition outline-none focus-visible:bg-accent"
+                :class="active==='overview' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'">
+          Overview
+        </button>
+        <button role="tab" data-tab="activity" :aria-selected="active==='activity'" :tabindex="active==='activity' ? 0 : -1"
+                @click="set('activity')" @keydown.right.prevent="next()" @keydown.left.prevent="prev()" @keydown.home.prevent="first()" @keydown.end.prevent="last()"
+                class="px-4 h-10 text-sm font-medium border-b-2 -mb-px transition outline-none focus-visible:bg-accent"
+                :class="active==='activity' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'">
+          Activity
+        </button>
+        <button role="tab" data-tab="settings" :aria-selected="active==='settings'" :tabindex="active==='settings' ? 0 : -1"
+                @click="set('settings')" @keydown.right.prevent="next()" @keydown.left.prevent="prev()" @keydown.home.prevent="first()" @keydown.end.prevent="last()"
+                class="px-4 h-10 text-sm font-medium border-b-2 -mb-px transition outline-none focus-visible:bg-accent"
+                :class="active==='settings' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'">
+          Settings
+        </button>
+      </div>
+      <div role="tabpanel" x-show="active==='overview'" class="pt-4 text-sm text-muted-foreground">Overview panel — summary, key metrics, recent activity.</div>
+      <div role="tabpanel" x-show="active==='activity'" x-cloak class="pt-4 text-sm text-muted-foreground">Activity panel — chronological events.</div>
+      <div role="tabpanel" x-show="active==='settings'" x-cloak class="pt-4 text-sm text-muted-foreground">Settings panel — preferences and danger zone.</div>
+    </div>
+  </div>
+
+  {# ── Pill ─────────────────────────────────────────────────────── #}
+  <div class="rounded-lg border border-border bg-card p-6">
+    <h2 class="text-sm font-semibold mb-4">Pill</h2>
+    <div x-data="apexTabs('day')">
+      <div role="tablist" aria-label="Range" class="inline-flex items-center bg-muted p-1 rounded-md">
+        <button role="tab" data-tab="day" :aria-selected="active==='day'" :tabindex="active==='day' ? 0 : -1"
+                @click="set('day')" @keydown.right.prevent="next()" @keydown.left.prevent="prev()"
+                class="h-8 px-3 text-xs font-medium rounded transition"
+                :class="active==='day' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'">Day</button>
+        <button role="tab" data-tab="week" :aria-selected="active==='week'" :tabindex="active==='week' ? 0 : -1"
+                @click="set('week')" @keydown.right.prevent="next()" @keydown.left.prevent="prev()"
+                class="h-8 px-3 text-xs font-medium rounded transition"
+                :class="active==='week' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'">Week</button>
+        <button role="tab" data-tab="month" :aria-selected="active==='month'" :tabindex="active==='month' ? 0 : -1"
+                @click="set('month')" @keydown.right.prevent="next()" @keydown.left.prevent="prev()"
+                class="h-8 px-3 text-xs font-medium rounded transition"
+                :class="active==='month' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'">Month</button>
+        <button role="tab" data-tab="year" :aria-selected="active==='year'" :tabindex="active==='year' ? 0 : -1"
+                @click="set('year')" @keydown.right.prevent="next()" @keydown.left.prevent="prev()"
+                class="h-8 px-3 text-xs font-medium rounded transition"
+                :class="active==='year' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'">Year</button>
+      </div>
+      <div role="tabpanel" x-show="active==='day'" class="pt-4 text-sm text-muted-foreground">Daily slice.</div>
+      <div role="tabpanel" x-show="active==='week'" x-cloak class="pt-4 text-sm text-muted-foreground">Weekly slice.</div>
+      <div role="tabpanel" x-show="active==='month'" x-cloak class="pt-4 text-sm text-muted-foreground">Monthly slice.</div>
+      <div role="tabpanel" x-show="active==='year'" x-cloak class="pt-4 text-sm text-muted-foreground">Yearly slice.</div>
+    </div>
+  </div>
+
+  {# ── Vertical ─────────────────────────────────────────────────── #}
+  <div class="rounded-lg border border-border bg-card p-6">
+    <h2 class="text-sm font-semibold mb-4">Vertical</h2>
+    <div x-data="apexTabs('profile')" class="grid grid-cols-[180px_1fr] gap-6">
+      <div role="tablist" aria-orientation="vertical" aria-label="Settings" class="flex flex-col gap-1 border-r border-border pr-3">
+        <button role="tab" data-tab="profile" :aria-selected="active==='profile'" :tabindex="active==='profile' ? 0 : -1"
+                @click="set('profile')" @keydown.down.prevent="next()" @keydown.up.prevent="prev()"
+                class="h-9 px-3 text-sm rounded-md text-left transition"
+                :class="active==='profile' ? 'bg-primary/10 text-primary font-medium' : 'text-muted-foreground hover:bg-accent hover:text-foreground'">Profile</button>
+        <button role="tab" data-tab="security" :aria-selected="active==='security'" :tabindex="active==='security' ? 0 : -1"
+                @click="set('security')" @keydown.down.prevent="next()" @keydown.up.prevent="prev()"
+                class="h-9 px-3 text-sm rounded-md text-left transition"
+                :class="active==='security' ? 'bg-primary/10 text-primary font-medium' : 'text-muted-foreground hover:bg-accent hover:text-foreground'">Security</button>
+        <button role="tab" data-tab="notifications" :aria-selected="active==='notifications'" :tabindex="active==='notifications' ? 0 : -1"
+                @click="set('notifications')" @keydown.down.prevent="next()" @keydown.up.prevent="prev()"
+                class="h-9 px-3 text-sm rounded-md text-left transition"
+                :class="active==='notifications' ? 'bg-primary/10 text-primary font-medium' : 'text-muted-foreground hover:bg-accent hover:text-foreground'">Notifications</button>
+        <button role="tab" data-tab="billing" :aria-selected="active==='billing'" :tabindex="active==='billing' ? 0 : -1"
+                @click="set('billing')" @keydown.down.prevent="next()" @keydown.up.prevent="prev()"
+                class="h-9 px-3 text-sm rounded-md text-left transition"
+                :class="active==='billing' ? 'bg-primary/10 text-primary font-medium' : 'text-muted-foreground hover:bg-accent hover:text-foreground'">Billing</button>
+      </div>
+      <div>
+        <div role="tabpanel" x-show="active==='profile'" class="text-sm text-muted-foreground">Profile fields.</div>
+        <div role="tabpanel" x-show="active==='security'" x-cloak class="text-sm text-muted-foreground">Security &amp; 2FA.</div>
+        <div role="tabpanel" x-show="active==='notifications'" x-cloak class="text-sm text-muted-foreground">Notification preferences.</div>
+        <div role="tabpanel" x-show="active==='billing'" x-cloak class="text-sm text-muted-foreground">Subscription &amp; payment methods.</div>
+      </div>
+    </div>
+  </div>
+
+  {# ── With badges ──────────────────────────────────────────────── #}
+  <div class="rounded-lg border border-border bg-card p-6">
+    <h2 class="text-sm font-semibold mb-4">With badges</h2>
+    <div x-data="apexTabs('inbox')">
+      <div role="tablist" aria-label="Mail" class="flex border-b border-border">
+        <button role="tab" data-tab="inbox" :aria-selected="active==='inbox'" :tabindex="active==='inbox' ? 0 : -1"
+                @click="set('inbox')" @keydown.right.prevent="next()" @keydown.left.prevent="prev()"
+                class="px-4 h-10 text-sm font-medium border-b-2 -mb-px transition inline-flex items-center gap-2 outline-none focus-visible:bg-accent"
+                :class="active==='inbox' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'">
+          Inbox
+          <span class="inline-flex items-center justify-center min-w-5 h-5 rounded-full text-[10px] font-semibold bg-primary text-primary-foreground px-1.5">12</span>
+        </button>
+        <button role="tab" data-tab="drafts" :aria-selected="active==='drafts'" :tabindex="active==='drafts' ? 0 : -1"
+                @click="set('drafts')" @keydown.right.prevent="next()" @keydown.left.prevent="prev()"
+                class="px-4 h-10 text-sm font-medium border-b-2 -mb-px transition inline-flex items-center gap-2 outline-none focus-visible:bg-accent"
+                :class="active==='drafts' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'">
+          Drafts
+          <span class="inline-flex items-center justify-center min-w-5 h-5 rounded-full text-[10px] font-semibold bg-muted text-muted-foreground px-1.5">3</span>
+        </button>
+        <button role="tab" data-tab="spam" :aria-selected="active==='spam'" :tabindex="active==='spam' ? 0 : -1"
+                @click="set('spam')" @keydown.right.prevent="next()" @keydown.left.prevent="prev()"
+                class="px-4 h-10 text-sm font-medium border-b-2 -mb-px transition inline-flex items-center gap-2 outline-none focus-visible:bg-accent"
+                :class="active==='spam' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'">
+          Spam
+          <span class="inline-flex items-center justify-center min-w-5 h-5 rounded-full text-[10px] font-semibold bg-destructive/15 text-destructive px-1.5">99+</span>
+        </button>
+      </div>
+      <div role="tabpanel" x-show="active==='inbox'" class="pt-4 text-sm text-muted-foreground">12 unread messages.</div>
+      <div role="tabpanel" x-show="active==='drafts'" x-cloak class="pt-4 text-sm text-muted-foreground">3 drafts.</div>
+      <div role="tabpanel" x-show="active==='spam'" x-cloak class="pt-4 text-sm text-muted-foreground">Quarantined messages.</div>
+    </div>
+  </div>
+
+  <div class="rounded-lg border border-border bg-card overflow-hidden">
+    <div class="px-5 py-3 border-b border-border">
+      <h2 class="text-sm font-semibold">Usage</h2>
+    </div>
+    <pre class="text-xs p-5 overflow-x-auto bg-muted/30"><code>&lt;div x-data="apexTabs('overview')"&gt;
+  &lt;div role="tablist" aria-label="Sections" class="flex border-b border-border"&gt;
+    &lt;button role="tab" data-tab="overview"
+            :aria-selected="active==='overview'"
+            :tabindex="active==='overview' ? 0 : -1"
+            @click="set('overview')"
+            @keydown.right.prevent="next()"
+            @keydown.left.prevent="prev()"
+            …&gt;Overview&lt;/button&gt;
+    {# repeat for each tab; data-tab must match what set() expects #}
+  &lt;/div&gt;
+  &lt;div role="tabpanel" x-show="active==='overview'"&gt;…&lt;/div&gt;
+&lt;/div&gt;</code></pre>
+  </div>
+
+  <div class="rounded-lg border border-border bg-card p-6 text-sm">
+    <h2 class="text-sm font-semibold mb-3">Accessibility</h2>
+    <ul class="space-y-1.5 text-muted-foreground">
+      <li>• Tablist uses <strong class="text-foreground">role="tablist"</strong> + <strong class="text-foreground">aria-label</strong> (or <strong class="text-foreground">aria-orientation="vertical"</strong>).</li>
+      <li>• Each tab uses <strong class="text-foreground">role="tab"</strong> + <strong class="text-foreground">aria-selected</strong> + roving <strong class="text-foreground">tabindex</strong> (only the active tab is in the tab order).</li>
+      <li>• <strong class="text-foreground">←/→</strong> cycle horizontal tabs; <strong class="text-foreground">↑/↓</strong> cycle vertical; <strong class="text-foreground">Home/End</strong> jump to first/last.</li>
+      <li>• Each panel uses <strong class="text-foreground">role="tabpanel"</strong>.</li>
+    </ul>
+  </div>
+
+</div>
+{% endblock %}

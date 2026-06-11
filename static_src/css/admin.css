@@ -1,0 +1,1579 @@
+/* =========================================================================
+ * Apex-themed Django Admin
+ * =========================================================================
+ * Scoped to .apex-admin so it never leaks outside /admin/. The Apex shell
+ * (sidebar/header) already provides chrome via templates/admin/base.html.
+ *
+ * Strategy: reset Django admin's stock chrome (gradient bars, pill buttons,
+ * 1996 link colours) inside .apex-admin, then layer Tailwind utilities on
+ * top of the admin's structural HTML (which we don't touch — only restyle).
+ * ========================================================================= */
+
+/* Bare-element resets for stock Django admin HTML (which emits unclassed
+   <a>/<h1>/<h2>/<h3>/<input> tags). Scoped to .apex-admin main so they
+   never leak into the Apex sidebar or header — and ":not([class])" on
+   anchors means any link in my themed templates with explicit Tailwind
+   classes keeps its own styling. */
+.apex-admin main a:not([class]),
+.apex-admin main a:not([class]):link,
+.apex-admin main a:not([class]):visited {
+  color: var(--primary);
+  text-decoration: none;
+}
+.apex-admin main a:not([class]):hover {
+  color: var(--primary);
+  text-decoration: underline;
+}
+
+.apex-admin main h1 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--foreground);
+  margin: 0 0 1rem 0;
+}
+.apex-admin main h2 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--foreground);
+  margin: 1.5rem 0 0.75rem 0;
+}
+.apex-admin main h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--foreground);
+  margin: 1rem 0 0.5rem 0;
+}
+
+.apex-admin {
+  color: var(--foreground);
+
+  /* -----------------------------------------------------------------------
+   * Changelist table
+   * --------------------------------------------------------------------- */
+  & #changelist {
+    background: transparent;
+  }
+  & #changelist-form {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  & #result_list {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--card);
+  }
+  & #result_list thead th {
+    background: var(--muted);
+    color: var(--muted-foreground);
+    font-weight: 500;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 0.75rem 1rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  & #result_list thead th.sorted {
+    background: var(--accent);
+    color: var(--accent-foreground);
+  }
+  & #result_list thead th a {
+    color: inherit;
+  }
+  & #result_list thead th .text a {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+  & #result_list tbody td,
+  & #result_list tbody th {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+    font-size: 0.875rem;
+    /* The primary column is rendered as <th scope="row"> — browsers
+       default those to center + bold, which looks off in a data table.
+       Force left-aligned, normal weight (the link inside carries the
+       emphasis via primary colour). */
+    text-align: left;
+    font-weight: 400;
+  }
+  & #result_list tbody tr:hover {
+    background: var(--muted);
+  }
+  & #result_list tbody tr.selected {
+    background: color-mix(in oklch, var(--primary) 8%, transparent);
+  }
+  & #result_list tbody tr:last-child td,
+  & #result_list tbody tr:last-child th {
+    border-bottom: none;
+  }
+  & #result_list .action-checkbox {
+    width: 1rem;
+  }
+
+  /* Sortable column headers. Django renders a .sortoptions block with
+     three controls — remove-from-sort (x), priority number, and a
+     direction toggle (▲/▼) — plus the column label in .text. Stock
+     admin paints the icons from a sprite we don't load, so without
+     styling they show as empty anchors. Give them Lucide-style glyphs
+     and lay the header out as: [label] [priority] [toggle] [x]. */
+  & #result_list thead th .text {
+    display: inline;
+  }
+  & #result_list thead th .text a {
+    color: inherit;
+    text-decoration: none;
+  }
+  & #result_list thead th .sortoptions {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin-left: 0.375rem;
+    vertical-align: middle;
+  }
+  & #result_list thead th .clear {
+    display: none;
+  }
+  & .sortpriority {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1rem;
+    height: 1rem;
+    padding: 0 0.25rem;
+    border-radius: 9999px;
+    background: var(--primary);
+    color: var(--primary-foreground);
+    font-size: 0.625rem;
+    font-weight: 600;
+    line-height: 1;
+  }
+  & a.sortremove,
+  & a.toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1rem;
+    height: 1rem;
+    color: var(--muted-foreground);
+    text-decoration: none;
+  }
+  & a.sortremove:hover,
+  & a.toggle:hover {
+    color: var(--foreground);
+    text-decoration: none;
+  }
+  & a.sortremove::before,
+  & a.toggle::before {
+    content: "";
+    display: inline-block;
+    width: 13px;
+    height: 13px;
+    background-color: currentColor;
+    mask-position: center;
+    mask-size: contain;
+    mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    -webkit-mask-size: contain;
+    -webkit-mask-repeat: no-repeat;
+  }
+  & a.sortremove::before {
+    mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><path d='M18 6 6 18'/><path d='m6 6 12 12'/></svg>");
+    -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><path d='M18 6 6 18'/><path d='m6 6 12 12'/></svg>");
+  }
+  & a.toggle.ascending::before {
+    mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><path d='m18 15-6-6-6 6'/></svg>");
+    -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><path d='m18 15-6-6-6 6'/></svg>");
+  }
+  & a.toggle.descending::before,
+  & a.toggle::before {
+    mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><path d='m6 9 6 6 6-6'/></svg>");
+    -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><path d='m6 9 6 6 6-6'/></svg>");
+  }
+
+  /* -----------------------------------------------------------------------
+   * Filter sidebar
+   * --------------------------------------------------------------------- */
+  & #changelist-filter {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1rem;
+    margin-left: 1rem;
+    min-width: 200px;
+  }
+  & #changelist-filter h2 {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--muted-foreground);
+    margin: 0 0 0.75rem 0;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+  & #changelist-filter h3 {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--foreground);
+    margin: 0.75rem 0 0.25rem 0;
+  }
+  & #changelist-filter ul {
+    list-style: none;
+    margin: 0 0 0.5rem 0;
+    padding: 0;
+  }
+  & #changelist-filter li {
+    padding: 0.25rem 0;
+  }
+  & #changelist-filter li.selected {
+    font-weight: 600;
+  }
+  & #changelist-filter li.selected a {
+    color: var(--primary);
+  }
+  & #changelist-filter li a {
+    font-size: 0.8125rem;
+    display: block;
+    padding: 0.25rem 0.5rem;
+    border-radius: var(--radius-sm);
+  }
+  & #changelist-filter li a:hover {
+    background: var(--muted);
+    text-decoration: none;
+  }
+
+  /* Search bar — input + submit are themed entirely via Tailwind utilities
+     in templates/admin/search_form.html (which uses an icon-prefixed input
+     and a <button> instead of <input type="submit">). Only the outer
+     wrapper needs un-styling here. */
+  & #toolbar {
+    background: transparent;
+    padding: 0 0 1rem 0;
+    border: none;
+  }
+
+  /* Pagination */
+  & .paginator {
+    background: transparent;
+    border: none;
+    color: var(--muted-foreground);
+    font-size: 0.875rem;
+    padding: 0.75rem 0;
+  }
+  & .paginator a,
+  & .paginator .this-page {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2rem;
+    height: 2rem;
+    padding: 0 0.5rem;
+    margin-right: 0.25rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 0.8125rem;
+    color: var(--foreground);
+  }
+  & .paginator a:hover {
+    background: var(--muted);
+    text-decoration: none;
+  }
+  & .paginator .this-page {
+    background: var(--primary);
+    color: var(--primary-foreground);
+    border-color: var(--primary);
+    font-weight: 600;
+  }
+
+  /* -----------------------------------------------------------------------
+   * Change form
+   * --------------------------------------------------------------------- */
+  & fieldset.module {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 1rem;
+    padding: 0;
+  }
+  & fieldset.module h2,
+  & fieldset.module caption {
+    background: var(--muted);
+    color: var(--foreground);
+    font-size: 0.875rem;
+    font-weight: 600;
+    padding: 0.75rem 1rem;
+    margin: 0;
+    border-bottom: 1px solid var(--border);
+    border-radius: var(--radius) var(--radius) 0 0;
+  }
+  & fieldset.module .form-row,
+  & fieldset.module .description {
+    padding: 0.75rem 1.25rem;
+    border-bottom: 1px solid var(--border);
+  }
+  & fieldset.module .form-row:last-child,
+  & fieldset.module > .description:last-child {
+    border-bottom: none;
+  }
+
+  /* The actual label + input pair sits in <div class="flex-container">
+     (Django 6). Use CSS grid so labels form a left column with a fixed
+     width and inputs fill the remaining space — that's what gives the
+     form its "aligned" feel. */
+  & .form-row .flex-container {
+    display: grid;
+    grid-template-columns: 10rem minmax(0, 1fr);
+    align-items: center;
+    column-gap: 1rem;
+    row-gap: 0.375rem;
+  }
+  /* Some widgets render via <fieldset><legend> chrome (SplitDateTime,
+     MultiWidget). The legend takes the label role OUTSIDE
+     .flex-container — leaving the .flex-container with only the field
+     widget as its sole child. Collapse the grid to one column so the
+     widget spans the full available width instead of squeezing into
+     the 10rem label column. */
+  & .form-row .flex-container:not(:has(> label)) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  & .form-row > fieldset {
+    border: none;
+    padding: 0;
+    margin: 0;
+  }
+  & .form-row > fieldset > legend {
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--foreground);
+    padding: 0;
+    margin: 0 0 0.5rem 0;
+  }
+  & .form-row label {
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--foreground);
+    margin: 0;
+    text-align: left;
+  }
+  /* Help text + errors live in siblings AFTER .flex-container — let them
+     span the full row width but indent to align with the input column. */
+  & .form-row .help,
+  & .form-row .help-tooltip {
+    display: block;
+    margin-top: 0.375rem;
+    margin-left: 11rem;  /* 10rem label + 1rem gap */
+    font-size: 0.75rem;
+    color: var(--muted-foreground);
+  }
+  & .form-row .errorlist {
+    list-style: none;
+    padding: 0;
+    margin: 0.375rem 0 0 11rem;
+    color: var(--destructive);
+    font-size: 0.75rem;
+  }
+  & .form-row.errors {
+    background: color-mix(in oklch, var(--destructive) 5%, transparent);
+  }
+  & .aligned label {
+    width: auto;
+    padding: 0;
+  }
+  /* Multi-field rows (Django emits .form-multiline) — let them flow */
+  & .form-row.form-multiline .flex-container {
+    grid-template-columns: 10rem minmax(0, 1fr);
+  }
+  /* Readonly fields — Django renders <div class="readonly">value</div>
+     in place of <input>. Style it as a muted value display. */
+  & .form-row .readonly {
+    font-size: 0.875rem;
+    color: var(--muted-foreground);
+    padding: 0.25rem 0;
+  }
+
+  /* Form-field defaults are declared OUTSIDE this nest with :where() so
+     explicit Tailwind utilities (e.g. pl-9 on the themed search input)
+     can override them — see the block below the closing `.apex-admin {}`. */
+  & input.vTextField,
+  & input.vURLField,
+  & input.vEmailField {
+    width: 24rem;
+    max-width: 100%;
+  }
+  & textarea.vLargeTextField {
+    width: 32rem;
+    max-width: 100%;
+  }
+
+  /* Submit row */
+  & .submit-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+    justify-content: flex-end;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 0.75rem 1rem;
+    margin-top: 1rem;
+  }
+  & .submit-row .deletelink-box {
+    margin-right: auto;
+  }
+  & .submit-row input[type="submit"],
+  & .submit-row a.deletelink {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    background: var(--card);
+    color: var(--foreground);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: none;
+    height: 2.25rem;
+  }
+  & .submit-row input[type="submit"]:hover {
+    background: var(--muted);
+  }
+  & .submit-row input[name="_save"],
+  & .submit-row input.default {
+    background: var(--primary);
+    color: var(--primary-foreground);
+    border-color: var(--primary);
+  }
+  & .submit-row input[name="_save"]:hover,
+  & .submit-row input.default:hover {
+    /* The general .submit-row input[type="submit"]:hover above sets bg
+       to --muted; that competes on equal specificity. Repeat the bg
+       and text colour here so the primary hover doesn't collapse to
+       muted-bg + white-text (near-invisible). */
+    background: var(--primary);
+    color: var(--primary-foreground);
+    opacity: 0.9;
+  }
+  & .submit-row a.deletelink {
+    color: var(--destructive);
+    border-color: var(--destructive);
+  }
+  & .submit-row a.deletelink:hover {
+    background: var(--destructive);
+    color: var(--destructive-foreground);
+    text-decoration: none;
+  }
+
+  /* -----------------------------------------------------------------------
+   * Inline formsets (stacked + tabular)
+   * --------------------------------------------------------------------- */
+  & .inline-group {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 1rem;
+    overflow: hidden;
+  }
+  & .inline-group h2 {
+    background: var(--muted);
+    font-size: 0.875rem;
+    font-weight: 600;
+    padding: 0.75rem 1rem;
+    margin: 0;
+    border-bottom: 1px solid var(--border);
+  }
+  & .inline-related {
+    border-bottom: 1px solid var(--border);
+  }
+  & .inline-related:last-child {
+    border-bottom: none;
+  }
+  & .inline-related h3 {
+    background: color-mix(in oklch, var(--muted) 50%, transparent);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    padding: 0.5rem 1rem;
+    margin: 0;
+    color: var(--muted-foreground);
+  }
+  & .add-row a {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.5rem 0.875rem;
+    margin: 0.75rem 1rem;
+    background: var(--background);
+    border: 1px dashed var(--border);
+    border-radius: var(--radius);
+    color: var(--primary);
+    font-size: 0.875rem;
+    font-weight: 500;
+  }
+  & .add-row a:hover {
+    background: var(--muted);
+    text-decoration: none;
+  }
+  & .tabular table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  & .tabular table thead th {
+    background: var(--muted);
+    color: var(--muted-foreground);
+    font-weight: 500;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 0.5rem 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  & .tabular table tbody td {
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  & .tabular table tbody tr.has_original td:first-child {
+    color: var(--muted-foreground);
+    font-size: 0.8125rem;
+  }
+
+  /* -----------------------------------------------------------------------
+   * Object tools (Add / History / View on site buttons)
+   * --------------------------------------------------------------------- */
+  & .object-tools {
+    margin: 0 0 1rem 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+  & .object-tools li {
+    display: inline-flex;
+  }
+  & .object-tools a {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    background: var(--card);
+    color: var(--foreground);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 0.4375rem 0.875rem;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    text-transform: none;
+    text-decoration: none;
+    letter-spacing: 0;
+  }
+  & .object-tools a:hover {
+    background: var(--muted);
+    text-decoration: none;
+  }
+  & .object-tools a.addlink {
+    background: var(--primary);
+    color: var(--primary-foreground);
+    border-color: var(--primary);
+  }
+  & .object-tools a.addlink:hover {
+    /* Same fix as .submit-row input[name="_save"]:hover — the general
+       .object-tools a:hover above sets bg:muted; keep the primary
+       colours here so the Add button stays high-contrast on hover. */
+    background: var(--primary);
+    color: var(--primary-foreground);
+    opacity: 0.9;
+  }
+
+  /* Selector (M2M filter horizontal/vertical). Django's stock layout is
+     a 3-column grid: Available | arrow buttons | Chosen. We theme each
+     piece — headers, filter input, dual <select> boxes, arrow chips
+     (with Lucide chevrons via mask-image), bulk action links. */
+  & .selector {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    gap: 0.75rem;
+    align-items: stretch;
+  }
+  & .selector-available,
+  & .selector-chosen {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--card);
+    overflow: hidden;
+  }
+  & .selector-available-title,
+  & .selector-chosen-title {
+    padding: 0.5rem 0.75rem;
+    background: var(--muted);
+    border-bottom: 1px solid var(--border);
+  }
+  & .selector-available-title label,
+  & .selector-chosen-title label {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--foreground);
+    width: auto;
+    padding: 0;
+  }
+  & .selector .helptext {
+    display: block;
+    font-size: 0.6875rem;
+    color: var(--muted-foreground);
+    margin: 0.125rem 0 0 0;
+    font-weight: 400;
+    line-height: 1.4;
+  }
+  & .selector-filter {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.5rem 0.75rem;
+    margin: 0;
+    border-bottom: 1px solid var(--border);
+    background: var(--background);
+  }
+  & .selector-filter label {
+    display: inline-flex;
+    align-items: center;
+    color: var(--muted-foreground);
+    width: auto;
+    padding: 0;
+  }
+  & .selector-filter input[type="text"] {
+    flex: 1;
+    height: 1.75rem;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.8125rem;
+    background: transparent;
+    border: 1px solid var(--input);
+    border-radius: var(--radius-sm);
+    color: var(--foreground);
+    width: auto;
+    max-width: 100%;
+  }
+  & .selector select {
+    flex: 1;
+    width: 100%;
+    height: 12rem;
+    border: none;
+    border-radius: 0;
+    background: var(--card);
+    color: var(--foreground);
+    font-size: 0.8125rem;
+    padding: 0.25rem;
+    max-width: 100%;
+  }
+  & .selector select option {
+    padding: 0.25rem 0.5rem;
+    border-radius: var(--radius-sm);
+  }
+  & .selector select option:checked {
+    background: var(--accent) linear-gradient(0deg, var(--accent), var(--accent));
+    color: var(--accent-foreground);
+  }
+  & .selector-chooseall,
+  & .selector-clearall {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    padding: 0.5rem 0.75rem;
+    background: var(--muted);
+    border-top: 1px solid var(--border);
+    color: var(--foreground);
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-decoration: none;
+    cursor: pointer;
+  }
+  & .selector-chooseall:hover,
+  & .selector-clearall:hover {
+    background: var(--accent);
+    color: var(--accent-foreground);
+    text-decoration: none;
+  }
+
+  /* Arrow column — vertical stack of Choose / Remove buttons */
+  & .selector-chooser {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0.375rem;
+    padding: 0 0.125rem;
+  }
+  & .selector-add,
+  & .selector-remove {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--foreground);
+    text-decoration: none;
+    font-size: 0;
+    cursor: pointer;
+  }
+  & .selector-add:hover,
+  & .selector-remove:hover {
+    background: var(--muted);
+    text-decoration: none;
+  }
+  /* Lucide arrow-right / arrow-left icons painted via mask-image so they
+     pick up currentColor in dark mode without an extra rule. */
+  & .selector-add::before,
+  & .selector-remove::before {
+    content: "";
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    background-color: currentColor;
+    mask-position: center;
+    mask-size: contain;
+    mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    -webkit-mask-size: contain;
+    -webkit-mask-repeat: no-repeat;
+  }
+  & .selector-add::before {
+    mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M5 12h14'/><path d='m12 5 7 7-7 7'/></svg>");
+    -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M5 12h14'/><path d='m12 5 7 7-7 7'/></svg>");
+  }
+  & .selector-remove::before {
+    mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M19 12H5'/><path d='m12 19-7-7 7-7'/></svg>");
+    -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M19 12H5'/><path d='m12 19-7-7 7-7'/></svg>");
+  }
+  /* Hide the legacy <img> icons inside .selector-add/.selector-remove —
+     we replaced them with mask-image pseudo-elements above. */
+  & .selector-add img,
+  & .selector-remove img {
+    display: none;
+  }
+  /* The "(Click to clear)" tip text that Django renders below the
+     chosen list — keep it discreet. */
+  & .selector .selector-chosen .help {
+    margin-left: 0;
+    padding: 0.375rem 0.75rem;
+    font-size: 0.6875rem;
+    color: var(--muted-foreground);
+    border-top: 1px solid var(--border);
+    background: var(--background);
+  }
+  & .selector .selector-chosen .help-icon {
+    display: none;
+  }
+
+  /* Related-object widget wrapper (FK + M2M) */
+  & .related-widget-wrapper {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    flex-wrap: wrap;
+  }
+  & .related-widget-wrapper-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--muted-foreground);
+    background: var(--card);
+  }
+  & .related-widget-wrapper-link:hover {
+    background: var(--muted);
+    color: var(--foreground);
+    text-decoration: none;
+  }
+  & .related-widget-wrapper-link img {
+    width: 14px;
+    height: 14px;
+    /* Recolor Django's PNG icons toward the muted-foreground in light mode;
+       inverted in dark via .dark override below. */
+    opacity: 0.7;
+  }
+
+  /* Calendar / clock pop-ups — full Apex-styled date picker. Django's
+     calendar.js injects an absolutely-positioned .calendarbox with a
+     nav row, a <table>, and bottom shortcut links. Style each piece
+     so the popup reads as a coherent card. */
+  & .calendarbox,
+  & .clockbox {
+    background: var(--popover);
+    color: var(--popover-foreground);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: 0 12px 32px -6px color-mix(in oklch, black 25%, transparent);
+    padding: 0.5rem;
+    min-width: 16rem;
+    z-index: 50;
+  }
+
+  /* Nav row at the top — Django emits two anchors with literal "<" / ">"
+     text. Hide the text via font-size:0 + replace with Lucide chevrons
+     painted via mask-image so the icons pick up the foreground colour
+     in both light and dark themes. */
+  & .calendarbox > div:first-child {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.25rem;
+    margin-bottom: 0.25rem;
+  }
+  & .calendarnav-previous,
+  & .calendarnav-next {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--card);
+    color: var(--foreground);
+    font-size: 0;
+    text-decoration: none;
+  }
+  & .calendarnav-previous:hover,
+  & .calendarnav-next:hover {
+    background: var(--muted);
+    text-decoration: none;
+  }
+  & .calendarnav-previous::before,
+  & .calendarnav-next::before {
+    content: "";
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    background-color: currentColor;
+    mask-position: center;
+    mask-size: contain;
+    mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    -webkit-mask-size: contain;
+    -webkit-mask-repeat: no-repeat;
+  }
+  & .calendarnav-previous::before {
+    mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='m15 18-6-6 6-6'/></svg>");
+    -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='m15 18-6-6 6-6'/></svg>");
+  }
+  & .calendarnav-next::before {
+    mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='m9 18 6-6-6-6'/></svg>");
+    -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='m9 18 6-6-6-6'/></svg>");
+  }
+
+  /* Month name caption sits between the nav arrows (absolutely positioned
+     above the table). Center it; treat it as a header. */
+  & .calendar caption,
+  & .calendarbox h2 {
+    background: transparent;
+    color: var(--foreground);
+    font-size: 0.875rem;
+    font-weight: 600;
+    padding: 0 0 0.5rem 0;
+    text-align: center;
+    margin: 0;
+    border: none;
+  }
+
+  /* Day grid */
+  & .calendar table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0.125rem;
+  }
+  & .calendar th {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--muted-foreground);
+    padding: 0.25rem 0;
+    text-align: center;
+    background: transparent;
+    border: none;
+  }
+  & .calendar td {
+    padding: 0;
+    text-align: center;
+    border: none;
+  }
+  & .calendar td.nonday {
+    background: transparent;
+  }
+  & .calendar td a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.875rem;
+    height: 1.875rem;
+    padding: 0;
+    border-radius: var(--radius-sm);
+    color: var(--foreground);
+    font-size: 0.8125rem;
+    text-decoration: none;
+  }
+  & .calendar td a:hover {
+    background: var(--accent);
+    color: var(--accent-foreground);
+    text-decoration: none;
+  }
+  & .calendar td.selected a {
+    background: var(--primary);
+    color: var(--primary-foreground);
+    font-weight: 600;
+  }
+  & .calendar td.today a {
+    box-shadow: inset 0 0 0 1px var(--primary);
+    color: var(--primary);
+    font-weight: 600;
+  }
+  & .calendar td.today.selected a {
+    box-shadow: none;
+    color: var(--primary-foreground);
+  }
+
+  /* Bottom action row — Yesterday | Today | Tomorrow + Cancel. Django
+     emits the shortcuts inline with " | " separators (text nodes). The
+     font-size:0 trick collapses those separators; we re-set font-size
+     on the anchors so the labels stay readable. */
+  & .calendar-shortcuts {
+    padding: 0.5rem 0.25rem 0.25rem;
+    margin-top: 0.25rem;
+    border-top: 1px solid var(--border);
+    text-align: center;
+    font-size: 0;
+  }
+  & .calendar-shortcuts a {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    margin: 0 0.125rem;
+    border-radius: var(--radius-sm);
+    color: var(--foreground);
+    font-size: 0.75rem;
+    text-decoration: none;
+  }
+  & .calendar-shortcuts a:hover {
+    background: var(--muted);
+    text-decoration: none;
+  }
+  & .calendar-cancel {
+    margin: 0.25rem 0 0 0;
+    padding: 0.25rem;
+    text-align: center;
+  }
+  & .calendar-cancel a {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    color: var(--muted-foreground);
+    font-size: 0.75rem;
+    text-decoration: none;
+  }
+  & .calendar-cancel a:hover {
+    color: var(--destructive);
+    text-decoration: none;
+  }
+
+  /* Clock pop-up — list of preset times */
+  & .clockbox h2 {
+    text-align: center;
+    font-size: 0.875rem;
+    font-weight: 600;
+    padding: 0 0 0.5rem 0;
+    margin: 0;
+    border-bottom: 1px solid var(--border);
+  }
+  & .clockbox ul.timelist {
+    list-style: none;
+    padding: 0.5rem 0 0 0;
+    margin: 0;
+  }
+  & .clockbox ul.timelist li a {
+    display: block;
+    padding: 0.375rem 0.75rem;
+    border-radius: var(--radius-sm);
+    color: var(--foreground);
+    font-size: 0.8125rem;
+    text-decoration: none;
+  }
+  & .clockbox ul.timelist li a:hover {
+    background: var(--accent);
+    color: var(--accent-foreground);
+    text-decoration: none;
+  }
+
+  /* Errors */
+  & .errornote {
+    background: color-mix(in oklch, var(--destructive) 8%, transparent);
+    border: 1px solid var(--destructive);
+    color: var(--destructive);
+    border-radius: var(--radius);
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+    margin-bottom: 1rem;
+  }
+
+  /* Help text inline next to fields */
+  & .help-tooltip {
+    background: var(--popover);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 0.5rem;
+    box-shadow: 0 4px 6px -1px color-mix(in oklch, black 10%, transparent);
+  }
+}
+
+/* Form-field defaults. Placed in @layer components so Tailwind's utilities
+   layer (e.g. pl-9 on the themed search input) wins. Without the layer,
+   unlayered styles sit ABOVE all Tailwind layers and specificity tricks
+   (:where, :not) wouldn't help. */
+@layer components {
+  .apex-admin input[type="text"],
+  .apex-admin input[type="email"],
+  .apex-admin input[type="url"],
+  .apex-admin input[type="password"],
+  .apex-admin input[type="number"],
+  .apex-admin input[type="search"],
+  .apex-admin input[type="tel"],
+  .apex-admin input[type="date"],
+  .apex-admin input[type="datetime-local"],
+  .apex-admin input[type="time"],
+  .apex-admin textarea,
+  .apex-admin select {
+    background: var(--background);
+    border: 1px solid var(--input);
+    border-radius: var(--radius);
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+    color: var(--foreground);
+    font-family: inherit;
+    line-height: 1.4;
+    width: auto;
+    max-width: 100%;
+  }
+  .apex-admin textarea {
+    min-height: 6rem;
+  }
+  .apex-admin input:focus,
+  .apex-admin textarea:focus,
+  .apex-admin select:focus {
+    outline: 2px solid var(--ring);
+    outline-offset: -1px;
+    border-color: transparent;
+  }
+}
+
+/* =========================================================================
+ * Polish pass — small things that show up on every form
+ * ========================================================================= */
+
+/* Required-field asterisk. Django renders <label class="required">Name:</label>
+   for required fields; we add a destructive-coloured "*" suffix. */
+.apex-admin label.required::after {
+  content: " *";
+  color: var(--destructive);
+  font-weight: 600;
+  margin-left: 2px;
+}
+
+/* Inline "Add another" link gets a "+" glyph prefix so it reads as a button. */
+.apex-admin .add-row a::before {
+  content: "+";
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  line-height: 12px;
+  text-align: center;
+  font-weight: 700;
+  margin-right: 6px;
+  color: var(--primary);
+  font-size: 1rem;
+}
+
+/* "Change" / "View" links rendered next to existing inline items. Stock
+   Django emits them as bare anchors with these classes; restyle as chips. */
+.apex-admin .inlinechangelink,
+.apex-admin .inlineviewlink {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 0.5rem;
+  padding: 0 0.5rem;
+  height: 1.5rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--card);
+  color: var(--foreground);
+  text-decoration: none;
+}
+.apex-admin .inlinechangelink:hover,
+.apex-admin .inlineviewlink:hover {
+  background: var(--muted);
+  text-decoration: none;
+}
+
+/* Date/time shortcut links — Django's JS injects a span with this class
+   right after every DateField / DateTimeField, holding "Today" / "Now" /
+   calendar / clock pop-up triggers. The trick: font-size:0 on the span
+   collapses the literal " | " text nodes Django inserts between anchors;
+   children explicitly re-set their own font-size. */
+.apex-admin .datetimeshortcuts {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-left: 0.5rem;
+  font-size: 0;
+  color: var(--muted-foreground);
+}
+.apex-admin .datetimeshortcuts a {
+  display: inline-flex;
+  align-items: center;
+  height: 1.75rem;
+  padding: 0 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--card);
+  color: var(--foreground);
+  text-decoration: none;
+  font-size: 0.75rem;
+}
+.apex-admin .datetimeshortcuts a:hover {
+  background: var(--muted);
+  text-decoration: none;
+}
+/* Django's JS structure: each shortcut link is <a id="calendarlinkN">
+   wrapping <span class="date-icon"> (or clocklinkN + .clock-icon).
+   Style the <a> as a square chip, then inject a Lucide SVG via mask on
+   the inner span — currentColor handles dark mode automatically. */
+.apex-admin .datetimeshortcuts a[id^="calendarlink"],
+.apex-admin .datetimeshortcuts a[id^="clocklink"] {
+  padding: 0;
+  width: 1.75rem;
+  justify-content: center;
+}
+.apex-admin .date-icon,
+.apex-admin .clock-icon {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  background-color: currentColor;
+  mask-position: center;
+  mask-size: contain;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  -webkit-mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+}
+.apex-admin .date-icon {
+  mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><rect width='18' height='18' x='3' y='4' rx='2' ry='2'/><line x1='16' x2='16' y1='2' y2='6'/><line x1='8' x2='8' y1='2' y2='6'/><line x1='3' x2='21' y1='10' y2='10'/></svg>");
+  -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><rect width='18' height='18' x='3' y='4' rx='2' ry='2'/><line x1='16' x2='16' y1='2' y2='6'/><line x1='8' x2='8' y1='2' y2='6'/><line x1='3' x2='21' y1='10' y2='10'/></svg>");
+}
+.apex-admin .clock-icon {
+  mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='12' r='10'/><polyline points='12 6 12 12 16 14'/></svg>");
+  -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='12' r='10'/><polyline points='12 6 12 12 16 14'/></svg>");
+}
+
+/* Help-text icon (Django ships icon-unknown.svg next to fields with
+   help_text). The PNG looks foreign; CSS filter dims it to match the
+   muted-foreground palette, and dark mode inverts it like other widget
+   icons. */
+.apex-admin .help-tooltip {
+  opacity: 0.55;
+  vertical-align: middle;
+  margin-left: 4px;
+}
+.dark .apex-admin .help-tooltip {
+  filter: invert(1) brightness(1.5);
+}
+
+/* Popup window adjustments — breadcrumbs in a 600px-tall popup just eat
+   vertical real estate (the user already knows what they're adding from
+   the button they clicked). Hide them; shrink the title for compactness. */
+.apex-admin.popup nav[aria-label="Breadcrumb"] {
+  display: none;
+}
+.apex-admin.popup main > header h1,
+.apex-admin.popup main h1:first-child {
+  font-size: 1.25rem;
+}
+.apex-admin.popup main {
+  padding-top: 1.5rem;
+}
+/* Hide internal metadata fields in popups — Django always renders these
+   even on add forms where they're empty placeholders ("Created at: -"
+   etc.). In a popup the user is creating a related object and doesn't
+   need to see audit timestamps. Targets the conventional Django field
+   names plus the Apex soft-delete field. */
+.apex-admin.popup .form-row.field-created_at,
+.apex-admin.popup .form-row.field-updated_at,
+.apex-admin.popup .form-row.field-created,
+.apex-admin.popup .form-row.field-modified,
+.apex-admin.popup .form-row.field-modified_at,
+.apex-admin.popup .form-row.field-last_modified,
+.apex-admin.popup .form-row.field-deleted_at,
+.apex-admin.popup .form-row.field-archived_at {
+  display: none;
+}
+/* Also hide ANY readonly row whose visible value is empty ("-" or "—" or
+   blank). Uses :has() so it works on whatever readonly field a model
+   throws at us. Modern-browser-only — fall back to the explicit list
+   above on engines without :has() support. */
+.apex-admin.popup .form-row:has(.readonly):not(:has(.readonly:not(:empty))) {
+  display: none;
+}
+
+/* Popup submit row — Django suppresses everything but "Save" in popup
+   mode (no Save-and-continue, no Delete, etc.). Make that single Save
+   feel like a confident primary action instead of a button floating
+   awkwardly in an empty card. Sticks to the bottom of the viewport so
+   it's always reachable without scrolling. */
+.apex-admin.popup .submit-row {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  margin: 1rem -1.25rem -1.5rem;  /* extend to the edges of main padding */
+  padding: 0.875rem 1.5rem;
+  background: var(--card);
+  border: none;
+  border-top: 1px solid var(--border);
+  border-radius: 0;
+  box-shadow: 0 -4px 12px -6px color-mix(in oklch, black 12%, transparent);
+}
+.apex-admin.popup .submit-row input[name="_save"],
+.apex-admin.popup .submit-row input.default {
+  padding: 0.5rem 1.5rem;
+  font-weight: 600;
+  height: 2.5rem;
+}
+/* Popups are narrow. Stack labels above inputs instead of fighting for
+   horizontal space with a 10rem label column. Same for narrow viewports. */
+.apex-admin.popup .form-row .flex-container,
+.apex-admin.popup .form-row.form-multiline .flex-container {
+  grid-template-columns: minmax(0, 1fr);
+  row-gap: 0.375rem;
+}
+.apex-admin.popup .form-row .help,
+.apex-admin.popup .form-row .help-tooltip,
+.apex-admin.popup .form-row .errorlist {
+  margin-left: 0;
+}
+@media (max-width: 700px) {
+  .apex-admin .form-row .flex-container {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 0.375rem;
+  }
+  .apex-admin .form-row .help,
+  .apex-admin .form-row .help-tooltip,
+  .apex-admin .form-row .errorlist {
+    margin-left: 0;
+  }
+}
+
+/* Inputs inside FIELDSET form rows fill the available column up to a
+   sensible cap. Scoped to .flex-container (Django 6's wrapper for the
+   label+field pair in a fieldset) so it doesn't leak into tabular
+   inline cells — Django emits <tr class="form-row"> there too, but
+   those have no .flex-container. */
+@layer components {
+  .apex-admin .form-row .flex-container input[type="text"],
+  .apex-admin .form-row .flex-container input[type="email"],
+  .apex-admin .form-row .flex-container input[type="url"],
+  .apex-admin .form-row .flex-container input[type="password"],
+  .apex-admin .form-row .flex-container input[type="number"],
+  .apex-admin .form-row .flex-container input[type="search"],
+  .apex-admin .form-row .flex-container input[type="tel"],
+  .apex-admin .form-row .flex-container input[type="date"],
+  .apex-admin .form-row .flex-container input[type="datetime-local"],
+  .apex-admin .form-row .flex-container input[type="time"],
+  .apex-admin .form-row .flex-container select {
+    width: 100%;
+    max-width: 28rem;
+  }
+  .apex-admin .form-row .flex-container textarea {
+    width: 100%;
+    max-width: 36rem;
+  }
+
+  /* JSONField widget — Django renders JSONField as Textarea(attrs={"class": "vLargeTextField"}).
+     The vLargeTextField class is also used for plain TextField, so we
+     specifically target textareas whose name contains "json" or that
+     belong to a .field-* class containing "json" — narrow enough to
+     avoid hitting non-JSON large textareas. */
+  .apex-admin .form-row[class*="field-"][class*="json"] textarea,
+  .apex-admin .form-row .flex-container textarea[name*="json"i],
+  .apex-admin .form-row .flex-container textarea[name*="config"i],
+  .apex-admin .form-row .flex-container textarea[name*="metadata"i],
+  .apex-admin .form-row .flex-container textarea[name*="payload"i] {
+    font-family: var(--font-mono, ui-monospace, "SF Mono", Menlo, Consolas, monospace);
+    font-size: 0.8125rem;
+    line-height: 1.5;
+    min-height: 12rem;
+    tab-size: 2;
+  }
+
+  /* File input. Browsers render <input type="file"> as a button + text
+     showing the chosen filename. The button portion accepts styling via
+     ::file-selector-button; the "No file chosen" text is browser-owned
+     and can only be styled (not removed). Make the button look like
+     our other secondary buttons. */
+  .apex-admin input[type="file"] {
+    font-size: 0.8125rem;
+    color: var(--muted-foreground);
+    border: none;
+    padding: 0;
+    background: transparent;
+    width: auto;
+    max-width: 100%;
+  }
+  .apex-admin input[type="file"]:focus {
+    outline: none;
+  }
+  .apex-admin input[type="file"]::file-selector-button {
+    margin-right: 0.75rem;
+    padding: 0.4375rem 0.875rem;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    background: var(--card);
+    color: var(--foreground);
+    cursor: pointer;
+    transition: background-color 0.12s ease;
+  }
+  .apex-admin input[type="file"]::file-selector-button:hover {
+    background: var(--muted);
+  }
+
+  /* When an ImageField/FileField has an existing value, Django renders:
+     <p class="file-upload">Currently: <a>file.ext</a> <input type="checkbox"> Clear<br>Change:</p>
+     Style this so it doesn't look like a wall of inline text. */
+  .apex-admin .form-row p.file-upload {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin: 0 0 0.5rem 0;
+    font-size: 0.8125rem;
+    color: var(--muted-foreground);
+  }
+  .apex-admin .form-row p.file-upload a {
+    color: var(--primary);
+    font-weight: 500;
+  }
+  .apex-admin .form-row p.file-upload br {
+    display: none;
+  }
+  .apex-admin .form-row p.file-upload .clearablefileinput {
+    margin-left: 0.25rem;
+  }
+
+  /* Thumbnail preview emitted by our clearable_file_input.html override
+     when the field's existing value is an image (jpg/png/gif/webp/...).
+     Renders as a small bordered card so it reads as "here's what you
+     already have" rather than as a raw image dump. */
+  .apex-admin .form-row .file-preview {
+    display: inline-block;
+    margin: 0 0 0.5rem 0;
+    padding: 0.25rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--background);
+    line-height: 0;
+  }
+  .apex-admin .form-row .file-preview img {
+    max-width: 12rem;
+    max-height: 8rem;
+    width: auto;
+    height: auto;
+    border-radius: calc(var(--radius-sm) - 2px);
+    object-fit: contain;
+  }
+  .apex-admin .form-row .file-current {
+    display: inline-flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+    font-size: 0.8125rem;
+    color: var(--muted-foreground);
+    margin-bottom: 0.5rem;
+  }
+  .apex-admin .form-row .file-current a {
+    color: var(--primary);
+    font-weight: 500;
+  }
+}
+
+/* =========================================================================
+ * Select2 autocomplete (admin's autocomplete_fields = [...] widget)
+ * =========================================================================
+ * Django ships a 279-line admin/css/autocomplete.css that styles Select2
+ * via CSS variables (--body-bg, --border-color, --body-fg,
+ * --body-quiet-color, --primary). Aliasing those vars to Apex tokens at
+ * the .apex-admin level lets Django's existing theme do most of the
+ * work — we layer Apex-specific tweaks (border-radius, focus ring,
+ * dropdown shadow) below.
+ * ========================================================================= */
+
+.apex-admin {
+  --body-bg: var(--background);
+  --body-fg: var(--foreground);
+  --body-quiet-color: var(--muted-foreground);
+  --body-medium-color: var(--muted-foreground);
+  --border-color: var(--input);
+  --darkened-bg: var(--muted);
+  --selected-bg: color-mix(in oklch, var(--primary) 12%, transparent);
+  --selected-row: color-mix(in oklch, var(--primary) 8%, transparent);
+  --link-fg: var(--primary);
+  --link-hover-color: var(--primary);
+  --link-selected-fg: var(--primary);
+}
+
+/* Outer Select2 control — match Apex input chrome (border, radius, height). */
+.apex-admin .select2-container--admin-autocomplete .select2-selection--single,
+.apex-admin .select2-container--admin-autocomplete .select2-selection--multiple {
+  background: var(--background);
+  border: 1px solid var(--input);
+  border-radius: var(--radius);
+  min-height: 2.25rem;
+  font-size: 0.875rem;
+  color: var(--foreground);
+}
+.apex-admin .select2-container--admin-autocomplete .select2-selection--single .select2-selection__rendered {
+  padding: 0 0.75rem;
+  line-height: calc(2.25rem - 2px);
+  color: var(--foreground);
+}
+.apex-admin .select2-container--admin-autocomplete .select2-selection--single .select2-selection__arrow {
+  height: calc(2.25rem - 2px);
+  width: 1.75rem;
+}
+.apex-admin .select2-container--admin-autocomplete .select2-selection--single .select2-selection__arrow b {
+  border-color: var(--muted-foreground) transparent transparent transparent;
+}
+.apex-admin .select2-container--admin-autocomplete.select2-container--focus .select2-selection,
+.apex-admin .select2-container--admin-autocomplete.select2-container--open .select2-selection {
+  border-color: transparent;
+  outline: 2px solid var(--ring);
+  outline-offset: -1px;
+}
+
+/* Multi-select chips */
+.apex-admin .select2-container--admin-autocomplete .select2-selection--multiple {
+  padding: 0.25rem;
+}
+.apex-admin .select2-container--admin-autocomplete .select2-selection--multiple .select2-selection__choice {
+  background: var(--accent);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0.125rem 0.5rem;
+  margin: 0.125rem 0.25rem 0.125rem 0;
+  font-size: 0.8125rem;
+  color: var(--accent-foreground);
+}
+.apex-admin .select2-container--admin-autocomplete .select2-selection--multiple .select2-selection__choice__remove {
+  color: var(--muted-foreground);
+  margin-right: 0.25rem;
+}
+.apex-admin .select2-container--admin-autocomplete .select2-selection--multiple .select2-selection__choice__remove:hover {
+  color: var(--destructive);
+  background: transparent;
+}
+
+/* Dropdown panel */
+.apex-admin .select2-container--admin-autocomplete .select2-dropdown,
+body > .select2-container--admin-autocomplete .select2-dropdown {
+  background: var(--popover);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 24px -6px color-mix(in oklch, black 18%, transparent);
+  overflow: hidden;
+  /* Select2 portals the dropdown to <body>, so we also style it via
+     body > .select2-container--admin-autocomplete (since .apex-admin is
+     on <body>, both selectors resolve to the same element). */
+}
+
+/* Search box inside the dropdown */
+.apex-admin .select2-container--admin-autocomplete .select2-search--dropdown,
+body > .select2-container--admin-autocomplete .select2-search--dropdown {
+  padding: 0.5rem;
+}
+.apex-admin .select2-container--admin-autocomplete .select2-search--dropdown .select2-search__field,
+body > .select2-container--admin-autocomplete .select2-search--dropdown .select2-search__field {
+  background: var(--background);
+  border: 1px solid var(--input);
+  border-radius: var(--radius-sm);
+  padding: 0.375rem 0.625rem;
+  font-size: 0.875rem;
+  color: var(--foreground);
+  outline: none;
+}
+.apex-admin .select2-container--admin-autocomplete .select2-search--dropdown .select2-search__field:focus,
+body > .select2-container--admin-autocomplete .select2-search--dropdown .select2-search__field:focus {
+  border-color: transparent;
+  outline: 2px solid var(--ring);
+  outline-offset: -1px;
+}
+
+/* Dropdown items */
+.apex-admin .select2-container--admin-autocomplete .select2-results__option,
+body > .select2-container--admin-autocomplete .select2-results__option {
+  padding: 0.4375rem 0.75rem;
+  font-size: 0.875rem;
+  color: var(--popover-foreground);
+}
+.apex-admin .select2-container--admin-autocomplete .select2-results__option--highlighted,
+.apex-admin .select2-container--admin-autocomplete .select2-results__option--highlighted[aria-selected],
+body > .select2-container--admin-autocomplete .select2-results__option--highlighted,
+body > .select2-container--admin-autocomplete .select2-results__option--highlighted[aria-selected] {
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+.apex-admin .select2-container--admin-autocomplete .select2-results__option[aria-selected="true"],
+body > .select2-container--admin-autocomplete .select2-results__option[aria-selected="true"] {
+  background: color-mix(in oklch, var(--primary) 12%, transparent);
+  color: var(--foreground);
+  font-weight: 500;
+}
+.apex-admin .select2-container--admin-autocomplete .select2-results__option--disabled,
+body > .select2-container--admin-autocomplete .select2-results__option--disabled {
+  color: var(--muted-foreground);
+}
+
+/* Placeholder text */
+.apex-admin .select2-container--admin-autocomplete .select2-selection--single .select2-selection__placeholder,
+.apex-admin .select2-container--admin-autocomplete .select2-selection--multiple .select2-search__field::placeholder {
+  color: var(--muted-foreground);
+}
+
+/* "No results found" / "Loading…" messages */
+body > .select2-container--admin-autocomplete .select2-results__option.loading-results,
+body > .select2-container--admin-autocomplete .select2-results__option.select2-results__message {
+  color: var(--muted-foreground);
+  font-style: italic;
+}
+
+/* =========================================================================
+ * Dark-mode-only tweaks
+ * ========================================================================= */
+
+/* Django's PNG widget icons (arrow, magnifier, plus) are dark on transparent
+   and disappear in dark mode. Invert them. */
+.dark .apex-admin .related-widget-wrapper-link img,
+.dark .apex-admin .selector img {
+  filter: invert(1) brightness(1.5);
+  opacity: 0.8;
+}

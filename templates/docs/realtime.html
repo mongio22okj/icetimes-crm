@@ -1,0 +1,109 @@
+{% extends "layouts/docs.html" %}
+{% load docs_tags %}
+
+{% block doc_title %}Realtime / Channels{% endblock %}
+{% block doc_subtitle %}WebSocket-backed notifications + presence. In-memory layer in dev, Redis in prod via REDIS_URL.{% endblock %}
+
+{% block doc_body %}
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">Stack</h2>
+  <ul class="space-y-2 text-sm text-muted-foreground">
+    {% feature title="Channels 4 + Daphne" %}
+      ASGI replaces gunicorn for WebSocket support. HTTP requests still go
+      through Django's normal stack.
+    {% endfeature %}
+    {% feature title="In-memory channel layer in dev" %}
+      Zero infra. Set <code class="rounded bg-muted px-1 text-xs">REDIS_URL</code> + install the <code class="rounded bg-muted px-1 text-xs">realtime</code> extra in prod for cross-process fan-out: <code class="rounded bg-muted px-1 text-xs">uv sync --extra realtime</code>.
+    {% endfeature %}
+    {% feature title="Auto-reconnect with exponential backoff" %}
+      Cap 30s on the client. Anonymous connections close with code 4401 and don't retry.
+    {% endfeature %}
+  </ul>
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">Consumers</h2>
+  <p class="text-sm text-muted-foreground">Two consumers ship out of the box (in <code class="rounded bg-muted px-1 text-xs">apps/realtime/consumers.py</code>):</p>
+  <ul class="space-y-2 text-sm text-muted-foreground ml-5 list-disc">
+    <li><code class="rounded bg-muted px-1 text-xs">NotificationConsumer</code> at <code class="rounded bg-muted px-1 text-xs">/ws/notifications/</code> — per-user fan-out channel <code class="rounded bg-muted px-1 text-xs">notify.user.&lt;id&gt;</code>. Receives <code class="rounded bg-muted px-1 text-xs">notify.message</code> (new row) and <code class="rounded bg-muted px-1 text-xs">notify.count</code> (badge bump) events.</li>
+    <li><code class="rounded bg-muted px-1 text-xs">PresenceConsumer</code> at <code class="rounded bg-muted px-1 text-xs">/ws/presence/</code> — global presence channel. Tracks per-process connection set; broadcasts a count + the joined/left username on every transition.</li>
+  </ul>
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">Pushing a notification from server-side code</h2>
+  {% code lang="python" %}from apps.realtime.dispatch import push_notification, push_unread_count
+
+# Fire from any view, signal handler, or management command:
+push_notification(user.id, {
+    "id": notification.id,
+    "title": "Invoice paid",
+    "body": "Acme Corp paid INV-2026-0001",
+    "url": "/invoices/123/",
+})
+push_unread_count(user.id, 7)   # update bell badge across all open tabs{% endcode %}
+  <p class="text-sm text-muted-foreground">
+    The notification dispatcher
+    (<code class="rounded bg-muted px-1 text-xs">apps.notifications.dispatch.notify()</code>)
+    already calls these for you after every
+    <code class="rounded bg-muted px-1 text-xs">Notification.objects.create()</code>.
+    Every existing notification source (orders, invoices, mail, chat, mentions)
+    becomes live with no per-call wiring.
+  </p>
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">Client-side</h2>
+  <p class="text-sm text-muted-foreground">
+    <code class="rounded bg-muted px-1 text-xs">static/js/realtime.js</code>
+    exposes two Alpine factories:
+  </p>
+  {% code lang="html" %}<!-- in templates/partials/header.html -->
+<div x-data="apexNotifyStream()">…</div>
+<div x-data="apexPresence()" x-show="count > 0">
+  <span x-text="count"></span> online
+</div>{% endcode %}
+  <p class="text-sm text-muted-foreground">
+    <code class="rounded bg-muted px-1 text-xs">apexNotifyStream()</code>
+    re-renders the bell badge inline AND triggers an HTMX refresh so the
+    dropdown body stays in sync. <code class="rounded bg-muted px-1 text-xs">apexPresence()</code>
+    exposes <code class="rounded bg-muted px-1 text-xs">count</code> +
+    <code class="rounded bg-muted px-1 text-xs">lastJoined</code> +
+    <code class="rounded bg-muted px-1 text-xs">lastLeft</code> for the header pill.
+  </p>
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">Demo page</h2>
+  <p class="text-sm text-muted-foreground">
+    <code class="rounded bg-muted px-1 text-xs">/realtime/</code> opens both
+    sockets, shows the live count, and ships a "Fire test notification"
+    button. <strong class="text-foreground">Open in two tabs</strong> — both update
+    instantly when one fires.
+  </p>
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">Adding your own consumer</h2>
+  <ol class="space-y-2 text-sm text-muted-foreground ml-5 list-decimal">
+    <li>Subclass <code class="rounded bg-muted px-1 text-xs">AsyncJsonWebsocketConsumer</code> in <code class="rounded bg-muted px-1 text-xs">apps/realtime/consumers.py</code>.</li>
+    <li>Implement <code class="rounded bg-muted px-1 text-xs">connect()</code> + <code class="rounded bg-muted px-1 text-xs">disconnect()</code> + your group event handlers.</li>
+    <li>Add a <code class="rounded bg-muted px-1 text-xs">path()</code> to <code class="rounded bg-muted px-1 text-xs">apps/realtime/routing.py</code>.</li>
+    <li>Push from server-side via <code class="rounded bg-muted px-1 text-xs">async_to_sync(layer.group_send)(...)</code> — see <code class="rounded bg-muted px-1 text-xs">apps/realtime/dispatch.py</code> for the wrapper pattern.</li>
+  </ol>
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">Tests</h2>
+  <p class="text-sm text-muted-foreground">
+    Async consumer tests use
+    <code class="rounded bg-muted px-1 text-xs">WebsocketCommunicator</code>
+    + <code class="rounded bg-muted px-1 text-xs">@pytest.mark.asyncio</code>.
+    See <code class="rounded bg-muted px-1 text-xs">apps/realtime/tests/test_consumers.py</code>
+    for the full pattern (anonymous reject, accept, group fan-out, per-user
+    isolation, presence count + join/leave broadcast).
+  </p>
+</section>
+
+{% endblock %}

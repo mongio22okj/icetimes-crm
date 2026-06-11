@@ -1,0 +1,36 @@
+{% load apex %}
+{% comment %}
+  Demo banner — visible only when settings.DEMO_MODE is True (gated in
+  the parent template). Sticky at the top of the dashboard surface so
+  visitors always know they're on a public sandbox where data resets.
+
+  The dismiss state is per-tab (sessionStorage) so it reappears on a
+  fresh visit but stays out of the way during a single browse.
+{% endcomment %}
+<div x-data="{
+       dismissed: sessionStorage.getItem('apex.demoBanner.dismissed') === '1',
+       dismiss() {
+         this.dismissed = true;
+         sessionStorage.setItem('apex.demoBanner.dismissed', '1');
+       }
+     }"
+     x-show="!dismissed"
+     x-cloak
+     class="bg-warning/10 border-b border-warning/30 text-warning-foreground px-4 py-2 text-xs flex items-center justify-center gap-3">
+  <span class="inline-flex items-center gap-1.5 font-medium text-warning">
+    {% icon "rocket" 14 %}
+    Public demo
+  </span>
+  <span class="text-muted-foreground hidden sm:inline">
+    Data resets every hour. Sign in with
+    <code class="bg-muted px-1 rounded">demo</code> /
+    <code class="bg-muted px-1 rounded">ApexShowcase!2026</code> — feel free to break things.
+  </span>
+  <span class="text-muted-foreground sm:hidden">Data resets every hour.</span>
+  <button type="button"
+          @click="dismiss()"
+          class="ml-auto text-muted-foreground hover:text-foreground"
+          aria-label="Dismiss demo banner">
+    {% icon "x" 14 %}
+  </button>
+</div>

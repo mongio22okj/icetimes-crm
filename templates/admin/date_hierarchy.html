@@ -1,0 +1,20 @@
+{% load apex %}
+{% if show %}
+<nav class="toplinks flex items-center flex-wrap gap-1.5 text-sm">
+  {% if back %}
+    <a href="{{ back.link }}"
+       class="inline-flex items-center gap-1 h-8 px-2.5 rounded-md border border-border bg-card text-foreground hover:bg-muted">
+      {% icon "chevron-left" 14 %}<span>{{ back.title }}</span>
+    </a>
+    <span class="text-muted-foreground mx-1">|</span>
+  {% endif %}
+  {% for choice in choices %}
+    {% if choice.link %}
+      <a href="{{ choice.link }}"
+         class="h-8 inline-flex items-center px-2.5 rounded-md border border-border bg-card text-foreground hover:bg-muted text-xs">{{ choice.title }}</a>
+    {% else %}
+      <span class="h-8 inline-flex items-center px-2.5 rounded-md bg-primary text-primary-foreground text-xs font-medium">{{ choice.title }}</span>
+    {% endif %}
+  {% endfor %}
+</nav>
+{% endif %}

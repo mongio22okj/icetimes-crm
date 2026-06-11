@@ -1,0 +1,100 @@
+{% extends "components/_detail_layout.html" %}
+{% load apex %}
+
+{% block component_body %}
+<div class="space-y-8">
+
+  <div class="rounded-lg border border-border bg-card p-6">
+    <h2 class="text-sm font-semibold mb-1">Levels</h2>
+    <p class="text-xs text-muted-foreground mb-4">Each button pushes a toast directly via <code class="text-[11px] bg-muted px-1 rounded">window.apexToast()</code>. Toasts auto-dismiss after 5 seconds.</p>
+    <div class="flex flex-wrap gap-2">
+      <button type="button" onclick="apexToast({level:'success', body:'Customer saved successfully.'})"
+              class="h-9 px-3 rounded-md bg-success text-success-foreground text-sm font-medium hover:opacity-90">
+        Success
+      </button>
+      <button type="button" onclick="apexToast({level:'info', body:'New version available — refresh to load it.'})"
+              class="h-9 px-3 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:opacity-90">
+        Info
+      </button>
+      <button type="button" onclick="apexToast({level:'warning', body:'Your session expires in 5 minutes.'})"
+              class="h-9 px-3 rounded-md bg-amber-500 text-white text-sm font-medium hover:opacity-90">
+        Warning
+      </button>
+      <button type="button" onclick="apexToast({level:'error', body:'Could not connect to the server.'})"
+              class="h-9 px-3 rounded-md bg-destructive text-destructive-foreground text-sm font-medium hover:opacity-90">
+        Error
+      </button>
+    </div>
+  </div>
+
+  <div class="rounded-lg border border-border bg-card p-6">
+    <h2 class="text-sm font-semibold mb-1">With action</h2>
+    <p class="text-xs text-muted-foreground mb-4">Add a button that links somewhere — useful for "Undo" or "View" follow-ups.</p>
+    <div class="flex flex-wrap gap-2">
+      <button type="button"
+              onclick="apexToast({level:'success', body:'Invoice INV-2103 was sent.', action:{label:'View', url:'#'}})"
+              class="h-9 px-3 rounded-md border border-border text-sm hover:bg-accent">
+        Show "View" toast
+      </button>
+      <button type="button"
+              onclick="apexToast({level:'info', body:'Customer archived.', action:{label:'Undo', url:'#'}})"
+              class="h-9 px-3 rounded-md border border-border text-sm hover:bg-accent">
+        Show "Undo" toast
+      </button>
+    </div>
+  </div>
+
+  <div class="rounded-lg border border-border bg-card p-6">
+    <h2 class="text-sm font-semibold mb-1">Persistent</h2>
+    <p class="text-xs text-muted-foreground mb-4">Persistent toasts don't auto-dismiss — user must click the close button. Use sparingly, only for things that require attention.</p>
+    <button type="button"
+            onclick="apexToast({level:'warning', body:'A scheduled maintenance window starts in 1 hour.', persistent:true})"
+            class="h-9 px-3 rounded-md border border-border text-sm hover:bg-accent">
+      Show persistent toast
+    </button>
+  </div>
+
+  <div class="rounded-lg border border-border bg-card overflow-hidden">
+    <div class="px-5 py-3 border-b border-border">
+      <h2 class="text-sm font-semibold">Server-side usage</h2>
+      <p class="text-xs text-muted-foreground mt-0.5">Push from any view via the messages bridge — toast renders on the next request.</p>
+    </div>
+    <pre class="text-xs p-5 overflow-x-auto bg-muted/30"><code>from apps.core.messages import toast, LEVEL_SUCCESS
+
+def my_view(request):
+    ...
+    toast(request, LEVEL_SUCCESS, "Saved.",
+          action={"label": "View", "url": obj.get_absolute_url()})
+    return redirect("…")
+
+# Or use plain Django messages — they light up too:
+from django.contrib import messages
+messages.success(request, "Saved.")
+</code></pre>
+  </div>
+
+  <div class="rounded-lg border border-border bg-card overflow-hidden">
+    <div class="px-5 py-3 border-b border-border">
+      <h2 class="text-sm font-semibold">Client-side usage</h2>
+    </div>
+    <pre class="text-xs p-5 overflow-x-auto bg-muted/30"><code>// Available globally on any page where the toast container is rendered.
+apexToast({
+  level: 'success',          // success | info | warning | error
+  body: 'Saved.',
+  action: { label: 'View', url: '/foo/1/' },  // optional
+  persistent: false,         // optional, default false
+});</code></pre>
+  </div>
+
+  <div class="rounded-lg border border-border bg-card p-6 text-sm">
+    <h2 class="text-sm font-semibold mb-3">Accessibility</h2>
+    <ul class="space-y-1.5 text-muted-foreground">
+      <li>• Container has <strong class="text-foreground">aria-live="polite"</strong> + <strong class="text-foreground">aria-atomic="false"</strong>.</li>
+      <li>• Each toast has <strong class="text-foreground">role="status"</strong>.</li>
+      <li>• Dismiss button has <strong class="text-foreground">aria-label="Dismiss"</strong>.</li>
+      <li>• Auto-dismiss extends to 8 seconds when <code class="text-[11px] bg-muted px-1 rounded">prefers-reduced-motion</code> is set.</li>
+    </ul>
+  </div>
+
+</div>
+{% endblock %}

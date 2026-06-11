@@ -1,0 +1,62 @@
+{% extends "components/_detail_layout.html" %}
+{% load apex %}
+
+{% block component_body %}
+<div class="space-y-8">
+
+  {# ── Trigger row ──────────────────────────────────────────────── #}
+  <div class="rounded-lg border border-border bg-card p-6">
+    <h2 class="text-sm font-semibold mb-1">Open variants</h2>
+    <p class="text-xs text-muted-foreground mb-4">Click any trigger to open the matching modal. Esc closes; backdrop click closes; focus returns to the trigger.</p>
+    <div class="flex flex-wrap gap-2">
+      <button type="button" @click="$dispatch('apex:open', 'modal-default')"
+              class="h-9 px-3 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:opacity-90">
+        Default modal
+      </button>
+      <button type="button" @click="$dispatch('apex:open', 'modal-small')"
+              class="h-9 px-3 rounded-md border border-border text-sm hover:bg-accent">
+        Small
+      </button>
+      <button type="button" @click="$dispatch('apex:open', 'modal-large')"
+              class="h-9 px-3 rounded-md border border-border text-sm hover:bg-accent">
+        Large
+      </button>
+      <button type="button" @click="$dispatch('apex:open', 'modal-confirm')"
+              class="h-9 px-3 rounded-md border border-destructive/40 text-destructive text-sm hover:bg-destructive/10">
+        Danger confirm
+      </button>
+    </div>
+  </div>
+
+  {# ── Markup snippet ───────────────────────────────────────────── #}
+  <div class="rounded-lg border border-border bg-card overflow-hidden">
+    <div class="px-5 py-3 border-b border-border">
+      <h2 class="text-sm font-semibold">Usage</h2>
+      <p class="text-xs text-muted-foreground mt-0.5">Drop the include into any template; trigger from anywhere via Alpine's <code class="text-[11px] bg-muted px-1 rounded">$dispatch</code>.</p>
+    </div>
+    <pre class="text-xs p-5 overflow-x-auto bg-muted/30"><code>{% templatetag openblock %} include "components/primitives/modal.html" with id="my-modal" title="Confirm" body="Sure?" primary_label="Yes" secondary_label="Cancel" {% templatetag closeblock %}
+
+{# Trigger from anywhere: #}
+&lt;button @click="$dispatch('apex:open', 'my-modal')"&gt;Open&lt;/button&gt;</code></pre>
+  </div>
+
+  {# ── Accessibility notes ──────────────────────────────────────── #}
+  <div class="rounded-lg border border-border bg-card p-6 text-sm">
+    <h2 class="text-sm font-semibold mb-3">Accessibility</h2>
+    <ul class="space-y-1.5 text-muted-foreground">
+      <li>• <strong class="text-foreground">role="dialog"</strong> + <strong class="text-foreground">aria-modal="true"</strong> + labelled-by the title.</li>
+      <li>• <strong class="text-foreground">Esc</strong> closes the modal.</li>
+      <li>• Backdrop click closes; clicks inside the panel do not.</li>
+      <li>• Focus returns to the triggering element on close (handled by <code class="text-[11px] bg-muted px-1 rounded">apexModal()</code> factory).</li>
+      <li>• Animations are gated on <code class="text-[11px] bg-muted px-1 rounded">prefers-reduced-motion</code> via Alpine transitions.</li>
+    </ul>
+  </div>
+
+</div>
+
+{# ── Modal definitions (kept at end so they don't disturb layout) ── #}
+{% include "components/primitives/modal.html" with id="modal-default" title="Default modal" body="This is a standard modal. Use it for confirmations, short forms, and contextual prompts." primary_label="Got it" secondary_label="Cancel" %}
+{% include "components/primitives/modal.html" with id="modal-small" size="sm" title="Small modal" body="Tight modal for quick decisions." primary_label="OK" %}
+{% include "components/primitives/modal.html" with id="modal-large" size="lg" title="Large modal" body="More room for forms or longer content. The body region scrolls if it overflows." primary_label="Save changes" secondary_label="Discard" %}
+{% include "components/primitives/modal.html" with id="modal-confirm" title="Delete this customer?" body="This action cannot be undone. The customer's orders will be retained but unlinked." primary_label="Delete" secondary_label="Cancel" destructive=True %}
+{% endblock %}

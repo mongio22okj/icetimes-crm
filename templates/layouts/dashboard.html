@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% load apex %}
+{% block body %}
+{% comment %}Skip-to-content link — visible only when focused via keyboard,
+  lets screen-reader + keyboard users bypass the sidebar + header. WCAG 2.4.1.
+{% endcomment %}
+<a href="#main-content"
+   class="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50
+          focus:px-4 focus:py-2 focus:rounded-md focus:bg-primary focus:text-primary-foreground
+          focus:font-medium focus:shadow-lg focus:ring-2 focus:ring-ring focus:outline-none">
+  Skip to main content
+</a>
+<div x-data="apexShell()" class="flex min-h-screen">
+  {% include "partials/sidebar.html" %}
+
+  {# Mobile backdrop #}
+  <div x-show="drawer.open"
+       x-transition.opacity
+       @click="drawer.open = false"
+       class="fixed inset-0 z-30 bg-black/50 lg:hidden"
+       aria-hidden="true"
+       style="display: none;"></div>
+
+  <div class="flex-1 lg:ml-[260px] min-w-0">
+    {% if demo_mode %}{% include "partials/demo_banner.html" %}{% endif %}
+    {% include "partials/install_banner.html" %}
+    {% include "partials/header.html" %}
+    {% breadcrumbs breadcrumbs %}
+    <main id="main-content" tabindex="-1" class="p-6">
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+
+  {# Nav items payload for the palette #}
+  {{ nav_items_json|json_script:"nav-items" }}
+
+  {# Command palette modal #}
+  {% include "partials/command_palette.html" %}
+</div>
+{% apex_toasts %}
+{% endblock %}

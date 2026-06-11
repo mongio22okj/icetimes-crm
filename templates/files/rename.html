@@ -1,0 +1,9 @@
+{% extends "layouts/dashboard.html" %}
+{% block title %}Rename · Apex{% endblock %}
+{% block content %}
+<h1>Rename {{ target_label }}</h1>
+<form method="post" action="{{ post_url }}">{% csrf_token %}
+  {{ form.name }}
+  <button type="submit">Rename</button>
+</form>
+{% endblock %}

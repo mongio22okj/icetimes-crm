@@ -1,0 +1,13 @@
+{% comment %}
+Cell renderers for the invoices TableView. The status pill itself stays
+in `_invoice_status_pill.html` because it's reused on the detail page,
+the public payment page, and the email templates.
+{% endcomment %}
+
+{% partialdef number %}
+<a href="{{ row.get_absolute_url }}" class="font-mono hover:underline">{{ row.number }}</a>
+{% endpartialdef %}
+
+{% partialdef status %}
+{% include "invoices/_invoice_status_pill.html" with status=row.display_status %}
+{% endpartialdef %}

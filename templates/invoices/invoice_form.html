@@ -1,0 +1,95 @@
+{% extends "layouts/dashboard.html" %}
+{% load apex %}
+{% block title %}{% if invoice %}Edit {{ invoice.number }}{% else %}New invoice{% endif %} · Apex{% endblock %}
+{% block content %}
+<div class="mb-6">
+  <h1 class="text-2xl font-bold tracking-tight">
+    {% if invoice %}Edit {{ invoice.number }}{% else %}New invoice{% endif %}
+  </h1>
+  <p class="text-sm text-muted-foreground mt-1">
+    {% if invoice %}Update draft invoice header and line items.{% else %}Create a draft invoice with at least one line item.{% endif %}
+  </p>
+</div>
+
+<form method="post" class="max-w-4xl space-y-6">
+  {% csrf_token %}
+  {% if form.non_field_errors %}
+    <div class="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">{{ form.non_field_errors }}</div>
+  {% endif %}
+  {% if formset.non_form_errors %}
+    <div class="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">{{ formset.non_form_errors }}</div>
+  {% endif %}
+
+  <section class="rounded-lg border border-border bg-card p-6 space-y-4">
+    <h2 class="text-base font-semibold">Header</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div>
+        <label for="{{ form.customer.id_for_label }}" class="block text-sm font-medium mb-1.5">Customer</label>
+        {{ form.customer }}
+        {% if form.customer.errors %}<p class="text-xs text-destructive mt-1">{{ form.customer.errors.0 }}</p>{% endif %}
+      </div>
+      <div>
+        <label for="{{ form.order.id_for_label }}" class="block text-sm font-medium mb-1.5">Order (optional)</label>
+        {{ form.order }}
+      </div>
+      <div>
+        <label for="{{ form.issue_date.id_for_label }}" class="block text-sm font-medium mb-1.5">Issue date</label>
+        {{ form.issue_date }}
+        {% if form.issue_date.errors %}<p class="text-xs text-destructive mt-1">{{ form.issue_date.errors.0 }}</p>{% endif %}
+      </div>
+      <div>
+        <label for="{{ form.due_date.id_for_label }}" class="block text-sm font-medium mb-1.5">Due date</label>
+        {{ form.due_date }}
+        {% if form.due_date.errors %}<p class="text-xs text-destructive mt-1">{{ form.due_date.errors.0 }}</p>{% endif %}
+      </div>
+      <div>
+        <label for="{{ form.tax_rate.id_for_label }}" class="block text-sm font-medium mb-1.5">Tax rate (%)</label>
+        {{ form.tax_rate }}
+      </div>
+    </div>
+    <div>
+      <label for="{{ form.notes.id_for_label }}" class="block text-sm font-medium mb-1.5">Notes</label>
+      {{ form.notes }}
+    </div>
+  </section>
+
+  <section class="rounded-lg border border-border bg-card p-6 space-y-3">
+    <div class="flex items-center justify-between">
+      <h2 class="text-base font-semibold">Line items</h2>
+      <button type="button"
+              hx-get="{% url 'invoices:add_row' %}"
+              hx-vals='js:{"index": document.getElementsByName("items-TOTAL_FORMS")[0].value}'
+              hx-target="#invoice-items"
+              hx-swap="beforeend"
+              hx-on::after-request="const tf = document.getElementsByName('items-TOTAL_FORMS')[0]; tf.value = parseInt(tf.value) + 1;"
+              class="h-9 px-3 rounded-md border border-border inline-flex items-center text-xs hover:bg-accent">
+        + Add row
+      </button>
+    </div>
+    <table class="w-full text-sm">
+      <thead class="border-b border-border text-left text-xs uppercase text-muted-foreground">
+        <tr>
+          <th class="p-2">Description</th>
+          <th class="p-2">Qty</th>
+          <th class="p-2">Unit price</th>
+          <th class="p-2"></th>
+        </tr>
+      </thead>
+      <tbody id="invoice-items">
+        {{ formset.management_form }}
+        {% for item_form in formset %}
+          {% include "invoices/_invoice_item_row.html" with form=item_form %}
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+
+  <div class="flex justify-end gap-2">
+    <a href="{% if invoice %}{% url 'invoices:detail' invoice.pk %}{% else %}{% url 'invoices:list' %}{% endif %}"
+       class="h-10 px-4 rounded-md border border-border inline-flex items-center text-sm hover:bg-accent">Cancel</a>
+    <button type="submit" class="h-10 px-4 rounded-md bg-primary text-primary-foreground inline-flex items-center font-medium hover:opacity-90">
+      {% if invoice %}Save changes{% else %}Create invoice{% endif %}
+    </button>
+  </div>
+</form>
+{% endblock %}

@@ -1,0 +1,103 @@
+{% extends "layouts/dashboard.html" %}
+{% load apex %}
+{% block title %}{{ customer.name }} · Apex{% endblock %}
+{% block content %}
+<div class="flex items-start justify-between mb-6">
+  <div class="flex items-center gap-4">
+    {% if customer.avatar %}
+      <img src="{{ customer.avatar.url }}" alt="" class="h-16 w-16 rounded-full object-cover" />
+    {% else %}
+      <span class="h-16 w-16 rounded-full inline-flex items-center justify-center text-lg font-semibold bg-muted">{{ customer.initials }}</span>
+    {% endif %}
+    <div>
+      <h1 class="text-2xl font-bold tracking-tight">{{ customer.name }}</h1>
+      <p class="text-sm text-muted-foreground">{{ customer.email }}{% if customer.company %} · {{ customer.company }}{% endif %}</p>
+      <div class="mt-2">{% include "customers/_table_cells.html#status_pill" with status=customer.status %}</div>
+    </div>
+  </div>
+  <div class="flex gap-2">
+    <a href="{% url 'customers:edit' customer.pk %}" class="h-9 px-3 rounded-md border border-border inline-flex items-center text-sm hover:bg-accent">Edit</a>
+  </div>
+</div>
+
+<div class="grid md:grid-cols-3 gap-6">
+  <section class="md:col-span-2 rounded-lg border border-border bg-card p-6">
+    <h2 class="text-base font-semibold mb-4">Contact</h2>
+    <dl class="grid grid-cols-2 gap-4 text-sm">
+      <div>
+        <dt class="text-xs uppercase tracking-wider text-muted-foreground">Phone</dt>
+        <dd class="mt-1">{{ customer.phone|default:"—" }}</dd>
+      </div>
+      <div>
+        <dt class="text-xs uppercase tracking-wider text-muted-foreground">Address</dt>
+        <dd class="mt-1">{{ customer.address|default:"—" }}</dd>
+      </div>
+      <div>
+        <dt class="text-xs uppercase tracking-wider text-muted-foreground">City</dt>
+        <dd class="mt-1">{{ customer.city|default:"—" }}</dd>
+      </div>
+      <div>
+        <dt class="text-xs uppercase tracking-wider text-muted-foreground">Country</dt>
+        <dd class="mt-1">{{ customer.country|default:"—" }}</dd>
+      </div>
+    </dl>
+    {% if customer.notes %}
+      <h3 class="text-sm font-medium mt-6 mb-2">Notes</h3>
+      <p class="text-sm text-muted-foreground whitespace-pre-line">{{ customer.notes }}</p>
+    {% endif %}
+  </section>
+
+  <section class="rounded-lg border border-border bg-card p-6">
+    <h2 class="text-base font-semibold mb-4">Lifetime</h2>
+    <dl class="space-y-3 text-sm">
+      <div>
+        <dt class="text-xs uppercase tracking-wider text-muted-foreground">Total orders</dt>
+        <dd class="mt-1 text-lg font-semibold">{{ customer.total_orders }}</dd>
+      </div>
+      <div>
+        <dt class="text-xs uppercase tracking-wider text-muted-foreground">Total spent</dt>
+        <dd class="mt-1 text-lg font-semibold">${{ customer.total_spent|floatformat:2 }}</dd>
+      </div>
+      <div>
+        <dt class="text-xs uppercase tracking-wider text-muted-foreground">Joined</dt>
+        <dd class="mt-1">{{ customer.created_at|date:"M d, Y" }}</dd>
+      </div>
+    </dl>
+  </section>
+</div>
+
+<section class="mt-6 rounded-lg border border-border bg-card p-6">
+  <div class="flex items-center justify-between mb-4">
+    <h2 class="text-base font-semibold">Recent orders</h2>
+  </div>
+  {% if recent_orders %}
+    <ul class="divide-y divide-border">
+      {% for order in recent_orders %}
+        <li class="py-2 flex items-center justify-between text-sm">
+          <a href="{% url 'orders:detail' order.pk %}" class="font-medium hover:text-primary">{{ order.number }}</a>
+          <span class="text-muted-foreground">{{ order.created_at|date:"M d, Y" }} · {{ order.get_status_display }}</span>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="text-sm text-muted-foreground">No orders yet.</p>
+  {% endif %}
+</section>
+
+<section class="mt-6 rounded-lg border border-dashed border-border p-6">
+  <h2 class="text-base font-semibold text-muted-foreground">Invoices</h2>
+  <p class="text-sm text-muted-foreground mt-1">Coming in Phase 4b.</p>
+</section>
+
+<section class="mt-6 rounded-lg border border-destructive/30 bg-destructive/5 p-6">
+  <h2 class="text-base font-semibold text-destructive">Danger zone</h2>
+  <p class="text-sm text-muted-foreground mt-1 mb-4">Archive this customer. Their orders stay linked; they're hidden from the active list.</p>
+  <form method="post" action="{% url 'customers:archive' customer.pk %}">
+    {% csrf_token %}
+    <button type="submit"
+            class="h-10 px-3 rounded-md border border-destructive text-destructive inline-flex items-center text-sm hover:bg-destructive hover:text-destructive-foreground transition-colors">
+      Archive customer
+    </button>
+  </form>
+</section>
+{% endblock %}

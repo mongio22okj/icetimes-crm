@@ -1,0 +1,81 @@
+{% extends "layouts/docs.html" %}
+{% load docs_tags %}
+
+{% block doc_title %}Internationalization{% endblock %}
+{% block doc_subtitle %}English + Spanish bundled. Add a new locale with one makemessages and translate the .po file.{% endblock %}
+
+{% block doc_body %}
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">What's bundled</h2>
+  <p class="text-sm text-muted-foreground">
+    Apex ships with English (<code class="rounded bg-muted px-1 text-xs">en</code>)
+    and Spanish (<code class="rounded bg-muted px-1 text-xs">es</code>)
+    translations, a header language picker, and
+    <code class="rounded bg-muted px-1 text-xs">gettext_lazy</code> calls
+    across navigation labels and key UI strings. Switching language updates
+    the active locale via Django's
+    <code class="rounded bg-muted px-1 text-xs">set_language</code> view +
+    a session cookie.
+  </p>
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">Adding a new locale</h2>
+  <p class="text-sm text-muted-foreground">
+    Add the locale code to <code class="rounded bg-muted px-1 text-xs">LANGUAGES</code>
+    in <code class="rounded bg-muted px-1 text-xs">apex/settings/base.py</code>:
+  </p>
+  {% code lang="python" %}LANGUAGES = [
+    ("en", "English"),
+    ("es", "Español"),
+    ("fr", "Français"),   # ← new
+]{% endcode %}
+  <p class="text-sm text-muted-foreground">
+    Then run makemessages to scaffold the .po file:
+  </p>
+  {% code lang="bash" %}uv run django-admin makemessages -l fr{% endcode %}
+  <p class="text-sm text-muted-foreground">
+    Open <code class="rounded bg-muted px-1 text-xs">locale/fr/LC_MESSAGES/django.po</code>,
+    fill in <code class="rounded bg-muted px-1 text-xs">msgstr</code> for each
+    <code class="rounded bg-muted px-1 text-xs">msgid</code>, and compile:
+  </p>
+  {% code lang="bash" %}uv run django-admin compilemessages{% endcode %}
+  <p class="text-sm text-muted-foreground">
+    The header language picker now lists French as an option. Switching
+    activates it everywhere
+    <code class="rounded bg-muted px-1 text-xs">{% verbatim %}{% trans "..." %}{% endverbatim %}</code>
+    or <code class="rounded bg-muted px-1 text-xs">gettext_lazy</code> is used.
+  </p>
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">Translating new strings in your code</h2>
+  <p class="text-sm text-muted-foreground">In Python:</p>
+  {% code lang="python" %}from django.utils.translation import gettext_lazy as _
+
+class MyView(TemplateView):
+    breadcrumb_title = _("Reports")    # lazily evaluated at render time{% endcode %}
+  <p class="text-sm text-muted-foreground">In templates:</p>
+  {% code lang="html" %}{% verbatim %}{% load i18n %}
+<h1>{% trans "Welcome back" %}</h1>
+<p>{% blocktrans with name=user.first_name %}Hi, {{ name }}!{% endblocktrans %}</p>{% endverbatim %}{% endcode %}
+  <p class="text-sm text-muted-foreground">
+    After adding new <code class="rounded bg-muted px-1 text-xs">trans</code> /
+    <code class="rounded bg-muted px-1 text-xs">_()</code> calls, re-run
+    <code class="rounded bg-muted px-1 text-xs">makemessages -a</code> to
+    pick them up across all locales, then re-translate and recompile.
+  </p>
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">Per-user language preference</h2>
+  <p class="text-sm text-muted-foreground">
+    If you want to remember each user's choice across sessions, store it on
+    the User model and set the language in middleware. The current setup uses
+    Django's session-based persistence, which works for anonymous visitors
+    too but resets after session expiry.
+  </p>
+</section>
+
+{% endblock %}

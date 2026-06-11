@@ -1,0 +1,54 @@
+{% extends "marketing/base.html" %}
+{% load apex %}
+{% block title %}Roadmap · Apex{% endblock %}
+{% block content %}
+<section class="mx-auto max-w-6xl px-6 py-16">
+  <header class="mb-12 text-center">
+    <p class="text-xs uppercase tracking-wider text-primary font-semibold mb-2">What's next</p>
+    <h1 class="text-4xl font-bold tracking-tight">Public roadmap</h1>
+    <p class="mt-3 text-base text-muted-foreground max-w-2xl mx-auto">
+      A living view of what we're building, what's queued, and what's on the
+      longer-term horizon. Shipped phases live in the <a href="{% url 'marketing:changelog' %}" class="text-primary hover:underline">changelog</a>.
+    </p>
+  </header>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    {% for col in columns %}
+      <div class="rounded-lg border border-border bg-card p-5">
+        <div class="flex items-center justify-between mb-1">
+          <h2 class="text-lg font-bold tracking-tight">{{ col.label }}</h2>
+          <span class="inline-flex items-center justify-center min-w-6 h-6 rounded-md text-xs font-semibold
+                       {% if col.key == 'now' %}bg-success/10 text-success
+                       {% elif col.key == 'next' %}bg-primary/10 text-primary
+                       {% else %}bg-muted text-muted-foreground{% endif %}">
+            {{ col.items|length }}
+          </span>
+        </div>
+        <p class="text-xs text-muted-foreground mb-4">{{ col.sub }}</p>
+        <ul class="space-y-3">
+          {% for item in col.items %}
+            <li class="rounded-md border border-border bg-background p-3">
+              <div class="flex items-start gap-2 mb-1">
+                <span class="inline-flex items-center px-1.5 h-5 rounded text-[10px] font-mono uppercase tracking-wider bg-muted text-muted-foreground shrink-0">
+                  Ph {{ item.phase }}
+                </span>
+                <p class="text-sm font-semibold leading-tight">{{ item.title }}</p>
+              </div>
+              <p class="text-xs text-muted-foreground">{{ item.blurb }}</p>
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
+    {% endfor %}
+  </div>
+
+  <div class="mt-12 rounded-lg border border-border bg-muted/30 p-6 text-center">
+    <p class="text-sm text-muted-foreground mb-3">
+      Have an idea? File it on the public board.
+    </p>
+    <a href="{% url 'marketing:support' %}" class="h-9 px-4 rounded-md bg-primary text-primary-foreground inline-flex items-center text-sm font-medium hover:opacity-90">
+      Suggest a feature
+    </a>
+  </div>
+</section>
+{% endblock %}

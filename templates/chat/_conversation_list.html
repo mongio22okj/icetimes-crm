@@ -1,0 +1,26 @@
+{% if conversations %}
+  <ul class="divide-y divide-border">
+    {% for c in conversations %}
+      <li>
+        <a href="{% url 'chat:conversation' c.partner.pk %}"
+           class="block px-4 py-3 hover:bg-accent/30 {% if partner and partner.pk == c.partner.pk %}bg-accent{% endif %}">
+          <div class="flex items-center justify-between gap-2">
+            <p class="text-sm font-medium truncate">{{ c.partner.get_full_name|default:c.partner.username }}</p>
+            <span class="text-[11px] text-muted-foreground shrink-0">{{ c.last_message.sent_at|date:"M j" }}</span>
+          </div>
+          <div class="flex items-center justify-between gap-2 mt-0.5">
+            <p class="text-xs text-muted-foreground truncate">{{ c.last_message.body|truncatechars:60 }}</p>
+            {% if c.unread_count %}
+              <span class="rounded-full bg-primary text-primary-foreground text-[10px] font-semibold h-4 min-w-4 px-1 inline-flex items-center justify-center">{{ c.unread_count }}</span>
+            {% endif %}
+          </div>
+        </a>
+      </li>
+    {% endfor %}
+  </ul>
+{% else %}
+  <div class="p-8 text-center text-sm text-muted-foreground">
+    No conversations yet.<br>
+    <a href="{% url 'chat:new' %}" class="text-primary hover:underline">Start one</a>
+  </div>
+{% endif %}

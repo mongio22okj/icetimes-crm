@@ -1,0 +1,66 @@
+{% extends "layouts/settings.html" %}
+{% load apex %}
+{% block settings_content %}
+<div class="mb-6">
+  <h2 class="text-lg font-semibold">Appearance</h2>
+  <p class="text-sm text-muted-foreground">Choose how Apex looks on this device.</p>
+</div>
+
+<div x-data="appearancePicker()" x-init="init()" class="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-2xl">
+  <button type="button"
+          @click="setTheme('light')"
+          :class="current === 'light' ? 'ring-2 ring-ring border-ring' : 'border-border'"
+          class="rounded-lg border bg-card p-5 text-left hover:border-ring transition-colors">
+    <div class="flex items-center justify-between mb-3">
+      <span class="text-sm font-medium">Light</span>
+      {% icon "sun" 18 "text-muted-foreground" %}
+    </div>
+    <div class="h-20 rounded-md bg-white border border-neutral-200"></div>
+  </button>
+
+  <button type="button"
+          @click="setTheme('dark')"
+          :class="current === 'dark' ? 'ring-2 ring-ring border-ring' : 'border-border'"
+          class="rounded-lg border bg-card p-5 text-left hover:border-ring transition-colors">
+    <div class="flex items-center justify-between mb-3">
+      <span class="text-sm font-medium">Dark</span>
+      {% icon "moon" 18 "text-muted-foreground" %}
+    </div>
+    <div class="h-20 rounded-md bg-neutral-900 border border-neutral-700"></div>
+  </button>
+
+  <button type="button"
+          @click="setTheme('system')"
+          :class="current === 'system' ? 'ring-2 ring-ring border-ring' : 'border-border'"
+          class="rounded-lg border bg-card p-5 text-left hover:border-ring transition-colors">
+    <div class="flex items-center justify-between mb-3">
+      <span class="text-sm font-medium">System</span>
+      {% icon "settings" 18 "text-muted-foreground" %}
+    </div>
+    <div class="h-20 rounded-md bg-gradient-to-r from-white to-neutral-900 border border-border"></div>
+  </button>
+</div>
+
+<script nonce="{{ csp_nonce }}">  function appearancePicker() {
+    return {
+      current: localStorage.getItem("theme") || "system",
+      init() {
+        window.addEventListener("storage", (e) => {
+          if (e.key === "theme") this.current = e.newValue || "system";
+        });
+      },
+      setTheme(mode) {
+        this.current = mode;
+        if (mode === "system") {
+          localStorage.removeItem("theme");
+          const dark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+          document.documentElement.classList.toggle("dark", dark);
+        } else {
+          localStorage.setItem("theme", mode);
+          document.documentElement.classList.toggle("dark", mode === "dark");
+        }
+      },
+    };
+  }
+</script>
+{% endblock %}

@@ -1,0 +1,105 @@
+{% extends "layouts/docs.html" %}
+{% load docs_tags %}
+
+{% block doc_title %}Components{% endblock %}
+{% block doc_subtitle %}Reusable UI primitives wired with Alpine + Tailwind. The full live showcase is at /components/ in the running app.{% endblock %}
+
+{% block doc_body %}
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">What's included</h2>
+  <p class="text-sm text-muted-foreground">
+    The component library at
+    <code class="rounded bg-muted px-1 text-xs">/components/</code> documents
+    every reusable primitive with a live demo + the markup to copy. Each
+    primitive is a small Alpine factory in
+    <code class="rounded bg-muted px-1 text-xs">static/js/shell.js</code>:
+  </p>
+  <ul class="space-y-2 text-sm text-muted-foreground">
+    {% feature title="Modal" %}
+      Focus-trapped, escape-to-close, backdrop-click-to-close. Variants for
+      confirm dialogs and full-screen takeovers.
+    {% endfeature %}
+    {% feature title="Drawer" %}
+      Slide-in panel (right or left). Used for settings drawers, mobile nav,
+      detail flyouts.
+    {% endfeature %}
+    {% feature title="Dropdown" %}
+      Click-to-open menu with keyboard navigation and click-outside dismissal.
+      The user menu in the header is built from this.
+    {% endfeature %}
+    {% feature title="Popover" %}
+      Anchored to a trigger; positions itself around viewport edges.
+    {% endfeature %}
+    {% feature title="Toast" %}
+      Pushed via <code class="rounded bg-muted px-1 text-xs">window.apexToast({level, body, action, persistent})</code>.
+      Auto-dismiss after 5s, or sticky if <code class="rounded bg-muted px-1 text-xs">persistent: true</code>.
+    {% endfeature %}
+    {% feature title="Tabs" %}
+      ARIA-compliant tablist with arrow-key navigation between tabs.
+    {% endfeature %}
+    {% feature title="Accordion" %}
+      Collapsible panel groups; supports single-open and multi-open modes.
+    {% endfeature %}
+    {% feature title="Empty state" %}
+      Branded "no results" panel with optional CTA. Use the
+      <code class="rounded bg-muted px-1 text-xs">{% verbatim %}{% include "components/_empty_state.html" %}{% endverbatim %}</code>
+      partial.
+    {% endfeature %}
+    {% feature title="Dropzone" %}
+      Drag-and-drop file upload with previews and progress.
+    {% endfeature %}
+    {% feature title="Status pill" %}
+      Color-coded badges for invoice statuses, order states, etc.
+    {% endfeature %}
+  </ul>
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">Pushing a toast</h2>
+  <p class="text-sm text-muted-foreground">
+    The most common cross-cutting primitive — call from any inline handler:
+  </p>
+  {% code lang="javascript" %}// Anywhere in your client code:
+window.apexToast({
+  level: "success",       // "info" | "success" | "warning" | "error"
+  body: "Changes saved.",
+  action: { label: "View", href: "/x/" },  // optional CTA
+  persistent: false,      // default false (auto-dismisses after 5s)
+});{% endcode %}
+  <p class="text-sm text-muted-foreground">
+    Server-side, Django messages are converted to toasts automatically by the
+    <code class="rounded bg-muted px-1 text-xs">apex_toasts</code> tag at the
+    bottom of <code class="rounded bg-muted px-1 text-xs">layouts/dashboard.html</code>
+    — just call <code class="rounded bg-muted px-1 text-xs">messages.success(request, "...")</code>
+    in your view.
+  </p>
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">Adding your own primitive</h2>
+  <p class="text-sm text-muted-foreground">
+    Two pieces:
+  </p>
+  <ol class="space-y-2 text-sm text-muted-foreground ml-5 list-decimal">
+    <li>An Alpine factory in <code class="rounded bg-muted px-1 text-xs">static/js/shell.js</code> exposing <code class="rounded bg-muted px-1 text-xs">window.apexYourThing()</code>.</li>
+    <li>A partial under <code class="rounded bg-muted px-1 text-xs">templates/components/primitives/</code> with the markup that uses it via <code class="rounded bg-muted px-1 text-xs">x-data="apexYourThing()"</code>.</li>
+  </ol>
+  <p class="text-sm text-muted-foreground">
+    Optionally add a documentation page at
+    <code class="rounded bg-muted px-1 text-xs">templates/components/pages/</code>
+    with a live demo + code snippet — that's what powers the
+    <code class="rounded bg-muted px-1 text-xs">/components/</code> showcase.
+  </p>
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">Where to look</h2>
+  <ul class="space-y-1.5 text-sm text-muted-foreground ml-5 list-disc">
+    <li><strong class="text-foreground">Live showcase</strong> — <code class="rounded bg-muted px-1 text-xs">/components/</code> in the running app</li>
+    <li><strong class="text-foreground">Source</strong> — <code class="rounded bg-muted px-1 text-xs">apps/components/</code> + <code class="rounded bg-muted px-1 text-xs">templates/components/</code></li>
+    <li><strong class="text-foreground">Alpine factories</strong> — <code class="rounded bg-muted px-1 text-xs">static/js/shell.js</code></li>
+  </ul>
+</section>
+
+{% endblock %}

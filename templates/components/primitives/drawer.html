@@ -1,0 +1,58 @@
+{% load apex %}
+{% comment %}
+Reusable Drawer primitive. Trigger from anywhere via:
+  @click="$dispatch('apex:open', 'drawer-id')"
+
+Args:
+  id        required — unique DOM id, also the dispatch target name
+  title     heading text (optional)
+  side      left | right | bottom    (default right)
+  size      sm | md | lg              (default md)
+  body      optional plain-text body
+  footer    optional footer markup-as-text
+{% endcomment %}
+{% with side=side|default:"right" size=size|default:"md" %}
+<div x-data="apexDrawer('{{ id }}')"
+     x-show="open"
+     x-cloak
+     @keydown.escape.window="close()"
+     @apex:open.window="if ($event.detail === '{{ id }}') open = true"
+     class="fixed inset-0 z-50"
+     role="dialog" aria-modal="true" aria-labelledby="{{ id }}-title">
+
+  {# Backdrop #}
+  <div x-show="open"
+       x-transition.opacity
+       @click="close()"
+       class="absolute inset-0 bg-black/50"
+       aria-hidden="true"></div>
+
+  {# Panel — position varies by side #}
+  <div x-show="open"
+       x-transition:enter="transition ease-out duration-250"
+       x-transition:enter-start="{% if side == 'left' %}-translate-x-full{% elif side == 'bottom' %}translate-y-full{% else %}translate-x-full{% endif %}"
+       x-transition:enter-end="translate-x-0 translate-y-0"
+       x-transition:leave="transition ease-in duration-200"
+       x-transition:leave-start="translate-x-0 translate-y-0"
+       x-transition:leave-end="{% if side == 'left' %}-translate-x-full{% elif side == 'bottom' %}translate-y-full{% else %}translate-x-full{% endif %}"
+       class="absolute bg-card border-border shadow-xl flex flex-col
+              {% if side == 'left' %}top-0 left-0 h-full border-r{% elif side == 'bottom' %}bottom-0 left-0 right-0 max-h-[85vh] border-t rounded-t-lg{% else %}top-0 right-0 h-full border-l{% endif %}
+              {% if side == 'bottom' %}w-full{% elif size == 'sm' %}w-80{% elif size == 'lg' %}w-[32rem]{% else %}w-96{% endif %}">
+
+    <div class="flex items-start justify-between p-5 border-b border-border shrink-0">
+      <h2 id="{{ id }}-title" class="text-base font-semibold">{{ title|default:"" }}</h2>
+      <button type="button" @click="close()" class="text-muted-foreground hover:text-foreground" aria-label="Close">
+        {% icon "x" 18 %}
+      </button>
+    </div>
+    <div class="p-5 text-sm overflow-y-auto flex-1">
+      {% if body %}{{ body }}{% endif %}
+    </div>
+    {% if footer %}
+      <div class="p-5 border-t border-border shrink-0">
+        {{ footer|safe }}
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endwith %}

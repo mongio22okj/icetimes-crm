@@ -1,0 +1,61 @@
+{% extends "components/_detail_layout.html" %}
+{% load apex %}
+
+{% block component_body %}
+<div class="space-y-8">
+
+  <div class="rounded-lg border border-border bg-card p-6">
+    <h2 class="text-sm font-semibold mb-1">Single-select</h2>
+    <p class="text-xs text-muted-foreground mb-4">Pick exactly one — like radios but as a row of buttons.</p>
+    <div x-data="{value: 'list'}" role="radiogroup" aria-label="View" class="inline-flex items-center bg-muted p-1 rounded-md">
+      <button type="button" role="radio" :aria-checked="value==='list'" @click="value = 'list'"
+              class="h-8 px-3 text-xs font-medium rounded inline-flex items-center gap-1.5 transition"
+              :class="value==='list' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'">
+        {% icon "menu" 14 %} List
+      </button>
+      <button type="button" role="radio" :aria-checked="value==='grid'" @click="value = 'grid'"
+              class="h-8 px-3 text-xs font-medium rounded inline-flex items-center gap-1.5 transition"
+              :class="value==='grid' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'">
+        {% icon "layout-dashboard" 14 %} Grid
+      </button>
+      <button type="button" role="radio" :aria-checked="value==='kanban'" @click="value = 'kanban'"
+              class="h-8 px-3 text-xs font-medium rounded inline-flex items-center gap-1.5 transition"
+              :class="value==='kanban' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'">
+        {% icon "trello" 14 %} Kanban
+      </button>
+    </div>
+  </div>
+
+  <div class="rounded-lg border border-border bg-card p-6">
+    <h2 class="text-sm font-semibold mb-1">Multi-select</h2>
+    <p class="text-xs text-muted-foreground mb-4">Pick any number — like checkboxes but as a row of buttons.</p>
+    <div x-data="{values: ['bold']}" role="group" aria-label="Format" class="inline-flex items-center gap-1 bg-muted p-1 rounded-md">
+      <template x-for="(item, i) in [{key:'bold',label:'B',ar:'Bold'},{key:'italic',label:'I',ar:'Italic'},{key:'underline',label:'U',ar:'Underline'},{key:'strike',label:'S',ar:'Strikethrough'}]" :key="item.key">
+        <button type="button"
+                @click="values.includes(item.key) ? values = values.filter(v => v !== item.key) : values.push(item.key)"
+                :aria-pressed="values.includes(item.key)" :aria-label="item.ar"
+                class="h-8 w-8 text-xs font-semibold rounded transition"
+                :class="values.includes(item.key) ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'">
+          <span x-text="item.label" :class="item.key === 'italic' ? 'italic' : item.key === 'underline' ? 'underline' : item.key === 'strike' ? 'line-through' : ''"></span>
+        </button>
+      </template>
+    </div>
+  </div>
+
+  <div class="rounded-lg border border-border bg-card p-6">
+    <h2 class="text-sm font-semibold mb-1">With separators (toolbar)</h2>
+    <p class="text-xs text-muted-foreground mb-4">Group related actions with a thin divider.</p>
+    <div class="inline-flex items-center bg-muted p-1 rounded-md gap-1">
+      <button type="button" class="h-8 w-8 inline-flex items-center justify-center text-muted-foreground rounded hover:bg-card" aria-label="Bold"><strong>B</strong></button>
+      <button type="button" class="h-8 w-8 inline-flex items-center justify-center text-muted-foreground rounded hover:bg-card italic" aria-label="Italic">I</button>
+      <button type="button" class="h-8 w-8 inline-flex items-center justify-center text-muted-foreground rounded hover:bg-card underline" aria-label="Underline">U</button>
+      <span aria-hidden="true" class="h-5 w-px bg-border mx-1"></span>
+      <button type="button" class="h-8 w-8 inline-flex items-center justify-center text-muted-foreground rounded hover:bg-card" aria-label="Align left">{% icon "menu" 14 %}</button>
+      <button type="button" class="h-8 w-8 inline-flex items-center justify-center text-muted-foreground rounded hover:bg-card" aria-label="Align center">{% icon "menu" 14 %}</button>
+      <span aria-hidden="true" class="h-5 w-px bg-border mx-1"></span>
+      <button type="button" class="h-8 w-8 inline-flex items-center justify-center text-destructive rounded hover:bg-destructive/10" aria-label="Delete">{% icon "trash" 14 %}</button>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

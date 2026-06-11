@@ -1,0 +1,29 @@
+{% load apex %}
+{% with folder=folder|default:"" %}
+<a href="{% url 'mail:inbox' %}"
+   class="flex items-center justify-between gap-2 h-9 px-3 rounded-md hover:bg-accent {% if folder == 'inbox' %}bg-accent text-foreground{% else %}text-muted-foreground{% endif %}">
+  <span class="flex items-center gap-2">{% icon "mail" 14 %} Inbox</span>
+  {% if folder_counts.inbox_unread %}
+    <span class="rounded-full bg-primary text-primary-foreground text-[10px] font-semibold h-4 min-w-4 px-1 inline-flex items-center justify-center">{{ folder_counts.inbox_unread }}</span>
+  {% endif %}
+</a>
+<a href="{% url 'mail:sent' %}"
+   class="flex items-center gap-2 h-9 px-3 rounded-md hover:bg-accent {% if folder == 'sent' %}bg-accent text-foreground{% else %}text-muted-foreground{% endif %}">
+  {% icon "arrow-up-right" 14 %} Sent
+</a>
+<a href="{% url 'mail:drafts' %}"
+   class="flex items-center justify-between gap-2 h-9 px-3 rounded-md hover:bg-accent {% if folder == 'drafts' %}bg-accent text-foreground{% else %}text-muted-foreground{% endif %}">
+  <span class="flex items-center gap-2">{% icon "file-text" 14 %} Drafts</span>
+  {% if folder_counts.drafts %}<span class="text-[11px]">{{ folder_counts.drafts }}</span>{% endif %}
+</a>
+<a href="{% url 'mail:starred' %}"
+   class="flex items-center justify-between gap-2 h-9 px-3 rounded-md hover:bg-accent {% if folder == 'starred' %}bg-accent text-foreground{% else %}text-muted-foreground{% endif %}">
+  <span class="flex items-center gap-2">{% icon "star" 14 %} Starred</span>
+  {% if folder_counts.starred %}<span class="text-[11px]">{{ folder_counts.starred }}</span>{% endif %}
+</a>
+<a href="{% url 'mail:trash' %}"
+   class="flex items-center justify-between gap-2 h-9 px-3 rounded-md hover:bg-accent {% if folder == 'trash' %}bg-accent text-foreground{% else %}text-muted-foreground{% endif %}">
+  <span class="flex items-center gap-2">{% icon "trash" 14 %} Trash</span>
+  {% if folder_counts.trash %}<span class="text-[11px]">{{ folder_counts.trash }}</span>{% endif %}
+</a>
+{% endwith %}

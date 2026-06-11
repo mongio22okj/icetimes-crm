@@ -1,0 +1,29 @@
+{% comment %}Tab nav for project detail. Expects `project` and `active_tab`.{% endcomment %}
+{% load apex %}
+<nav class="border-b border-border mb-6 -mx-2" aria-label="Project sections">
+  <div class="flex gap-1 overflow-x-auto px-2">
+    {% with tabs="overview tasks team activity"|slice:"0" %}{% endwith %}
+    <a href="{% url 'projects:overview' project.slug %}"
+       class="inline-flex items-center gap-2 px-3 h-10 text-sm font-medium border-b-2 -mb-px transition-colors
+              {% if active_tab == 'overview' %}border-primary text-foreground{% else %}border-transparent text-muted-foreground hover:text-foreground hover:border-border{% endif %}">
+      {% icon "layout-dashboard" 16 %}<span>Overview</span>
+    </a>
+    <a href="{% url 'projects:tasks' project.slug %}"
+       class="inline-flex items-center gap-2 px-3 h-10 text-sm font-medium border-b-2 -mb-px transition-colors
+              {% if active_tab == 'tasks' %}border-primary text-foreground{% else %}border-transparent text-muted-foreground hover:text-foreground hover:border-border{% endif %}">
+      {% icon "trello" 16 %}<span>Tasks</span>
+      <span class="text-xs px-1.5 py-0.5 rounded bg-muted text-muted-foreground">{{ project.task_count }}</span>
+    </a>
+    <a href="{% url 'projects:team' project.slug %}"
+       class="inline-flex items-center gap-2 px-3 h-10 text-sm font-medium border-b-2 -mb-px transition-colors
+              {% if active_tab == 'team' %}border-primary text-foreground{% else %}border-transparent text-muted-foreground hover:text-foreground hover:border-border{% endif %}">
+      {% icon "users" 16 %}<span>Team</span>
+      <span class="text-xs px-1.5 py-0.5 rounded bg-muted text-muted-foreground">{{ project.team.count }}</span>
+    </a>
+    <a href="{% url 'projects:activity' project.slug %}"
+       class="inline-flex items-center gap-2 px-3 h-10 text-sm font-medium border-b-2 -mb-px transition-colors
+              {% if active_tab == 'activity' %}border-primary text-foreground{% else %}border-transparent text-muted-foreground hover:text-foreground hover:border-border{% endif %}">
+      {% icon "activity" 16 %}<span>Activity</span>
+    </a>
+  </div>
+</nav>

@@ -1,0 +1,146 @@
+{% extends "components/_detail_layout.html" %}
+{% load apex %}
+
+{% block component_body %}
+<div class="space-y-8">
+
+  {# ── Single-open ──────────────────────────────────────────────── #}
+  <div class="rounded-lg border border-border bg-card p-6">
+    <h2 class="text-sm font-semibold mb-1">Single open</h2>
+    <p class="text-xs text-muted-foreground mb-4">Default behaviour. Opening one section closes the others.</p>
+    <div x-data="apexAccordion()" class="divide-y divide-border border border-border rounded-md">
+      <div>
+        <button type="button" @click="toggle('a')" :aria-expanded="isOpen('a')" aria-controls="acc-a"
+                class="w-full flex items-center justify-between px-4 h-12 text-sm font-medium hover:bg-accent">
+          <span>Account information</span>
+          {% icon "chevron-down" 16 cls="transition-transform" %}
+        </button>
+        <div id="acc-a" x-show="isOpen('a')" x-collapse role="region" class="px-4 pb-4 text-sm text-muted-foreground">
+          Your name, email, and basic profile fields.
+        </div>
+      </div>
+      <div>
+        <button type="button" @click="toggle('b')" :aria-expanded="isOpen('b')" aria-controls="acc-b"
+                class="w-full flex items-center justify-between px-4 h-12 text-sm font-medium hover:bg-accent">
+          <span>Security</span>
+          {% icon "chevron-down" 16 %}
+        </button>
+        <div id="acc-b" x-show="isOpen('b')" x-cloak role="region" class="px-4 pb-4 text-sm text-muted-foreground">
+          Password, 2FA, sessions, and connected devices.
+        </div>
+      </div>
+      <div>
+        <button type="button" @click="toggle('c')" :aria-expanded="isOpen('c')" aria-controls="acc-c"
+                class="w-full flex items-center justify-between px-4 h-12 text-sm font-medium hover:bg-accent">
+          <span>Billing</span>
+          {% icon "chevron-down" 16 %}
+        </button>
+        <div id="acc-c" x-show="isOpen('c')" x-cloak role="region" class="px-4 pb-4 text-sm text-muted-foreground">
+          Plan, payment methods, invoices.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {# ── Multi-open ───────────────────────────────────────────────── #}
+  <div class="rounded-lg border border-border bg-card p-6">
+    <h2 class="text-sm font-semibold mb-1">Multi-open</h2>
+    <p class="text-xs text-muted-foreground mb-4">Multiple sections can be open at once — useful for filter panels.</p>
+    <div x-data="apexAccordion({multi: true})" class="divide-y divide-border border border-border rounded-md">
+      <div>
+        <button type="button" @click="toggle('status')" :aria-expanded="isOpen('status')"
+                class="w-full flex items-center justify-between px-4 h-12 text-sm font-medium hover:bg-accent">
+          <span>Status</span>
+          {% icon "chevron-down" 16 %}
+        </button>
+        <div x-show="isOpen('status')" x-cloak role="region" class="px-4 pb-4 text-sm text-muted-foreground space-y-1.5">
+          <label class="flex items-center gap-2"><input type="checkbox" class="h-4 w-4 rounded border-input"> Active</label>
+          <label class="flex items-center gap-2"><input type="checkbox" class="h-4 w-4 rounded border-input"> Pending</label>
+          <label class="flex items-center gap-2"><input type="checkbox" class="h-4 w-4 rounded border-input"> Archived</label>
+        </div>
+      </div>
+      <div>
+        <button type="button" @click="toggle('owner')" :aria-expanded="isOpen('owner')"
+                class="w-full flex items-center justify-between px-4 h-12 text-sm font-medium hover:bg-accent">
+          <span>Owner</span>
+          {% icon "chevron-down" 16 %}
+        </button>
+        <div x-show="isOpen('owner')" x-cloak role="region" class="px-4 pb-4 text-sm text-muted-foreground">
+          Filter list — Sara Chen, Marcus Patel, Demo User…
+        </div>
+      </div>
+      <div>
+        <button type="button" @click="toggle('date')" :aria-expanded="isOpen('date')"
+                class="w-full flex items-center justify-between px-4 h-12 text-sm font-medium hover:bg-accent">
+          <span>Date range</span>
+          {% icon "chevron-down" 16 %}
+        </button>
+        <div x-show="isOpen('date')" x-cloak role="region" class="px-4 pb-4 text-sm text-muted-foreground">
+          Daterange picker target.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {# ── FAQ style ────────────────────────────────────────────────── #}
+  <div class="rounded-lg border border-border bg-card p-6">
+    <h2 class="text-sm font-semibold mb-1">FAQ style</h2>
+    <p class="text-xs text-muted-foreground mb-4">No outer border, larger headings.</p>
+    <div x-data="apexAccordion({initial: 'q1'})" class="space-y-1">
+      <div class="border-b border-border">
+        <button type="button" @click="toggle('q1')" :aria-expanded="isOpen('q1')"
+                class="w-full flex items-center justify-between py-4 text-base font-semibold text-left">
+          <span>What's included in the demo?</span>
+          {% icon "chevron-down" 16 %}
+        </button>
+        <div x-show="isOpen('q1')" x-cloak class="pb-4 text-sm text-muted-foreground">
+          Every dashboard variant, all 20 apps, demo user with pre-seeded data, and the full component library.
+        </div>
+      </div>
+      <div class="border-b border-border">
+        <button type="button" @click="toggle('q2')" :aria-expanded="isOpen('q2')"
+                class="w-full flex items-center justify-between py-4 text-base font-semibold text-left">
+          <span>Can I use it for commercial projects?</span>
+          {% icon "chevron-down" 16 %}
+        </button>
+        <div x-show="isOpen('q2')" x-cloak class="pb-4 text-sm text-muted-foreground">
+          Yes — Apex ships with an MIT-style license. See the LICENSE file in the repo.
+        </div>
+      </div>
+      <div class="border-b border-border">
+        <button type="button" @click="toggle('q3')" :aria-expanded="isOpen('q3')"
+                class="w-full flex items-center justify-between py-4 text-base font-semibold text-left">
+          <span>Do I need Node.js?</span>
+          {% icon "chevron-down" 16 %}
+        </button>
+        <div x-show="isOpen('q3')" x-cloak class="pb-4 text-sm text-muted-foreground">
+          Only to compile Tailwind once. After that, the dashboard runs on Python alone.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="rounded-lg border border-border bg-card overflow-hidden">
+    <div class="px-5 py-3 border-b border-border">
+      <h2 class="text-sm font-semibold">Usage</h2>
+    </div>
+    <pre class="text-xs p-5 overflow-x-auto bg-muted/30"><code>&lt;div x-data="apexAccordion()"&gt;                   {# single-open #}
+&lt;div x-data="apexAccordion({multi: true})"&gt;       {# multi-open #}
+&lt;div x-data="apexAccordion({initial: 'a'})"&gt;      {# pre-opened section id #}
+
+  &lt;button @click="toggle('a')" :aria-expanded="isOpen('a')"&gt;…&lt;/button&gt;
+  &lt;div x-show="isOpen('a')" x-cloak role="region"&gt;…&lt;/div&gt;
+&lt;/div&gt;</code></pre>
+  </div>
+
+  <div class="rounded-lg border border-border bg-card p-6 text-sm">
+    <h2 class="text-sm font-semibold mb-3">Accessibility</h2>
+    <ul class="space-y-1.5 text-muted-foreground">
+      <li>• Trigger uses <strong class="text-foreground">aria-expanded</strong> + <strong class="text-foreground">aria-controls</strong>.</li>
+      <li>• Region uses <strong class="text-foreground">role="region"</strong>.</li>
+      <li>• Open/close animates via Alpine's <code class="text-[11px] bg-muted px-1 rounded">x-collapse</code> when the plugin is loaded; falls back to <code class="text-[11px] bg-muted px-1 rounded">x-show</code> otherwise.</li>
+    </ul>
+  </div>
+
+</div>
+{% endblock %}

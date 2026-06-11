@@ -1,0 +1,98 @@
+{% extends "layouts/dashboard.html" %}
+{% load apex %}
+{% block title %}Files · Apex{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+  <div>
+    <nav class="text-sm text-muted-foreground mb-1">
+      <a href="{% url 'files:root' %}" class="hover:text-primary">Files</a>
+      {% for crumb in file_breadcrumbs %}
+        <span class="mx-1">/</span>
+        {% if forloop.last %}
+          <span>{{ crumb.name }}</span>
+        {% else %}
+          <a href="{% url 'files:folder' crumb.pk %}" class="hover:text-primary">{{ crumb.name }}</a>
+        {% endif %}
+      {% endfor %}
+    </nav>
+    <h1 class="text-2xl font-bold tracking-tight">{% if current %}{{ current.name }}{% else %}Files{% endif %}</h1>
+  </div>
+  <div class="flex gap-2">
+    <a href="{% url 'files:folder_create' %}{% if current %}?parent={{ current.pk }}{% endif %}"
+       class="h-10 px-4 rounded-md border border-border inline-flex items-center text-sm hover:bg-accent">
+      New folder
+    </a>
+    <a href="{% url 'files:upload' %}{% if current %}?parent={{ current.pk }}{% endif %}"
+       class="h-10 px-4 rounded-md bg-primary text-primary-foreground inline-flex items-center font-medium hover:opacity-90 text-sm">
+      Upload
+    </a>
+  </div>
+</div>
+
+{% if folders or files %}
+  <section class="rounded-lg border border-border bg-card overflow-hidden">
+    <table class="w-full text-sm">
+      <thead class="border-b border-border bg-muted/30">
+        <tr class="text-left text-xs uppercase tracking-wider text-muted-foreground">
+          <th class="px-4 py-3">Name</th>
+          <th class="px-4 py-3">Size</th>
+          <th class="px-4 py-3">Created</th>
+          <th class="px-4 py-3 text-right">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for folder in folders %}
+          <tr class="border-b border-border last:border-0 hover:bg-accent/30">
+            <td class="px-4 py-3">
+              <a href="{% url 'files:folder' folder.pk %}" class="flex items-center gap-2 font-medium hover:text-primary">
+                {% icon "folder" 16 %} {{ folder.name }}
+              </a>
+            </td>
+            <td class="px-4 py-3 text-muted-foreground">—</td>
+            <td class="px-4 py-3 text-muted-foreground">{{ folder.created_at|date:"M j, Y" }}</td>
+            <td class="px-4 py-3 text-right">
+              <a href="{% url 'files:folder_rename' folder.pk %}" class="text-xs text-muted-foreground hover:text-foreground mr-2">Rename</a>
+              <form method="post" action="{% url 'files:folder_delete' folder.pk %}" class="inline"
+                    onsubmit="return confirm('Delete folder and all its contents?')">{% csrf_token %}
+                <button type="submit" class="text-xs text-destructive hover:underline">Delete</button>
+              </form>
+            </td>
+          </tr>
+        {% endfor %}
+        {% for f in files %}
+          <tr class="border-b border-border last:border-0 hover:bg-accent/30">
+            <td class="px-4 py-3">
+              <span class="flex items-center gap-2">
+                {% icon "file-text" 16 %} {{ f.original_name }}
+              </span>
+            </td>
+            <td class="px-4 py-3 text-muted-foreground">{{ f.size|filesizeformat }}</td>
+            <td class="px-4 py-3 text-muted-foreground">{{ f.created_at|date:"M j, Y" }}</td>
+            <td class="px-4 py-3 text-right">
+              <a href="{% url 'files:download' f.pk %}" class="text-xs hover:underline mr-2">Download</a>
+              <a href="{% url 'files:file_rename' f.pk %}" class="text-xs text-muted-foreground hover:text-foreground mr-2">Rename</a>
+              <form method="post" action="{% url 'files:file_delete' f.pk %}" class="inline"
+                    onsubmit="return confirm('Delete this file?')">{% csrf_token %}
+                <button type="submit" class="text-xs text-destructive hover:underline">Delete</button>
+              </form>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+{% else %}
+  <div class="rounded-lg border border-border bg-card p-12 text-center">
+    <div class="mx-auto h-12 w-12 rounded-full bg-muted/50 inline-flex items-center justify-center mb-3">
+      {% icon "folder" 20 %}
+    </div>
+    <p class="text-sm text-muted-foreground">This folder is empty.</p>
+    <div class="mt-4 flex justify-center gap-2">
+      <a href="{% url 'files:upload' %}{% if current %}?parent={{ current.pk }}{% endif %}"
+         class="h-10 px-4 rounded-md bg-primary text-primary-foreground inline-flex items-center font-medium text-sm">Upload files</a>
+      <a href="{% url 'files:folder_create' %}{% if current %}?parent={{ current.pk }}{% endif %}"
+         class="h-10 px-4 rounded-md border border-border inline-flex items-center text-sm">New folder</a>
+    </div>
+  </div>
+{% endif %}
+{% endblock %}

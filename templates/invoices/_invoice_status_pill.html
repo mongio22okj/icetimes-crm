@@ -1,0 +1,13 @@
+{% with s=status %}
+  {% if s == "draft" %}
+    <span class="inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">Draft</span>
+  {% elif s == "sent" %}
+    <span class="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800 dark:bg-blue-900/30 dark:text-blue-200">Sent</span>
+  {% elif s == "overdue" %}
+    <span class="inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-800 dark:bg-red-900/30 dark:text-red-200">Overdue</span>
+  {% elif s == "paid" %}
+    <span class="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800 dark:bg-green-900/30 dark:text-green-200">Paid</span>
+  {% elif s == "void" %}
+    <span class="inline-flex items-center rounded-full bg-zinc-100 px-2.5 py-0.5 text-xs font-medium text-zinc-600 line-through dark:bg-zinc-800 dark:text-zinc-300">Void</span>
+  {% endif %}
+{% endwith %}

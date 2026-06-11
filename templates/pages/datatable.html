@@ -1,0 +1,153 @@
+{% extends "layouts/dashboard.html" %}
+{% load apex %}
+{% block title %}Datatable · Apex{% endblock %}
+{% block content %}
+<div class="mb-6">
+  <h1 class="text-2xl font-bold tracking-tight">Datatable</h1>
+  <p class="mt-1 text-sm text-muted-foreground">
+    The reusable HTMX-driven table system that powers every list view in Apex.
+    Sort, filter, paginate, search, bulk-action, save views, and export — all
+    server-side, with no full page reloads.
+  </p>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">
+  <a href="{% url 'customers:list' %}"
+     class="rounded-lg border border-border bg-card p-5 hover:border-primary/40 hover:shadow-sm transition group">
+    <div class="flex items-start gap-3">
+      <span class="inline-flex h-10 w-10 items-center justify-center rounded-md bg-primary/10 text-primary shrink-0">
+        {% icon "user-plus" 20 %}
+      </span>
+      <div>
+        <h3 class="text-sm font-semibold group-hover:text-primary">Customers</h3>
+        <p class="text-xs text-muted-foreground mt-0.5">100 seeded rows · text/select/daterange filters · 3 bulk actions · CSV/XLSX/PDF</p>
+      </div>
+    </div>
+  </a>
+
+  <a href="{% url 'orders:list' %}"
+     class="rounded-lg border border-border bg-card p-5 hover:border-primary/40 hover:shadow-sm transition group">
+    <div class="flex items-start gap-3">
+      <span class="inline-flex h-10 w-10 items-center justify-center rounded-md bg-primary/10 text-primary shrink-0">
+        {% icon "shopping-cart" 20 %}
+      </span>
+      <div>
+        <h3 class="text-sm font-semibold group-hover:text-primary">Orders</h3>
+        <p class="text-xs text-muted-foreground mt-0.5">Status / date filters · mark paid / shipped / cancel</p>
+      </div>
+    </div>
+  </a>
+
+  <a href="{% url 'invoices:list' %}"
+     class="rounded-lg border border-border bg-card p-5 hover:border-primary/40 hover:shadow-sm transition group">
+    <div class="flex items-start gap-3">
+      <span class="inline-flex h-10 w-10 items-center justify-center rounded-md bg-primary/10 text-primary shrink-0">
+        {% icon "file-text" 20 %}
+      </span>
+      <div>
+        <h3 class="text-sm font-semibold group-hover:text-primary">Invoices</h3>
+        <p class="text-xs text-muted-foreground mt-0.5">Lifecycle filter · mark sent / paid / void · daterange</p>
+      </div>
+    </div>
+  </a>
+
+  <a href="{% url 'products:list' %}"
+     class="rounded-lg border border-border bg-card p-5 hover:border-primary/40 hover:shadow-sm transition group">
+    <div class="flex items-start gap-3">
+      <span class="inline-flex h-10 w-10 items-center justify-center rounded-md bg-primary/10 text-primary shrink-0">
+        {% icon "package" 20 %}
+      </span>
+      <div>
+        <h3 class="text-sm font-semibold group-hover:text-primary">Products</h3>
+        <p class="text-xs text-muted-foreground mt-0.5">Numeric range filters (price/stock) · publish/archive bulk</p>
+      </div>
+    </div>
+  </a>
+
+  <a href="{% url 'users:list' %}"
+     class="rounded-lg border border-border bg-card p-5 hover:border-primary/40 hover:shadow-sm transition group">
+    <div class="flex items-start gap-3">
+      <span class="inline-flex h-10 w-10 items-center justify-center rounded-md bg-primary/10 text-primary shrink-0">
+        {% icon "users" 20 %}
+      </span>
+      <div>
+        <h3 class="text-sm font-semibold group-hover:text-primary">Users</h3>
+        <p class="text-xs text-muted-foreground mt-0.5">Boolean filter (active) · role select · activate/deactivate</p>
+      </div>
+    </div>
+  </a>
+
+  <a href="{% url 'activity:list' %}"
+     class="rounded-lg border border-border bg-card p-5 hover:border-primary/40 hover:shadow-sm transition group">
+    <div class="flex items-start gap-3">
+      <span class="inline-flex h-10 w-10 items-center justify-center rounded-md bg-primary/10 text-primary shrink-0">
+        {% icon "activity" 20 %}
+      </span>
+      <div>
+        <h3 class="text-sm font-semibold group-hover:text-primary">Activity log</h3>
+        <p class="text-xs text-muted-foreground mt-0.5">Read-only audit · category select · scope filter (just me)</p>
+      </div>
+    </div>
+  </a>
+</div>
+
+<div class="rounded-lg border border-border bg-card p-6 mb-8">
+  <h2 class="text-base font-semibold mb-3">What's included</h2>
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2 text-sm">
+    <ul class="space-y-1.5 text-muted-foreground">
+      <li>• <strong class="text-foreground">Server-side everything.</strong> Sort, filter, search, paginate, bulk action, export — all via the URL.</li>
+      <li>• <strong class="text-foreground">HTMX swaps.</strong> Every interaction updates just the table region; no full page reload.</li>
+      <li>• <strong class="text-foreground">Bulk actions.</strong> Row checkboxes + select-all-on-page + Alpine-powered confirm modal.</li>
+      <li>• <strong class="text-foreground">Saved views.</strong> Per-user named filter+sort combos with default-view auto-apply.</li>
+      <li>• <strong class="text-foreground">Column visibility.</strong> Per-user persisted; pinned columns stay locked.</li>
+    </ul>
+    <ul class="space-y-1.5 text-muted-foreground">
+      <li>• <strong class="text-foreground">3 export formats.</strong> CSV (stdlib), XLSX (openpyxl), PDF (WeasyPrint, capped 500 rows).</li>
+      <li>• <strong class="text-foreground">6 filter widgets.</strong> Text, select, multi-select, daterange, numeric range, boolean.</li>
+      <li>• <strong class="text-foreground">Multi-sort.</strong> Shift-click to add secondary sort columns.</li>
+      <li>• <strong class="text-foreground">Mobile-friendly.</strong> Table collapses to stacked cards under <code class="text-[11px] bg-muted px-1 rounded">md</code>.</li>
+      <li>• <strong class="text-foreground">Empty states.</strong> Distinct copy for "no data yet" vs "no matches".</li>
+    </ul>
+  </div>
+</div>
+
+<div class="rounded-lg border border-border bg-card overflow-hidden">
+  <div class="px-5 py-3 border-b border-border">
+    <h2 class="text-sm font-semibold">Adding a table to your view</h2>
+  </div>
+  <pre class="text-xs p-5 overflow-x-auto bg-muted/30"><code># apps/widgets/views.py
+from apps.core.tables import BulkAction, Column, Filter, TableConfig, TableView
+
+WIDGETS_TABLE = TableConfig(
+    key="widgets",                         # unique; scopes prefs + saved views
+    columns=(
+        Column("name", "Name", searchable=True, pinned=True),
+        Column("status", "Status",
+               filter=Filter("select", choices=Widget.STATUS)),
+        Column("created_at", "Created",
+               filter=Filter("daterange"),
+               formatter=lambda v: v.strftime("%b %d, %Y") if v else ""),
+    ),
+    bulk_actions=(
+        BulkAction("archive", "Archive", icon="trash", destructive=True,
+                   confirm_text="Archive {n} widgets?"),
+    ),
+    default_sort="-created_at",
+    page_size=25,
+    empty_headline="No widgets yet",
+    empty_body="Create your first widget to get started.",
+)
+
+
+class WidgetListView(LoginRequiredMixin, TableView):
+    model = Widget
+    template_name = "widgets/list.html"   # extends layouts/dashboard.html
+    table_config = WIDGETS_TABLE
+
+    def handle_bulk_action(self, action, ids, request):
+        if action.slug == "archive":
+            Widget.objects.filter(pk__in=ids).update(archived=True)
+        return redirect("widgets:list")
+</code></pre>
+</div>
+{% endblock %}

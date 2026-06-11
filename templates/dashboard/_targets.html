@@ -1,0 +1,25 @@
+{% comment %}Reusable progress-targets card. Expects a `targets` list with
+  {label, current, target, accent, is_money, suffix?}. Title via `title`.{% endcomment %}
+<div class="rounded-lg border border-border bg-card p-4">
+  <h2 class="font-semibold mb-1">{{ title }}</h2>
+  <p class="text-sm text-muted-foreground mb-4">{{ subtitle }}</p>
+  <div class="space-y-5">
+    {% for t in targets %}
+      <div>
+        <div class="flex items-center justify-between text-sm mb-1.5">
+          <span class="font-medium">{{ t.label }}</span>
+          <span class="text-muted-foreground">
+            {% if t.is_money %}${{ t.current|floatformat:0 }}{% else %}{{ t.current|floatformat:"-1" }}{{ t.suffix|default:"" }}{% endif %}
+            <span class="text-xs">/
+              {% if t.is_money %}${{ t.target|floatformat:0 }}{% else %}{{ t.target|floatformat:"-1" }}{{ t.suffix|default:"" }}{% endif %}
+            </span>
+          </span>
+        </div>
+        <div class="h-2 rounded-full bg-muted overflow-hidden">
+          {% widthratio t.current t.target 100 as pct %}
+          <div class="h-full rounded-full" style="width: {{ pct }}%; background-color: {{ t.accent }};"></div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+</div>

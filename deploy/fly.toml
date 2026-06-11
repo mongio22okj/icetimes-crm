@@ -1,0 +1,71 @@
+# Fly.io deploy spec for Apex Django.
+# Multi-region capable; native WebSocket support; Docker-based.
+#
+# Quick start:
+#   curl -L https://fly.io/install.sh | sh        # install flyctl
+#   fly auth signup                                 # or `fly auth login`
+#   fly launch --copy-config --no-deploy            # uses this file
+#   fly postgres create --name apex-django-db --region <region>
+#   fly postgres attach apex-django-db              # auto-sets DATABASE_URL
+#   fly redis create --name apex-django-redis       # via Upstash
+#   fly secrets set SECRET_KEY="$(openssl rand -hex 32)"
+#   fly secrets set ALLOWED_HOSTS="apex-django.fly.dev,your.custom.domain"
+#   fly deploy
+#
+# What you get:
+#   - Native WebSocket support (no special config needed)
+#   - Multi-region failover (add `regions = ["iad", "fra", "syd"]`)
+#   - HTTPS with automatic Let's Encrypt
+#   - Volumes for persistent uploads (declared below, attach via `fly volumes`)
+
+app = "apex-django"           # change to your app name; must be globally unique
+primary_region = "iad"        # iad/lhr/fra/syd/sin/etc — see `fly platform regions`
+
+[build]
+  dockerfile = "Dockerfile"
+
+[deploy]
+  # `release_command` runs once per deploy in a one-shot VM, before any
+  # web VMs roll. Migrations land here so they don't race across instances.
+  release_command = "python manage.py migrate --no-input"
+  strategy = "rolling"        # zero-downtime; new instance must pass health check before old one stops
+
+[env]
+  PORT = "8080"
+  DJANGO_SETTINGS_MODULE = "apex.settings.prod"
+  DEMO_MODE = "true"          # set false for non-demo deploys
+  # ALLOWED_HOSTS, SECRET_KEY, DATABASE_URL, REDIS_URL come from `fly secrets`
+
+# ── HTTP service ────────────────────────────────────────────────────
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = "off"   # set to "stop" for scale-to-zero on demos
+  auto_start_machines = true
+  min_machines_running = 1
+  processes = ["app"]
+
+  [[http_service.checks]]
+    grace_period = "30s"
+    interval = "15s"
+    method = "get"
+    timeout = "5s"
+    path = "/__health/"
+
+# ── VM size ────────────────────────────────────────────────────────
+# `shared-cpu-1x` 256MB is the minimum that runs a Django + Daphne process
+# comfortably. Bump `memory_mb` to 512 once you have real traffic.
+[[vm]]
+  size = "shared-cpu-1x"
+  memory_mb = 256
+  cpu_kind = "shared"
+  cpus = 1
+
+# ── Persistent volume for user uploads (Files app, avatars) ────────
+# Uncomment + run `fly volumes create apex_uploads --region iad --size 1`
+# before first deploy. Otherwise uploads are lost on every deploy.
+#
+# [[mounts]]
+#   source = "apex_uploads"
+#   destination = "/app/user_files"
+#   processes = ["app"]

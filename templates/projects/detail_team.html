@@ -1,0 +1,39 @@
+{% extends "layouts/dashboard.html" %}
+{% load apex %}
+{% block title %}{{ project.name }} · Team · Apex{% endblock %}
+{% block content %}
+{% include "projects/_detail_header.html" with project=project active_tab=active_tab %}
+
+<div class="rounded-lg border border-border bg-card">
+  <div class="px-4 pt-4 pb-3 border-b border-border flex items-center justify-between">
+    <div>
+      <h2 class="font-semibold">Team members</h2>
+      <p class="text-sm text-muted-foreground">{{ team.count }} {{ team.count|pluralize:"person,people" }} working on this project.</p>
+    </div>
+    <a href="{% url 'projects:edit' project.slug %}" class="h-9 px-3 rounded-md border border-border inline-flex items-center text-sm hover:bg-accent">{% icon "settings" 14 %}<span class="ml-1.5">Manage</span></a>
+  </div>
+  {% if team %}
+    <ul class="divide-y divide-border">
+      {% for member in team %}
+        <li class="px-4 py-4 flex items-center justify-between gap-4">
+          <div class="flex items-center gap-3 min-w-0">
+            <span class="inline-flex h-12 w-12 items-center justify-center rounded-full text-sm font-semibold text-white" style="background-color: {{ member|avatar_color }};">{{ member|initials }}</span>
+            <div class="min-w-0">
+              <p class="font-medium truncate">{{ member.get_full_name|default:member.username }}</p>
+              <p class="text-sm text-muted-foreground truncate">{{ member.email }}</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-3 shrink-0">
+            {% if member == project.owner %}<span class="inline-flex items-center px-2 h-6 rounded-md text-xs font-medium bg-primary/10 text-primary">Owner</span>{% endif %}
+            {% if member.role %}<span class="text-xs text-muted-foreground capitalize hidden sm:inline">{{ member.get_role_display|default:member.role }}</span>{% endif %}
+          </div>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <div class="p-12 text-center">
+      <p class="text-sm text-muted-foreground">No team members yet. <a href="{% url 'projects:edit' project.slug %}" class="text-primary hover:underline">Add some →</a></p>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

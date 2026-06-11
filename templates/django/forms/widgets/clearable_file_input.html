@@ -1,0 +1,28 @@
+{% comment %}
+  Apex override of Django's ClearableFileInput template. When an
+  ImageField has an existing value, show a thumbnail preview above the
+  "Currently / Clear / Change" controls. Falls back to the stock layout
+  for non-image files (PDFs, docs, etc.). Image detection uses URL
+  extension matching — pragmatic and avoids a custom templatetag.
+
+  Note: this template applies to ALL FileField/ImageField widgets, not
+  just admin — Django form-renderer template loader picks up the
+  project-level templates/django/forms/widgets/ directory.
+{% endcomment %}
+{% if widget.is_initial %}
+  {% with url=widget.value.url|lower %}
+    {% if '.jpg' in url or '.jpeg' in url or '.png' in url or '.gif' in url or '.webp' in url or '.avif' in url or '.svg' in url %}
+      <div class="file-preview"><img src="{{ widget.value.url }}" alt="" loading="lazy"></div>
+    {% endif %}
+  {% endwith %}
+  <span class="file-current">
+    {{ widget.initial_text }}: <a href="{{ widget.value.url }}">{{ widget.value }}</a>
+    {% if not widget.required %}
+      <input type="checkbox" name="{{ widget.checkbox_name }}" id="{{ widget.checkbox_id }}"{% if widget.attrs.disabled %} disabled{% endif %}{% if widget.attrs.checked %} checked{% endif %}>
+      <label for="{{ widget.checkbox_id }}">{{ widget.clear_checkbox_label }}</label>
+    {% endif %}
+  </span>
+  <br>
+  {{ widget.input_text }}:
+{% endif %}
+<input type="{{ widget.type }}" name="{{ widget.name }}"{% include "django/forms/widgets/attrs.html" %}>

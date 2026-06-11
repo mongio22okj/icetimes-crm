@@ -1,0 +1,77 @@
+{% load apex %}
+{% comment %}
+FileDropzone widget. Each picked file POSTs to `widget.upload_url` via
+XHR; the dropzone tracks per-file status (uploading / done / error) and
+exposes `uploadedIds` as a comma-joined string for the hidden input.
+{% endcomment %}
+{% with attrs=widget.attrs %}
+<div data-widget="file-dropzone"
+     x-data='apexDropzone({
+       uploadUrl: {{ widget.upload_url|json_dumps }},
+       accept: {{ widget.accept|json_dumps }},
+       maxFiles: {{ widget.max_files }},
+       maxSizeMB: {{ widget.max_size_mb }},
+       initialIds: {{ widget.initial_ids_json|safe }},
+     })'>
+
+  <input type="hidden" name="{{ widget.name }}" :value="uploadedIds"
+         {% if attrs.id %}id="{{ attrs.id }}"{% endif %}>
+
+  <label
+    @dragover="onDragOver"
+    @dragleave="onDragLeave"
+    @drop="onDrop"
+    class="block rounded-lg border-2 border-dashed p-8 text-center cursor-pointer transition"
+    :class="isDragging ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/40 hover:bg-accent/30'">
+    <div class="mx-auto h-12 w-12 rounded-full bg-primary/10 text-primary inline-flex items-center justify-center mb-3">
+      {% icon "upload-cloud" 22 %}
+    </div>
+    <p class="text-sm font-semibold">Drop files here, or <span class="text-primary">browse</span></p>
+    <p class="text-xs text-muted-foreground mt-1">
+      {% if widget.accept %}{{ widget.accept }} · {% endif %}up to {{ widget.max_size_mb }} MB · max {{ widget.max_files }} files
+    </p>
+    <input type="file" multiple
+           {% if widget.accept %}accept="{{ widget.accept }}"{% endif %}
+           @change="onPick" class="sr-only" />
+  </label>
+  <p x-show="error" x-text="error" class="text-xs text-destructive mt-2"></p>
+
+  <div x-show="files.length" x-cloak class="mt-3 space-y-2">
+    <template x-for="f in files" :key="f.id">
+      <div class="flex items-center gap-3 rounded-md border border-border bg-background p-2">
+        <template x-if="f.preview">
+          <img :src="f.preview" alt="" class="h-10 w-10 rounded object-cover" />
+        </template>
+        <template x-if="!f.preview">
+          <span class="h-10 w-10 rounded bg-muted text-muted-foreground inline-flex items-center justify-center">
+            {% icon "file-text" 16 %}
+          </span>
+        </template>
+
+        <div class="flex-1 min-w-0">
+          <p class="text-sm font-medium truncate" x-text="f.name"></p>
+          <div class="flex items-center gap-2 text-xs text-muted-foreground">
+            <span x-text="fmtSize(f.size)" x-show="f.size > 0"></span>
+            <span x-show="f.status === 'uploading'" class="text-primary">
+              <span x-text="f.progress + '%'"></span>
+            </span>
+            <span x-show="f.status === 'done'" class="text-success">Uploaded</span>
+            <span x-show="f.status === 'error'" class="text-destructive" x-text="f.error || 'Failed'"></span>
+          </div>
+          {# Per-file progress bar shown only while uploading #}
+          <div x-show="f.status === 'uploading'" class="h-1 mt-1.5 rounded-full bg-muted overflow-hidden">
+            <div class="h-full bg-primary transition-all" :style="`width: ${f.progress}%`"></div>
+          </div>
+        </div>
+
+        <button type="button"
+                @click="f.status === 'uploading' ? cancel(f.id) : remove(f.id)"
+                class="text-muted-foreground hover:text-destructive p-1"
+                :aria-label="f.status === 'uploading' ? 'Cancel upload' : 'Remove file'">
+          {% icon "x" 16 %}
+        </button>
+      </div>
+    </template>
+  </div>
+</div>
+{% endwith %}

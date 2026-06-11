@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% load apex %}
+{% block title %}503 · Service Unavailable · Apex{% endblock %}
+{% block body %}
+<main class="min-h-screen flex items-center justify-center bg-background p-4">
+  <div class="w-full max-w-md">
+    <a href="/" aria-label="Apex home" class="mb-6 flex items-center justify-center gap-2.5 font-semibold">
+      <span class="h-9 w-9 rounded-md bg-primary text-primary-foreground inline-flex items-center justify-center">
+        {% icon "package" 20 %}
+      </span>
+      <span class="text-lg tracking-tight">Apex</span>
+    </a>
+
+    <div class="rounded-lg border border-border bg-card p-8 shadow-sm text-center">
+      <p class="text-6xl font-bold text-destructive mb-2">503</p>
+      <h1 class="text-2xl font-bold tracking-tight mb-2">Service Unavailable</h1>
+      <p class="text-sm text-muted-foreground mb-6">
+        We're temporarily offline. Our team has been notified and is on it. Please try again in a few moments.
+      </p>
+
+      <div class="rounded-md border border-border bg-muted/30 p-3 mb-6 text-xs text-left flex items-start gap-3">
+        <span class="text-muted-foreground mt-0.5">{% icon "activity" 14 %}</span>
+        <div class="flex-1">
+          <p class="font-medium">Incident detected</p>
+          <p class="text-muted-foreground mt-0.5">Reference: <span class="font-mono">{{ reference|default:"INC-2026-0001" }}</span></p>
+        </div>
+      </div>
+
+      <div class="space-y-2">
+        <a href="/" class="block w-full h-10 rounded-md bg-primary text-primary-foreground font-medium leading-10">
+          Retry now
+        </a>
+        <a href="{% url 'marketing:support' %}" class="block w-full h-10 rounded-md border border-border font-medium leading-10 text-sm hover:bg-accent">
+          Contact support
+        </a>
+      </div>
+    </div>
+  </div>
+</main>
+{% endblock %}

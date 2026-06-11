@@ -1,0 +1,74 @@
+{% extends "layouts/dashboard.html" %}
+{% load apex %}
+{% block title %}{{ person.get_full_name|default:person.username }} · Apex{% endblock %}
+{% block content %}
+{% include "profiles/_detail_header.html" with person=person active_tab=active_tab %}
+
+<div class="grid grid-cols-1 xl:grid-cols-12 gap-6">
+  <section class="xl:col-span-8 rounded-lg border border-border bg-card">
+    <div class="px-4 pt-4 pb-3 border-b border-border flex items-center justify-between">
+      <h2 class="font-semibold">Recent projects</h2>
+      <a href="{% url 'profiles:projects' person.username %}" class="text-xs text-muted-foreground hover:text-foreground">View all →</a>
+    </div>
+    {% if recent_projects %}
+      <ul class="divide-y divide-border">
+        {% for p in recent_projects %}
+          <li class="px-4 py-3 flex items-center justify-between gap-3">
+            <div class="min-w-0">
+              <a href="{% url 'projects:overview' p.slug %}" class="font-medium text-sm hover:text-primary truncate block">{{ p.name }}</a>
+              <p class="text-xs text-muted-foreground">{% if p.customer %}{{ p.customer.name }} · {% endif %}{{ p.computed_progress }}% complete</p>
+            </div>
+            <div class="flex items-center gap-2 shrink-0">
+              {% include "projects/_status_pill.html" with status=p.status %}
+            </div>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <div class="p-8 text-center text-sm text-muted-foreground">Not on any projects yet.</div>
+    {% endif %}
+  </section>
+
+  <aside class="xl:col-span-4 space-y-6">
+    <section class="rounded-lg border border-border bg-card p-4">
+      <h2 class="font-semibold mb-3">Recent tasks</h2>
+      {% if recent_tasks %}
+        <ul class="space-y-2.5">
+          {% for t in recent_tasks %}
+            <li>
+              <a href="{% url 'projects:tasks' t.project.slug %}" class="block hover:bg-muted/30 -mx-2 px-2 py-1 rounded">
+                <p class="text-sm font-medium truncate">{{ t.title }}</p>
+                <p class="text-xs text-muted-foreground">{{ t.project.name }} · {{ t.get_status_display }}</p>
+              </a>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="text-sm text-muted-foreground">No tasks assigned yet.</p>
+      {% endif %}
+    </section>
+
+    <section class="rounded-lg border border-border bg-card p-4">
+      <h2 class="font-semibold mb-3">About</h2>
+      <dl class="space-y-2 text-sm">
+        <div>
+          <dt class="text-xs text-muted-foreground">Username</dt>
+          <dd class="font-mono">{{ person.username }}</dd>
+        </div>
+        {% if person.title %}<div>
+          <dt class="text-xs text-muted-foreground">Title</dt>
+          <dd>{{ person.title }}</dd>
+        </div>{% endif %}
+        {% if person.location %}<div>
+          <dt class="text-xs text-muted-foreground">Location</dt>
+          <dd>{{ person.location }}</dd>
+        </div>{% endif %}
+        <div>
+          <dt class="text-xs text-muted-foreground">Joined</dt>
+          <dd>{{ person.date_joined|date:"M j, Y" }}</dd>
+        </div>
+      </dl>
+    </section>
+  </aside>
+</div>
+{% endblock %}

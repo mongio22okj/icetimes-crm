@@ -1,0 +1,23 @@
+{% extends "layouts/dashboard.html" %}
+{% block title %}Dashboard · Apex{% endblock %}
+{% block content %}
+<div class="mb-6">
+  <h1 class="text-2xl font-bold tracking-tight">Dashboard</h1>
+  <p class="mt-1 text-sm text-muted-foreground">
+    Welcome back{% if request.user.first_name %}, {{ request.user.first_name }}{% endif %}. Here's what's happening.
+  </p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+  {% for stat in stats %}
+    {% include "components/stat_card.html" with label=stat.label value=stat.value delta=stat.delta trend=stat.trend icon=stat.icon accent=stat.accent spark=stat.spark %}
+  {% endfor %}
+</div>
+<div class="mt-6 grid grid-cols-1 xl:grid-cols-12 gap-4">
+  {% include "dashboard/_revenue_chart.html" %}
+  {% include "dashboard/_side_panel.html" %}
+</div>
+<div class="mt-6 grid grid-cols-1 xl:grid-cols-12 gap-4">
+  {% include "dashboard/_recent_orders.html" %}
+  {% include "dashboard/_activity_feed.html" %}
+</div>
+{% endblock %}

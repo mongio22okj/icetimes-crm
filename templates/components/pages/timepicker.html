@@ -1,0 +1,47 @@
+{% extends "components/_detail_layout.html" %}
+{% load apex %}
+
+{% block component_body %}
+<div class="space-y-8">
+
+  <div class="rounded-lg border border-border bg-card p-6">
+    <h2 class="text-sm font-semibold mb-1">Native input</h2>
+    <p class="text-xs text-muted-foreground mb-4">12h or 24h based on browser locale. Step controls minute granularity.</p>
+    <div class="flex items-end gap-3">
+      <div>
+        <label class="block text-sm font-medium mb-1.5">Reminder time</label>
+        <input type="time" value="14:30"
+               class="h-10 px-3 rounded-md border border-input bg-background text-sm" />
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1.5">15-minute step</label>
+        <input type="time" value="09:00" step="900"
+               class="h-10 px-3 rounded-md border border-input bg-background text-sm" />
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1.5">With seconds</label>
+        <input type="time" value="14:30:00" step="1"
+               class="h-10 px-3 rounded-md border border-input bg-background text-sm" />
+      </div>
+    </div>
+  </div>
+
+  <div class="rounded-lg border border-border bg-card p-6">
+    <h2 class="text-sm font-semibold mb-1">Quick-pick chips</h2>
+    <p class="text-xs text-muted-foreground mb-4">For appointment slots — show the available windows directly.</p>
+    <div x-data="{value: '10:00'}" class="space-y-3">
+      <p class="text-sm">Selected: <span class="font-semibold tabular-nums" x-text="value"></span></p>
+      <div class="flex flex-wrap gap-2">
+        <template x-for="t in ['09:00','09:30','10:00','10:30','11:00','11:30','13:00','13:30','14:00','14:30','15:00','15:30','16:00']" :key="t">
+          <button type="button" @click="value = t"
+                  class="h-9 px-3 rounded-md border text-xs font-medium tabular-nums transition"
+                  :class="value === t ? 'bg-primary text-primary-foreground border-primary' : 'border-border hover:bg-accent'">
+            <span x-text="t"></span>
+          </button>
+        </template>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,15 @@
+<nav class="mt-4 flex items-center justify-between text-sm" aria-label="Pagination">
+  <p class="text-muted-foreground">
+    Showing {{ page_obj.start_index }}–{{ page_obj.end_index }} of {{ page_obj.paginator.count }}
+  </p>
+  <div class="flex gap-1">
+    {% if page_obj.has_previous %}
+      <a href="?page={{ page_obj.previous_page_number }}"
+         class="h-8 px-3 rounded-md border border-border inline-flex items-center hover:bg-muted">Previous</a>
+    {% endif %}
+    {% if page_obj.has_next %}
+      <a href="?page={{ page_obj.next_page_number }}"
+         class="h-8 px-3 rounded-md border border-border inline-flex items-center hover:bg-muted">Next</a>
+    {% endif %}
+  </div>
+</nav>

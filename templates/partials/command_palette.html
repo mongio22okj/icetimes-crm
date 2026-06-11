@@ -1,0 +1,113 @@
+{% load apex %}
+<div x-show="palette.open"
+     x-cloak
+     x-transition.opacity
+     @keydown.escape.prevent="closePalette()"
+     @keydown.tab.prevent="trapFocus($event)"
+     class="fixed inset-0 z-50 flex items-start justify-center pt-[15vh] px-4"
+     role="dialog"
+     aria-modal="true"
+     aria-label="Command palette"
+     style="display: none;">
+  <div @click="closePalette()" class="absolute inset-0 bg-black/40"></div>
+  <div class="relative w-full max-w-xl bg-popover text-popover-foreground rounded-lg border border-border shadow-xl overflow-hidden">
+    <div class="flex items-center border-b border-border px-3">
+      <span class="text-muted-foreground">{% icon "search" 18 %}</span>
+      <input id="palette-input"
+             type="text"
+             x-model="palette.query"
+             @keydown.arrow-down.prevent="moveSelection(1)"
+             @keydown.arrow-up.prevent="moveSelection(-1)"
+             @keydown.enter.prevent="activateSelected()"
+             placeholder="Type a command or search..."
+             class="flex-1 h-12 bg-transparent px-3 text-sm focus:outline-none placeholder:text-muted-foreground"
+             autocomplete="off"
+             spellcheck="false">
+      <kbd class="hidden sm:inline-flex h-6 items-center rounded border border-border px-1.5 text-[10px] font-mono text-muted-foreground">esc</kbd>
+    </div>
+    <div class="max-h-[50vh] overflow-y-auto p-2">
+      {# Pages — local nav items #}
+      <div x-show="filteredItems().length > 0">
+        <p class="px-2 py-1.5 text-xs text-muted-foreground">Pages</p>
+        <ul>
+          <template x-for="(item, index) in filteredItems()" :key="'nav-'+item.url">
+            <li>
+              <button type="button"
+                      @click="closePalette(); window.location.href = item.url"
+                      @mouseenter="palette.selectedIndex = index"
+                      :class="index === palette.selectedIndex ? 'bg-accent text-accent-foreground' : ''"
+                      class="w-full flex items-center gap-3 rounded-md px-2 py-2 text-sm text-left hover:bg-accent hover:text-accent-foreground">
+                <span class="text-muted-foreground" x-html="iconSvg(item.icon)"></span>
+                <span x-text="item.label"></span>
+                <span x-show="item.badge" class="ml-auto text-xs text-primary font-semibold" x-text="item.badge"></span>
+              </button>
+            </li>
+          </template>
+        </ul>
+      </div>
+
+      {# Remote search groups (customers, invoices, products, orders, mail, kanban) #}
+      <template x-for="(group, gi) in palette.remoteGroups" :key="'g-'+group.label">
+        <div class="mt-2 border-t border-border pt-2">
+          <p class="px-2 py-1.5 text-xs text-muted-foreground" x-text="group.label"></p>
+          <ul>
+            <template x-for="(item, ii) in group.items" :key="'r-'+gi+'-'+item.url">
+              <li>
+                <button type="button"
+                        @click="closePalette(); window.location.href = item.url"
+                        @mouseenter="palette.selectedIndex = selectionOffsetForRemoteItem(gi, ii)"
+                        :class="selectionOffsetForRemoteItem(gi, ii) === palette.selectedIndex ? 'bg-accent text-accent-foreground' : ''"
+                        class="w-full flex items-start gap-3 rounded-md px-2 py-2 text-sm text-left hover:bg-accent hover:text-accent-foreground">
+                  <span class="text-muted-foreground mt-0.5" x-html="iconSvg(group.icon)"></span>
+                  <span class="flex-1 min-w-0">
+                    <span class="block truncate" x-text="item.label"></span>
+                    <span x-show="item.subtitle" class="block text-xs text-muted-foreground truncate" x-text="item.subtitle"></span>
+                  </span>
+                </button>
+              </li>
+            </template>
+          </ul>
+        </div>
+      </template>
+
+      {# Loading hint #}
+      <div x-show="palette.remoteLoading && palette.remoteGroups.length === 0 && palette.query.trim().length >= 2"
+           class="px-2 py-3 text-xs text-muted-foreground text-center">
+        Searching…
+      </div>
+
+      {# Empty state #}
+      <div x-show="!palette.remoteLoading && filteredItems().length === 0 && palette.remoteGroups.length === 0"
+           class="px-2 py-6 text-sm text-muted-foreground text-center">
+        <template x-if="palette.query.trim().length < 2">
+          <span>Type at least 2 characters to search records.</span>
+        </template>
+        <template x-if="palette.query.trim().length >= 2">
+          <span>No results for "<span x-text="palette.query"></span>".</span>
+        </template>
+      </div>
+      {# Actions #}
+      <div class="mt-2 border-t border-border pt-2">
+        <p class="px-2 py-1.5 text-xs text-muted-foreground">Actions</p>
+        <ul>
+          <li>
+            <a href="{% url 'orders:create' %}"
+               @click="closePalette()"
+               class="w-full flex items-center gap-3 rounded-md px-2 py-2 text-sm hover:bg-accent hover:text-accent-foreground">
+              <span class="text-muted-foreground">{% icon "plus" 16 %}</span>
+              <span>New Order</span>
+            </a>
+          </li>
+          <li>
+            <button type="button"
+                    @click="toggleTheme()"
+                    class="w-full flex items-center gap-3 rounded-md px-2 py-2 text-sm text-left hover:bg-accent hover:text-accent-foreground">
+              <span class="text-muted-foreground">{% icon "moon" 16 %}</span>
+              <span>Toggle theme</span>
+            </button>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>

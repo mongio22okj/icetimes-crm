@@ -1,0 +1,86 @@
+{% extends "layouts/docs.html" %}
+{% load docs_tags %}
+
+{% block doc_title %}Demo mode + reseed cron{% endblock %}
+{% block doc_subtitle %}Run a public sandbox where visitors can break things and the data resets on a fixed schedule.{% endblock %}
+
+{% block doc_body %}
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">What demo mode gives you</h2>
+  <p class="text-sm text-muted-foreground">
+    Setting <code class="rounded bg-muted px-1 text-xs">DEMO_MODE=true</code>
+    in the production env file flips two visible behaviors:
+  </p>
+  <ul class="space-y-2 text-sm text-muted-foreground ml-5 list-disc">
+    <li><strong class="text-foreground">Login auto-fill</strong> — the <code class="rounded bg-muted px-1 text-xs">/accounts/login/</code> page pre-fills <code class="rounded bg-muted px-1 text-xs">demo</code> / <code class="rounded bg-muted px-1 text-xs">ApexShowcase!2026</code> and shows a "Demo credentials" banner.</li>
+    <li><strong class="text-foreground">Demo banner</strong> — a sticky orange bar at the top of every dashboard page reminding visitors this is a demo where data resets. Dismissable per-tab via sessionStorage.</li>
+  </ul>
+  <p class="text-sm text-muted-foreground">
+    Both gate on <code class="rounded bg-muted px-1 text-xs">settings.DEMO_MODE</code>,
+    so a real production deploy with the var unset shows neither.
+  </p>
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">The reset_demo command</h2>
+  <p class="text-sm text-muted-foreground">
+    <code class="rounded bg-muted px-1 text-xs">apps/core/management/commands/reset_demo.py</code>
+    flushes the database and re-runs <code class="rounded bg-muted px-1 text-xs">seed_demo</code>
+    to restore the canonical sandbox.
+  </p>
+  {% code lang="bash" %}uv run python manage.py reset_demo            # confirms y/N first
+uv run python manage.py reset_demo --no-input # for cron{% endcode %}
+  {% callout type="warn" %}
+    Safety belt: refuses to run unless
+    <code class="rounded bg-muted px-1 text-xs">settings.DEMO_MODE=True</code>
+    (or <code class="rounded bg-muted px-1 text-xs">--force</code>), so it can
+    never accidentally wipe a real production database.
+  {% endcallout %}
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">Hourly cron — the recommended setup</h2>
+  <p class="text-sm text-muted-foreground">Install for the apex user:</p>
+  {% code lang="bash" %}sudo crontab -u apex -e{% endcode %}
+  <p class="text-sm text-muted-foreground">Add:</p>
+  {% code lang="cron" %}# Reset demo data every hour at HH:05
+5 * * * * /var/www/apex-django/deploy/scripts/reset_demo_cron.sh >> /var/log/apex-django/reset.log 2>&1{% endcode %}
+  <p class="text-sm text-muted-foreground">
+    Make sure the log directory exists and is writable by the apex user:
+  </p>
+  {% code lang="bash" %}sudo install -d -o apex -g apex -m 0755 /var/log/apex-django{% endcode %}
+  <p class="text-sm text-muted-foreground">
+    The wrapper script
+    (<code class="rounded bg-muted px-1 text-xs">deploy/scripts/reset_demo_cron.sh</code>)
+    sources <code class="rounded bg-muted px-1 text-xs">/etc/apex-django.env</code>
+    so DJANGO_SETTINGS_MODULE, DATABASE_URL, etc. are available — cron runs
+    in a minimal environment without these by default.
+  </p>
+  <p class="text-sm text-muted-foreground">
+    Full reset takes ~5 seconds on a small VPS. Visitors signed in during
+    the reset get logged out the next time they make a request.
+  </p>
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">Verifying the reset worked</h2>
+  {% code lang="bash" %}# After the cron fires, hit the health endpoint:
+curl https://apex-django.example.com/__health/
+# {"status":"ok","checks":{"db":{"ok":true,"ms":1.2}, …}}{% endcode %}
+  <p class="text-sm text-muted-foreground">
+    The bell badge shows ~30 unread notifications fresh out of
+    <code class="rounded bg-muted px-1 text-xs">seed_demo</code>.
+  </p>
+</section>
+
+<section class="space-y-3">
+  <h2 class="text-lg font-semibold">Combining with backups</h2>
+  <p class="text-sm text-muted-foreground">
+    Even on a demo, a daily <code class="rounded bg-muted px-1 text-xs">pg_dump</code>
+    snapshot is cheap insurance — see the
+    <a href="{% url 'docs:backups' %}" class="text-primary hover:underline">Backups guide</a>.
+  </p>
+</section>
+
+{% endblock %}

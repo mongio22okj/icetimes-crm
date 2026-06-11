@@ -1,0 +1,39 @@
+{% comment %}
+Cell renderers for the customers TableView.
+
+Each {% partialdef %} below corresponds to a Column.template entry in
+apps/customers/views.py. Reference them as:
+
+    template="customers/_table_cells.html#customer"
+    template="customers/_table_cells.html#status"
+
+Caller passes `row` (a Customer instance) and `col` (the Column dataclass).
+The status pill also doubles as a standalone partial via
+`status_pill` so list pages and detail pages can show the same badge.
+{% endcomment %}
+
+{% partialdef customer %}
+<a href="{% url 'customers:detail' row.pk %}" class="flex items-center gap-3 -my-1">
+  {% if row.avatar %}
+    <img src="{{ row.avatar.url }}" alt="" class="h-8 w-8 rounded-full object-cover" />
+  {% else %}
+    <span class="h-8 w-8 rounded-full inline-flex items-center justify-center text-xs font-semibold bg-muted">{{ row.initials }}</span>
+  {% endif %}
+  <div class="min-w-0">
+    <div class="font-medium truncate">{{ row.name }}</div>
+    <div class="text-xs text-muted-foreground truncate">{{ row.email }}</div>
+  </div>
+</a>
+{% endpartialdef %}
+
+{% partialdef status %}
+{% include "customers/_table_cells.html#status_pill" with status=row.status %}
+{% endpartialdef %}
+
+{% partialdef status_pill inline %}
+{% if status == "active" %}
+  <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-primary/10 text-primary">Active</span>
+{% else %}
+  <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-muted text-muted-foreground">Inactive</span>
+{% endif %}
+{% endpartialdef %}

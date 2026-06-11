@@ -1,0 +1,121 @@
+{% extends "layouts/dashboard.html" %}
+{% load apex %}
+{% block title %}eCommerce · Apex{% endblock %}
+{% block content %}
+<div class="mb-6">
+  <h1 class="text-2xl font-bold tracking-tight">eCommerce</h1>
+  <p class="mt-1 text-sm text-muted-foreground">Sales performance, top products, and recent transactions.</p>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+  {% for stat in stats %}
+    {% include "components/stat_card.html" with label=stat.label value=stat.value delta=stat.delta trend=stat.trend icon=stat.icon accent=stat.accent spark=stat.spark %}
+  {% endfor %}
+</div>
+
+<div class="mt-6 grid grid-cols-1 xl:grid-cols-12 gap-4">
+  <div class="xl:col-span-8 rounded-lg border border-border bg-card p-4">
+    <div class="mb-4">
+      <h2 class="font-semibold">Sales Overview</h2>
+      <p class="text-sm text-muted-foreground">Daily revenue, orders, and profit — last 30 days.</p>
+    </div>
+    {{ daily_sales_data|json_script:"daily-sales-data" }}
+    <div id="daily-sales-chart" class="h-[320px]" x-data="dailySalesChart()"></div>
+  </div>
+
+  <div class="xl:col-span-4 rounded-lg border border-border bg-card p-4">
+    <div class="mb-4">
+      <h2 class="font-semibold">Order Status</h2>
+      <p class="text-sm text-muted-foreground">Active orders by lifecycle state.</p>
+    </div>
+    {{ order_status_data|json_script:"order-status-data" }}
+    <div id="order-status-chart" class="h-[260px]" x-data="orderStatusChart()"></div>
+  </div>
+</div>
+
+<div class="mt-6 grid grid-cols-1 xl:grid-cols-12 gap-4">
+  <div class="xl:col-span-7 rounded-lg border border-border bg-card">
+    <div class="px-4 pt-4 pb-3 border-b border-border">
+      <h2 class="font-semibold">Top Selling Products</h2>
+      <p class="text-sm text-muted-foreground">By revenue this period.</p>
+    </div>
+    <table class="w-full text-sm">
+      <thead class="text-xs text-muted-foreground uppercase tracking-wide bg-muted/30">
+        <tr>
+          <th class="text-left px-4 py-2 font-medium w-10">#</th>
+          <th class="text-left px-4 py-2 font-medium">Product</th>
+          <th class="text-right px-4 py-2 font-medium">Sold</th>
+          <th class="text-right px-4 py-2 font-medium pr-6">Revenue</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-border">
+        {% for p in top_products %}
+          <tr class="hover:bg-muted/30">
+            <td class="px-4 py-3 text-muted-foreground tabular-nums">{{ forloop.counter }}</td>
+            <td class="px-4 py-3">
+              <p class="font-medium">{{ p.name }}</p>
+              <p class="text-xs text-muted-foreground">${{ p.price|floatformat:2 }}</p>
+            </td>
+            <td class="px-4 py-3 text-right tabular-nums">{{ p.sold }}</td>
+            <td class="px-4 py-3 pr-6 text-right tabular-nums">${{ p.revenue|floatformat:2 }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="xl:col-span-5 rounded-lg border border-border bg-card p-4">
+    <div class="mb-4">
+      <h2 class="font-semibold">Sales by Category</h2>
+      <p class="text-sm text-muted-foreground">Revenue split across product categories.</p>
+    </div>
+    {{ category_data|json_script:"category-sales-data" }}
+    <div id="category-sales-chart" class="h-[300px]" x-data="categorySalesChart()"></div>
+  </div>
+</div>
+
+<div class="mt-6 grid grid-cols-1 xl:grid-cols-12 gap-4">
+  <div class="xl:col-span-8 rounded-lg border border-border bg-card">
+    <div class="px-4 pt-4 pb-3 border-b border-border">
+      <h2 class="font-semibold">Recent Transactions</h2>
+      <p class="text-sm text-muted-foreground">Latest customer purchases.</p>
+    </div>
+    <table class="w-full text-sm">
+      <thead class="text-xs text-muted-foreground uppercase tracking-wide bg-muted/30">
+        <tr>
+          <th class="text-left px-4 py-2 font-medium">Customer</th>
+          <th class="text-left px-4 py-2 font-medium">Product</th>
+          <th class="text-right px-4 py-2 font-medium">Amount</th>
+          <th class="text-left px-4 py-2 font-medium pl-6">Status</th>
+          <th class="text-right px-4 py-2 font-medium pr-6">Date</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-border">
+        {% for t in recent_transactions %}
+          <tr class="hover:bg-muted/30">
+            <td class="px-4 py-3">
+              <div class="flex items-center gap-3">
+                <span class="inline-flex h-9 w-9 items-center justify-center rounded-full text-xs font-semibold text-white" style="background-color: {{ t.customer|avatar_color }};">{{ t.initials }}</span>
+                <span class="font-medium">{{ t.customer }}</span>
+              </div>
+            </td>
+            <td class="px-4 py-3 text-muted-foreground">{{ t.product }}</td>
+            <td class="px-4 py-3 text-right tabular-nums">${{ t.amount|floatformat:2 }}</td>
+            <td class="px-4 py-3 pl-6">
+              {% if t.status == "completed" %}<span class="inline-flex items-center px-2 h-6 rounded-md text-xs font-medium bg-success/10 text-success">Completed</span>
+              {% elif t.status == "processing" %}<span class="inline-flex items-center px-2 h-6 rounded-md text-xs font-medium bg-primary/10 text-primary">Processing</span>
+              {% elif t.status == "pending" %}<span class="inline-flex items-center px-2 h-6 rounded-md text-xs font-medium bg-amber-500/10 text-amber-600">Pending</span>
+              {% elif t.status == "cancelled" %}<span class="inline-flex items-center px-2 h-6 rounded-md text-xs font-medium bg-destructive/10 text-destructive">Cancelled</span>{% endif %}
+            </td>
+            <td class="px-4 py-3 pr-6 text-right text-muted-foreground">{{ t.date }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="xl:col-span-4">
+    {% include "dashboard/_targets.html" with title="Revenue Targets" subtitle="Progress against monthly goals." targets=targets %}
+  </div>
+</div>
+{% endblock %}

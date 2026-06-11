@@ -1,0 +1,40 @@
+<div class="xl:col-span-4 rounded-lg border border-border bg-card p-4 space-y-6">
+  <div>
+    <h2 class="font-semibold mb-1">Traffic Sources</h2>
+    <p class="text-sm text-muted-foreground mb-4">Where your visitors came from</p>
+    {{ traffic_sources|json_script:"traffic-sources-data" }}
+    <div class="grid grid-cols-5 gap-4 items-center">
+      <div class="col-span-3 relative">
+        <div id="traffic-chart" class="h-[180px]"
+             role="img" x-data="trafficChart()" aria-label="Traffic sources donut chart"></div>
+      </div>
+      <ul class="col-span-2 space-y-2 text-sm">
+        {% for s in traffic_sources %}
+        <li class="flex items-center gap-2">
+          <span class="h-2.5 w-2.5 rounded-full shrink-0"
+                style="background-color: {% cycle '#16a34a' '#0891b2' '#6366f1' '#d97706' %};"></span>
+          <span class="flex-1 truncate">{{ s.label }}</span>
+          <span class="font-medium tabular-nums">{{ s.value }}%</span>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+  <div>
+    <h2 class="font-semibold mb-1">Goals</h2>
+    <p class="text-sm text-muted-foreground mb-4">Quarterly progress</p>
+    <ul class="space-y-4">
+      {% for g in goals %}
+      <li>
+        <div class="flex items-center justify-between text-sm mb-1">
+          <span>{{ g.label }}</span>
+          <span class="text-muted-foreground">{{ g.current }}/{{ g.target }}</span>
+        </div>
+        <div class="h-2 rounded-full bg-muted overflow-hidden">
+          <div class="h-full bg-primary" style="width: {% widthratio g.current g.target 100 %}%"></div>
+        </div>
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+</div>

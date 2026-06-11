@@ -1,0 +1,15 @@
+{% extends "marketing/base.html" %}
+{% block title %}CRM · Apex{% endblock %}
+
+{% block content %}
+{% include "marketing/_hero.html" with hero_eyebrow="CRM" hero_headline="Every conversation, captured" hero_subhead="A contact database, kanban pipelines, and inline messaging — backed by a relational schema your team can extend." hero_cta_label="See the pipeline" hero_cta_url="#features" hero_accent="text-emerald-600" %}
+
+{% include "marketing/_logos.html" %}
+{% include "marketing/_stats.html" %}
+
+{% include "marketing/_features.html" with features=features_list features_heading="Relationships, organized" features_subhead="From first touch to closed deal in one workspace." feature_accent_bg="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300" %}
+
+{% include "marketing/_testimonials.html" with testimonials=testimonials_list %}
+
+{% include "marketing/_cta.html" %}
+{% endblock %}

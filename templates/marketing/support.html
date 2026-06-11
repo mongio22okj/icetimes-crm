@@ -1,0 +1,85 @@
+{% extends "marketing/base.html" %}
+{% load apex %}
+{% block title %}Support · Apex{% endblock %}
+
+{% block content %}
+<section class="border-b border-border">
+  <div class="mx-auto max-w-4xl px-6 py-20">
+    <div class="text-center max-w-2xl mx-auto">
+      <h1 class="text-4xl lg:text-5xl font-bold tracking-tight">How can we help?</h1>
+      <p class="mt-4 text-lg text-muted-foreground">Search our help center or send us a note — we read every message.</p>
+    </div>
+    <div class="mt-8 max-w-xl mx-auto">
+      <div class="relative">
+        {% icon "search" 16 cls="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" %}
+        <input type="text" placeholder="Search articles…"
+               class="w-full h-12 rounded-md border border-input bg-background pl-10 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring/50">
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="border-b border-border bg-muted/20">
+  <div class="mx-auto max-w-6xl px-6 py-20">
+    <h2 class="text-2xl font-bold tracking-tight">Help articles</h2>
+    <div class="mt-8 grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {% for article in articles %}
+        <article class="rounded-lg border border-border bg-card p-6 hover:border-primary/50 transition-colors">
+          <h3 class="font-semibold">{{ article.title }}</h3>
+          <p class="mt-2 text-sm text-muted-foreground">{{ article.summary }}</p>
+          <a href="#" class="mt-4 inline-flex items-center gap-1 text-sm text-primary hover:underline">
+            Read article {% icon "arrow-up-right" 12 %}
+          </a>
+        </article>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="mx-auto max-w-2xl px-6 py-20">
+    <h2 class="text-2xl font-bold tracking-tight">Still need help? Contact us.</h2>
+    <p class="mt-2 text-muted-foreground">Drop us a note and we'll respond within one business day.</p>
+
+    {% if messages %}
+      {% for message in messages %}
+        <div class="mt-6 rounded-md border border-emerald-500/30 bg-emerald-50 dark:bg-emerald-900/20 p-3 text-sm text-emerald-700 dark:text-emerald-300">
+          {{ message }}
+        </div>
+      {% endfor %}
+    {% endif %}
+
+    <form method="post" class="mt-8 space-y-4">
+      {% csrf_token %}
+      {% if form.non_field_errors %}
+        <div class="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">{{ form.non_field_errors }}</div>
+      {% endif %}
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium mb-1.5">Name</label>
+          {{ form.name }}
+          {% if form.name.errors %}<p class="text-xs text-destructive mt-1">{{ form.name.errors.0 }}</p>{% endif %}
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1.5">Email</label>
+          {{ form.email }}
+          {% if form.email.errors %}<p class="text-xs text-destructive mt-1">{{ form.email.errors.0 }}</p>{% endif %}
+        </div>
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1.5">Subject</label>
+        {{ form.subject }}
+        {% if form.subject.errors %}<p class="text-xs text-destructive mt-1">{{ form.subject.errors.0 }}</p>{% endif %}
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1.5">Message</label>
+        {{ form.body }}
+        {% if form.body.errors %}<p class="text-xs text-destructive mt-1">{{ form.body.errors.0 }}</p>{% endif %}
+      </div>
+      <div class="flex justify-end">
+        <button type="submit" class="h-11 px-6 rounded-md bg-primary text-primary-foreground inline-flex items-center font-medium hover:opacity-90">Send message</button>
+      </div>
+    </form>
+  </div>
+</section>
+{% endblock %}

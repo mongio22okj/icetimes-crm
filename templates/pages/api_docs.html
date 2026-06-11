@@ -1,0 +1,323 @@
+{% extends "layouts/dashboard.html" %}
+{% load apex %}
+{% block title %}API docs · Apex{% endblock %}
+{% block content %}
+
+<div class="rounded-lg border border-primary/40 bg-primary/5 p-5 mb-6 flex items-start gap-4">
+  <span class="inline-flex h-10 w-10 rounded-md bg-primary/15 text-primary items-center justify-center shrink-0">
+    {% icon "rocket" 22 %}
+  </span>
+  <div class="flex-1 min-w-0">
+    <h2 class="text-base font-semibold mb-1">Apex API is live</h2>
+    <p class="text-sm text-muted-foreground">
+      The reference below is a quick browse. The real API ships at
+      <code class="text-[11px] bg-muted px-1 rounded">/api/v1/</code> with auto-generated
+      OpenAPI docs. Generate a key with
+      <code class="text-[11px] bg-muted px-1 rounded">python manage.py create_api_key &lt;username&gt;</code>.
+    </p>
+  </div>
+  <div class="flex items-center gap-2 shrink-0">
+    <a href="/api/v1/docs" class="h-9 px-3 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 inline-flex items-center gap-1.5">
+      Open Swagger UI {% icon "arrow-up-right" 14 %}
+    </a>
+    <a href="/api/v1/openapi.json" class="h-9 px-3 rounded-md border border-border text-sm hover:bg-accent inline-flex items-center">
+      Schema
+    </a>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+
+  {# ── Sidebar nav ─────────────────────────────────────────────── #}
+  <aside class="lg:col-span-3">
+    <nav class="lg:sticky lg:top-4 rounded-lg border border-border bg-card p-2 text-sm" aria-label="API sections">
+      <p class="px-3 py-1.5 text-[10px] uppercase tracking-wide text-muted-foreground font-semibold">Get started</p>
+      <a href="#intro" class="block px-3 py-1.5 rounded-md hover:bg-accent">Introduction</a>
+      <a href="#auth" class="block px-3 py-1.5 rounded-md hover:bg-accent">Authentication</a>
+      <a href="#requests" class="block px-3 py-1.5 rounded-md hover:bg-accent">Making requests</a>
+
+      <p class="px-3 py-1.5 text-[10px] uppercase tracking-wide text-muted-foreground font-semibold mt-2">Resources</p>
+      <a href="#customers" class="block px-3 py-1.5 rounded-md hover:bg-accent">Customers</a>
+      <a href="#orders" class="block px-3 py-1.5 rounded-md hover:bg-accent">Orders</a>
+      <a href="#invoices" class="block px-3 py-1.5 rounded-md hover:bg-accent">Invoices</a>
+
+      <p class="px-3 py-1.5 text-[10px] uppercase tracking-wide text-muted-foreground font-semibold mt-2">Realtime</p>
+      <a href="#webhooks" class="block px-3 py-1.5 rounded-md hover:bg-accent">Webhooks</a>
+
+      <p class="px-3 py-1.5 text-[10px] uppercase tracking-wide text-muted-foreground font-semibold mt-2">Reference</p>
+      <a href="#errors" class="block px-3 py-1.5 rounded-md hover:bg-accent">Errors</a>
+      <a href="#rate-limits" class="block px-3 py-1.5 rounded-md hover:bg-accent">Rate limits</a>
+      <a href="#sdks" class="block px-3 py-1.5 rounded-md hover:bg-accent">SDKs</a>
+      <a href="#changelog" class="block px-3 py-1.5 rounded-md hover:bg-accent">Changelog</a>
+    </nav>
+  </aside>
+
+  {# ── Body ───────────────────────────────────────────────────── #}
+  <div class="lg:col-span-9 space-y-12">
+
+    {# ── Intro ─────────────────────────────────────────────── #}
+    <section id="intro">
+      <p class="text-sm text-muted-foreground mb-2">REST · JSON</p>
+      <h1 class="text-3xl font-bold tracking-tight mb-3">Apex API</h1>
+      <p class="text-base text-muted-foreground max-w-3xl mb-5">
+        The Apex API is organized around REST. It uses standard HTTP verbs, returns JSON-encoded responses, and uses HTTP status codes for errors.
+      </p>
+      <div class="rounded-md border border-border bg-card p-4 max-w-3xl">
+        <p class="text-xs text-muted-foreground mb-1">Base URL</p>
+        <p class="font-mono text-sm">{{ base_url }}</p>
+      </div>
+    </section>
+
+    {# ── Auth ──────────────────────────────────────────────── #}
+    <section id="auth">
+      <h2 class="text-2xl font-bold tracking-tight mb-3">Authentication</h2>
+      <p class="text-sm text-muted-foreground max-w-3xl mb-4">
+        Authenticate every request with a personal access token in the <code class="font-mono text-xs px-1 py-0.5 rounded bg-muted">Authorization</code> header. Generate tokens from <a href="{% url 'settings:profile' %}" class="text-primary hover:underline">Settings → API tokens</a>.
+      </p>
+      {% include "pages/_codeblock.html" with lang="bash" code=code_auth_curl %}
+
+      <div class="mt-4 rounded-md border border-amber-500/20 bg-amber-500/5 p-3 text-xs text-amber-700 dark:text-amber-500 max-w-3xl">
+        <strong>Never expose tokens in client code.</strong> Server-side calls only — leaked tokens have full account access.
+      </div>
+    </section>
+
+    {# ── Requests ──────────────────────────────────────────── #}
+    <section id="requests">
+      <h2 class="text-2xl font-bold tracking-tight mb-3">Making requests</h2>
+      <p class="text-sm text-muted-foreground max-w-3xl mb-4">
+        All requests must use HTTPS. Request bodies are JSON. List endpoints support standard pagination via <code class="font-mono text-xs px-1 py-0.5 rounded bg-muted">page</code> and <code class="font-mono text-xs px-1 py-0.5 rounded bg-muted">per_page</code> query parameters.
+      </p>
+      <div class="overflow-x-auto rounded-md border border-border bg-card">
+        <table class="w-full text-sm">
+          <thead class="text-xs text-muted-foreground uppercase tracking-wide bg-muted/30">
+            <tr>
+              <th class="text-left px-4 py-2 font-medium">Method</th>
+              <th class="text-left px-4 py-2 font-medium">Path</th>
+              <th class="text-left px-4 py-2 font-medium">Summary</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-border">
+            {% for e in endpoints %}
+              <tr class="hover:bg-muted/30">
+                <td class="px-4 py-2.5">{% include "pages/_method_pill.html" with method=e.method %}</td>
+                <td class="px-4 py-2.5 font-mono text-xs">{{ e.path }}</td>
+                <td class="px-4 py-2.5 text-muted-foreground">{{ e.summary }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    {# ── Customers ─────────────────────────────────────────── #}
+    <section id="customers">
+      <h2 class="text-2xl font-bold tracking-tight mb-3">Customers</h2>
+      <p class="text-sm text-muted-foreground mb-5">External people you sell to. Subscriptions and invoices reference a customer.</p>
+
+      <div class="space-y-6">
+
+        {# GET list #}
+        <div class="rounded-lg border border-border bg-card overflow-hidden">
+          <div class="px-4 py-3 border-b border-border flex items-center gap-3">
+            {% include "pages/_method_pill.html" with method="GET" %}
+            <span class="font-mono text-sm">/customers</span>
+          </div>
+          <div class="p-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div>
+              <p class="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-2">Query parameters</p>
+              <dl class="text-xs space-y-1.5">
+                <div class="flex gap-2"><dt class="font-mono text-foreground">page</dt><dd class="text-muted-foreground">integer · default 1</dd></div>
+                <div class="flex gap-2"><dt class="font-mono text-foreground">per_page</dt><dd class="text-muted-foreground">integer · 1-100, default 20</dd></div>
+                <div class="flex gap-2"><dt class="font-mono text-foreground">status</dt><dd class="text-muted-foreground">active · inactive · archived</dd></div>
+              </dl>
+            </div>
+            <div>
+              <p class="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-2">Example response</p>
+              {% include "pages/_codeblock.html" with code=code_customers_response %}
+            </div>
+          </div>
+        </div>
+
+        {# POST create #}
+        <div class="rounded-lg border border-border bg-card overflow-hidden">
+          <div class="px-4 py-3 border-b border-border flex items-center gap-3">
+            {% include "pages/_method_pill.html" with method="POST" %}
+            <span class="font-mono text-sm">/customers</span>
+          </div>
+          <div class="p-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div>
+              <p class="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-2">Request body</p>
+              <dl class="text-xs space-y-1.5">
+                <div class="flex gap-2"><dt class="font-mono text-foreground">name</dt><dd class="text-muted-foreground">string · required</dd></div>
+                <div class="flex gap-2"><dt class="font-mono text-foreground">email</dt><dd class="text-muted-foreground">string · required</dd></div>
+                <div class="flex gap-2"><dt class="font-mono text-foreground">phone</dt><dd class="text-muted-foreground">string · optional</dd></div>
+                <div class="flex gap-2"><dt class="font-mono text-foreground">company</dt><dd class="text-muted-foreground">string · optional</dd></div>
+              </dl>
+            </div>
+            <div>
+              <p class="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-2">Example</p>
+              {% include "pages/_codeblock.html" with lang="bash" code=code_customer_create_curl %}
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    {# ── Orders ────────────────────────────────────────────── #}
+    <section id="orders">
+      <h2 class="text-2xl font-bold tracking-tight mb-3">Orders</h2>
+      <p class="text-sm text-muted-foreground mb-5">Purchases tied to a customer. Each order has line items and a status state machine.</p>
+      <div class="rounded-lg border border-border bg-card overflow-hidden">
+        <div class="px-4 py-3 border-b border-border flex items-center gap-3">
+          {% include "pages/_method_pill.html" with method="POST" %}
+          <span class="font-mono text-sm">/orders</span>
+        </div>
+        <div class="p-4">
+          {% include "pages/_codeblock.html" with lang="python" code=code_orders_python %}
+        </div>
+      </div>
+    </section>
+
+    {# ── Invoices ──────────────────────────────────────────── #}
+    <section id="invoices">
+      <h2 class="text-2xl font-bold tracking-tight mb-3">Invoices</h2>
+      <p class="text-sm text-muted-foreground mb-5">PDF + public token URL. Invoices flow draft → sent → paid → void.</p>
+      <div class="rounded-lg border border-border bg-card overflow-hidden">
+        <div class="px-4 py-3 border-b border-border flex items-center gap-3">
+          {% include "pages/_method_pill.html" with method="POST" %}
+          <span class="font-mono text-sm">/invoices/{id}/send</span>
+        </div>
+        <div class="p-4">
+          {% include "pages/_codeblock.html" with lang="javascript" code=code_invoice_send_js %}
+        </div>
+      </div>
+    </section>
+
+    {# ── Webhooks ──────────────────────────────────────────── #}
+    <section id="webhooks">
+      <h2 class="text-2xl font-bold tracking-tight mb-3">Webhooks</h2>
+      <p class="text-sm text-muted-foreground max-w-3xl mb-4">
+        Subscribe to events to receive real-time notifications. Apex signs every payload with HMAC-SHA256 — verify the <code class="font-mono text-xs px-1 py-0.5 rounded bg-muted">X-Apex-Signature</code> header before processing.
+      </p>
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div>
+          <p class="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-2">Sample event types</p>
+          <ul class="text-xs space-y-1 font-mono">
+            <li>customer.created</li>
+            <li>customer.archived</li>
+            <li>order.placed</li>
+            <li>invoice.sent</li>
+            <li>invoice.paid</li>
+            <li>subscription.canceled</li>
+          </ul>
+        </div>
+        <div>
+          <p class="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-2">Verifying a signature</p>
+          {% include "pages/_codeblock.html" with lang="python" code=code_webhook_verify %}
+        </div>
+      </div>
+    </section>
+
+    {# ── Errors ────────────────────────────────────────────── #}
+    <section id="errors">
+      <h2 class="text-2xl font-bold tracking-tight mb-3">Errors</h2>
+      <p class="text-sm text-muted-foreground max-w-3xl mb-4">Apex uses standard HTTP status codes. Error bodies always include <code class="font-mono text-xs px-1 py-0.5 rounded bg-muted">code</code> and <code class="font-mono text-xs px-1 py-0.5 rounded bg-muted">message</code>.</p>
+      <div class="overflow-x-auto rounded-md border border-border bg-card">
+        <table class="w-full text-sm">
+          <thead class="text-xs text-muted-foreground uppercase tracking-wide bg-muted/30">
+            <tr>
+              <th class="text-left px-4 py-2 font-medium">Status</th>
+              <th class="text-left px-4 py-2 font-medium">Code</th>
+              <th class="text-left px-4 py-2 font-medium">Meaning</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-border font-mono text-xs">
+            <tr><td class="px-4 py-2.5">200</td><td class="px-4 py-2.5">ok</td><td class="px-4 py-2.5 text-muted-foreground font-sans">Success</td></tr>
+            <tr><td class="px-4 py-2.5">400</td><td class="px-4 py-2.5">invalid_request</td><td class="px-4 py-2.5 text-muted-foreground font-sans">Malformed body or missing required field</td></tr>
+            <tr><td class="px-4 py-2.5">401</td><td class="px-4 py-2.5">unauthenticated</td><td class="px-4 py-2.5 text-muted-foreground font-sans">Missing or invalid API token</td></tr>
+            <tr><td class="px-4 py-2.5">403</td><td class="px-4 py-2.5">forbidden</td><td class="px-4 py-2.5 text-muted-foreground font-sans">Token lacks the required scope</td></tr>
+            <tr><td class="px-4 py-2.5">404</td><td class="px-4 py-2.5">not_found</td><td class="px-4 py-2.5 text-muted-foreground font-sans">Resource doesn't exist</td></tr>
+            <tr><td class="px-4 py-2.5">409</td><td class="px-4 py-2.5">conflict</td><td class="px-4 py-2.5 text-muted-foreground font-sans">Stale write — refetch and retry</td></tr>
+            <tr><td class="px-4 py-2.5">429</td><td class="px-4 py-2.5">rate_limited</td><td class="px-4 py-2.5 text-muted-foreground font-sans">Slow down; see Retry-After header</td></tr>
+            <tr><td class="px-4 py-2.5">5xx</td><td class="px-4 py-2.5">internal_error</td><td class="px-4 py-2.5 text-muted-foreground font-sans">Apex bug or downstream outage</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    {# ── Rate limits ───────────────────────────────────────── #}
+    <section id="rate-limits">
+      <h2 class="text-2xl font-bold tracking-tight mb-3">Rate limits</h2>
+      <p class="text-sm text-muted-foreground max-w-3xl mb-4">
+        Each token is rate-limited per minute. The current window is exposed in response headers.
+      </p>
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-3xl">
+        <div class="rounded-md border border-border bg-card p-4">
+          <p class="text-xs text-muted-foreground">Free</p>
+          <p class="text-xl font-bold tabular-nums">60<span class="text-sm text-muted-foreground font-medium"> /min</span></p>
+        </div>
+        <div class="rounded-md border border-border bg-card p-4">
+          <p class="text-xs text-muted-foreground">Pro</p>
+          <p class="text-xl font-bold tabular-nums">600<span class="text-sm text-muted-foreground font-medium"> /min</span></p>
+        </div>
+        <div class="rounded-md border border-border bg-card p-4">
+          <p class="text-xs text-muted-foreground">Enterprise</p>
+          <p class="text-xl font-bold tabular-nums">3,000<span class="text-sm text-muted-foreground font-medium"> /min</span></p>
+        </div>
+      </div>
+      <p class="mt-3 text-xs text-muted-foreground font-mono">X-RateLimit-Limit · X-RateLimit-Remaining · X-RateLimit-Reset</p>
+    </section>
+
+    {# ── SDKs ──────────────────────────────────────────────── #}
+    <section id="sdks">
+      <h2 class="text-2xl font-bold tracking-tight mb-3">SDKs</h2>
+      <p class="text-sm text-muted-foreground max-w-3xl mb-4">Officially supported clients — install with your package manager of choice.</p>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3 max-w-3xl">
+        <a href="#" class="rounded-md border border-border bg-card p-4 hover:border-primary/40">
+          <p class="font-semibold">Python</p>
+          <p class="font-mono text-[10px] text-muted-foreground mt-1.5">pip install apex</p>
+        </a>
+        <a href="#" class="rounded-md border border-border bg-card p-4 hover:border-primary/40">
+          <p class="font-semibold">JavaScript</p>
+          <p class="font-mono text-[10px] text-muted-foreground mt-1.5">npm i @apex/sdk</p>
+        </a>
+        <a href="#" class="rounded-md border border-border bg-card p-4 hover:border-primary/40">
+          <p class="font-semibold">Ruby</p>
+          <p class="font-mono text-[10px] text-muted-foreground mt-1.5">gem install apex</p>
+        </a>
+        <a href="#" class="rounded-md border border-border bg-card p-4 hover:border-primary/40">
+          <p class="font-semibold">Go</p>
+          <p class="font-mono text-[10px] text-muted-foreground mt-1.5">go get apex-go</p>
+        </a>
+      </div>
+    </section>
+
+    {# ── Changelog ─────────────────────────────────────────── #}
+    <section id="changelog">
+      <h2 class="text-2xl font-bold tracking-tight mb-3">Changelog</h2>
+      <ol class="rounded-lg border border-border bg-card divide-y divide-border max-w-3xl">
+        <li class="px-4 py-3 flex items-start gap-3">
+          <span class="text-xs font-mono text-muted-foreground tabular-nums shrink-0 w-20">2026-04-22</span>
+          <div class="text-sm">
+            <p><span class="inline-flex items-center px-1.5 h-4 rounded text-[10px] font-medium bg-primary/10 text-primary mr-2">Added</span>Webhook signature header is now <code class="font-mono text-xs">X-Apex-Signature</code>.</p>
+          </div>
+        </li>
+        <li class="px-4 py-3 flex items-start gap-3">
+          <span class="text-xs font-mono text-muted-foreground tabular-nums shrink-0 w-20">2026-03-18</span>
+          <div class="text-sm">
+            <p><span class="inline-flex items-center px-1.5 h-4 rounded text-[10px] font-medium bg-success/10 text-success mr-2">Improved</span>Rate-limit error response now includes a <code class="font-mono text-xs">retry_after</code> field.</p>
+          </div>
+        </li>
+        <li class="px-4 py-3 flex items-start gap-3">
+          <span class="text-xs font-mono text-muted-foreground tabular-nums shrink-0 w-20">2026-02-04</span>
+          <div class="text-sm">
+            <p><span class="inline-flex items-center px-1.5 h-4 rounded text-[10px] font-medium bg-amber-500/10 text-amber-600 mr-2">Deprecated</span><code class="font-mono text-xs">/v0/customers</code> — sunsets 2026-08-01. Migrate to <code class="font-mono text-xs">/v1/customers</code>.</p>
+          </div>
+        </li>
+      </ol>
+    </section>
+
+  </div>
+</div>
+{% endblock %}
