@@ -7,6 +7,9 @@ node_modules/
 static/*
 !static/vendor/
 !static/js/
+!static/icons/
+!static/css/
+static/css/app.css
 staticfiles/
 .pytest_cache/
 .playwright/
