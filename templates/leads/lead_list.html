@@ -1,0 +1,94 @@
+{% extends "layouts/dashboard.html" %}
+{% load apex %}
+{% load i18n %}
+{% block title %}Leads · IceTimes CRM{% endblock %}
+{% block content %}
+<div class="mb-6 flex flex-wrap items-end justify-between gap-4">
+  <div>
+    <h1 class="text-2xl font-bold tracking-tight">{% translate "Leads" %}</h1>
+    <p class="text-sm text-muted-foreground mt-1">
+      {% blocktranslate with from=date_from|date:"d/m/Y" to=date_to|date:"d/m/Y" %}Leads from the CRM integration, {{ from }} – {{ to }}.{% endblocktranslate %}
+    </p>
+  </div>
+  <a href="{% url 'leads:send' %}"
+     class="h-10 px-4 rounded-md bg-primary text-primary-foreground inline-flex items-center gap-2 text-sm font-medium hover:opacity-90">
+    {% icon "plus" %} {% translate "Send lead" %}
+  </a>
+</div>
+
+{% if error %}
+  <div class="mb-6 rounded-md border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
+    {{ error }}
+  </div>
+{% endif %}
+
+<form method="get" class="mb-6 rounded-lg border border-border bg-card p-4">
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+    <div>{% apex_field form.date_from %}</div>
+    <div>{% apex_field form.date_to %}</div>
+    <div>{% apex_field form.deposit %}</div>
+    <div>
+      <button type="submit"
+              class="h-10 w-full px-4 rounded-md border border-border inline-flex items-center justify-center gap-2 text-sm font-medium hover:bg-accent">
+        {% icon "search" %} {% translate "Filter" %}
+      </button>
+    </div>
+  </div>
+</form>
+
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+  <div class="rounded-lg border border-border bg-card p-4">
+    <div class="text-sm text-muted-foreground">{% translate "Total leads" %}</div>
+    <div class="text-2xl font-bold mt-1">{{ total }}</div>
+  </div>
+  <div class="rounded-lg border border-border bg-card p-4">
+    <div class="text-sm text-muted-foreground">{% translate "With deposit" %}</div>
+    <div class="text-2xl font-bold mt-1">{{ deposits }}</div>
+  </div>
+</div>
+
+<div class="rounded-lg border border-border bg-card overflow-hidden">
+  <table class="w-full text-sm">
+    <thead>
+      <tr class="border-b border-border text-left text-muted-foreground">
+        <th class="px-4 py-3 font-medium">{% translate "Created" %}</th>
+        <th class="px-4 py-3 font-medium">UUID</th>
+        <th class="px-4 py-3 font-medium">{% translate "Call status" %}</th>
+        <th class="px-4 py-3 font-medium">{% translate "Deposit" %}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for lead in leads %}
+      <tr class="border-b border-border last:border-0 hover:bg-accent/40">
+        <td class="px-4 py-3 whitespace-nowrap">
+          {% if lead.created_dt %}{{ lead.created_dt|date:"d/m/Y H:i" }}{% else %}{{ lead.createdAt }}{% endif %}
+        </td>
+        <td class="px-4 py-3 font-mono text-xs">{{ lead.uuid }}</td>
+        <td class="px-4 py-3">{{ lead.callStatus|default:"—" }}</td>
+        <td class="px-4 py-3">
+          {% if lead.isDeposit %}
+            <span class="inline-flex items-center rounded-full bg-emerald-500/10 px-2 py-0.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">
+              {% translate "Deposit" %}
+            </span>
+          {% else %}
+            <span class="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+              {% translate "No deposit" %}
+            </span>
+          {% endif %}
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="4" class="px-4 py-10 text-center text-muted-foreground">
+          {% if error %}
+            {% translate "No data — fix the configuration above to load leads." %}
+          {% else %}
+            {% translate "No leads in the selected period." %}
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

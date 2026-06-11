@@ -2,6 +2,7 @@
 Base Django settings for apex project.
 """
 
+import os
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -51,6 +52,7 @@ INSTALLED_APPS = [
     "apps.help",
     "apps.invoices",
     "apps.kanban",
+    "apps.leads",
     "apps.mail",
     "apps.marketing",
     "apps.notifications",
@@ -228,4 +230,10 @@ SECURE_CSP = {
 DEMO_MODE = False
 DEMO_USERNAME = "demo"
 DEMO_PASSWORD = "ApexShowcase!2026"
+
+# ── External CRM lead API ────────────────────────────────────────────────
+# Integration with the external lead CRM (x-api-key auth). When unset,
+# the Leads pages render a configuration warning instead of calling out.
+CRM_API_BASE_URL = os.environ.get("CRM_API_BASE_URL", "")
+CRM_API_KEY = os.environ.get("CRM_API_KEY", "")
 

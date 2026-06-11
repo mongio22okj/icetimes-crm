@@ -99,6 +99,7 @@ urlpatterns = [
     path("files/", include("apps.files.urls")),
     path("invoices/", include("apps.invoices.urls")),
     path("kanban/", include("apps.kanban.urls")),
+    path("leads/", include("apps.leads.urls")),
     path("landing/", include("apps.marketing.urls")),
     path("mail/", include("apps.mail.urls")),
     path("notifications/", include("apps.notifications.urls")),
