@@ -56,8 +56,13 @@ class LeadSendForm(forms.Form):
         widget=forms.TextInput(attrs={"class": BASE_INPUT}),
     )
 
-    def to_api_payload(self, request, account_password):
-        """Build the push body from cleaned data + request context."""
+    def to_api_payload(self, request, account_password, affclickid):
+        """Build the push body from cleaned data + request context.
+
+        `affclickid` is our own click id: TrackBox echoes it back in the
+        {affclickid} postback macro, letting the receiver match events to
+        the Lead row created at push time.
+        """
         data = self.cleaned_data
         forwarded = request.META.get("HTTP_X_FORWARDED_FOR", "")
         ip = forwarded.split(",")[0].strip() or request.META.get("REMOTE_ADDR", "")
@@ -69,6 +74,7 @@ class LeadSendForm(forms.Form):
             "password": account_password,
             "userip": ip,
             "lg": data["lg"].upper(),
+            "affclickid": affclickid,
         }
         if data.get("so"):
             payload["so"] = data["so"]

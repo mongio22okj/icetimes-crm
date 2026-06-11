@@ -80,25 +80,20 @@ class LeadSendView(BreadcrumbsMixin, LoginRequiredMixin,
         # TrackBox creates an account for the lead — generate a strong
         # one-off password instead of asking the operator for one.
         account_password = secrets.token_urlsafe(10)
+        # Our click id: echoed back by the {affclickid} postback macro so
+        # status/deposit events update this same Lead row.
+        affclickid = f"ice{secrets.token_hex(6)}"
         try:
             result = client.push_lead(
-                form.to_api_payload(self.request, account_password)
+                form.to_api_payload(self.request, account_password, affclickid)
             ) or {}
         except client.CRMAPIError as exc:
             form.add_error(None, str(exc))
             return self.form_invalid(form)
 
-        uniqueid = ""
-        if isinstance(result, dict):
-            addon = result.get("addonData") or {}
-            inner = addon.get("data") or {}
-            uniqueid = str(
-                result.get("uniqueid") or addon.get("uniqueid")
-                or inner.get("uniqueid") or result.get("uuid") or ""
-            )
         data = form.cleaned_data
         Lead.objects.create(
-            uniqueid=uniqueid,
+            uniqueid=affclickid,
             firstname=data["firstname"],
             lastname=data["lastname"],
             email=data["email"],
