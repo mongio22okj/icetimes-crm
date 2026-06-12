@@ -25,6 +25,7 @@ from apps.core.pwa import service_worker as pwa_sw
 from apps.core.search import global_search
 from apps.marketing.sitemaps import MarketingSitemap
 from apps.organizations.views import InvitationAcceptView
+from apps.products.views import ProductLandingView, ProductSubmitView
 
 
 def robots_txt(request):
@@ -93,6 +94,9 @@ urlpatterns = [
     path("users/", include("apps.accounts.user_urls")),
     path("settings/", include("apps.accounts.settings_urls")),
     path("products/", include("apps.products.urls")),
+    # Public product landing — short URL, ad-friendly.
+    path("p/<slug:slug>/", ProductLandingView.as_view(), name="product_landing"),
+    path("p/<slug:slug>/submit/", ProductSubmitView.as_view(), name="product_submit"),
     path("customers/", include("apps.customers.urls")),
     path("calendar/", include("apps.events.urls")),
     path("chat/", include("apps.chat.urls")),

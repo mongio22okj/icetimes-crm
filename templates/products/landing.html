@@ -1,0 +1,138 @@
+{% load i18n %}<!DOCTYPE html>
+{% with theme=product.theme accent=product.accent_color %}
+<html lang="it" class="{% if theme == 'dark' %}theme-dark{% else %}theme-light{% endif %}">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{{ product.name }}</title>
+<meta name="description" content="{{ product.description|truncatewords:30|striptags }}">
+<meta name="robots" content="noindex">
+<style>
+  *{box-sizing:border-box;font-family:system-ui,-apple-system,sans-serif;margin:0;padding:0}
+  body{min-height:100vh;padding:20px;display:grid;place-items:center}
+  html.theme-dark body{background:#0f172a;color:#fff}
+  html.theme-light body{background:#f1f5f9;color:#111}
+
+  .wrap{max-width:780px;width:100%;display:grid;grid-template-columns:1fr;gap:24px}
+  @media(min-width:780px){.wrap{grid-template-columns:1.2fr 1fr}}
+
+  .info,.card{border-radius:16px;padding:32px}
+  html.theme-light .info,html.theme-light .card{background:#fff;box-shadow:0 20px 60px rgba(0,0,0,.08)}
+  html.theme-dark .info,html.theme-dark .card{background:rgba(255,255,255,.05);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.1)}
+
+  .badge{display:inline-block;font-size:11px;font-weight:700;padding:5px 12px;border-radius:99px;letter-spacing:.5px;margin-bottom:14px}
+  html.theme-light .badge{background:#fef3c7;color:#92400e}
+  html.theme-dark .badge{background:rgba(99,102,241,.15);color:#a5b4fc}
+
+  h1{font-size:28px;line-height:1.15;margin:0 0 12px}
+  .description{font-size:14px;line-height:1.6;margin-bottom:18px;white-space:pre-line}
+  html.theme-light .description{color:#444}
+  html.theme-dark .description{color:#cbd5e1}
+  .price-box{padding:14px 16px;border-radius:10px;font-weight:700;font-size:20px;display:inline-block}
+  html.theme-light .price-box{background:#f1f5f9;color:#111}
+  html.theme-dark .price-box{background:rgba(255,255,255,.08);color:#fff}
+  .price-box small{display:block;font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:1px;opacity:.7;margin-bottom:4px}
+
+  .card h2{font-size:18px;margin:0 0 6px}
+  .card p.sub{margin:0 0 20px;font-size:13px}
+  html.theme-light .card p.sub{color:#666}
+  html.theme-dark .card p.sub{color:#94a3b8}
+
+  label{display:block;font-size:12px;font-weight:600;margin:10px 0 4px}
+  html.theme-light label{color:#444}
+  html.theme-dark label{color:#cbd5e1}
+
+  input,select{width:100%;padding:11px;border-radius:8px;font-size:14px;font-family:inherit}
+  html.theme-light input,html.theme-light select{border:1px solid #e5e7eb;background:#fff;color:#111}
+  html.theme-dark input,html.theme-dark select{border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.05);color:#fff}
+  html.theme-dark input::placeholder{color:#64748b}
+  input:focus,select:focus{outline:none}
+
+  button{width:100%;margin-top:18px;padding:14px;color:#fff;border:0;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer}
+  button:hover{filter:brightness(.92)}
+  button:disabled{opacity:.5;cursor:wait}
+
+  .msg{margin-top:14px;padding:10px;border-radius:8px;font-size:14px;text-align:center;display:none}
+  html.theme-light .msg.ok{background:#d1fae5;color:#065f46;display:block}
+  html.theme-light .msg.err{background:#fee2e2;color:#991b1b;display:block}
+  html.theme-dark .msg.ok{background:rgba(34,197,94,.15);color:#86efac;display:block}
+  html.theme-dark .msg.err{background:rgba(239,68,68,.15);color:#fca5a5;display:block}
+
+  .privacy{margin-top:14px;font-size:11px;text-align:center;opacity:.6}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  {# ── Product info ──────────────────────────────────────────────── #}
+  <div class="info">
+    {% if product.badge %}<span class="badge">{{ product.badge }}</span>{% endif %}
+    <h1>{{ product.name }}</h1>
+    {% if product.description %}<div class="description">{{ product.description }}</div>{% endif %}
+    {% if product.price %}
+      <div class="price-box">
+        <small>{% translate "Prezzo" %}</small>
+        € {{ product.price }}
+      </div>
+    {% endif %}
+  </div>
+
+  {# ── Lead form ────────────────────────────────────────────────── #}
+  <div class="card">
+    <h2>{% translate "Iscrizione" %}</h2>
+    <p class="sub">{% translate "Compila i dati per accedere al servizio." %}</p>
+
+    <form id="f">
+      <label>{% translate "Nome" %}</label>
+      <input name="firstname" required>
+      <label>{% translate "Cognome" %}</label>
+      <input name="lastname" required>
+      <label>Email</label>
+      <input name="email" type="email" required>
+      <label>{% translate "Telefono" %}</label>
+      <input name="phone" type="tel" placeholder="+39…" required>
+      <button type="submit" id="btn" style="background:{{ accent }}">{{ product.cta_label }}</button>
+      <div id="msg" class="msg"></div>
+      <p class="privacy">{% translate "Inviando accetti la nostra privacy policy." %}</p>
+    </form>
+  </div>
+</div>
+
+<script>
+const SUBMIT_URL = "{% url 'product_submit' slug=product.slug %}";
+const SUCCESS_MSG = "{{ product.success_message|escapejs }}";
+const CTA_LABEL = "{{ product.cta_label|escapejs }}";
+
+// utm_* dalla query string → salvati nel Lead derivato.
+const qs = new URLSearchParams(location.search);
+
+document.getElementById("f").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const btn = document.getElementById("btn");
+  const msg = document.getElementById("msg");
+  btn.disabled = true; btn.textContent = "…";
+
+  const fd = new FormData(e.target);
+  for (const k of ["utm_source","utm_medium","utm_campaign","utm_content","utm_term"]) {
+    const v = qs.get(k);
+    if (v) fd.append(k, v);
+  }
+
+  try {
+    const r = await fetch(SUBMIT_URL, { method: "POST", body: fd }).then(r => r.json());
+    if (!r.ok) throw new Error(r.error || "errore");
+    if (r.redirect) { location.href = r.redirect; return; }
+    msg.className = "msg ok";
+    msg.textContent = "✅ " + SUCCESS_MSG;
+    e.target.reset();
+  } catch (err) {
+    msg.className = "msg err";
+    msg.textContent = "❌ " + err.message;
+  } finally {
+    btn.disabled = false; btn.textContent = CTA_LABEL;
+  }
+});
+</script>
+</body>
+</html>
+{% endwith %}

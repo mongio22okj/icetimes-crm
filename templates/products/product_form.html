@@ -1,32 +1,143 @@
 {% extends "layouts/dashboard.html" %}
-{% block title %}{% if form.instance.pk %}Edit{% else %}New{% endif %} product · Apex{% endblock %}
+{% load apex %}
+{% load i18n %}
+{% block title %}{% if form.instance.pk %}Edit{% else %}New{% endif %} product · IceTimes CRM{% endblock %}
 {% block content %}
-<div class="mb-6">
-  <nav class="text-sm text-muted-foreground mb-1">
-    <a href="{% url 'products:list' %}" class="hover:text-primary">Products</a> <span class="mx-1">/</span>
-    <span>{% if form.instance.pk %}Edit{% else %}New{% endif %}</span>
-  </nav>
-  <h1 class="text-2xl font-bold tracking-tight">
-    {% if form.instance.pk %}Edit {{ form.instance.name }}{% else %}New product{% endif %}
-  </h1>
+<div class="mb-6 flex items-start justify-between gap-3">
+  <div>
+    <nav class="text-sm text-muted-foreground mb-1">
+      <a href="{% url 'products:list' %}" class="hover:text-primary">Products</a> <span class="mx-1">/</span>
+      <span>{% if form.instance.pk %}{% translate "Modifica" %}{% else %}{% translate "Nuovo" %}{% endif %}</span>
+    </nav>
+    <h1 class="text-2xl font-bold tracking-tight">
+      {% if form.instance.pk %}{% translate "Modifica" %} {{ form.instance.name }}{% else %}{% translate "Nuovo prodotto" %}{% endif %}
+    </h1>
+  </div>
+  {% if form.instance.pk and form.instance.status == "published" %}
+    <a href="{{ form.instance.get_landing_url }}" target="_blank"
+       class="h-10 px-4 rounded-md border border-border inline-flex items-center gap-2 text-sm hover:bg-accent">
+      {% icon "arrow-up-right" %} {% translate "Apri landing pubblica" %}
+    </a>
+  {% endif %}
 </div>
 
-<form method="post" enctype="multipart/form-data" class="max-w-2xl rounded-lg border border-border bg-card p-6 space-y-4">
+<form method="post" enctype="multipart/form-data" class="max-w-3xl space-y-6">
   {% csrf_token %}
   {% if form.non_field_errors %}
-    <div class="text-sm text-destructive">{{ form.non_field_errors }}</div>
+    <div class="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">{{ form.non_field_errors }}</div>
   {% endif %}
-  {% for field in form %}
-    <div>
-      <label for="{{ field.id_for_label }}" class="block text-sm font-medium mb-1">{{ field.label }}</label>
-      {{ field }}
-      {% if field.help_text %}<p class="text-xs text-muted-foreground mt-1">{{ field.help_text }}</p>{% endif %}
-      {% if field.errors %}<p class="text-xs text-destructive mt-1">{{ field.errors.0 }}</p>{% endif %}
+
+  {# ── Catalog ──────────────────────────────────────────────────── #}
+  <section class="rounded-lg border border-border bg-card p-6 space-y-4">
+    <h2 class="text-base font-semibold">{% translate "Catalogo" %}</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="md:col-span-2">
+        <label for="{{ form.name.id_for_label }}" class="block text-sm font-medium mb-1">{{ form.name.label }}</label>
+        {{ form.name }}
+        {% if form.name.errors %}<p class="text-xs text-destructive mt-1">{{ form.name.errors.0 }}</p>{% endif %}
+      </div>
+      <div>
+        <label for="{{ form.slug.id_for_label }}" class="block text-sm font-medium mb-1">{{ form.slug.label }}</label>
+        {{ form.slug }}
+        {% if form.slug.errors %}<p class="text-xs text-destructive mt-1">{{ form.slug.errors.0 }}</p>{% endif %}
+        <p class="text-xs text-muted-foreground mt-1">URL: <code class="font-mono">/p/{{ form.slug.value|default:"…" }}/</code></p>
+      </div>
+      <div>
+        <label for="{{ form.sku.id_for_label }}" class="block text-sm font-medium mb-1">{{ form.sku.label }}</label>
+        {{ form.sku }}
+        {% if form.sku.errors %}<p class="text-xs text-destructive mt-1">{{ form.sku.errors.0 }}</p>{% endif %}
+      </div>
+      <div>
+        <label for="{{ form.price.id_for_label }}" class="block text-sm font-medium mb-1">{{ form.price.label }}</label>
+        {{ form.price }}
+      </div>
+      <div>
+        <label for="{{ form.stock.id_for_label }}" class="block text-sm font-medium mb-1">{{ form.stock.label }}</label>
+        {{ form.stock }}
+      </div>
+      <div>
+        <label for="{{ form.status.id_for_label }}" class="block text-sm font-medium mb-1">{{ form.status.label }}</label>
+        {{ form.status }}
+        <p class="text-xs text-muted-foreground mt-1">{% translate "La landing pubblica risponde solo se status = published." %}</p>
+      </div>
+      <div>
+        <label for="{{ form.category.id_for_label }}" class="block text-sm font-medium mb-1">{{ form.category.label }}</label>
+        {{ form.category }}
+      </div>
+      <div class="md:col-span-2">
+        <label for="{{ form.description.id_for_label }}" class="block text-sm font-medium mb-1">{{ form.description.label }}</label>
+        {{ form.description }}
+      </div>
+      <div class="md:col-span-2">
+        <label for="{{ form.image.id_for_label }}" class="block text-sm font-medium mb-1">{{ form.image.label }}</label>
+        {{ form.image }}
+      </div>
     </div>
-  {% endfor %}
-  <div class="flex justify-end gap-2 pt-2">
-    <a href="{% url 'products:list' %}" class="h-10 px-4 rounded-md border border-border inline-flex items-center">Cancel</a>
-    <button type="submit" class="h-10 px-4 rounded-md bg-primary text-primary-foreground inline-flex items-center font-medium">Save</button>
+  </section>
+
+  {# ── Landing customization ───────────────────────────────────── #}
+  <section class="rounded-lg border border-border bg-card p-6 space-y-4">
+    <h2 class="text-base font-semibold">{% translate "Landing pubblica" %}</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div>
+        <label for="{{ form.badge.id_for_label }}" class="block text-sm font-medium mb-1">{{ form.badge.label }}</label>
+        {{ form.badge }}
+        {% if form.badge.help_text %}<p class="text-xs text-muted-foreground mt-1">{{ form.badge.help_text }}</p>{% endif %}
+      </div>
+      <div>
+        <label for="{{ form.cta_label.id_for_label }}" class="block text-sm font-medium mb-1">{{ form.cta_label.label }}</label>
+        {{ form.cta_label }}
+        {% if form.cta_label.help_text %}<p class="text-xs text-muted-foreground mt-1">{{ form.cta_label.help_text }}</p>{% endif %}
+      </div>
+      <div>
+        <label for="{{ form.accent_color.id_for_label }}" class="block text-sm font-medium mb-1">{{ form.accent_color.label }}</label>
+        {{ form.accent_color }}
+        {% if form.accent_color.help_text %}<p class="text-xs text-muted-foreground mt-1">{{ form.accent_color.help_text }}</p>{% endif %}
+      </div>
+      <div>
+        <label for="{{ form.theme.id_for_label }}" class="block text-sm font-medium mb-1">{{ form.theme.label }}</label>
+        {{ form.theme }}
+      </div>
+      <div class="md:col-span-2">
+        <label for="{{ form.success_message.id_for_label }}" class="block text-sm font-medium mb-1">{{ form.success_message.label }}</label>
+        {{ form.success_message }}
+        {% if form.success_message.help_text %}<p class="text-xs text-muted-foreground mt-1">{{ form.success_message.help_text }}</p>{% endif %}
+      </div>
+      <div class="md:col-span-2">
+        <label for="{{ form.redirect_url.id_for_label }}" class="block text-sm font-medium mb-1">{{ form.redirect_url.label }}</label>
+        {{ form.redirect_url }}
+        {% if form.redirect_url.help_text %}<p class="text-xs text-muted-foreground mt-1">{{ form.redirect_url.help_text }}</p>{% endif %}
+      </div>
+    </div>
+  </section>
+
+  {# ── Status API ─────────────────────────────────────────────── #}
+  <section class="rounded-lg border border-border bg-card p-6 space-y-4">
+    <div>
+      <h2 class="text-base font-semibold">{% translate "API status" %}</h2>
+      <p class="text-xs text-muted-foreground mt-1">
+        {% translate "Quando una vendita viene marcata sold/lost, il CRM fa POST a questa URL col payload della vendita. Lascia vuoto se non serve la notifica esterna." %}
+      </p>
+    </div>
+    <div class="grid grid-cols-1 gap-4">
+      <div>
+        <label for="{{ form.status_api_url.id_for_label }}" class="block text-sm font-medium mb-1">{{ form.status_api_url.label }}</label>
+        {{ form.status_api_url }}
+        {% if form.status_api_url.help_text %}<p class="text-xs text-muted-foreground mt-1">{{ form.status_api_url.help_text }}</p>{% endif %}
+      </div>
+      <div>
+        <label for="{{ form.status_api_key.id_for_label }}" class="block text-sm font-medium mb-1">{{ form.status_api_key.label }}</label>
+        {{ form.status_api_key }}
+        {% if form.status_api_key.help_text %}<p class="text-xs text-muted-foreground mt-1">{{ form.status_api_key.help_text }}</p>{% endif %}
+      </div>
+    </div>
+  </section>
+
+  <div class="flex justify-end gap-2">
+    <a href="{% url 'products:list' %}" class="h-10 px-4 rounded-md border border-border inline-flex items-center text-sm hover:bg-accent">{% translate "Annulla" %}</a>
+    <button type="submit" class="h-10 px-4 rounded-md bg-primary text-primary-foreground inline-flex items-center font-medium hover:opacity-90">
+      {% translate "Salva" %}
+    </button>
   </div>
 </form>
 {% endblock %}
