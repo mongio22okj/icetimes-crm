@@ -1,0 +1,91 @@
+{% extends "layouts/dashboard.html" %}
+{% load apex %}
+{% load i18n %}
+{% block title %}{% translate "Notifiche" %} · IceTimes CRM{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+  <div>
+    <h1 class="text-2xl font-bold tracking-tight">{% translate "Webhook di notifica" %}</h1>
+    <p class="text-sm text-muted-foreground mt-1">
+      {% translate "Alert real-time su Slack / Discord / Telegram quando arriva un nuovo lead o un FTD — chi prende il telefono per primo converte di più." %}
+    </p>
+  </div>
+  <a href="{% url 'leads:notification_create' %}"
+     class="h-10 px-4 rounded-md bg-primary text-primary-foreground inline-flex items-center gap-2 font-medium hover:opacity-90">
+    {% icon "plus" %} {% translate "Nuovo webhook" %}
+  </a>
+</div>
+
+<div class="rounded-lg border border-border bg-card overflow-x-auto">
+  <table class="w-full text-sm">
+    <thead>
+      <tr class="border-b border-border text-left text-muted-foreground">
+        <th class="px-4 py-3 font-medium">{% translate "Nome" %}</th>
+        <th class="px-4 py-3 font-medium">{% translate "Tipo" %}</th>
+        <th class="px-4 py-3 font-medium">{% translate "Eventi" %}</th>
+        <th class="px-4 py-3 font-medium">URL</th>
+        <th class="px-4 py-3 font-medium">{% translate "Stato" %}</th>
+        <th class="px-4 py-3 font-medium text-right">{% translate "Azioni" %}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for h in hooks %}
+      <tr class="border-b border-border last:border-0 hover:bg-accent/40">
+        <td class="px-4 py-3 font-medium">{{ h.name }}</td>
+        <td class="px-4 py-3 text-xs">{{ h.get_kind_display }}</td>
+        <td class="px-4 py-3 text-xs">
+          <div class="flex flex-wrap gap-1">
+            {% if h.on_new_lead %}<span class="rounded-full bg-sky-500/10 text-sky-700 dark:text-sky-300 px-2 py-0.5">new_lead</span>{% endif %}
+            {% if h.on_ftd %}<span class="rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 px-2 py-0.5">ftd</span>{% endif %}
+            {% if h.on_sale_sold %}<span class="rounded-full bg-violet-500/10 text-violet-700 dark:text-violet-300 px-2 py-0.5">sale</span>{% endif %}
+            {% if h.on_api_error %}<span class="rounded-full bg-rose-500/10 text-rose-700 dark:text-rose-300 px-2 py-0.5">error</span>{% endif %}
+          </div>
+        </td>
+        <td class="px-4 py-3 font-mono text-xs text-muted-foreground truncate max-w-xs">{{ h.url|truncatechars:48 }}</td>
+        <td class="px-4 py-3">
+          {% if h.is_active %}
+            <span class="inline-flex items-center rounded-full bg-emerald-500/10 px-2 py-0.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">ON</span>
+          {% else %}
+            <span class="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">OFF</span>
+          {% endif %}
+        </td>
+        <td class="px-4 py-3 text-right whitespace-nowrap">
+          <form method="post" action="{% url 'leads:notification_test' h.pk %}" class="inline">
+            {% csrf_token %}
+            <button type="submit" class="inline-flex h-8 px-3 items-center rounded-md border border-border text-xs hover:bg-accent">
+              {% translate "Test" %}
+            </button>
+          </form>
+          <a href="{% url 'leads:notification_edit' h.pk %}"
+             class="inline-flex h-8 px-3 items-center rounded-md border border-border text-xs hover:bg-accent">
+            {% translate "Modifica" %}
+          </a>
+          <form method="post" action="{% url 'leads:notification_delete' h.pk %}" class="inline"
+                onsubmit="return confirm('Eliminare?');">
+            {% csrf_token %}
+            <button type="submit" class="inline-flex h-8 px-3 items-center rounded-md border border-destructive/40 text-xs text-destructive hover:bg-destructive/10">
+              {% translate "Elimina" %}
+            </button>
+          </form>
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="6" class="px-4 py-10 text-center text-muted-foreground">
+          {% translate "Nessun webhook configurato — aggiungine uno per ricevere alert real-time." %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="mt-4 rounded-md border border-sky-500/30 bg-sky-500/5 p-3 text-xs text-sky-700 dark:text-sky-300">
+  💡 <strong>Setup veloce:</strong>
+  <ul class="list-disc ml-5 mt-1 space-y-0.5">
+    <li><strong>Slack:</strong> Impostazioni workspace → App → Incoming Webhooks → New → copia URL <code>https://hooks.slack.com/services/...</code></li>
+    <li><strong>Discord:</strong> Server settings → Integrations → Webhooks → New webhook → copia URL</li>
+    <li><strong>Telegram:</strong> URL = <code>https://api.telegram.org/bot&lt;TOKEN&gt;/sendMessage</code> + inserisci chat_id</li>
+  </ul>
+</div>
+{% endblock %}

@@ -1,7 +1,7 @@
 from django import forms
 from django.utils.translation import gettext_lazy as _
 
-from .models import Campaign, LeadSource, Partner
+from .models import AutoMessage, Campaign, LeadSource, NotificationWebhook, Partner
 from .sources import push_sources
 
 BASE_INPUT = (
@@ -69,6 +69,8 @@ class LeadSourceForm(forms.ModelForm):
             "username", "password", "ai", "ci", "gi",
             "affiliate_id", "offer_id", "goal_lead", "goal_ftd",
             "link_id", "funnel", "source_tag", "notes",
+            "priority", "auto_dispatch", "payout_per_ftd",
+            "payout_per_lead", "duplicate_window_hours",
         )
         widgets = {
             "password": forms.PasswordInput(render_value=True),
@@ -148,5 +150,48 @@ class CampaignForm(forms.ModelForm):
             elif isinstance(widget, forms.Textarea):
                 widget.attrs.setdefault("class",
                                        BASE_INPUT.replace("h-10", "min-h-[80px] py-2"))
+            else:
+                widget.attrs.setdefault("class", BASE_INPUT)
+
+
+class NotificationWebhookForm(forms.ModelForm):
+    class Meta:
+        model = NotificationWebhook
+        fields = (
+            "name", "kind", "url", "telegram_chat_id",
+            "on_new_lead", "on_ftd", "on_sale_sold", "on_api_error",
+            "is_active",
+        )
+        widgets = {
+            "url": forms.URLInput(attrs={"placeholder": "https://hooks.slack.com/..."}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for name, field in self.fields.items():
+            widget = field.widget
+            if isinstance(widget, forms.CheckboxInput):
+                widget.attrs.setdefault("class", "h-4 w-4 rounded border-input")
+            else:
+                widget.attrs.setdefault("class", BASE_INPUT)
+
+
+class AutoMessageForm(forms.ModelForm):
+    class Meta:
+        model = AutoMessage
+        fields = ("name", "trigger", "subject", "body", "from_email", "is_active")
+        widgets = {
+            "body": forms.Textarea(attrs={"rows": 8}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for name, field in self.fields.items():
+            widget = field.widget
+            if isinstance(widget, forms.CheckboxInput):
+                widget.attrs.setdefault("class", "h-4 w-4 rounded border-input")
+            elif isinstance(widget, forms.Textarea):
+                widget.attrs.setdefault("class",
+                                       BASE_INPUT.replace("h-10", "min-h-[160px] py-2 font-mono text-xs"))
             else:
                 widget.attrs.setdefault("class", BASE_INPUT)

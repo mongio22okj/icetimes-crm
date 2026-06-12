@@ -18,7 +18,15 @@ from apps.core.messages import LEVEL_ERROR, LEVEL_SUCCESS, toast
 from apps.core.tables import BulkAction, Column, Filter, TableConfig, TableView
 
 from .forms import CampaignForm, LeadSourceForm, PartnerForm
-from .models import Campaign, Lead, LeadSource, Partner
+from .models import (
+    AutoMessage,
+    Campaign,
+    DispatchLog,
+    Lead,
+    LeadSource,
+    NotificationWebhook,
+    Partner,
+)
 from .sync import run_all_sources
 
 
@@ -260,17 +268,89 @@ def postback(request):
         value = _first(data, *keys)
         if value:
             setattr(lead, field, str(value)[:120])
+    was_deposit_before = bool(lead.pk and lead.is_deposit)
     if status:
         lead.status = status[:120]
-    if deposit_raw is not None and _truthy(deposit_raw):
+    deposit_now = deposit_raw is not None and _truthy(deposit_raw)
+    if deposit_now:
         lead.is_deposit = True
     if event_at:
         lead.event_at = event_at
     merged = dict(lead.payload or {})
     merged.update(data)
     lead.payload = merged
+
+    # ── Duplicate detection — only when CREATING a new Lead row. ──────
+    is_new_lead = lead.pk is None
+    if is_new_lead and email:
+        from datetime import timedelta
+
+        from django.utils import timezone
+
+        from .models import LeadSource as _LS
+        match_kind = (lead.source or "").split("-", 1)[0]
+        src = _LS.objects.filter(kind=match_kind).first() if match_kind else None
+        window = src.duplicate_window_hours if src else 24
+        if window:
+            cutoff = timezone.now() - timedelta(hours=window)
+            recent = Lead.objects.filter(
+                email__iexact=email, created_at__gte=cutoff,
+            ).exists()
+            if recent:
+                return JsonResponse({
+                    "ok": True, "duplicate": True,
+                    "reason": f"email seen within last {window}h",
+                })
+
+    # ── Lead scoring. ────────────────────────────────────────────────
+    from .scoring import compute_score
+    lead.score = compute_score(lead)
+
     lead.save()
-    return JsonResponse({"ok": True, "id": lead.pk})
+
+    # ── Notifications (Slack/Discord/Telegram/generic). ──────────────
+    from . import notifications
+    base_payload = {
+        "name": lead.full_name or "—",
+        "email": lead.email,
+        "phone": lead.phone,
+        "country": lead.country,
+        "source": lead.source,
+        "score": lead.score,
+    }
+    try:
+        if is_new_lead:
+            notifications.fire("new_lead", base_payload)
+        if deposit_now and not was_deposit_before:
+            notifications.fire("ftd", {**base_payload, "broker": lead.source})
+    except Exception:  # noqa: BLE001
+        pass
+
+    # ── Auto-email (speed-to-lead) — only on first creation. ─────────
+    if is_new_lead:
+        try:
+            from . import auto_email
+            auto_email.fire("new_lead", lead)
+        except Exception:  # noqa: BLE001
+            pass
+    if deposit_now and not was_deposit_before:
+        try:
+            from . import auto_email
+            auto_email.fire("ftd", lead)
+        except Exception:  # noqa: BLE001
+            pass
+
+    # ── Auto-dispatch ping-tree if any active source has it on. ──────
+    if is_new_lead:
+        try:
+            from .models import LeadSource as _LS
+            if _LS.objects.filter(is_active=True, auto_dispatch=True).exists():
+                from . import dispatch as _dispatch
+                _dispatch.dispatch(lead)
+        except Exception:  # noqa: BLE001
+            pass
+
+    return JsonResponse({"ok": True, "id": lead.pk, "score": lead.score})
 
 
 # ── Partner CRUD (staff-only) ───────────────────────────────────────────
@@ -365,6 +445,7 @@ class BrokersDashboardView(BreadcrumbsMixin, LoginRequiredMixin,
 
         cards = []
         total_leads = total_ftd = 0
+        total_revenue = 0
         for s in sources:
             # Match leads whose Lead.source equals slug or starts with kind.
             matched = [
@@ -375,21 +456,25 @@ class BrokersDashboardView(BreadcrumbsMixin, LoginRequiredMixin,
             ftd = sum(m["ftd"] for m in matched)
             last = max((m["last"] for m in matched if m["last"]), default=None)
             conv = (ftd * 100 / leads) if leads else 0
+            revenue = float(s.payout_per_ftd or 0) * ftd + float(s.payout_per_lead or 0) * leads
             total_leads += leads
             total_ftd += ftd
+            total_revenue += revenue
             cards.append({
                 "source": s,
                 "leads": leads,
                 "ftd": ftd,
                 "conv": conv,
                 "last": last,
+                "revenue": revenue,
             })
-        cards.sort(key=lambda c: c["leads"], reverse=True)
+        cards.sort(key=lambda c: c["revenue"], reverse=True)
 
         ctx["cards"] = cards
         ctx["totals"] = {
             "leads": total_leads,
             "ftd": total_ftd,
+            "revenue": total_revenue,
             "conv": (total_ftd * 100 / total_leads) if total_leads else 0,
             "brokers_active": sum(1 for s in sources if s.is_active),
             "brokers_total": len(sources),
@@ -527,3 +612,185 @@ class ReportsView(BreadcrumbsMixin, LoginRequiredMixin,
         ctx["has_brokers"] = bool(sources)
         ctx["has_campaigns"] = campaigns.exists()
         return ctx
+
+
+# ── NotificationWebhook CRUD ────────────────────────────────────────────
+
+class NotificationListView(BreadcrumbsMixin, LoginRequiredMixin,
+                           EmailVerifiedRequiredMixin, StaffRequiredMixin,
+                           ListView):
+    model = NotificationWebhook
+    template_name = "leads/notification_list.html"
+    context_object_name = "hooks"
+    breadcrumb_title = "Notifiche"
+
+
+class NotificationCreateView(BreadcrumbsMixin, LoginRequiredMixin,
+                             EmailVerifiedRequiredMixin, StaffRequiredMixin,
+                             CreateView):
+    model = NotificationWebhook
+    template_name = "leads/notification_form.html"
+    success_url = reverse_lazy("leads:notification_list")
+    breadcrumb_title = "Nuovo webhook"
+    breadcrumb_parent = ("Notifiche", "leads:notification_list")
+
+    def get_form_class(self):
+        from .forms import NotificationWebhookForm
+        return NotificationWebhookForm
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        toast(self.request, LEVEL_SUCCESS,
+              f"Webhook '{self.object.name}' creato.")
+        return response
+
+
+class NotificationUpdateView(BreadcrumbsMixin, LoginRequiredMixin,
+                             EmailVerifiedRequiredMixin, StaffRequiredMixin,
+                             UpdateView):
+    model = NotificationWebhook
+    template_name = "leads/notification_form.html"
+    success_url = reverse_lazy("leads:notification_list")
+    breadcrumb_title = "Modifica webhook"
+    breadcrumb_parent = ("Notifiche", "leads:notification_list")
+
+    def get_form_class(self):
+        from .forms import NotificationWebhookForm
+        return NotificationWebhookForm
+
+
+class NotificationDeleteView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
+                             StaffRequiredMixin, View):
+    def post(self, request, pk):
+        NotificationWebhook.objects.filter(pk=pk).delete()
+        toast(request, LEVEL_SUCCESS, "Webhook eliminato.")
+        return redirect("leads:notification_list")
+
+
+class NotificationTestView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
+                           StaffRequiredMixin, View):
+    """Fire a fake "test" event to verify the hook is configured right."""
+
+    def post(self, request, pk):
+        from . import notifications as _n
+        hook = NotificationWebhook.objects.filter(pk=pk).first()
+        if hook is None:
+            toast(request, LEVEL_ERROR, "Webhook non trovato.")
+            return redirect("leads:notification_list")
+        ok, info = _n.send_to_webhook(hook, "new_lead", {
+            "name": "Test User",
+            "email": "test@example.com",
+            "phone": "+393331234567",
+            "country": "IT",
+            "source": "test",
+            "score": 75,
+        })
+        if ok:
+            toast(request, LEVEL_SUCCESS, f"Test inviato a '{hook.name}' — {info}")
+        else:
+            toast(request, LEVEL_ERROR, f"Test fallito — {info}")
+        return redirect("leads:notification_list")
+
+
+# ── AutoMessage CRUD ────────────────────────────────────────────────────
+
+class AutoMessageListView(BreadcrumbsMixin, LoginRequiredMixin,
+                          EmailVerifiedRequiredMixin, StaffRequiredMixin,
+                          ListView):
+    model = AutoMessage
+    template_name = "leads/auto_message_list.html"
+    context_object_name = "messages_list"
+    breadcrumb_title = "Auto-email"
+
+
+class AutoMessageCreateView(BreadcrumbsMixin, LoginRequiredMixin,
+                            EmailVerifiedRequiredMixin, StaffRequiredMixin,
+                            CreateView):
+    model = AutoMessage
+    template_name = "leads/auto_message_form.html"
+    success_url = reverse_lazy("leads:auto_message_list")
+    breadcrumb_title = "Nuova auto-email"
+    breadcrumb_parent = ("Auto-email", "leads:auto_message_list")
+
+    def get_form_class(self):
+        from .forms import AutoMessageForm
+        return AutoMessageForm
+
+
+class AutoMessageUpdateView(BreadcrumbsMixin, LoginRequiredMixin,
+                            EmailVerifiedRequiredMixin, StaffRequiredMixin,
+                            UpdateView):
+    model = AutoMessage
+    template_name = "leads/auto_message_form.html"
+    success_url = reverse_lazy("leads:auto_message_list")
+    breadcrumb_title = "Modifica auto-email"
+    breadcrumb_parent = ("Auto-email", "leads:auto_message_list")
+
+    def get_form_class(self):
+        from .forms import AutoMessageForm
+        return AutoMessageForm
+
+
+class AutoMessageDeleteView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
+                            StaffRequiredMixin, View):
+    def post(self, request, pk):
+        AutoMessage.objects.filter(pk=pk).delete()
+        toast(request, LEVEL_SUCCESS, "Auto-email eliminata.")
+        return redirect("leads:auto_message_list")
+
+
+# ── Ping-tree dispatch ──────────────────────────────────────────────────
+
+class DispatchLogView(BreadcrumbsMixin, LoginRequiredMixin,
+                      EmailVerifiedRequiredMixin, StaffRequiredMixin,
+                      ListView):
+    model = DispatchLog
+    template_name = "leads/dispatch_log.html"
+    context_object_name = "logs"
+    paginate_by = 50
+    breadcrumb_title = "Dispatch log"
+
+    def get_queryset(self):
+        return DispatchLog.objects.select_related("lead", "source")
+
+    def get_context_data(self, **kwargs):
+        from django.db.models import Avg, Count, Q
+        ctx = super().get_context_data(**kwargs)
+        per_broker = (
+            DispatchLog.objects
+            .values("source_name")
+            .annotate(
+                total=Count("id"),
+                success=Count("id", filter=Q(success=True)),
+                avg_latency=Avg("latency_ms"),
+            )
+            .order_by("-total")
+        )
+        for row in per_broker:
+            row["rate"] = (row["success"] * 100 / row["total"]) if row["total"] else 0
+        ctx["per_broker"] = per_broker
+        return ctx
+
+
+class LeadDispatchTriggerView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
+                              StaffRequiredMixin, View):
+    """Manually fire ping-tree dispatch for a single Lead."""
+
+    def post(self, request, pk):
+        lead = Lead.objects.filter(pk=pk).first()
+        if lead is None:
+            toast(request, LEVEL_ERROR, "Lead non trovato.")
+            return redirect("leads:list")
+        from . import dispatch as _d
+        attempts = _d.dispatch(lead)
+        ok_count = sum(1 for a in attempts if a["success"])
+        if ok_count:
+            toast(request, LEVEL_SUCCESS,
+                  f"Dispatch lead #{lead.pk}: {ok_count}/{len(attempts)} broker hanno accettato.")
+        elif attempts:
+            toast(request, LEVEL_ERROR,
+                  f"Dispatch lead #{lead.pk}: nessun broker ha accettato ({len(attempts)} tentativi).")
+        else:
+            toast(request, LEVEL_ERROR,
+                  "Nessun broker push-capable attivo da provare.")
+        return redirect("leads:dispatch_log")

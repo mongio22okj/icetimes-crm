@@ -1,0 +1,76 @@
+{% extends "layouts/dashboard.html" %}
+{% load apex %}
+{% load i18n %}
+{% block title %}Auto-email · IceTimes CRM{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+  <div>
+    <h1 class="text-2xl font-bold tracking-tight">{% translate "Auto-email" %}</h1>
+    <p class="text-sm text-muted-foreground mt-1">
+      {% translate "Email auto-inviate al lead sull'evento configurato. Variabili supportate" %}: <code class="font-mono">{{ '{{firstname}}' }}</code>, <code class="font-mono">{{ '{{lastname}}' }}</code>, <code class="font-mono">{{ '{{email}}' }}</code>, <code class="font-mono">{{ '{{country}}' }}</code>.
+    </p>
+  </div>
+  <a href="{% url 'leads:auto_message_create' %}"
+     class="h-10 px-4 rounded-md bg-primary text-primary-foreground inline-flex items-center gap-2 font-medium hover:opacity-90">
+    {% icon "plus" %} {% translate "Nuova auto-email" %}
+  </a>
+</div>
+
+<div class="rounded-lg border border-border bg-card overflow-x-auto">
+  <table class="w-full text-sm">
+    <thead>
+      <tr class="border-b border-border text-left text-muted-foreground">
+        <th class="px-4 py-3 font-medium">{% translate "Nome" %}</th>
+        <th class="px-4 py-3 font-medium">{% translate "Trigger" %}</th>
+        <th class="px-4 py-3 font-medium">{% translate "Oggetto" %}</th>
+        <th class="px-4 py-3 font-medium">{% translate "From" %}</th>
+        <th class="px-4 py-3 font-medium">{% translate "Stato" %}</th>
+        <th class="px-4 py-3 font-medium text-right">{% translate "Azioni" %}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for m in messages_list %}
+      <tr class="border-b border-border last:border-0 hover:bg-accent/40">
+        <td class="px-4 py-3 font-medium">{{ m.name }}</td>
+        <td class="px-4 py-3">
+          {% if m.trigger == 'ftd' %}
+            <span class="inline-flex rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 text-xs">FTD</span>
+          {% else %}
+            <span class="inline-flex rounded-full bg-sky-500/10 text-sky-700 dark:text-sky-300 px-2 py-0.5 text-xs">{% translate "Nuovo lead" %}</span>
+          {% endif %}
+        </td>
+        <td class="px-4 py-3 truncate max-w-xs">{{ m.subject|truncatechars:60 }}</td>
+        <td class="px-4 py-3 text-xs font-mono text-muted-foreground">{{ m.from_email|default:"DEFAULT" }}</td>
+        <td class="px-4 py-3">
+          {% if m.is_active %}
+            <span class="inline-flex items-center rounded-full bg-emerald-500/10 px-2 py-0.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">ON</span>
+          {% else %}
+            <span class="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">OFF</span>
+          {% endif %}
+        </td>
+        <td class="px-4 py-3 text-right whitespace-nowrap">
+          <a href="{% url 'leads:auto_message_edit' m.pk %}"
+             class="inline-flex h-8 px-3 items-center rounded-md border border-border text-xs hover:bg-accent">
+            {% translate "Modifica" %}
+          </a>
+          <form method="post" action="{% url 'leads:auto_message_delete' m.pk %}" class="inline" onsubmit="return confirm('Eliminare?');">
+            {% csrf_token %}
+            <button type="submit" class="inline-flex h-8 px-3 items-center rounded-md border border-destructive/40 text-xs text-destructive hover:bg-destructive/10">{% translate "Elimina" %}</button>
+          </form>
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="6" class="px-4 py-10 text-center text-muted-foreground">
+          {% translate "Nessuna auto-email configurata." %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="mt-4 rounded-md border border-amber-500/30 bg-amber-500/5 p-3 text-xs text-amber-700 dark:text-amber-300">
+  ⚠️ <strong>SMTP:</strong> {% translate "le email vengono inviate via Django EMAIL_BACKEND. Se non hai configurato SMTP nelle env vars di Render, le email verranno scritte nel log della console invece di essere recapitate." %}
+</div>
+{% endblock %}

@@ -25,6 +25,10 @@ class Lead(models.Model):
     is_deposit = models.BooleanField(default=False)
     source = models.CharField(max_length=64, default="postback")
     payload = models.JSONField(default=dict, blank=True)
+    score = models.PositiveSmallIntegerField(
+        default=0,
+        help_text="Qualità del lead 0-100. Calcolato automaticamente in "
+                  "base alla completezza/validità dei dati al postback.")
 
     class Meta:
         ordering = ["-created_at"]
@@ -102,8 +106,28 @@ class LeadSource(models.Model):
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
 
+    # ── Ping-tree dispatch + payout (2026 best practices). ─────────────
+    priority = models.PositiveIntegerField(
+        default=100, db_index=True,
+        help_text="Ordine ping-tree: numero più basso = priorità più alta. "
+                  "Il dispatch prova prima il broker con priority minore.")
+    auto_dispatch = models.BooleanField(
+        default=False,
+        help_text="Se ON, al postback il CRM avvia automaticamente il "
+                  "dispatch ping-tree per leads ricevuti da questo source.")
+    payout_per_ftd = models.DecimalField(
+        "Payout per FTD (€)", max_digits=10, decimal_places=2, default=0,
+        help_text="Quanto ti paga il broker per ogni FTD verificato.")
+    payout_per_lead = models.DecimalField(
+        "Payout per lead (€)", max_digits=10, decimal_places=2, default=0,
+        help_text="Quanto ti paga il broker per ogni lead consegnato (anche senza FTD).")
+    duplicate_window_hours = models.PositiveIntegerField(
+        "Finestra antiduplicato (ore)", default=24,
+        help_text="Un lead con stessa email/uniqueid arrivato entro N ore "
+                  "viene marcato come duplicato. 0 = disabilita controllo.")
+
     class Meta:
-        ordering = ["name"]
+        ordering = ["priority", "name"]
 
     def __str__(self):
         return f"{self.name} ({self.get_kind_display()})"
@@ -239,3 +263,127 @@ class Campaign(models.Model):
         if not self.budget:
             return 0
         return min(100, float(self.spent) * 100 / float(self.budget))
+
+
+class NotificationWebhook(models.Model):
+    """Outbound webhook fired on CRM events (new lead, FTD, errors).
+
+    Lets the operator wire Slack/Discord/Telegram alerts so leads are
+    actioned immediately — directly tackles the "speed-to-lead" best
+    practice (every hour of delay kills FTD conversion).
+    """
+
+    KIND_SLACK = "slack"
+    KIND_DISCORD = "discord"
+    KIND_TELEGRAM = "telegram"
+    KIND_GENERIC = "generic"
+    KIND_CHOICES = (
+        (KIND_SLACK, "Slack incoming webhook"),
+        (KIND_DISCORD, "Discord webhook"),
+        (KIND_TELEGRAM, "Telegram bot (sendMessage)"),
+        (KIND_GENERIC, "Generic JSON POST"),
+    )
+
+    EVENT_NEW_LEAD = "new_lead"
+    EVENT_FTD = "ftd"
+    EVENT_SALE_SOLD = "sale_sold"
+    EVENT_API_ERROR = "api_error"
+    EVENT_LABELS = {
+        EVENT_NEW_LEAD: "Nuovo lead",
+        EVENT_FTD: "FTD",
+        EVENT_SALE_SOLD: "Vendita venduta",
+        EVENT_API_ERROR: "Errore API",
+    }
+
+    name = models.CharField(max_length=120)
+    kind = models.CharField(max_length=20, choices=KIND_CHOICES,
+                            default=KIND_SLACK)
+    url = models.URLField(
+        "Webhook URL",
+        help_text="Slack/Discord: la URL di incoming webhook. "
+                  "Telegram: https://api.telegram.org/bot<TOKEN>/sendMessage. "
+                  "Generic: qualsiasi endpoint che accetta POST JSON.")
+    telegram_chat_id = models.CharField(
+        "Telegram chat_id", max_length=64, blank=True,
+        help_text="Solo per Telegram — chat_id dove inviare il messaggio.")
+
+    on_new_lead = models.BooleanField("Nuovo lead", default=True)
+    on_ftd = models.BooleanField("FTD", default=True)
+    on_sale_sold = models.BooleanField("Vendita venduta", default=True)
+    on_api_error = models.BooleanField("Errore API", default=False)
+
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["name"]
+
+    def __str__(self):
+        return f"{self.name} ({self.get_kind_display()})"
+
+    def fires_for(self, event):
+        return {
+            self.EVENT_NEW_LEAD: self.on_new_lead,
+            self.EVENT_FTD: self.on_ftd,
+            self.EVENT_SALE_SOLD: self.on_sale_sold,
+            self.EVENT_API_ERROR: self.on_api_error,
+        }.get(event, False)
+
+
+class DispatchLog(models.Model):
+    """One row per ping-tree attempt: which broker, when, success, latency."""
+
+    lead = models.ForeignKey(Lead, on_delete=models.CASCADE,
+                             related_name="dispatch_logs")
+    source = models.ForeignKey(LeadSource, on_delete=models.SET_NULL,
+                               null=True, related_name="dispatch_logs")
+    source_name = models.CharField(max_length=120, blank=True,
+                                   help_text="Snapshot del nome al momento del dispatch.")
+    attempted_at = models.DateTimeField(default=timezone.now, db_index=True)
+    success = models.BooleanField(default=False)
+    response = models.JSONField(default=dict, blank=True)
+    latency_ms = models.PositiveIntegerField(default=0)
+    error = models.CharField(max_length=255, blank=True)
+
+    class Meta:
+        ordering = ["-attempted_at"]
+
+    def __str__(self):
+        return f"Lead {self.lead_id} → {self.source_name} ({'ok' if self.success else 'fail'})"
+
+
+class AutoMessage(models.Model):
+    """Email template fired automatically on CRM events.
+
+    Speed-to-lead: the first touchpoint should happen within minutes.
+    These messages auto-send via Django's email backend when triggered.
+    """
+
+    TRIGGER_NEW_LEAD = "new_lead"
+    TRIGGER_FTD = "ftd"
+    TRIGGER_CHOICES = (
+        (TRIGGER_NEW_LEAD, "Nuovo lead"),
+        (TRIGGER_FTD, "FTD"),
+    )
+
+    name = models.CharField(max_length=120)
+    trigger = models.CharField(max_length=20, choices=TRIGGER_CHOICES,
+                               default=TRIGGER_NEW_LEAD)
+    subject = models.CharField(
+        max_length=200,
+        help_text="Variabili: {{firstname}}, {{lastname}}, {{email}}, {{country}}.")
+    body = models.TextField(
+        help_text="Plain text. Variabili: {{firstname}}, {{lastname}}, "
+                  "{{email}}, {{phone}}, {{country}}, {{status}}.")
+    from_email = models.EmailField(blank=True,
+                                   help_text="Vuoto = usa DEFAULT_FROM_EMAIL.")
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["trigger", "name"]
+
+    def __str__(self):
+        return f"{self.name} ({self.get_trigger_display()})"

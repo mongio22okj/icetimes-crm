@@ -17,7 +17,7 @@
 </div>
 
 {# ── Totali ───────────────────────────────────────────────────────── #}
-<div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+<div class="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6">
   <div class="rounded-lg border border-border bg-card p-4">
     <div class="text-xs text-muted-foreground">{% translate "Broker attivi" %}</div>
     <div class="text-2xl font-bold mt-1">{{ totals.brokers_active }} / {{ totals.brokers_total }}</div>
@@ -31,8 +31,12 @@
     <div class="text-2xl font-bold mt-1 text-emerald-600 dark:text-emerald-400">{{ totals.ftd }}</div>
   </div>
   <div class="rounded-lg border border-border bg-card p-4">
-    <div class="text-xs text-muted-foreground">{% translate "Conversion rate" %}</div>
+    <div class="text-xs text-muted-foreground">{% translate "Conv. rate" %}</div>
     <div class="text-2xl font-bold mt-1">{{ totals.conv|floatformat:1 }}%</div>
+  </div>
+  <div class="rounded-lg border border-border bg-card p-4">
+    <div class="text-xs text-muted-foreground">{% translate "Revenue (payout)" %}</div>
+    <div class="text-2xl font-bold mt-1">€{{ totals.revenue|floatformat:0 }}</div>
   </div>
 </div>
 
@@ -55,7 +59,7 @@
       </span>
     </div>
 
-    <div class="grid grid-cols-2 gap-3 mb-4">
+    <div class="grid grid-cols-2 gap-3 mb-3">
       <div>
         <div class="text-xs text-muted-foreground">{% translate "Lead" %}</div>
         <div class="text-xl font-bold">{{ c.leads }}</div>
@@ -69,11 +73,17 @@
         <div class="text-xl font-bold">{{ c.conv|floatformat:1 }}%</div>
       </div>
       <div>
-        <div class="text-xs text-muted-foreground">{% translate "Ultima attività" %}</div>
-        <div class="text-sm font-medium mt-0.5">
-          {% if c.last %}{{ c.last|timesince }} fa{% else %}—{% endif %}
-        </div>
+        <div class="text-xs text-muted-foreground">{% translate "Revenue" %}</div>
+        <div class="text-xl font-bold">€{{ c.revenue|floatformat:0 }}</div>
       </div>
+    </div>
+    <div class="flex items-center justify-between text-xs text-muted-foreground mb-3">
+      <span>{% translate "Priorità" %}: <strong class="text-foreground">{{ c.source.priority }}</strong></span>
+      <span>
+        {% if c.source.payout_per_ftd %}€{{ c.source.payout_per_ftd|floatformat:0 }}/FTD{% endif %}
+        {% if c.source.auto_dispatch %} · ⚡ auto-dispatch{% endif %}
+      </span>
+      <span>{% if c.last %}{{ c.last|timesince }} fa{% else %}—{% endif %}</span>
     </div>
 
     <div class="text-xs text-muted-foreground font-mono truncate border-t border-border pt-3 flex items-center gap-1.5">

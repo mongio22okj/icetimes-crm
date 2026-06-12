@@ -1,0 +1,92 @@
+{% extends "layouts/dashboard.html" %}
+{% load apex %}
+{% load i18n %}
+{% block title %}Dispatch log · IceTimes CRM{% endblock %}
+{% block content %}
+<div class="mb-6">
+  <h1 class="text-2xl font-bold tracking-tight">{% translate "Dispatch log" %}</h1>
+  <p class="text-sm text-muted-foreground mt-1">
+    {% translate "Ogni tentativo di invio lead a un broker via ping-tree. Imposta la priorità dei broker e attiva auto_dispatch sul source per partire automaticamente al postback." %}
+  </p>
+</div>
+
+{# ── Per-broker success rate ───────────────────────────────────────── #}
+{% if per_broker %}
+<div class="rounded-lg border border-border bg-card p-5 mb-6">
+  <h2 class="text-base font-semibold mb-4">{% translate "Success rate per broker" %}</h2>
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+    {% for row in per_broker %}
+    <div class="rounded-md border border-border p-3">
+      <div class="flex items-center justify-between mb-1">
+        <span class="font-medium truncate">{{ row.source_name|default:"—" }}</span>
+        <span class="text-xs font-mono {% if row.rate >= 70 %}text-emerald-600 dark:text-emerald-400{% elif row.rate >= 40 %}text-amber-600 dark:text-amber-400{% else %}text-rose-600 dark:text-rose-400{% endif %}">
+          {{ row.rate|floatformat:1 }}%
+        </span>
+      </div>
+      <div class="h-1.5 rounded-full bg-muted overflow-hidden mb-2">
+        <div class="h-full {% if row.rate >= 70 %}bg-emerald-500{% elif row.rate >= 40 %}bg-amber-500{% else %}bg-rose-500{% endif %}" style="width:{{ row.rate|floatformat:0 }}%"></div>
+      </div>
+      <div class="text-xs text-muted-foreground">
+        {{ row.success }}/{{ row.total }} ok · {{ row.avg_latency|floatformat:0 }}ms avg
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+{# ── Log table ────────────────────────────────────────────────────── #}
+<div class="rounded-lg border border-border bg-card overflow-x-auto">
+  <table class="w-full text-sm">
+    <thead>
+      <tr class="border-b border-border text-left text-muted-foreground">
+        <th class="px-4 py-3 font-medium">{% translate "Tentato" %}</th>
+        <th class="px-4 py-3 font-medium">Lead</th>
+        <th class="px-4 py-3 font-medium">Broker</th>
+        <th class="px-4 py-3 font-medium">{% translate "Esito" %}</th>
+        <th class="px-4 py-3 font-medium">{% translate "Latency" %}</th>
+        <th class="px-4 py-3 font-medium">{% translate "Errore / Risposta" %}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for l in logs %}
+      <tr class="border-b border-border last:border-0 hover:bg-accent/40">
+        <td class="px-4 py-3 text-xs whitespace-nowrap">{{ l.attempted_at|date:"d/m/Y H:i:s" }}</td>
+        <td class="px-4 py-3">
+          <div class="font-medium">#{{ l.lead.pk }} {{ l.lead.full_name|default:l.lead.email }}</div>
+          <div class="text-xs text-muted-foreground font-mono">{{ l.lead.email }}</div>
+        </td>
+        <td class="px-4 py-3 text-xs">{{ l.source_name|default:"—" }}</td>
+        <td class="px-4 py-3">
+          {% if l.success %}
+            <span class="inline-flex items-center rounded-full bg-emerald-500/10 px-2 py-0.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">✓ OK</span>
+          {% else %}
+            <span class="inline-flex items-center rounded-full bg-rose-500/10 px-2 py-0.5 text-xs font-medium text-rose-600 dark:text-rose-400">✗ Fail</span>
+          {% endif %}
+        </td>
+        <td class="px-4 py-3 font-mono text-xs">{{ l.latency_ms }} ms</td>
+        <td class="px-4 py-3 text-xs text-muted-foreground truncate max-w-md">
+          {% if l.error %}{{ l.error|truncatechars:120 }}{% else %}{{ l.response|stringformat:"s"|truncatechars:120 }}{% endif %}
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="6" class="px-4 py-10 text-center text-muted-foreground">
+          {% translate "Nessun dispatch ancora. Configura priority + auto_dispatch sui broker, oppure trigger manuale dalla pagina Lead." %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% if is_paginated %}
+<div class="mt-4 flex items-center justify-between text-sm">
+  <span class="text-muted-foreground">{% translate "Pagina" %} {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+  <div class="flex gap-2">
+    {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}" class="h-9 px-3 rounded-md border border-border inline-flex items-center hover:bg-accent">«</a>{% endif %}
+    {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}" class="h-9 px-3 rounded-md border border-border inline-flex items-center hover:bg-accent">»</a>{% endif %}
+  </div>
+</div>
+{% endif %}
+{% endblock %}
