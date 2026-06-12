@@ -1,0 +1,72 @@
+{% extends "layouts/dashboard.html" %}
+{% load apex %}
+{% load i18n %}
+{% block title %}{% if form.instance.pk %}{% translate "Modifica" %}{% else %}{% translate "Nuovo" %}{% endif %} {% translate "partner" %} · IceTimes CRM{% endblock %}
+{% block content %}
+<div class="mb-6">
+  <h1 class="text-2xl font-bold tracking-tight">
+    {% if form.instance.pk %}{% translate "Modifica partner" %}{% else %}{% translate "Nuovo partner" %}{% endif %}
+  </h1>
+  <p class="text-sm text-muted-foreground mt-1">
+    {% translate "Configura un partner/affiliazione. I lead provenienti dal partner possono essere taggati col suo ID." %}
+  </p>
+</div>
+
+<form method="post" class="max-w-3xl space-y-6">
+  {% csrf_token %}
+  {% if form.non_field_errors %}
+    <div class="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
+      {{ form.non_field_errors }}
+    </div>
+  {% endif %}
+
+  <section class="rounded-lg border border-border bg-card p-6 space-y-4">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div>
+        <label class="block text-sm font-medium mb-1">{% translate "ID Partner (univoco, latino)" %}</label>
+        {{ form.slug }}
+        {% if form.slug.errors %}<p class="text-xs text-destructive mt-1">{{ form.slug.errors|striptags }}</p>{% endif %}
+        {% if form.slug.help_text %}<p class="text-xs text-muted-foreground mt-1">{{ form.slug.help_text }}</p>{% endif %}
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1">{% translate "Nome (visualizzato)" %}</label>
+        {{ form.name }}
+        {% if form.name.errors %}<p class="text-xs text-destructive mt-1">{{ form.name.errors|striptags }}</p>{% endif %}
+      </div>
+      <div class="md:col-span-2">
+        <label class="block text-sm font-medium mb-1">{% translate "URL della landing" %}</label>
+        {{ form.landing_url }}
+        {% if form.landing_url.errors %}<p class="text-xs text-destructive mt-1">{{ form.landing_url.errors|striptags }}</p>{% endif %}
+      </div>
+      <div class="md:col-span-2">
+        <label class="block text-sm font-medium mb-1">{% translate "Chiave API (se richiesta)" %}</label>
+        {{ form.api_key }}
+        {% if form.api_key.errors %}<p class="text-xs text-destructive mt-1">{{ form.api_key.errors|striptags }}</p>{% endif %}
+        {% if form.api_key.help_text %}<p class="text-xs text-muted-foreground mt-1">{{ form.api_key.help_text }}</p>{% endif %}
+      </div>
+      <div class="md:col-span-2">
+        <label class="block text-sm font-medium mb-1">{% translate "Nota" %}</label>
+        {{ form.note }}
+        {% if form.note.errors %}<p class="text-xs text-destructive mt-1">{{ form.note.errors|striptags }}</p>{% endif %}
+      </div>
+    </div>
+  </section>
+
+  <section class="rounded-lg border border-border bg-card p-6">
+    <label class="flex items-center gap-3 text-sm">
+      {{ form.is_active }} <span class="font-medium">{% translate "Attivo" %}</span>
+      <span class="text-xs text-muted-foreground">— {% translate "se OFF, il partner non risulta selezionabile." %}</span>
+    </label>
+  </section>
+
+  <div class="flex justify-end gap-2">
+    <a href="{% url 'leads:partner_list' %}"
+       class="h-10 px-4 rounded-md border border-border inline-flex items-center text-sm hover:bg-accent">
+      {% translate "Annulla" %}
+    </a>
+    <button type="submit" class="h-10 px-4 rounded-md bg-primary text-primary-foreground inline-flex items-center font-medium hover:opacity-90">
+      {% if form.instance.pk %}{% translate "Salva modifiche" %}{% else %}{% translate "Crea partner" %}{% endif %}
+    </button>
+  </div>
+</form>
+{% endblock %}

@@ -1,4 +1,5 @@
 from django.db import models
+from django.urls import reverse
 from django.utils import timezone
 
 
@@ -119,3 +120,46 @@ class LeadSource(models.Model):
     def slug(self) -> str:
         """Stable per-source tag stored on Lead.source."""
         return f"{self.kind}-{self.pk}" if self.pk else self.kind
+
+
+class Partner(models.Model):
+    """An external partner / affiliate the CRM tracks for traffic attribution.
+
+    Lighter than LeadSource: just an ID slug, a display name, an optional
+    landing URL and API key, plus a free-text note. Useful for registering
+    partners that drive traffic to our landings or that we forward leads
+    to manually.
+    """
+
+    slug = models.SlugField(
+        "ID Partner", unique=True, max_length=80,
+        help_text="Univoco, caratteri latini (lettere, numeri, underscore, trattini)."
+    )
+    name = models.CharField(
+        "Nome", max_length=200,
+        help_text="Nome visualizzato. Es. \"Partner #1\"."
+    )
+    landing_url = models.URLField(
+        "URL della landing", blank=True,
+        help_text="URL della landing del partner (esterna)."
+    )
+    api_key = models.CharField(
+        "Chiave API", max_length=255, blank=True,
+        help_text="Opzionale — solo se il partner richiede una API key per gli invii."
+    )
+    note = models.TextField(
+        "Nota", blank=True,
+        help_text="Promemoria interno. Non viene mostrato pubblicamente."
+    )
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:
+        return f"{self.name} ({self.slug})"
+
+    def get_absolute_url(self) -> str:
+        return reverse("leads:partner_edit", kwargs={"pk": self.pk})

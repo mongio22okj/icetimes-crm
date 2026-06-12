@@ -1,7 +1,7 @@
 from django import forms
 from django.utils.translation import gettext_lazy as _
 
-from .models import LeadSource
+from .models import LeadSource, Partner
 from .sources import push_sources
 
 BASE_INPUT = (
@@ -98,3 +98,28 @@ class LeadSourceForm(forms.ModelForm):
                 raise forms.ValidationError(
                     _("TrackBox richiede username e password."))
         return cleaned
+
+
+class PartnerForm(forms.ModelForm):
+    class Meta:
+        model = Partner
+        fields = ("slug", "name", "landing_url", "api_key", "note", "is_active")
+        widgets = {
+            "slug": forms.TextInput(attrs={"placeholder": "mio_partner_1"}),
+            "name": forms.TextInput(attrs={"placeholder": "Partner #1"}),
+            "landing_url": forms.URLInput(attrs={"placeholder": "https://..."}),
+            "api_key": forms.TextInput(attrs={"placeholder": "..."}),
+            "note": forms.Textarea(attrs={"rows": 3, "placeholder": "Info per te stesso"}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for name, field in self.fields.items():
+            widget = field.widget
+            if isinstance(widget, forms.CheckboxInput):
+                widget.attrs.setdefault("class", "h-4 w-4 rounded border-input")
+            elif isinstance(widget, forms.Textarea):
+                widget.attrs.setdefault("class",
+                                       BASE_INPUT.replace("h-10", "min-h-[90px] py-2"))
+            else:
+                widget.attrs.setdefault("class", BASE_INPUT)

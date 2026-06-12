@@ -4,6 +4,10 @@ from .views import (
     IntegrationsView,
     LeadListView,
     LeadSyncView,
+    PartnerCreateView,
+    PartnerDeleteView,
+    PartnerListView,
+    PartnerUpdateView,
     SourceCreateView,
     SourceDeleteView,
     SourceUpdateView,
@@ -21,4 +25,9 @@ urlpatterns = [
     path("sources/new/", SourceCreateView.as_view(), name="source_create"),
     path("sources/<int:pk>/", SourceUpdateView.as_view(), name="source_edit"),
     path("sources/<int:pk>/delete/", SourceDeleteView.as_view(), name="source_delete"),
+    # Partner API — lightweight partner/affiliate registry.
+    path("partners/", PartnerListView.as_view(), name="partner_list"),
+    path("partners/new/", PartnerCreateView.as_view(), name="partner_create"),
+    path("partners/<int:pk>/", PartnerUpdateView.as_view(), name="partner_edit"),
+    path("partners/<int:pk>/delete/", PartnerDeleteView.as_view(), name="partner_delete"),
 ]

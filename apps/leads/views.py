@@ -9,7 +9,7 @@ from django.urls import reverse_lazy
 from django.utils.dateparse import parse_datetime
 from django.views import View
 from django.views.decorators.csrf import csrf_exempt
-from django.views.generic import CreateView, TemplateView, UpdateView
+from django.views.generic import CreateView, ListView, TemplateView, UpdateView
 
 from apps.accounts.mixins import EmailVerifiedRequiredMixin
 from apps.accounts.views import StaffRequiredMixin
@@ -17,8 +17,8 @@ from apps.core.breadcrumbs import BreadcrumbsMixin
 from apps.core.messages import LEVEL_ERROR, LEVEL_SUCCESS, toast
 from apps.core.tables import BulkAction, Column, Filter, TableConfig, TableView
 
-from .forms import LeadSourceForm
-from .models import Lead, LeadSource
+from .forms import LeadSourceForm, PartnerForm
+from .models import Lead, LeadSource, Partner
 from .sync import run_all_sources
 
 
@@ -270,3 +270,60 @@ def postback(request):
     lead.payload = merged
     lead.save()
     return JsonResponse({"ok": True, "id": lead.pk})
+
+
+# ── Partner CRUD (staff-only) ───────────────────────────────────────────
+
+class PartnerListView(BreadcrumbsMixin, LoginRequiredMixin,
+                      EmailVerifiedRequiredMixin, StaffRequiredMixin, ListView):
+    model = Partner
+    template_name = "leads/partner_list.html"
+    context_object_name = "partners"
+    breadcrumb_title = "Partner API"
+
+
+class PartnerCreateView(BreadcrumbsMixin, LoginRequiredMixin,
+                        EmailVerifiedRequiredMixin, StaffRequiredMixin,
+                        CreateView):
+    model = Partner
+    form_class = PartnerForm
+    template_name = "leads/partner_form.html"
+    success_url = reverse_lazy("leads:partner_list")
+    breadcrumb_title = "Nuovo partner"
+    breadcrumb_parent = ("Partner API", "leads:partner_list")
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        toast(self.request, LEVEL_SUCCESS,
+              f"Partner '{self.object.name}' creato.")
+        return response
+
+
+class PartnerUpdateView(BreadcrumbsMixin, LoginRequiredMixin,
+                        EmailVerifiedRequiredMixin, StaffRequiredMixin,
+                        UpdateView):
+    model = Partner
+    form_class = PartnerForm
+    template_name = "leads/partner_form.html"
+    success_url = reverse_lazy("leads:partner_list")
+    breadcrumb_title = "Modifica partner"
+    breadcrumb_parent = ("Partner API", "leads:partner_list")
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        toast(self.request, LEVEL_SUCCESS,
+              f"Partner '{self.object.name}' aggiornato.")
+        return response
+
+
+class PartnerDeleteView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
+                        StaffRequiredMixin, View):
+    def post(self, request, pk):
+        partner = Partner.objects.filter(pk=pk).first()
+        if partner is None:
+            toast(request, LEVEL_ERROR, "Partner non trovato.")
+            return redirect("leads:partner_list")
+        name = partner.name
+        partner.delete()
+        toast(request, LEVEL_SUCCESS, f"Partner '{name}' eliminato.")
+        return redirect("leads:partner_list")
