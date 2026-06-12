@@ -1,6 +1,5 @@
 import hmac
 import json
-import secrets
 
 from django.conf import settings
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -10,7 +9,7 @@ from django.urls import reverse_lazy
 from django.utils.dateparse import parse_datetime
 from django.views import View
 from django.views.decorators.csrf import csrf_exempt
-from django.views.generic import CreateView, FormView, TemplateView, UpdateView
+from django.views.generic import CreateView, TemplateView, UpdateView
 
 from apps.accounts.mixins import EmailVerifiedRequiredMixin
 from apps.accounts.views import StaffRequiredMixin
@@ -18,48 +17,10 @@ from apps.core.breadcrumbs import BreadcrumbsMixin
 from apps.core.messages import LEVEL_ERROR, LEVEL_SUCCESS, toast
 from apps.core.tables import BulkAction, Column, Filter, TableConfig, TableView
 
-from . import affinitrax, client, irev, v3
-from .client import CRMAPIError
-from .forms import LeadSendForm, LeadSourceForm, source_token
+from .forms import LeadSourceForm
 from .models import Lead, LeadSource
-from .sources import push_sources, resolve
 from .sync import run_all_sources
 
-
-def _endpoint_for(src):
-    """Best-guess outbound endpoint per source kind, shown in the UI."""
-    base = (getattr(src, "base_url", "") or "").rstrip("/")
-    if not base:
-        return ""
-    if src.kind == LeadSource.KIND_V3:
-        return f"{base}/api/v3/integration"
-    if src.kind == LeadSource.KIND_TRACKBOX:
-        return f"{base}/api/leads/add"
-    if src.kind == LeadSource.KIND_IREV:
-        return f"{base}/track/api/lead"
-    if src.kind == LeadSource.KIND_AFFINITRAX:
-        return f"{base}/api/sales-leads"
-    return base
-
-
-def _source_to_dict(src):
-    pk = getattr(src, "pk", None)
-    kind = getattr(src, "kind", "")
-    return {
-        "id": source_token(src),
-        "is_db": bool(pk),
-        "name": getattr(src, "name", "") or kind,
-        "kind": kind,
-        "kind_display": src.get_kind_display() if hasattr(src, "get_kind_display") else kind,
-        "base_url": getattr(src, "base_url", "") or "",
-        "is_active": bool(getattr(src, "is_active", True)),
-        "funnel": getattr(src, "funnel", "") or "",
-        "source_tag": getattr(src, "source_tag", "") or "",
-        "link_id": getattr(src, "link_id", "") or "",
-        "affiliate_id": getattr(src, "affiliate_id", "") or "",
-        "offer_id": getattr(src, "offer_id", "") or "",
-        "endpoint": _endpoint_for(src),
-    }
 
 LEADS_TABLE = TableConfig(
     key="leads",
@@ -145,174 +106,6 @@ class LeadListView(BreadcrumbsMixin, LoginRequiredMixin,
         return stats
 
 
-class APIBrokerView(BreadcrumbsMixin, LoginRequiredMixin,
-                    EmailVerifiedRequiredMixin, StaffRequiredMixin, FormView):
-    """Unified API Broker page: sidebar of configured sources + send form."""
-
-    template_name = "leads/api_broker.html"
-    form_class = LeadSendForm
-    success_url = reverse_lazy("leads:api_broker")
-    breadcrumb_title = "API Broker"
-
-    def get_context_data(self, **kwargs):
-        ctx = super().get_context_data(**kwargs)
-        db_sources = list(LeadSource.objects.all())
-        active = push_sources()
-        active_tokens = {source_token(s) for s in active}
-        all_serialized = []
-        for s in db_sources:
-            data = _source_to_dict(s)
-            data["available_for_send"] = data["id"] in active_tokens
-            all_serialized.append(data)
-        # env shims (active, no DB row) — appended after DB rows.
-        seen_ids = {d["id"] for d in all_serialized}
-        for s in active:
-            tok = source_token(s)
-            if tok in seen_ids:
-                continue
-            data = _source_to_dict(s)
-            data["available_for_send"] = True
-            all_serialized.append(data)
-        ctx["sources_json"] = json.dumps(all_serialized)
-        ctx["sources_count"] = len(all_serialized)
-        ctx["initial_broker"] = self.request.GET.get("broker") or (
-            all_serialized[0]["id"] if all_serialized else "")
-        return ctx
-
-    def _client_ip(self):
-        forwarded = self.request.META.get("HTTP_X_FORWARDED_FOR", "")
-        return (forwarded.split(",")[0].strip()
-                or self.request.META.get("REMOTE_ADDR", ""))
-
-    def form_valid(self, form):
-        data = form.cleaned_data
-        src = resolve(data.get("target"))
-        if src is None:
-            form.add_error(None, "Nessuna sorgente valida selezionata.")
-            return self.form_invalid(form)
-        handler = {
-            LeadSource.KIND_TRACKBOX: self._send_trackbox,
-            LeadSource.KIND_IREV: self._send_irev,
-            LeadSource.KIND_AFFINITRAX: self._send_affinitrax,
-            LeadSource.KIND_V3: self._send_v3,
-        }.get(src.kind)
-        if handler is None:
-            form.add_error(None, f"Tipo sorgente non gestito: {src.kind}")
-            return self.form_invalid(form)
-        return handler(form, data, src)
-
-    def _send_trackbox(self, form, data, src):
-        account_password = secrets.token_urlsafe(10)
-        affclickid = f"ice{secrets.token_hex(6)}"
-        payload = {
-            "firstname": data["firstname"],
-            "lastname": data["lastname"],
-            "email": data["email"],
-            "phone": data["phone"],
-            "password": account_password,
-            "userip": self._client_ip(),
-            "country": data["country"].upper(),
-            "lg": data["lg"].upper(),
-            "affclickid": affclickid,
-        }
-        if data.get("so"):
-            payload["so"] = data["so"]
-        if data.get("sub"):
-            payload["sub"] = data["sub"]
-        try:
-            result = client.push_lead(src, payload) or {}
-        except CRMAPIError as exc:
-            form.add_error(None, str(exc))
-            return self.form_invalid(form)
-        self._store_local(data, uniqueid=affclickid, src=src, payload=result)
-        toast(self.request, LEVEL_SUCCESS,
-              f"Lead inviato a {src.name} (rif: {affclickid}).")
-        return super().form_valid(form)
-
-    def _send_irev(self, form, data, src):
-        profile = {
-            "email": data["email"],
-            "phone": data["phone"],
-            "first_name": data["firstname"],
-            "last_name": data["lastname"],
-        }
-        try:
-            result = irev.push_lead(src, profile, ip=self._client_ip()) or {}
-        except CRMAPIError as exc:
-            form.add_error(None, str(exc))
-            return self.form_invalid(form)
-        if isinstance(result, dict) and result.get("validation_errors"):
-            form.add_error(None, f"IREV: {result['validation_errors']}")
-            return self.form_invalid(form)
-        lead_id = result.get("lead_id") if isinstance(result, dict) else None
-        uniqueid = f"irev-{lead_id}" if lead_id else f"irev-man-{secrets.token_hex(5)}"
-        self._store_local(data, uniqueid=uniqueid, src=src, payload=result)
-        toast(self.request, LEVEL_SUCCESS,
-              f"Lead inviato a {src.name} (rif: {lead_id or 'n/d'}).")
-        return super().form_valid(form)
-
-    def _send_affinitrax(self, form, data, src):
-        click_id = f"ice{secrets.token_hex(6)}"
-        payload = {
-            "email": data["email"],
-            "phone": data["phone"],
-            "first_name": data["firstname"],
-            "last_name": data["lastname"],
-            "country": data["country"].upper(),
-            "ip": self._client_ip(),
-            "click_id": click_id,
-        }
-        try:
-            result = affinitrax.push_lead(src, payload) or {}
-        except CRMAPIError as exc:
-            form.add_error(None, str(exc))
-            return self.form_invalid(form)
-        lead_id = result.get("lead_id") if isinstance(result, dict) else None
-        status = (result.get("status") if isinstance(result, dict) else "") or "sent"
-        self._store_local(data, uniqueid=f"afx-{lead_id}" if lead_id else click_id,
-                          src=src, payload=result, status=status)
-        toast(self.request, LEVEL_SUCCESS,
-              f"Lead inviato a {src.name} (rif: {lead_id or click_id}).")
-        return super().form_valid(form)
-
-    def _send_v3(self, form, data, src):
-        payload = {
-            "fname": data["firstname"],
-            "lname": data["lastname"],
-            "email": data["email"],
-            "fullphone": data["phone"],
-            "ip": self._client_ip(),
-            "country": data["country"].upper(),
-            "language": data["lg"].lower(),
-        }
-        try:
-            result = v3.push_lead(src, payload) or {}
-        except CRMAPIError as exc:
-            form.add_error(None, str(exc))
-            return self.form_invalid(form)
-        ref = ""
-        if isinstance(result, dict):
-            ref = str(result.get("lead_id") or result.get("id") or "")
-        self._store_local(data, uniqueid=ref or f"v3-{secrets.token_hex(5)}",
-                          src=src, payload=result)
-        toast(self.request, LEVEL_SUCCESS,
-              f"Lead inviato a {src.name}{f' (rif: {ref})' if ref else ''}.")
-        return super().form_valid(form)
-
-    def _store_local(self, data, *, uniqueid, src, payload, status="sent"):
-        Lead.objects.create(
-            uniqueid=uniqueid,
-            firstname=data["firstname"],
-            lastname=data["lastname"],
-            email=data["email"],
-            phone=data["phone"],
-            country=data.get("country", "").upper(),
-            status=status,
-            source=src.slug,
-            payload=payload if isinstance(payload, dict) else {},
-        )
-
-
 class LeadSyncView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
                    StaffRequiredMixin, View):
     """Manual sync of every active, pull-capable source."""
@@ -329,25 +122,16 @@ class LeadSyncView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
         return redirect("leads:list")
 
 
-# ── Source management (API Broker config) ───────────────────────────────
+# ── LeadSource CRUD (manageable via direct URL or Django admin) ─────────
 
-class _SourceFormMixin:
-    """Render the form as a modal partial when called with ?modal=1."""
-
-    def get_template_names(self):
-        if self.request.GET.get("modal"):
-            return ["leads/_source_form_modal.html"]
-        return [self.template_name]
-
-
-class SourceCreateView(_SourceFormMixin, BreadcrumbsMixin, LoginRequiredMixin,
+class SourceCreateView(BreadcrumbsMixin, LoginRequiredMixin,
                        EmailVerifiedRequiredMixin, StaffRequiredMixin, CreateView):
     model = LeadSource
     form_class = LeadSourceForm
     template_name = "leads/source_form.html"
-    success_url = reverse_lazy("leads:api_broker")
+    success_url = reverse_lazy("leads:list")
     breadcrumb_title = "New API source"
-    breadcrumb_parent = ("API Broker", "leads:api_broker")
+    breadcrumb_parent = "leads:list"
 
     def form_valid(self, form):
         response = super().form_valid(form)
@@ -356,14 +140,14 @@ class SourceCreateView(_SourceFormMixin, BreadcrumbsMixin, LoginRequiredMixin,
         return response
 
 
-class SourceUpdateView(_SourceFormMixin, BreadcrumbsMixin, LoginRequiredMixin,
+class SourceUpdateView(BreadcrumbsMixin, LoginRequiredMixin,
                        EmailVerifiedRequiredMixin, StaffRequiredMixin, UpdateView):
     model = LeadSource
     form_class = LeadSourceForm
     template_name = "leads/source_form.html"
-    success_url = reverse_lazy("leads:api_broker")
+    success_url = reverse_lazy("leads:list")
     breadcrumb_title = "Edit API source"
-    breadcrumb_parent = ("API Broker", "leads:api_broker")
+    breadcrumb_parent = "leads:list"
 
     def form_valid(self, form):
         response = super().form_valid(form)
@@ -378,7 +162,7 @@ class SourceDeleteView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
         deleted = LeadSource.objects.filter(pk=pk).delete()[0]
         toast(request, LEVEL_SUCCESS if deleted else LEVEL_ERROR,
               "Sorgente eliminata." if deleted else "Sorgente non trovata.")
-        return redirect("leads:api_broker")
+        return redirect("leads:list")
 
 
 # ── API & Integrazioni page (tabs + code examples) ──────────────────────
