@@ -383,17 +383,6 @@ class SourceDeleteView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
 
 # ── API & Integrazioni page (tabs + code examples) ──────────────────────
 
-class SimpleAPIManagerView(BreadcrumbsMixin, LoginRequiredMixin,
-                           EmailVerifiedRequiredMixin, StaffRequiredMixin,
-                           TemplateView):
-    """Client-side single-page tester: edit API configs in a table, pick
-    one, POST a lead directly from the browser to the broker's v3 endpoint.
-    Useful for quick smoke tests when the broker has CORS open."""
-    template_name = "leads/api_manager_simple.html"
-    breadcrumb_title = "API Manager (semplice)"
-    breadcrumb_parent = ("API Broker", "leads:api_broker")
-
-
 class IntegrationsView(BreadcrumbsMixin, LoginRequiredMixin,
                        EmailVerifiedRequiredMixin, StaffRequiredMixin,
                        TemplateView):

@@ -38,7 +38,7 @@ def api(method, url, body=None):
 
 
 def changed_files():
-    """Return (modified+untracked) repo-relative paths, excluding deletions."""
+    """Return list of (path, is_deleted) for all changes; skip renames."""
     out = subprocess.check_output(
         ["git", "status", "--porcelain=v1", "-z"]
     ).decode("utf-8", errors="replace")
@@ -46,12 +46,12 @@ def changed_files():
     for entry in out.split("\x00"):
         if not entry:
             continue
-        # Format: "XY path" where X,Y are status flags.
         status = entry[:2]
         path = entry[3:]
-        if "D" in status or status.startswith("R"):
-            continue  # skip deletes/renames for simplicity
-        files.append(path)
+        if status.startswith("R"):
+            continue  # skip renames
+        is_deleted = "D" in status
+        files.append((path, is_deleted))
     return files
 
 
@@ -61,8 +61,9 @@ def main():
         print("No changes.")
         return 0
     print(f"Committing {len(files)} files:")
-    for f in files:
-        print(f"  • {f}")
+    for path, deleted in files:
+        prefix = "DEL" if deleted else " + "
+        print(f"  {prefix} {path}")
 
     # 1. Current ref → commit SHA.
     _, ref = api("GET", f"/repos/{REPO}/git/ref/heads/{BRANCH}")
@@ -70,9 +71,18 @@ def main():
     _, parent_commit = api("GET", f"/repos/{REPO}/git/commits/{parent_sha}")
     base_tree = parent_commit["tree"]["sha"]
 
-    # 2. Upload each file as a blob.
+    # 2. Upload each file as a blob (or mark for deletion).
     tree_items = []
-    for path in files:
+    for path, deleted in files:
+        if deleted:
+            # Setting sha=None on a tree entry deletes it from the new tree.
+            tree_items.append({
+                "path": path.replace("\\", "/"),
+                "mode": "100644",
+                "type": "blob",
+                "sha": None,
+            })
+            continue
         with open(path, "rb") as f:
             content = f.read()
         status, blob = api("POST", f"/repos/{REPO}/git/blobs", {
