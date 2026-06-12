@@ -1,0 +1,69 @@
+{% load i18n %}<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{% translate "Iscriviti alla newsletter" %}</title>
+<meta name="robots" content="noindex">
+<style>
+  *{box-sizing:border-box;font-family:system-ui,-apple-system,sans-serif;margin:0;padding:0}
+  body{background:#0f172a;min-height:100vh;display:grid;place-items:center;padding:20px;color:#fff}
+  .card{background:rgba(255,255,255,.05);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:40px;max-width:440px;width:100%;text-align:center}
+  h1{margin:0 0 8px;font-size:28px}
+  p{margin:0 0 24px;color:#94a3b8;font-size:15px;line-height:1.5}
+  .row{display:flex;gap:8px}
+  input{flex:1;padding:14px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.05);color:#fff;border-radius:8px;font-size:15px}
+  input::placeholder{color:#64748b}
+  input:focus{outline:none;border-color:#6366f1;background:rgba(99,102,241,.1)}
+  button{padding:14px 24px;background:#6366f1;color:#fff;border:0;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;white-space:nowrap}
+  button:hover{background:#5558e0}
+  button:disabled{opacity:.5;cursor:wait}
+  .msg{margin-top:16px;padding:10px;border-radius:8px;font-size:14px;display:none}
+  .msg.ok{background:rgba(34,197,94,.15);color:#86efac;display:block}
+  .msg.err{background:rgba(239,68,68,.15);color:#fca5a5;display:block}
+  .privacy{margin-top:16px;font-size:11px;color:#64748b}
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>📬 {% translate "Resta aggiornato" %}</h1>
+  <p>{% translate "Ricevi le novità una volta a settimana. Niente spam." %}</p>
+
+  <form id="f">
+    <input type="hidden" name="variant" value="newsletter">
+    <input type="hidden" name="status" value="newsletter">
+    <input type="hidden" name="country" value="IT">
+    <div class="row">
+      <input name="email" type="email" placeholder="{% translate 'tu@email.com' %}" required>
+      <button type="submit" id="btn">{% translate "Iscrivimi" %}</button>
+    </div>
+    <div id="msg" class="msg"></div>
+    <p class="privacy">{% translate "Inviando accetti la nostra privacy policy." %}</p>
+  </form>
+</div>
+
+<script>
+document.getElementById("f").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const btn = document.getElementById("btn");
+  const msg = document.getElementById("msg");
+  btn.disabled = true; btn.textContent = "…";
+  try {
+    const r = await fetch("{% url 'marketing:landing_submit' %}", {
+      method: "POST",
+      body: new FormData(e.target),
+    }).then(r => r.json());
+    if (!r.ok) throw new Error(r.error || "errore");
+    msg.className = "msg ok";
+    msg.textContent = "✅ {% translate 'Iscrizione confermata!' %}";
+    e.target.reset();
+  } catch (err) {
+    msg.className = "msg err";
+    msg.textContent = "❌ " + err.message;
+  } finally {
+    btn.disabled = false; btn.textContent = "{% translate 'Iscrivimi' %}";
+  }
+});
+</script>
+</body>
+</html>

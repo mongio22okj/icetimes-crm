@@ -4,9 +4,15 @@ Each variant view sets its own `features` + `testimonials` context.
 Hardcoded copy lives here, not in DB. Support form persists submissions
 in SupportTicket.
 """
+import secrets
+import time
+
 from django.contrib import messages
+from django.http import JsonResponse
 from django.shortcuts import redirect, render
+from django.utils.decorators import method_decorator
 from django.views import View
+from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import TemplateView
 
 from apps.marketing.forms import SupportForm
@@ -454,3 +460,62 @@ class ShowcaseView(TemplateView):
             },
         ]
         return ctx
+
+
+# ── Lead-capture landings (public, no auth) ─────────────────────────────
+
+class NewsletterLandingView(TemplateView):
+    """Minimal email-only signup. Submits to LandingSubmitView."""
+    template_name = "marketing/landing_newsletter.html"
+
+
+class TradingLandingView(TemplateView):
+    """Full lead form with funnel/source/sub from query string for A/B tests.
+
+    URL params override the defaults:
+        ?funnel=trading-2026-A&source=FB&sub=ad-set-1234
+    """
+    template_name = "marketing/landing_trading.html"
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        q = self.request.GET
+        ctx["funnel"] = q.get("funnel", "trading-2026-A")
+        ctx["source_tag"] = q.get("source", "direct")
+        ctx["sub"] = q.get("sub", "")
+        return ctx
+
+
+@method_decorator(csrf_exempt, name="dispatch")
+class LandingSubmitView(View):
+    """Server-side intake for the public landing pages.
+
+    Same effect as the postback endpoint but for in-CRM landings: builds a
+    Lead row directly without exposing the postback token in the browser.
+    Returns JSON so the page can show an inline success message.
+    """
+
+    def post(self, request):
+        from apps.leads.models import Lead
+
+        data = request.POST
+        email = (data.get("email") or "").strip()
+        if not email:
+            return JsonResponse({"ok": False, "error": "email required"}, status=400)
+
+        variant = (data.get("variant") or "landing").strip()[:32]
+        uniqueid = f"land-{variant}-{int(time.time())}-{secrets.token_hex(3)}"
+        payload = {k: v for k, v in data.items() if k != "csrfmiddlewaretoken"}
+
+        lead = Lead.objects.create(
+            uniqueid=uniqueid,
+            firstname=(data.get("firstname") or "").strip()[:120],
+            lastname=(data.get("lastname") or "").strip()[:120],
+            email=email[:254],
+            phone=(data.get("phone") or "").strip()[:32],
+            country=(data.get("country") or "").strip().upper()[:8],
+            status=(data.get("status") or "lead").strip()[:120],
+            source=f"landing-{variant}"[:64],
+            payload=payload,
+        )
+        return JsonResponse({"ok": True, "id": lead.pk})

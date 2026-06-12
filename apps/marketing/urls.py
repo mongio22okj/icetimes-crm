@@ -17,4 +17,8 @@ urlpatterns = [
     path("roadmap/", views.RoadmapView.as_view(), name="roadmap"),
     path("compare/", views.CompareView.as_view(), name="compare"),
     path("showcase/", views.ShowcaseView.as_view(), name="showcase"),
+    # Lead-capture landings (public, no auth — submit handled server-side).
+    path("newsletter/", views.NewsletterLandingView.as_view(), name="landing_newsletter"),
+    path("trading/", views.TradingLandingView.as_view(), name="landing_trading"),
+    path("submit/", views.LandingSubmitView.as_view(), name="landing_submit"),
 ]
