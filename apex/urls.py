@@ -24,6 +24,7 @@ from apps.core.pwa import offline as pwa_offline
 from apps.core.pwa import service_worker as pwa_sw
 from apps.core.search import global_search
 from apps.marketing.sitemaps import MarketingSitemap
+from apps.leads.views import BrokerLandingSubmitView, BrokerLandingView
 from apps.organizations.views import InvitationAcceptView
 from apps.products.views import ProductLandingView, ProductSubmitView
 
@@ -97,6 +98,9 @@ urlpatterns = [
     # Public product landing — short URL, ad-friendly.
     path("p/<slug:slug>/", ProductLandingView.as_view(), name="product_landing"),
     path("p/<slug:slug>/submit/", ProductSubmitView.as_view(), name="product_submit"),
+    # Public broker landing — one per LeadSource (when landing_active=True).
+    path("b/<slug:slug>/", BrokerLandingView.as_view(), name="broker_landing"),
+    path("b/<slug:slug>/submit/", BrokerLandingSubmitView.as_view(), name="broker_landing_submit"),
     path("customers/", include("apps.customers.urls")),
     path("calendar/", include("apps.events.urls")),
     path("chat/", include("apps.chat.urls")),

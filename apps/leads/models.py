@@ -126,11 +126,67 @@ class LeadSource(models.Model):
         help_text="Un lead con stessa email/uniqueid arrivato entro N ore "
                   "viene marcato come duplicato. 0 = disabilita controllo.")
 
+    # ── Public broker landing /b/<landing_slug>/ ────────────────────────
+    landing_active = models.BooleanField(
+        "Landing pubblica attiva", default=False,
+        help_text="Se ON, /b/<landing_slug>/ risponde con la landing del broker.")
+    landing_slug = models.SlugField(
+        "Slug landing", max_length=80, blank=True,
+        help_text="URL: /b/<slug>/. Esempio: broker1-crypto.")
+    landing_hero_title = models.CharField(
+        "Hero — titolo", max_length=200, blank=True,
+        default="Inizia a investire oggi")
+    landing_hero_subtitle = models.TextField(
+        "Hero — sottotitolo", blank=True,
+        default="La piattaforma più affidabile. Registrati in 2 minuti.")
+    landing_features = models.TextField(
+        "Hero — features (1 per riga)", blank=True,
+        help_text="Una feature per riga. Es: \"Regolamentato CONSOB & CySEC\".")
+    landing_trust_badges = models.TextField(
+        "Trust badges (1 per riga)", blank=True,
+        help_text="Badge piccoli sotto il form. Es: \"SSL Sicuro\", \"GDPR\", \"4.8/5\".")
+    LANDING_THEME_GRADIENT = "gradient"
+    LANDING_THEME_LIGHT = "light"
+    LANDING_THEME_DARK = "dark"
+    LANDING_THEME_CHOICES = (
+        (LANDING_THEME_GRADIENT, "Gradient viola/blu"),
+        (LANDING_THEME_LIGHT, "Chiaro"),
+        (LANDING_THEME_DARK, "Scuro"),
+    )
+    landing_theme = models.CharField(
+        "Tema", max_length=20, choices=LANDING_THEME_CHOICES,
+        default=LANDING_THEME_GRADIENT)
+    landing_accent_color = models.CharField(
+        "Colore accent", max_length=20, default="#667eea",
+        help_text="Colore esadecimale del bottone CTA.")
+    landing_cta_label = models.CharField(
+        "Label CTA", max_length=80, default="Crea Account Gratis")
+    landing_redirect_url = models.URLField(
+        "Redirect post-submit", blank=True,
+        help_text="Vuoto = mostra messaggio inline.")
+    landing_success_message = models.CharField(
+        "Messaggio successo", max_length=200,
+        default="Grazie! Ti contatteremo entro pochi minuti.")
+
     class Meta:
         ordering = ["priority", "name"]
 
     def __str__(self):
         return f"{self.name} ({self.get_kind_display()})"
+
+    def get_landing_url(self):
+        from django.urls import reverse
+        if self.landing_slug:
+            return reverse("broker_landing", kwargs={"slug": self.landing_slug})
+        return ""
+
+    @property
+    def hero_features_list(self):
+        return [line.strip() for line in (self.landing_features or "").splitlines() if line.strip()]
+
+    @property
+    def trust_badges_list(self):
+        return [line.strip() for line in (self.landing_trust_badges or "").splitlines() if line.strip()]
 
     @property
     def can_pull(self) -> bool:

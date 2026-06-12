@@ -71,6 +71,12 @@ class LeadSourceForm(forms.ModelForm):
             "link_id", "funnel", "source_tag", "notes",
             "priority", "auto_dispatch", "payout_per_ftd",
             "payout_per_lead", "duplicate_window_hours",
+            # Public broker landing.
+            "landing_active", "landing_slug", "landing_hero_title",
+            "landing_hero_subtitle", "landing_features",
+            "landing_trust_badges", "landing_theme", "landing_accent_color",
+            "landing_cta_label", "landing_redirect_url",
+            "landing_success_message",
         )
         widgets = {
             "password": forms.PasswordInput(render_value=True),

@@ -794,3 +794,100 @@ class LeadDispatchTriggerView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
             toast(request, LEVEL_ERROR,
                   "Nessun broker push-capable attivo da provare.")
         return redirect("leads:dispatch_log")
+
+
+# ── Public broker landing /b/<slug>/ ────────────────────────────────────
+
+class BrokerLandingView(TemplateView):
+    """Public landing for a single broker. Form posts to BrokerLandingSubmit."""
+    template_name = "leads/broker_landing.html"
+
+    def get_context_data(self, **kwargs):
+        from django.http import Http404
+        ctx = super().get_context_data(**kwargs)
+        slug = kwargs.get("slug")
+        broker = LeadSource.objects.filter(
+            landing_slug=slug, landing_active=True, is_active=True,
+        ).first()
+        if broker is None:
+            raise Http404()
+        ctx["broker"] = broker
+        return ctx
+
+
+@method_decorator(csrf_exempt, name="dispatch")
+class BrokerLandingSubmitView(View):
+    """Form submit endpoint for a broker landing.
+
+    Creates a Lead tagged to the broker source, then force-dispatches
+    the lead to that broker only (not ping-tree). Fires notifications
+    and auto-email per the global config.
+    """
+
+    def post(self, request, slug):
+        from django.http import Http404, JsonResponse
+        from . import dispatch as _dispatch
+        from . import notifications as _notifications
+        from .scoring import compute_score
+
+        broker = LeadSource.objects.filter(
+            landing_slug=slug, landing_active=True, is_active=True,
+        ).first()
+        if broker is None:
+            raise Http404()
+
+        data = request.POST
+        email = (data.get("email") or "").strip()
+        if not email:
+            return JsonResponse({"ok": False, "error": "email required"}, status=400)
+
+        import secrets
+        import time
+        uniqueid = f"land-{broker.slug}-{int(time.time())}-{secrets.token_hex(3)}"
+        payload = {k: v for k, v in data.items() if k != "csrfmiddlewaretoken"}
+
+        lead = Lead.objects.create(
+            uniqueid=uniqueid,
+            firstname=(data.get("firstname") or data.get("nome") or "").strip()[:120],
+            lastname=(data.get("lastname") or data.get("cognome") or "").strip()[:120],
+            email=email[:254],
+            phone=(data.get("phone") or data.get("telefono") or "").strip()[:32],
+            country=(data.get("country") or "IT").strip().upper()[:8],
+            status="lead",
+            source=broker.slug,
+            payload=payload,
+        )
+        lead.score = compute_score(lead)
+        lead.save(update_fields=["score"])
+
+        # Force-dispatch to THIS broker only.
+        try:
+            _dispatch.dispatch(lead, sources=[broker])
+        except Exception:  # noqa: BLE001
+            pass
+
+        # Notifications (silent fail).
+        try:
+            _notifications.fire("new_lead", {
+                "name": lead.full_name or "—",
+                "email": lead.email,
+                "phone": lead.phone,
+                "country": lead.country,
+                "source": broker.name,
+                "score": lead.score,
+            })
+        except Exception:  # noqa: BLE001
+            pass
+
+        # Auto-email.
+        try:
+            from . import auto_email
+            auto_email.fire("new_lead", lead)
+        except Exception:  # noqa: BLE001
+            pass
+
+        return JsonResponse({
+            "ok": True,
+            "lead_id": lead.pk,
+            "redirect": broker.landing_redirect_url or "",
+        })
