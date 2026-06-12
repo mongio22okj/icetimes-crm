@@ -8,13 +8,25 @@ BASE_INPUT = (
 )
 
 
-class LeadSendForm(forms.Form):
-    """Manual lead submission towards TrackBox (/api/signup/procform).
+TARGET_CHOICES = (
+    ("trackbox", "TrackBox (fintechgurus)"),
+    ("irev", "IREV (stylishwnt)"),
+)
 
-    ai/ci/gi come from settings; userip is filled server-side from the
-    request. The remaining fields are exposed here.
+
+class LeadSendForm(forms.Form):
+    """Manual lead submission towards an external source (TrackBox/IREV).
+
+    Source credentials come from settings; userip is filled server-side
+    from the request. The remaining fields are exposed here.
     """
 
+    target = forms.ChoiceField(
+        label=_("Send to"),
+        choices=TARGET_CHOICES,
+        initial="trackbox",
+        widget=forms.Select(attrs={"class": BASE_INPUT}),
+    )
     firstname = forms.CharField(
         label=_("First name"),
         max_length=100,

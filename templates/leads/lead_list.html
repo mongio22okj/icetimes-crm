@@ -10,10 +10,19 @@
       <p class="text-sm text-muted-foreground mt-1">{{ config.caption }}</p>
     {% endif %}
   </div>
-  <a href="{% url 'leads:send' %}"
-     class="h-10 px-4 rounded-md bg-primary text-primary-foreground inline-flex items-center gap-2 font-medium hover:opacity-90">
-    {% icon "plus" %} {% translate "Send lead" %}
-  </a>
+  <div class="flex items-center gap-2">
+    <form method="post" action="{% url 'leads:sync_irev' %}">
+      {% csrf_token %}
+      <button type="submit"
+              class="h-10 px-4 rounded-md border border-border inline-flex items-center gap-2 text-sm font-medium hover:bg-accent">
+        {% icon "rotate-ccw" %} {% translate "Sync IREV" %}
+      </button>
+    </form>
+    <a href="{% url 'leads:send' %}"
+       class="h-10 px-4 rounded-md bg-primary text-primary-foreground inline-flex items-center gap-2 font-medium hover:opacity-90">
+      {% icon "plus" %} {% translate "Send lead" %}
+    </a>
+  </div>
 </div>
 
 <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">

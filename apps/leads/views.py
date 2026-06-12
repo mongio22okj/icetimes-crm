@@ -8,18 +8,20 @@ from django.http import JsonResponse
 from django.shortcuts import redirect
 from django.urls import reverse_lazy
 from django.utils.dateparse import parse_datetime
+from django.views import View
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import FormView
 
 from apps.accounts.mixins import EmailVerifiedRequiredMixin
 from apps.accounts.views import StaffRequiredMixin
 from apps.core.breadcrumbs import BreadcrumbsMixin
-from apps.core.messages import LEVEL_SUCCESS, toast
+from apps.core.messages import LEVEL_ERROR, LEVEL_SUCCESS, toast
 from apps.core.tables import BulkAction, Column, Filter, TableConfig, TableView
 
-from . import client
+from . import client, irev
 from .forms import LeadSendForm
 from .models import Lead
+from .sync import sync_irev_leads
 
 LEADS_TABLE = TableConfig(
     key="leads",
@@ -115,6 +117,13 @@ class LeadSendView(BreadcrumbsMixin, LoginRequiredMixin,
     breadcrumb_parent = "leads:list"
 
     def form_valid(self, form):
+        data = form.cleaned_data
+        target = data.get("target") or "trackbox"
+        if target == "irev":
+            return self._send_irev(form, data)
+        return self._send_trackbox(form, data)
+
+    def _send_trackbox(self, form, data):
         # TrackBox creates an account for the lead — generate a strong
         # one-off password instead of asking the operator for one.
         account_password = secrets.token_urlsafe(10)
@@ -128,22 +137,63 @@ class LeadSendView(BreadcrumbsMixin, LoginRequiredMixin,
         except client.CRMAPIError as exc:
             form.add_error(None, str(exc))
             return self.form_invalid(form)
+        self._store_local(data, uniqueid=affclickid, source="trackbox",
+                          payload=result)
+        toast(self.request, LEVEL_SUCCESS,
+              f"Lead inviato a TrackBox (rif: {affclickid}).")
+        return super().form_valid(form)
 
-        data = form.cleaned_data
+    def _send_irev(self, form, data):
+        forwarded = self.request.META.get("HTTP_X_FORWARDED_FOR", "")
+        ip = forwarded.split(",")[0].strip() or self.request.META.get("REMOTE_ADDR", "")
+        profile = {
+            "email": data["email"],
+            "phone": data["phone"],
+            "first_name": data["firstname"],
+            "last_name": data["lastname"],
+        }
+        try:
+            result = irev.push_lead(profile, ip=ip) or {}
+        except client.CRMAPIError as exc:
+            form.add_error(None, str(exc))
+            return self.form_invalid(form)
+        if isinstance(result, dict) and result.get("validation_errors"):
+            form.add_error(None, f"IREV: {result['validation_errors']}")
+            return self.form_invalid(form)
+        lead_id = result.get("lead_id") if isinstance(result, dict) else None
+        uniqueid = f"irev-{lead_id}" if lead_id else f"irev-man-{secrets.token_hex(5)}"
+        self._store_local(data, uniqueid=uniqueid, source="irev", payload=result)
+        toast(self.request, LEVEL_SUCCESS,
+              f"Lead inviato a IREV (rif: {lead_id or 'n/d'}).")
+        return super().form_valid(form)
+
+    def _store_local(self, data, *, uniqueid, source, payload):
         Lead.objects.create(
-            uniqueid=affclickid,
+            uniqueid=uniqueid,
             firstname=data["firstname"],
             lastname=data["lastname"],
             email=data["email"],
             phone=data["phone"],
             country="",
             status="sent",
-            source="manual",
-            payload=result if isinstance(result, dict) else {},
+            source=source,
+            payload=payload if isinstance(payload, dict) else {},
         )
-        toast(self.request, LEVEL_SUCCESS,
-              f"Lead inviato a TrackBox{f' (rif: {uniqueid})' if uniqueid else ''}.")
-        return super().form_valid(form)
+
+
+class LeadSyncIrevView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
+                       StaffRequiredMixin, View):
+    """Manual pull-sync from IREV (button on the Leads page)."""
+
+    def post(self, request):
+        try:
+            created, updated = sync_irev_leads()
+        except client.CRMAPIError as exc:
+            toast(request, LEVEL_ERROR, str(exc))
+        else:
+            toast(request, LEVEL_SUCCESS,
+                  f"IREV sincronizzato: {created} nuovi, {updated} aggiornati.")
+        return redirect("leads:list")
 
 
 # ── Postback receiver ────────────────────────────────────────────────────

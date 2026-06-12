@@ -247,3 +247,13 @@ TRACKBOX_GI = os.environ.get("TRACKBOX_GI", "")
 # When unset, the endpoint rejects everything.
 LEADS_POSTBACK_TOKEN = os.environ.get("LEADS_POSTBACK_TOKEN", "")
 
+# ── IREV affiliate API ───────────────────────────────────────────────────
+# Second lead source (stylishwnt.com). Token is IP-whitelisted on the
+# IREV side. Goal UUIDs distinguish plain leads from FTD deposits.
+IREV_BASE_URL = os.environ.get("IREV_BASE_URL", "")
+IREV_TOKEN = os.environ.get("IREV_TOKEN", "")
+IREV_AFFILIATE_ID = os.environ.get("IREV_AFFILIATE_ID", "")
+IREV_OFFER_ID = os.environ.get("IREV_OFFER_ID", "")
+IREV_GOAL_LEAD = os.environ.get("IREV_GOAL_LEAD", "")
+IREV_GOAL_FTD = os.environ.get("IREV_GOAL_FTD", "")
+
