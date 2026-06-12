@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 ## [unreleased] - 2026-06-12
 
 - Test deploy: repo Render ricollegato al fork `mongio22okj/icetimes-crm`.
+- Webhook test 2: verifica che l'app GitHub di Render trighi l'auto-deploy.
 
 ## [0.18.2] - 2026-05-30
 
