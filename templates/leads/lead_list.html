@@ -16,5 +16,17 @@
   </a>
 </div>
 
+<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
+  {% for s in lead_stats %}
+  <div class="rounded-lg border border-border bg-card p-3">
+    <div class="text-xs text-muted-foreground">{{ s.label }}</div>
+    <div class="text-xl font-bold mt-0.5">{{ s.count }}</div>
+    <div class="text-xs mt-0.5 {% if s.deposits %}text-emerald-600 dark:text-emerald-400{% else %}text-muted-foreground{% endif %}">
+      {{ s.deposits }} FTD ({{ s.pct }}%)
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
 {% include "core/tables/_table.html" %}
 {% endblock %}

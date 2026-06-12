@@ -65,6 +65,44 @@ class LeadListView(BreadcrumbsMixin, LoginRequiredMixin,
             toast(request, LEVEL_SUCCESS, f"Deleted {n} leads.")
         return redirect("leads:list")
 
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx["lead_stats"] = self._period_stats()
+        return ctx
+
+    @staticmethod
+    def _period_stats():
+        """Counts + deposit conversion per period (doctorback-style panel)."""
+        from datetime import timedelta
+
+        from django.utils import timezone
+        from django.utils.translation import gettext as _
+
+        today = timezone.localdate()
+        week_start = today - timedelta(days=today.weekday())
+        month_start = today.replace(day=1)
+        last_month_end = month_start - timedelta(days=1)
+        periods = (
+            (_("Today"), today, today),
+            (_("Yesterday"), today - timedelta(days=1), today - timedelta(days=1)),
+            (_("This week"), week_start, today),
+            (_("This month"), month_start, today),
+            (_("Last month"), last_month_end.replace(day=1), last_month_end),
+            (_("Total"), None, None),
+        )
+        stats = []
+        for label, start, end in periods:
+            qs = Lead.objects.all()
+            if start:
+                qs = qs.filter(created_at__date__gte=start,
+                               created_at__date__lte=end)
+            count = qs.count()
+            deposits = qs.filter(is_deposit=True).count()
+            pct = round(deposits * 100 / count, 1) if count else 0
+            stats.append({"label": label, "count": count,
+                          "deposits": deposits, "pct": pct})
+        return stats
+
 
 class LeadSendView(BreadcrumbsMixin, LoginRequiredMixin,
                    EmailVerifiedRequiredMixin, StaffRequiredMixin, FormView):
