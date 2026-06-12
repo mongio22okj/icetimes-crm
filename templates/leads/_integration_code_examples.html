@@ -1,0 +1,29 @@
+{% load apex %}
+{% load i18n %}
+{% comment %}Partial: language sub-tabs + code block.
+Caller provides `key` ("rest" or "affiliates"). Reads from the parent
+Alpine scope (codeLang, codeLangs, codeBlock).{% endcomment %}
+<div class="border-b border-border bg-muted/30 px-4 py-2 flex items-center gap-2 text-sm font-medium inline-flex">
+  <span class="text-amber-500">{% icon "lightbulb" %}</span>
+  {% translate "Esempi di codice" %}
+</div>
+<div class="flex border-b border-border" role="tablist">
+  <template x-for="lang in codeLangs" :key="lang">
+    <button type="button" role="tab"
+            @click="codeLang = lang"
+            :aria-selected="codeLang === lang"
+            :class="codeLang === lang ? 'border-primary text-foreground bg-card' : 'border-transparent text-muted-foreground hover:text-foreground'"
+            class="h-9 px-4 -mb-px border-b-2 text-xs font-semibold uppercase tracking-wide"
+            x-text="lang">
+    </button>
+  </template>
+</div>
+<div class="bg-muted/20 border-t border-border px-4 py-2 text-xs font-medium flex items-center justify-between">
+  <span>{% translate "Registrazione Lead" %} — <span x-text="codeLang"></span></span>
+  <button type="button"
+          @click="copy(codeBlock('{{ key }}', codeLang), $event)"
+          class="h-7 px-2 rounded border border-border hover:bg-accent inline-flex items-center gap-1">
+    {% icon "copy" %} {% translate "Copia" %}
+  </button>
+</div>
+<pre class="bg-zinc-950 text-zinc-100 dark:bg-zinc-900 text-xs p-4 overflow-x-auto"><code x-text="codeBlock('{{ key }}', codeLang)"></code></pre>

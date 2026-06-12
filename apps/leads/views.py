@@ -10,7 +10,7 @@ from django.urls import reverse_lazy
 from django.utils.dateparse import parse_datetime
 from django.views import View
 from django.views.decorators.csrf import csrf_exempt
-from django.views.generic import CreateView, FormView, ListView, UpdateView
+from django.views.generic import CreateView, FormView, TemplateView, UpdateView
 
 from apps.accounts.mixins import EmailVerifiedRequiredMixin
 from apps.accounts.views import StaffRequiredMixin
@@ -20,10 +20,46 @@ from apps.core.tables import BulkAction, Column, Filter, TableConfig, TableView
 
 from . import affinitrax, client, irev, v3
 from .client import CRMAPIError
-from .forms import LeadSendForm, LeadSourceForm
+from .forms import LeadSendForm, LeadSourceForm, source_token
 from .models import Lead, LeadSource
-from .sources import resolve
+from .sources import push_sources, resolve
 from .sync import run_all_sources
+
+
+def _endpoint_for(src):
+    """Best-guess outbound endpoint per source kind, shown in the UI."""
+    base = (getattr(src, "base_url", "") or "").rstrip("/")
+    if not base:
+        return ""
+    if src.kind == LeadSource.KIND_V3:
+        return f"{base}/api/v3/integration"
+    if src.kind == LeadSource.KIND_TRACKBOX:
+        return f"{base}/api/leads/add"
+    if src.kind == LeadSource.KIND_IREV:
+        return f"{base}/track/api/lead"
+    if src.kind == LeadSource.KIND_AFFINITRAX:
+        return f"{base}/api/sales-leads"
+    return base
+
+
+def _source_to_dict(src):
+    pk = getattr(src, "pk", None)
+    kind = getattr(src, "kind", "")
+    return {
+        "id": source_token(src),
+        "is_db": bool(pk),
+        "name": getattr(src, "name", "") or kind,
+        "kind": kind,
+        "kind_display": src.get_kind_display() if hasattr(src, "get_kind_display") else kind,
+        "base_url": getattr(src, "base_url", "") or "",
+        "is_active": bool(getattr(src, "is_active", True)),
+        "funnel": getattr(src, "funnel", "") or "",
+        "source_tag": getattr(src, "source_tag", "") or "",
+        "link_id": getattr(src, "link_id", "") or "",
+        "affiliate_id": getattr(src, "affiliate_id", "") or "",
+        "offer_id": getattr(src, "offer_id", "") or "",
+        "endpoint": _endpoint_for(src),
+    }
 
 LEADS_TABLE = TableConfig(
     key="leads",
@@ -109,15 +145,39 @@ class LeadListView(BreadcrumbsMixin, LoginRequiredMixin,
         return stats
 
 
-class LeadSendView(BreadcrumbsMixin, LoginRequiredMixin,
-                   EmailVerifiedRequiredMixin, StaffRequiredMixin, FormView):
-    """Manual lead submission towards a chosen active source."""
+class APIBrokerView(BreadcrumbsMixin, LoginRequiredMixin,
+                    EmailVerifiedRequiredMixin, StaffRequiredMixin, FormView):
+    """Unified API Broker page: sidebar of configured sources + send form."""
 
-    template_name = "leads/lead_send.html"
+    template_name = "leads/api_broker.html"
     form_class = LeadSendForm
-    success_url = reverse_lazy("leads:list")
-    breadcrumb_title = "Send lead"
-    breadcrumb_parent = "leads:list"
+    success_url = reverse_lazy("leads:api_broker")
+    breadcrumb_title = "API Broker"
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        db_sources = list(LeadSource.objects.all())
+        active = push_sources()
+        active_tokens = {source_token(s) for s in active}
+        all_serialized = []
+        for s in db_sources:
+            data = _source_to_dict(s)
+            data["available_for_send"] = data["id"] in active_tokens
+            all_serialized.append(data)
+        # env shims (active, no DB row) — appended after DB rows.
+        seen_ids = {d["id"] for d in all_serialized}
+        for s in active:
+            tok = source_token(s)
+            if tok in seen_ids:
+                continue
+            data = _source_to_dict(s)
+            data["available_for_send"] = True
+            all_serialized.append(data)
+        ctx["sources_json"] = json.dumps(all_serialized)
+        ctx["sources_count"] = len(all_serialized)
+        ctx["initial_broker"] = self.request.GET.get("broker") or (
+            all_serialized[0]["id"] if all_serialized else "")
+        return ctx
 
     def _client_ip(self):
         forwarded = self.request.META.get("HTTP_X_FORWARDED_FOR", "")
@@ -269,24 +329,25 @@ class LeadSyncView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
         return redirect("leads:list")
 
 
-# ── Source management (Settings → API sources) ──────────────────────────
+# ── Source management (API Broker config) ───────────────────────────────
 
-class SourceListView(BreadcrumbsMixin, LoginRequiredMixin,
-                     EmailVerifiedRequiredMixin, StaffRequiredMixin, ListView):
-    model = LeadSource
-    template_name = "leads/source_list.html"
-    context_object_name = "sources"
-    breadcrumb_title = "API sources"
+class _SourceFormMixin:
+    """Render the form as a modal partial when called with ?modal=1."""
+
+    def get_template_names(self):
+        if self.request.GET.get("modal"):
+            return ["leads/_source_form_modal.html"]
+        return [self.template_name]
 
 
-class SourceCreateView(BreadcrumbsMixin, LoginRequiredMixin,
+class SourceCreateView(_SourceFormMixin, BreadcrumbsMixin, LoginRequiredMixin,
                        EmailVerifiedRequiredMixin, StaffRequiredMixin, CreateView):
     model = LeadSource
     form_class = LeadSourceForm
     template_name = "leads/source_form.html"
-    success_url = reverse_lazy("leads:sources")
+    success_url = reverse_lazy("leads:api_broker")
     breadcrumb_title = "New API source"
-    breadcrumb_parent = ("API sources", "leads:sources")
+    breadcrumb_parent = ("API Broker", "leads:api_broker")
 
     def form_valid(self, form):
         response = super().form_valid(form)
@@ -295,14 +356,14 @@ class SourceCreateView(BreadcrumbsMixin, LoginRequiredMixin,
         return response
 
 
-class SourceUpdateView(BreadcrumbsMixin, LoginRequiredMixin,
+class SourceUpdateView(_SourceFormMixin, BreadcrumbsMixin, LoginRequiredMixin,
                        EmailVerifiedRequiredMixin, StaffRequiredMixin, UpdateView):
     model = LeadSource
     form_class = LeadSourceForm
     template_name = "leads/source_form.html"
-    success_url = reverse_lazy("leads:sources")
+    success_url = reverse_lazy("leads:api_broker")
     breadcrumb_title = "Edit API source"
-    breadcrumb_parent = ("API sources", "leads:sources")
+    breadcrumb_parent = ("API Broker", "leads:api_broker")
 
     def form_valid(self, form):
         response = super().form_valid(form)
@@ -317,7 +378,27 @@ class SourceDeleteView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
         deleted = LeadSource.objects.filter(pk=pk).delete()[0]
         toast(request, LEVEL_SUCCESS if deleted else LEVEL_ERROR,
               "Sorgente eliminata." if deleted else "Sorgente non trovata.")
-        return redirect("leads:sources")
+        return redirect("leads:api_broker")
+
+
+# ── API & Integrazioni page (tabs + code examples) ──────────────────────
+
+class IntegrationsView(BreadcrumbsMixin, LoginRequiredMixin,
+                       EmailVerifiedRequiredMixin, StaffRequiredMixin,
+                       TemplateView):
+    template_name = "leads/integrations.html"
+    breadcrumb_title = "API & Integrazioni"
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        host = self.request.get_host()
+        scheme = "https" if self.request.is_secure() else "http"
+        ctx["default_domain"] = f"{scheme}://{host}"
+        ctx["postback_token_preview"] = (
+            (settings.LEADS_POSTBACK_TOKEN[:4] + "…" + settings.LEADS_POSTBACK_TOKEN[-4:])
+            if getattr(settings, "LEADS_POSTBACK_TOKEN", "") else ""
+        )
+        return ctx
 
 
 # ── Postback receiver ────────────────────────────────────────────────────

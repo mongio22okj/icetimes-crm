@@ -1,0 +1,236 @@
+{% extends "layouts/dashboard.html" %}
+{% load apex %}
+{% load i18n %}
+{% block title %}{% translate "API & Integrazioni" %} · IceTimes CRM{% endblock %}
+{% block content %}
+<div x-data='integrations("{{ default_domain|escapejs }}")' class="space-y-6">
+
+  <div>
+    <h1 class="text-2xl font-bold tracking-tight">{% translate "API & Integrazioni" %}</h1>
+    <p class="text-sm text-muted-foreground mt-1">
+      {% translate "Endpoint per ricevere lead da affiliati, sincronizzare con broker esterni, embeddare un form e ricevere webhook." %}
+    </p>
+  </div>
+
+  {# ── Tabs ─────────────────────────────────────────────────────────── #}
+  <nav class="flex flex-wrap gap-1 border-b border-border" role="tablist">
+    <template x-for="t in tabs" :key="t.id">
+      <button type="button" role="tab"
+              @click="activeTab = t.id"
+              :aria-selected="activeTab === t.id"
+              :class="activeTab === t.id ? 'border-primary text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground'"
+              class="h-10 px-4 -mb-px border-b-2 inline-flex items-center gap-2 text-sm font-medium transition">
+        <span x-html="t.icon"></span>
+        <span x-text="t.label"></span>
+      </button>
+    </template>
+  </nav>
+
+  {# ── Tab: API REST ─────────────────────────────────────────────────── #}
+  <section x-show="activeTab === 'rest'" x-cloak role="tabpanel" class="space-y-4">
+    <div class="rounded-md border border-amber-500/30 bg-amber-500/5 p-4 flex items-start gap-3">
+      <span class="text-amber-600 dark:text-amber-400 mt-0.5">{% icon "alert-triangle" %}</span>
+      <div class="text-sm">
+        <p class="font-semibold text-amber-700 dark:text-amber-300">{% translate "Esegui sempre lato server" %}</p>
+        <p class="text-muted-foreground mt-0.5">
+          {% translate "Il" %} <code class="px-1 rounded bg-amber-500/10 text-xs">postback_token</code>
+          {% translate "è una credenziale privata. Non includere mai questo codice direttamente nel browser — eseguilo da un backend (PHP, Python, Node.js) per proteggere il token." %}
+        </p>
+      </div>
+    </div>
+
+    <div class="rounded-lg border border-border bg-card p-6 space-y-4">
+      <h2 class="text-base font-semibold inline-flex items-center gap-2">{% icon "settings-2" %} {% translate "Configura i parametri" %}</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <label class="block">
+          <span class="text-xs font-medium uppercase tracking-wide text-muted-foreground">{% translate "Domain name" %}</span>
+          <input type="text" x-model="domain"
+                 class="mt-1 w-full h-10 rounded-md border border-input bg-background px-3 text-sm font-mono">
+        </label>
+        <label class="block">
+          <span class="text-xs font-medium uppercase tracking-wide text-muted-foreground">{% translate "Postback token" %}</span>
+          <input type="text" x-model="postbackToken"
+                 placeholder="YOUR_POSTBACK_TOKEN"
+                 class="mt-1 w-full h-10 rounded-md border border-input bg-background px-3 text-sm font-mono">
+        </label>
+      </div>
+      <p class="text-xs text-muted-foreground">
+        {% translate "I valori inseriti aggiornano il codice in tempo reale — nessun dato viene salvato." %}
+        {% if postback_token_preview %}
+          <br>{% translate "Token corrente sul server" %}: <code class="font-mono">{{ postback_token_preview }}</code>
+        {% endif %}
+      </p>
+    </div>
+
+    <div class="rounded-lg border border-border bg-card p-6 space-y-2">
+      <h3 class="text-sm font-semibold inline-flex items-center gap-2">{% icon "link" %} {% translate "Endpoint" %}</h3>
+      <div class="rounded-md bg-muted/40 border border-border px-3 py-2 font-mono text-xs flex items-center gap-2 justify-between">
+        <span class="rounded bg-primary text-primary-foreground text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5">POST</span>
+        <span class="flex-1 break-all" x-text="restEndpoint"></span>
+        <button type="button" @click="copy(restEndpoint, $event)" class="h-7 px-2 rounded border border-border text-[11px] hover:bg-accent">{% translate "Copia" %}</button>
+      </div>
+    </div>
+
+    <div class="rounded-lg border border-border bg-card overflow-hidden">
+      {% include "leads/_integration_code_examples.html" with key="rest" %}
+    </div>
+  </section>
+
+  {# ── Tab: Affiliati ────────────────────────────────────────────────── #}
+  <section x-show="activeTab === 'affiliates'" x-cloak role="tabpanel" class="space-y-4">
+    <div class="rounded-md border border-amber-500/30 bg-amber-500/5 p-4 flex items-start gap-3">
+      <span class="text-amber-600 dark:text-amber-400 mt-0.5">{% icon "alert-triangle" %}</span>
+      <div class="text-sm">
+        <p class="font-semibold text-amber-700 dark:text-amber-300">{% translate "Esegui sempre lato server" %}</p>
+        <p class="text-muted-foreground mt-0.5">
+          {% translate "L'" %} <code class="px-1 rounded bg-amber-500/10 text-xs">api_token</code>
+          {% translate "è una credenziale privata. Non includere mai questo codice direttamente nel browser — eseguilo da un backend (PHP, Python, Node.js) per proteggere il token." %}
+        </p>
+      </div>
+    </div>
+
+    <div class="rounded-lg border border-border bg-card p-6 space-y-4">
+      <h2 class="text-base font-semibold inline-flex items-center gap-2">{% icon "settings-2" %} {% translate "Configura i parametri" %}</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <label class="block">
+          <span class="text-xs font-medium uppercase tracking-wide text-muted-foreground">{% translate "Domain name" %}</span>
+          <input type="text" x-model="domain" class="mt-1 w-full h-10 rounded-md border border-input bg-background px-3 text-sm font-mono">
+        </label>
+        <label class="block">
+          <span class="text-xs font-medium uppercase tracking-wide text-muted-foreground">{% translate "Affiliate API token" %}</span>
+          <input type="text" x-model="affiliateToken" placeholder="YOUR_AFFILIATE_API_TOKEN"
+                 class="mt-1 w-full h-10 rounded-md border border-input bg-background px-3 text-sm font-mono">
+        </label>
+      </div>
+      <p class="text-xs text-muted-foreground">{% translate "I valori inseriti aggiornano il codice in tempo reale — nessun dato viene salvato." %}</p>
+    </div>
+
+    <div class="rounded-lg border border-border bg-card p-6 space-y-2">
+      <h3 class="text-sm font-semibold inline-flex items-center gap-2">{% icon "link" %} {% translate "Endpoint" %}</h3>
+      <div class="rounded-md bg-muted/40 border border-border px-3 py-2 font-mono text-xs flex items-center gap-2 justify-between">
+        <span class="rounded bg-primary text-primary-foreground text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5">POST</span>
+        <span class="flex-1 break-all" x-text="affiliatesEndpoint"></span>
+        <button type="button" @click="copy(affiliatesEndpoint, $event)" class="h-7 px-2 rounded border border-border text-[11px] hover:bg-accent">{% translate "Copia" %}</button>
+      </div>
+    </div>
+
+    <div class="rounded-lg border border-border bg-card overflow-hidden">
+      {% include "leads/_integration_code_examples.html" with key="affiliates" %}
+    </div>
+  </section>
+
+  {# ── Tab: Embed ────────────────────────────────────────────────────── #}
+  <section x-show="activeTab === 'embed'" x-cloak role="tabpanel" class="space-y-4">
+    <div class="rounded-md border border-emerald-500/30 bg-emerald-500/5 p-4 flex items-start gap-3">
+      <span class="text-emerald-600 dark:text-emerald-400 mt-0.5">{% icon "info" %}</span>
+      <div class="text-sm">
+        <p class="font-semibold text-emerald-700 dark:text-emerald-300">{% translate "Sicuro lato client" %}</p>
+        <p class="text-muted-foreground mt-0.5">
+          {% translate "Il widget di embed non espone segreti: inoltra solo i campi del form al CRM, e il token viene aggiunto lato server." %}
+        </p>
+      </div>
+    </div>
+
+    <div class="rounded-lg border border-border bg-card p-6 space-y-3">
+      <h3 class="text-sm font-semibold inline-flex items-center gap-2">{% icon "code" %} {% translate "Snippet HTML da incollare nella landing" %}</h3>
+      <pre class="rounded-md bg-muted/40 border border-border p-3 text-xs overflow-x-auto"><code x-text="embedSnippet"></code></pre>
+      <button type="button" @click="copy(embedSnippet, $event)" class="h-8 px-3 rounded-md border border-border text-xs hover:bg-accent inline-flex items-center gap-1.5">{% icon "copy" %} {% translate "Copia snippet" %}</button>
+    </div>
+  </section>
+
+  {# ── Tab: Webhook ──────────────────────────────────────────────────── #}
+  <section x-show="activeTab === 'webhook'" x-cloak role="tabpanel" class="space-y-4">
+    <div class="rounded-md border border-sky-500/30 bg-sky-500/5 p-4 flex items-start gap-3">
+      <span class="text-sky-600 dark:text-sky-400 mt-0.5">{% icon "info" %}</span>
+      <div class="text-sm">
+        <p class="font-semibold text-sky-700 dark:text-sky-300">{% translate "Webhook in entrata" %}</p>
+        <p class="text-muted-foreground mt-0.5">
+          {% translate "Configura sul broker l'URL qui sotto come destinazione delle notifiche di stato lead (sale, FTD, ecc.). I dati ricevuti aggiornano il lead corrispondente per uniqueid o email." %}
+        </p>
+      </div>
+    </div>
+
+    <div class="rounded-lg border border-border bg-card p-6 space-y-2">
+      <h3 class="text-sm font-semibold inline-flex items-center gap-2">{% icon "link" %} {% translate "Webhook URL" %}</h3>
+      <div class="rounded-md bg-muted/40 border border-border px-3 py-2 font-mono text-xs flex items-center gap-2 justify-between">
+        <span class="rounded bg-primary text-primary-foreground text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5">GET / POST</span>
+        <span class="flex-1 break-all" x-text="restEndpoint"></span>
+        <button type="button" @click="copy(restEndpoint, $event)" class="h-7 px-2 rounded border border-border text-[11px] hover:bg-accent">{% translate "Copia" %}</button>
+      </div>
+      <p class="text-xs text-muted-foreground mt-2">
+        {% translate "Parametri accettati" %}: <code class="font-mono">uniqueid</code>, <code class="font-mono">email</code>, <code class="font-mono">firstname</code>, <code class="font-mono">lastname</code>, <code class="font-mono">phone</code>, <code class="font-mono">country</code>, <code class="font-mono">status</code>, <code class="font-mono">isDeposit</code>, <code class="font-mono">createdAt</code>.
+      </p>
+    </div>
+  </section>
+</div>
+
+<script>
+function integrations(defaultDomain) {
+  const ICONS = {
+    rest:       '<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"/></svg>',
+    affiliates: '<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 7L9 18l-5-5"/></svg>',
+    embed:      '<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>',
+    webhook:    '<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 2l4 4-10 10H8v-4L18 2z"/></svg>',
+  };
+  return {
+    activeTab: 'affiliates',
+    domain: defaultDomain || 'https://your-domain.com',
+    postbackToken: 'YOUR_POSTBACK_TOKEN',
+    affiliateToken: 'YOUR_AFFILIATE_API_TOKEN',
+    codeLang: 'cURL',
+    tabs: [
+      { id: 'rest',       label: 'API REST',  icon: ICONS.rest },
+      { id: 'affiliates', label: 'Affiliati', icon: ICONS.affiliates },
+      { id: 'embed',      label: 'Embed',     icon: ICONS.embed },
+      { id: 'webhook',    label: 'Webhook',   icon: ICONS.webhook },
+    ],
+    codeLangs: ['cURL', 'PHP', 'JavaScript', 'Python'],
+    get restEndpoint() {
+      const d = (this.domain || '').replace(/\/+$/, '');
+      return `${d}/leads/postback/?token=${this.postbackToken}`;
+    },
+    get affiliatesEndpoint() {
+      const d = (this.domain || '').replace(/\/+$/, '');
+      return `${d}/api/v3/integration?api_token=${this.affiliateToken}`;
+    },
+    get embedSnippet() {
+      const d = (this.domain || '').replace(/\/+$/, '');
+      return `<form action="${d}/leads/postback/" method="POST">\n  <input type="hidden" name="source" value="landing-web">\n  <input name="firstname" placeholder="Nome" required>\n  <input name="lastname"  placeholder="Cognome" required>\n  <input name="email" type="email" placeholder="Email" required>\n  <input name="phone" placeholder="+39…" required>\n  <input name="country" value="IT" maxlength="2">\n  <button type="submit">Invia</button>\n</form>\n<!-- Lato server, aggiungi ?token=… o l'header X-Postback-Token. -->`;
+    },
+    codeBlock(tab, lang) {
+      const dom = (this.domain || '').replace(/\/+$/, '');
+      const url = tab === 'rest' ? `${dom}/leads/postback/?token=${this.postbackToken}` : `${dom}/api/v3/integration?api_token=${this.affiliateToken}`;
+      const params = [
+        ['firstname', 'Tom'], ['lastname', 'Hardy'], ['email', 'tom.hardy@example.com'],
+        ['phone', '+441268272099'], ['country', 'IT'], ['lg', 'IT'],
+      ];
+      if (lang === 'cURL') {
+        const args = params.map(([k, v]) => `--data-urlencode '${k}=${v}'`).join(' \\\n  ');
+        return `curl --location '${url}' \\\n  --header 'Content-Type: application/x-www-form-urlencoded' \\\n  ${args}`;
+      }
+      if (lang === 'PHP') {
+        const arr = params.map(([k, v]) => `  '${k}' => '${v}',`).join('\n');
+        return `<?php\n$data = [\n${arr}\n];\n$ch = curl_init('${url}');\ncurl_setopt($ch, CURLOPT_POST, 1);\ncurl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($data));\ncurl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);\n$response = curl_exec($ch);\ncurl_close($ch);\necho $response;`;
+      }
+      if (lang === 'JavaScript') {
+        const body = params.map(([k, v]) => `  ${k}: '${v}',`).join('\n');
+        return `// Node.js — eseguilo lato server, mai nel browser.\nconst body = new URLSearchParams({\n${body}\n});\nconst r = await fetch('${url}', {\n  method: 'POST',\n  headers: { 'Content-Type': 'application/x-www-form-urlencoded' },\n  body,\n});\nconsole.log(await r.json());`;
+      }
+      if (lang === 'Python') {
+        const dct = params.map(([k, v]) => `    "${k}": "${v}",`).join('\n');
+        return `import requests\n\ndata = {\n${dct}\n}\nresp = requests.post(\n    "${url}",\n    data=data,\n    timeout=10,\n)\nprint(resp.status_code, resp.json())`;
+      }
+      return '';
+    },
+    copy(text, evt) {
+      navigator.clipboard.writeText(text).then(() => {
+        const btn = evt.currentTarget;
+        const original = btn.textContent;
+        btn.textContent = '✓';
+        setTimeout(() => { btn.textContent = original; }, 1200);
+      });
+    },
+  };
+}
+</script>
+{% endblock %}
