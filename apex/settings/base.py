@@ -257,3 +257,8 @@ IREV_OFFER_ID = os.environ.get("IREV_OFFER_ID", "")
 IREV_GOAL_LEAD = os.environ.get("IREV_GOAL_LEAD", "")
 IREV_GOAL_FTD = os.environ.get("IREV_GOAL_FTD", "")
 
+# ── Affinitrax seller API ────────────────────────────────────────────────
+# Third lead source (affinitrax.com). X-API-Key header auth, no IP lock.
+AFFINITRAX_BASE_URL = os.environ.get("AFFINITRAX_BASE_URL", "")
+AFFINITRAX_API_KEY = os.environ.get("AFFINITRAX_API_KEY", "")
+

@@ -6,7 +6,7 @@ flags come from conversions whose goal matches IREV_GOAL_FTD.
 from django.conf import settings
 from django.utils.dateparse import parse_datetime
 
-from . import irev
+from . import affinitrax, irev
 from .models import Lead
 
 MAX_PAGES = 30  # safety cap: 30 × 100 = 3000 rows per run
@@ -83,3 +83,33 @@ def sync_irev_leads():
         lead.payload = merged
         lead.save()
     return created, updated
+
+
+def refresh_affinitrax_statuses(limit=100):
+    """Re-query Affinitrax for our non-final leads; returns updated count.
+
+    Affinitrax has no bulk listing endpoint, so we poll lead-by-lead the
+    most recent rows still in a non-final status (rate limit 200/min).
+    """
+    leads = (Lead.objects
+             .filter(source="affinitrax", uniqueid__startswith="afx-")
+             .filter(status__in=affinitrax.NON_FINAL_STATUSES)
+             .order_by("-created_at")[:limit])
+    updated = 0
+    for lead in leads:
+        afx_id = lead.uniqueid.removeprefix("afx-")
+        try:
+            result = affinitrax.get_lead(afx_id) or {}
+        except Exception:
+            continue  # one bad lead must not kill the whole refresh
+        status = result.get("status") if isinstance(result, dict) else None
+        if status and status != lead.status:
+            lead.status = str(status)[:120]
+            if status == "ftd":
+                lead.is_deposit = True
+            merged = dict(lead.payload or {})
+            merged.update(result)
+            lead.payload = merged
+            lead.save()
+            updated += 1
+    return updated

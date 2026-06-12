@@ -11,11 +11,11 @@
     {% endif %}
   </div>
   <div class="flex items-center gap-2">
-    <form method="post" action="{% url 'leads:sync_irev' %}">
+    <form method="post" action="{% url 'leads:sync' %}">
       {% csrf_token %}
       <button type="submit"
               class="h-10 px-4 rounded-md border border-border inline-flex items-center gap-2 text-sm font-medium hover:bg-accent">
-        {% icon "rotate-ccw" %} {% translate "Sync IREV" %}
+        {% icon "rotate-ccw" %} {% translate "Sync" %}
       </button>
     </form>
     <a href="{% url 'leads:send' %}"

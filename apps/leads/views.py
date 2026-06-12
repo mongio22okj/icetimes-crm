@@ -18,10 +18,10 @@ from apps.core.breadcrumbs import BreadcrumbsMixin
 from apps.core.messages import LEVEL_ERROR, LEVEL_SUCCESS, toast
 from apps.core.tables import BulkAction, Column, Filter, TableConfig, TableView
 
-from . import client, irev
+from . import affinitrax, client, irev
 from .forms import LeadSendForm
 from .models import Lead
-from .sync import sync_irev_leads
+from .sync import refresh_affinitrax_statuses, sync_irev_leads
 
 LEADS_TABLE = TableConfig(
     key="leads",
@@ -121,7 +121,38 @@ class LeadSendView(BreadcrumbsMixin, LoginRequiredMixin,
         target = data.get("target") or "trackbox"
         if target == "irev":
             return self._send_irev(form, data)
+        if target == "affinitrax":
+            return self._send_affinitrax(form, data)
         return self._send_trackbox(form, data)
+
+    def _client_ip(self):
+        forwarded = self.request.META.get("HTTP_X_FORWARDED_FOR", "")
+        return (forwarded.split(",")[0].strip()
+                or self.request.META.get("REMOTE_ADDR", ""))
+
+    def _send_affinitrax(self, form, data):
+        click_id = f"ice{secrets.token_hex(6)}"
+        payload = {
+            "email": data["email"],
+            "phone": data["phone"],
+            "first_name": data["firstname"],
+            "last_name": data["lastname"],
+            "country": data["country"].upper(),
+            "ip": self._client_ip(),
+            "click_id": click_id,
+        }
+        try:
+            result = affinitrax.push_lead(payload) or {}
+        except client.CRMAPIError as exc:
+            form.add_error(None, str(exc))
+            return self.form_invalid(form)
+        lead_id = result.get("lead_id") if isinstance(result, dict) else None
+        status = (result.get("status") if isinstance(result, dict) else "") or "sent"
+        self._store_local(data, uniqueid=f"afx-{lead_id}" if lead_id else click_id,
+                          source="affinitrax", payload=result, status=status)
+        toast(self.request, LEVEL_SUCCESS,
+              f"Lead inviato ad Affinitrax (rif: {lead_id or click_id}).")
+        return super().form_valid(form)
 
     def _send_trackbox(self, form, data):
         # TrackBox creates an account for the lead — generate a strong
@@ -144,8 +175,6 @@ class LeadSendView(BreadcrumbsMixin, LoginRequiredMixin,
         return super().form_valid(form)
 
     def _send_irev(self, form, data):
-        forwarded = self.request.META.get("HTTP_X_FORWARDED_FOR", "")
-        ip = forwarded.split(",")[0].strip() or self.request.META.get("REMOTE_ADDR", "")
         profile = {
             "email": data["email"],
             "phone": data["phone"],
@@ -153,7 +182,7 @@ class LeadSendView(BreadcrumbsMixin, LoginRequiredMixin,
             "last_name": data["lastname"],
         }
         try:
-            result = irev.push_lead(profile, ip=ip) or {}
+            result = irev.push_lead(profile, ip=self._client_ip()) or {}
         except client.CRMAPIError as exc:
             form.add_error(None, str(exc))
             return self.form_invalid(form)
@@ -167,32 +196,47 @@ class LeadSendView(BreadcrumbsMixin, LoginRequiredMixin,
               f"Lead inviato a IREV (rif: {lead_id or 'n/d'}).")
         return super().form_valid(form)
 
-    def _store_local(self, data, *, uniqueid, source, payload):
+    def _store_local(self, data, *, uniqueid, source, payload, status="sent"):
         Lead.objects.create(
             uniqueid=uniqueid,
             firstname=data["firstname"],
             lastname=data["lastname"],
             email=data["email"],
             phone=data["phone"],
-            country="",
-            status="sent",
+            country=data.get("country", "").upper(),
+            status=status,
             source=source,
             payload=payload if isinstance(payload, dict) else {},
         )
 
 
-class LeadSyncIrevView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
-                       StaffRequiredMixin, View):
-    """Manual pull-sync from IREV (button on the Leads page)."""
+class LeadSyncView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
+                   StaffRequiredMixin, View):
+    """Manual sync of every configured pull-capable source."""
 
     def post(self, request):
-        try:
-            created, updated = sync_irev_leads()
-        except client.CRMAPIError as exc:
-            toast(request, LEVEL_ERROR, str(exc))
-        else:
-            toast(request, LEVEL_SUCCESS,
-                  f"IREV sincronizzato: {created} nuovi, {updated} aggiornati.")
+        ran_any = False
+        if irev.is_configured():
+            ran_any = True
+            try:
+                created, updated = sync_irev_leads()
+            except client.CRMAPIError as exc:
+                toast(request, LEVEL_ERROR, f"IREV: {exc}")
+            else:
+                toast(request, LEVEL_SUCCESS,
+                      f"IREV: {created} nuovi, {updated} aggiornati.")
+        if affinitrax.is_configured():
+            ran_any = True
+            try:
+                refreshed = refresh_affinitrax_statuses()
+            except client.CRMAPIError as exc:
+                toast(request, LEVEL_ERROR, f"Affinitrax: {exc}")
+            else:
+                toast(request, LEVEL_SUCCESS,
+                      f"Affinitrax: {refreshed} stati aggiornati.")
+        if not ran_any:
+            toast(request, LEVEL_ERROR,
+                  "Nessuna fonte configurata per la sincronizzazione.")
         return redirect("leads:list")
 
 

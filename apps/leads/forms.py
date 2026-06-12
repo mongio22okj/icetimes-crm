@@ -11,6 +11,7 @@ BASE_INPUT = (
 TARGET_CHOICES = (
     ("trackbox", "TrackBox (fintechgurus)"),
     ("irev", "IREV (stylishwnt)"),
+    ("affinitrax", "Affinitrax"),
 )
 
 
@@ -46,6 +47,13 @@ class LeadSendForm(forms.Form):
         regex=r"^\+[1-9]\d{6,14}$",
         error_messages={"invalid": _("Use E.164 format, e.g. +393331234567 (no spaces).")},
         widget=forms.TextInput(attrs={"class": BASE_INPUT, "placeholder": "+393331234567"}),
+    )
+    country = forms.RegexField(
+        label=_("Country (alpha-2)"),
+        regex=r"^[A-Za-z]{2}$",
+        initial="IT",
+        error_messages={"invalid": _("Two-letter code, e.g. IT, ES, DE.")},
+        widget=forms.TextInput(attrs={"class": BASE_INPUT, "maxlength": "2"}),
     )
     so = forms.CharField(
         label=_("Funnel / source (so)"),
@@ -85,6 +93,7 @@ class LeadSendForm(forms.Form):
             "phone": data["phone"],
             "password": account_password,
             "userip": ip,
+            "country": data["country"].upper(),
             "lg": data["lg"].upper(),
             "affclickid": affclickid,
         }
