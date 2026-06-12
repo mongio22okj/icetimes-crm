@@ -55,6 +55,10 @@ NAV_ITEMS: tuple[NavItem, ...] = (
             keywords=("api", "integrations", "docs", "rest", "webhook",
                       "embed", "affiliate", "code examples"),
             group=G_ACCOUNT, requires_staff=True),
+    NavItem(_("Landing Pages"), "marketing:landing_admin_list", "rocket",
+            keywords=("landing", "page", "ads", "campaign", "funnel",
+                      "ab test", "newsletter"),
+            group=G_ACCOUNT, requires_staff=True),
     NavItem(_("Settings"), "settings:profile", "settings",
             keywords=("account", "profile", "preferences"), group=G_ACCOUNT),
 )

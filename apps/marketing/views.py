@@ -464,25 +464,31 @@ class ShowcaseView(TemplateView):
 
 # ── Lead-capture landings (public, no auth) ─────────────────────────────
 
-class NewsletterLandingView(TemplateView):
-    """Minimal email-only signup. Submits to LandingSubmitView."""
-    template_name = "marketing/landing_newsletter.html"
+class LandingDetailView(TemplateView):
+    """Public landing — renders a LandingPage row by slug.
 
-
-class TradingLandingView(TemplateView):
-    """Full lead form with funnel/source/sub from query string for A/B tests.
-
-    URL params override the defaults:
-        ?funnel=trading-2026-A&source=FB&sub=ad-set-1234
+    Query string can override the pre-set tracking values for A/B tests
+    or per-ad-group customization, e.g.:
+        /landing/trading/?funnel=trading-2026-B&source=GoogleAds&sub=kw-99
     """
-    template_name = "marketing/landing_trading.html"
+    template_name = "marketing/landing_public.html"
 
     def get_context_data(self, **kwargs):
+        from django.http import Http404
+
+        from apps.marketing.models import LandingPage
+
         ctx = super().get_context_data(**kwargs)
+        slug = kwargs.get("slug")
+        try:
+            landing = LandingPage.objects.get(slug=slug, is_active=True)
+        except LandingPage.DoesNotExist:
+            raise Http404("Landing not found")
         q = self.request.GET
-        ctx["funnel"] = q.get("funnel", "trading-2026-A")
-        ctx["source_tag"] = q.get("source", "direct")
-        ctx["sub"] = q.get("sub", "")
+        ctx["landing"] = landing
+        ctx["funnel"] = q.get("funnel") or landing.funnel
+        ctx["source_tag"] = q.get("source") or landing.source_tag
+        ctx["sub"] = q.get("sub") or landing.sub
         return ctx
 
 
@@ -490,9 +496,10 @@ class TradingLandingView(TemplateView):
 class LandingSubmitView(View):
     """Server-side intake for the public landing pages.
 
-    Same effect as the postback endpoint but for in-CRM landings: builds a
-    Lead row directly without exposing the postback token in the browser.
-    Returns JSON so the page can show an inline success message.
+    Builds a Lead row directly (without going through the public postback
+    endpoint) so the page can show an inline success message and the
+    postback token is never exposed in the browser. The submitting page
+    sends `variant` (= landing slug) so we tag the lead's source field.
     """
 
     def post(self, request):
@@ -519,3 +526,85 @@ class LandingSubmitView(View):
             payload=payload,
         )
         return JsonResponse({"ok": True, "id": lead.pk})
+
+
+# ── Landing admin CRUD (staff-only) ─────────────────────────────────────
+
+from django.contrib.auth.mixins import LoginRequiredMixin  # noqa: E402
+from django.urls import reverse_lazy  # noqa: E402
+from django.views.generic import CreateView, DeleteView, ListView, UpdateView  # noqa: E402
+
+from apps.accounts.mixins import EmailVerifiedRequiredMixin  # noqa: E402
+from apps.accounts.views import StaffRequiredMixin  # noqa: E402
+from apps.core.breadcrumbs import BreadcrumbsMixin  # noqa: E402
+from apps.core.messages import LEVEL_SUCCESS, toast  # noqa: E402
+
+
+class LandingPageListView(BreadcrumbsMixin, LoginRequiredMixin,
+                          EmailVerifiedRequiredMixin, StaffRequiredMixin,
+                          ListView):
+    template_name = "marketing/landing_admin_list.html"
+    context_object_name = "landings"
+    breadcrumb_title = "Landing Pages"
+
+    def get_queryset(self):
+        from apps.marketing.models import LandingPage
+        return LandingPage.objects.all()
+
+
+class LandingPageCreateView(BreadcrumbsMixin, LoginRequiredMixin,
+                            EmailVerifiedRequiredMixin, StaffRequiredMixin,
+                            CreateView):
+    template_name = "marketing/landing_admin_form.html"
+    success_url = reverse_lazy("marketing:landing_admin_list")
+    breadcrumb_title = "Nuova landing"
+    breadcrumb_parent = ("Landing Pages", "marketing:landing_admin_list")
+
+    def get_form_class(self):
+        from apps.marketing.forms import LandingPageForm
+        return LandingPageForm
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        toast(self.request, LEVEL_SUCCESS,
+              f"Landing '{self.object.title}' creata.")
+        return response
+
+
+class LandingPageUpdateView(BreadcrumbsMixin, LoginRequiredMixin,
+                            EmailVerifiedRequiredMixin, StaffRequiredMixin,
+                            UpdateView):
+    template_name = "marketing/landing_admin_form.html"
+    success_url = reverse_lazy("marketing:landing_admin_list")
+    breadcrumb_title = "Modifica landing"
+    breadcrumb_parent = ("Landing Pages", "marketing:landing_admin_list")
+
+    def get_queryset(self):
+        from apps.marketing.models import LandingPage
+        return LandingPage.objects.all()
+
+    def get_form_class(self):
+        from apps.marketing.forms import LandingPageForm
+        return LandingPageForm
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        toast(self.request, LEVEL_SUCCESS,
+              f"Landing '{self.object.title}' aggiornata.")
+        return response
+
+
+class LandingPageDeleteView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
+                            StaffRequiredMixin, DeleteView):
+    success_url = reverse_lazy("marketing:landing_admin_list")
+
+    def get_queryset(self):
+        from apps.marketing.models import LandingPage
+        return LandingPage.objects.all()
+
+    def post(self, request, *args, **kwargs):
+        obj = self.get_object()
+        title = obj.title
+        obj.delete()
+        toast(request, LEVEL_SUCCESS, f"Landing '{title}' eliminata.")
+        return redirect(self.success_url)

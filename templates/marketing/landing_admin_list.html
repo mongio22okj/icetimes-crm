@@ -1,0 +1,108 @@
+{% extends "layouts/dashboard.html" %}
+{% load apex %}
+{% load i18n %}
+{% block title %}{% translate "Landing Pages" %} · IceTimes CRM{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+  <div>
+    <h1 class="text-2xl font-bold tracking-tight">{% translate "Landing Pages" %}</h1>
+    <p class="text-sm text-muted-foreground mt-1">
+      {% translate "Pagine pubbliche per catturare lead. Duplica una landing per ogni campagna/variante A/B." %}
+    </p>
+  </div>
+  <a href="{% url 'marketing:landing_admin_create' %}"
+     class="h-10 px-4 rounded-md bg-primary text-primary-foreground inline-flex items-center gap-2 font-medium hover:opacity-90">
+    {% icon "plus" %} {% translate "Nuova landing" %}
+  </a>
+</div>
+
+<div class="rounded-lg border border-border bg-card overflow-x-auto">
+  <table class="w-full text-sm">
+    <thead>
+      <tr class="border-b border-border text-left text-muted-foreground">
+        <th class="px-4 py-3 font-medium">{% translate "Titolo" %}</th>
+        <th class="px-4 py-3 font-medium">URL pubblico</th>
+        <th class="px-4 py-3 font-medium">{% translate "Form" %}</th>
+        <th class="px-4 py-3 font-medium">Funnel / Source</th>
+        <th class="px-4 py-3 font-medium">{% translate "Stato" %}</th>
+        <th class="px-4 py-3 font-medium text-right">{% translate "Azioni" %}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for l in landings %}
+      <tr class="border-b border-border last:border-0 hover:bg-accent/40">
+        <td class="px-4 py-3">
+          <div class="flex items-center gap-2">
+            <span class="h-3 w-3 rounded-sm shrink-0 border border-border" style="background:{{ l.accent_color }}"></span>
+            <div class="min-w-0">
+              <div class="font-medium truncate">{{ l.title }}</div>
+              <div class="text-xs text-muted-foreground truncate">{{ l.subtitle|default:"—"|truncatechars:60 }}</div>
+            </div>
+          </div>
+        </td>
+        <td class="px-4 py-3">
+          <a href="{{ l.get_absolute_url }}" target="_blank"
+             class="inline-flex items-center gap-1 font-mono text-xs text-primary hover:underline">
+            /landing/{{ l.slug }}/ {% icon "arrow-up-right" %}
+          </a>
+        </td>
+        <td class="px-4 py-3 text-xs text-muted-foreground">
+          {{ l.get_form_variant_display }}
+        </td>
+        <td class="px-4 py-3 text-xs">
+          {% if l.funnel %}<div><span class="text-muted-foreground">funnel:</span> {{ l.funnel }}</div>{% endif %}
+          {% if l.source_tag %}<div><span class="text-muted-foreground">source:</span> {{ l.source_tag }}</div>{% endif %}
+          {% if not l.funnel and not l.source_tag %}<span class="text-muted-foreground">—</span>{% endif %}
+        </td>
+        <td class="px-4 py-3">
+          {% if l.is_active %}
+            <span class="inline-flex items-center rounded-full bg-emerald-500/10 px-2 py-0.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">{% translate "Attiva" %}</span>
+          {% else %}
+            <span class="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">OFF</span>
+          {% endif %}
+        </td>
+        <td class="px-4 py-3 text-right whitespace-nowrap">
+          <button type="button" onclick="copyUrl('{{ l.slug }}', this)"
+                  class="inline-flex h-8 px-3 items-center gap-1 rounded-md border border-border text-xs hover:bg-accent">
+            {% icon "copy" %} {% translate "Copia URL" %}
+          </button>
+          <a href="{% url 'marketing:landing_admin_update' l.pk %}"
+             class="inline-flex h-8 px-3 items-center rounded-md border border-border text-xs hover:bg-accent">
+            {% translate "Modifica" %}
+          </a>
+          <form method="post" action="{% url 'marketing:landing_admin_delete' l.pk %}" class="inline"
+                onsubmit="return confirm('{% translate "Eliminare la landing" %} \'{{ l.title|escapejs }}\' ?');">
+            {% csrf_token %}
+            <button type="submit"
+                    class="inline-flex h-8 px-3 items-center rounded-md border border-destructive/40 text-xs text-destructive hover:bg-destructive/10">
+              {% translate "Elimina" %}
+            </button>
+          </form>
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="6" class="px-4 py-10 text-center text-muted-foreground">
+          {% translate "Nessuna landing ancora — crea la prima." %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<p class="text-xs text-muted-foreground mt-4">
+  {% translate "Tip: ogni landing è duplicabile cambiando lo slug. Per A/B test, duplica una landing e cambia solo funnel/source. UTM da query string (utm_source, utm_campaign, ecc.) vengono catturati automaticamente." %}
+</p>
+
+<script>
+function copyUrl(slug, btn) {
+  const url = location.protocol + "//" + location.host + "/landing/" + slug + "/";
+  navigator.clipboard.writeText(url).then(() => {
+    const original = btn.textContent.trim();
+    btn.textContent = "✓";
+    setTimeout(() => { btn.textContent = original; }, 1200);
+  });
+}
+</script>
+{% endblock %}

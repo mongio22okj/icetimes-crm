@@ -1,0 +1,89 @@
+{% extends "layouts/dashboard.html" %}
+{% load apex %}
+{% load i18n %}
+{% block title %}{% if form.instance.pk %}{% translate "Modifica" %}{% else %}{% translate "Nuova" %}{% endif %} {% translate "landing" %} · IceTimes CRM{% endblock %}
+{% block content %}
+<div class="mb-6 flex items-start justify-between gap-3">
+  <div>
+    <h1 class="text-2xl font-bold tracking-tight">
+      {% if form.instance.pk %}{% translate "Modifica landing" %}{% else %}{% translate "Nuova landing" %}{% endif %}
+    </h1>
+    <p class="text-sm text-muted-foreground mt-1">
+      {% translate "Configura titolo, colori, tracking. La pagina pubblica si aggiorna in tempo reale al salvataggio." %}
+    </p>
+  </div>
+  {% if form.instance.pk %}
+    <a href="{{ form.instance.get_absolute_url }}" target="_blank"
+       class="h-10 px-4 rounded-md border border-border inline-flex items-center gap-2 text-sm hover:bg-accent">
+      {% icon "arrow-up-right" %} {% translate "Apri pagina pubblica" %}
+    </a>
+  {% endif %}
+</div>
+
+<form method="post" class="max-w-3xl space-y-6">
+  {% csrf_token %}
+  {% if form.non_field_errors %}
+    <div class="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
+      {{ form.non_field_errors }}
+    </div>
+  {% endif %}
+
+  <section class="rounded-lg border border-border bg-card p-6 space-y-4">
+    <h2 class="text-base font-semibold">{% translate "Identità" %}</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div>{% apex_field form.slug %}</div>
+      <div>{% apex_field form.title %}</div>
+      <div class="md:col-span-2">{% apex_field form.subtitle %}</div>
+      <div>{% apex_field form.badge %}</div>
+      <div>{% apex_field form.cta_label %}</div>
+    </div>
+  </section>
+
+  <section class="rounded-lg border border-border bg-card p-6 space-y-4">
+    <h2 class="text-base font-semibold">{% translate "Aspetto" %}</h2>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div>{% apex_field form.theme %}</div>
+      <div>{% apex_field form.accent_color %}</div>
+      <div>{% apex_field form.form_variant %}</div>
+    </div>
+  </section>
+
+  <section class="rounded-lg border border-border bg-card p-6 space-y-4">
+    <h2 class="text-base font-semibold">{% translate "Tracking pre-impostato" %}</h2>
+    <p class="text-xs text-muted-foreground -mt-2">
+      {% translate "Questi valori vengono salvati come campi del lead. Possono essere sovrascritti per URL via" %}
+      <code class="font-mono">?funnel=…&amp;source=…&amp;sub=…</code>.
+    </p>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div>{% apex_field form.funnel %}</div>
+      <div>{% apex_field form.source_tag %}</div>
+      <div>{% apex_field form.sub %}</div>
+    </div>
+  </section>
+
+  <section class="rounded-lg border border-border bg-card p-6 space-y-4">
+    <h2 class="text-base font-semibold">{% translate "Dopo l'invio" %}</h2>
+    <div class="grid grid-cols-1 gap-4">
+      <div>{% apex_field form.success_message %}</div>
+      <div>{% apex_field form.redirect_url %}</div>
+    </div>
+  </section>
+
+  <section class="rounded-lg border border-border bg-card p-6">
+    <label class="flex items-center gap-3 text-sm">
+      {{ form.is_active }} <span class="font-medium">{% translate "Attiva" %}</span>
+      <span class="text-xs text-muted-foreground">— {% translate "se OFF la URL pubblica risponde 404." %}</span>
+    </label>
+  </section>
+
+  <div class="flex justify-end gap-2">
+    <a href="{% url 'marketing:landing_admin_list' %}"
+       class="h-10 px-4 rounded-md border border-border inline-flex items-center text-sm hover:bg-accent">
+      {% translate "Annulla" %}
+    </a>
+    <button type="submit" class="h-10 px-4 rounded-md bg-primary text-primary-foreground inline-flex items-center font-medium hover:opacity-90">
+      {% if form.instance.pk %}{% translate "Salva modifiche" %}{% else %}{% translate "Crea landing" %}{% endif %}
+    </button>
+  </div>
+</form>
+{% endblock %}
