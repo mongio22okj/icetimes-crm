@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [unreleased] - 2026-06-12
+
+- Test deploy: repo Render ricollegato al fork `mongio22okj/icetimes-crm`.
+
 ## [0.18.2] - 2026-05-30
 
 **Admin prominence + slimmer distribution.** Two same-day refinements
