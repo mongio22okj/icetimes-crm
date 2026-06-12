@@ -23,7 +23,7 @@ class BreadcrumbsMixin:
         return self.breadcrumb_title or ""
 
     def get_breadcrumbs(self) -> list[tuple[str, str | None]]:
-        crumbs: list[tuple[str, str | None]] = [("Dashboard", reverse("dashboard"))]
+        crumbs: list[tuple[str, str | None]] = [("Home", reverse("leads:list"))]
         parent = self.breadcrumb_parent
         if parent:
             if isinstance(parent, tuple):

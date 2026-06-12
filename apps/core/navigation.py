@@ -34,14 +34,12 @@ G_ACCOUNT = _("Account")
 
 
 NAV_ITEMS: tuple[NavItem, ...] = (
-    NavItem(_("Overview"), "dashboard", "layout-dashboard",
-            keywords=("home", "overview"), group=G_DASHBOARDS),
-    NavItem(_("Customers"), "customers:list", "user-plus",
-            keywords=("people", "crm", "customers"), group=G_COMMERCE,
-            requires_staff=True),
     NavItem(_("Leads"), "leads:list", "target",
             keywords=("leads", "crm", "integrations", "deposit"),
             group=G_COMMERCE, requires_staff=True),
+    NavItem(_("Customers"), "customers:list", "user-plus",
+            keywords=("people", "crm", "customers"), group=G_COMMERCE,
+            requires_staff=True),
     NavItem(_("Administration"), "admin:index", "shield",
             keywords=("admin", "administration", "django admin", "models",
                       "permissions", "auth", "groups", "site admin"),
