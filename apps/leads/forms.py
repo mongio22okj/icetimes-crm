@@ -1,6 +1,9 @@
 from django import forms
 from django.utils.translation import gettext_lazy as _
 
+from .models import LeadSource
+from .sources import push_sources
+
 BASE_INPUT = (
     "w-full h-10 rounded-md border border-input bg-background px-3 text-sm "
     "focus:outline-none focus:ring-2 focus:ring-ring/50 focus:border-ring "
@@ -8,97 +11,90 @@ BASE_INPUT = (
 )
 
 
-TARGET_CHOICES = (
-    ("trackbox", "TrackBox (fintechgurus)"),
-    ("irev", "IREV (stylishwnt)"),
-    ("affinitrax", "Affinitrax"),
-)
+def source_token(src):
+    """Stable form value identifying a source (DB pk or env shim)."""
+    return str(src.pk) if getattr(src, "pk", None) else f"env-{src.kind}"
 
 
 class LeadSendForm(forms.Form):
-    """Manual lead submission towards an external source (TrackBox/IREV).
-
-    Source credentials come from settings; userip is filled server-side
-    from the request. The remaining fields are exposed here.
-    """
+    """Manual lead submission towards a chosen active source."""
 
     target = forms.ChoiceField(
         label=_("Send to"),
-        choices=TARGET_CHOICES,
-        initial="trackbox",
+        choices=(),
         widget=forms.Select(attrs={"class": BASE_INPUT}),
     )
-    firstname = forms.CharField(
-        label=_("First name"),
-        max_length=100,
-        widget=forms.TextInput(attrs={"class": BASE_INPUT}),
-    )
-    lastname = forms.CharField(
-        label=_("Last name"),
-        max_length=100,
-        widget=forms.TextInput(attrs={"class": BASE_INPUT}),
-    )
+    firstname = forms.CharField(label=_("First name"), max_length=100,
+                                widget=forms.TextInput(attrs={"class": BASE_INPUT}))
+    lastname = forms.CharField(label=_("Last name"), max_length=100,
+                               widget=forms.TextInput(attrs={"class": BASE_INPUT}))
     email = forms.EmailField(
         label=_("Email"),
-        widget=forms.EmailInput(attrs={"class": BASE_INPUT, "placeholder": "lead@example.com"}),
-    )
+        widget=forms.EmailInput(attrs={"class": BASE_INPUT, "placeholder": "lead@example.com"}))
     phone = forms.RegexField(
-        label=_("Phone"),
-        regex=r"^\+[1-9]\d{6,14}$",
+        label=_("Phone"), regex=r"^\+[1-9]\d{6,14}$",
         error_messages={"invalid": _("Use E.164 format, e.g. +393331234567 (no spaces).")},
-        widget=forms.TextInput(attrs={"class": BASE_INPUT, "placeholder": "+393331234567"}),
-    )
+        widget=forms.TextInput(attrs={"class": BASE_INPUT, "placeholder": "+393331234567"}))
     country = forms.RegexField(
-        label=_("Country (alpha-2)"),
-        regex=r"^[A-Za-z]{2}$",
-        initial="IT",
+        label=_("Country (alpha-2)"), regex=r"^[A-Za-z]{2}$", initial="IT",
         error_messages={"invalid": _("Two-letter code, e.g. IT, ES, DE.")},
-        widget=forms.TextInput(attrs={"class": BASE_INPUT, "maxlength": "2"}),
-    )
-    so = forms.CharField(
-        label=_("Funnel / source (so)"),
-        required=False,
-        max_length=200,
-        help_text=_("Funnel name shown in TrackBox reports."),
-        widget=forms.TextInput(attrs={"class": BASE_INPUT}),
-    )
+        widget=forms.TextInput(attrs={"class": BASE_INPUT, "maxlength": "2"}))
     lg = forms.RegexField(
-        label=_("Language (alpha-2)"),
-        regex=r"^[A-Za-z]{2}$",
-        initial="IT",
+        label=_("Language (alpha-2)"), regex=r"^[A-Za-z]{2}$", initial="IT",
         error_messages={"invalid": _("Two-letter code, e.g. IT, EN.")},
-        widget=forms.TextInput(attrs={"class": BASE_INPUT, "maxlength": "2"}),
-    )
-    sub = forms.CharField(
-        label=_("Sub (optional)"),
-        required=False,
-        max_length=200,
-        widget=forms.TextInput(attrs={"class": BASE_INPUT}),
-    )
+        widget=forms.TextInput(attrs={"class": BASE_INPUT, "maxlength": "2"}))
+    so = forms.CharField(label=_("Funnel / source (so)"), required=False, max_length=200,
+                         widget=forms.TextInput(attrs={"class": BASE_INPUT}))
+    sub = forms.CharField(label=_("Sub (optional)"), required=False, max_length=200,
+                          widget=forms.TextInput(attrs={"class": BASE_INPUT}))
 
-    def to_api_payload(self, request, account_password, affclickid):
-        """Build the push body from cleaned data + request context.
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        sources = push_sources()
+        self.fields["target"].choices = [
+            (source_token(s), f"{s.name} ({s.get_kind_display() if hasattr(s, 'get_kind_display') else s.kind})")
+            for s in sources
+        ]
+        if not sources:
+            self.fields["target"].choices = [("", _("No source configured"))]
 
-        `affclickid` is our own click id: TrackBox echoes it back in the
-        {affclickid} postback macro, letting the receiver match events to
-        the Lead row created at push time.
-        """
-        data = self.cleaned_data
-        forwarded = request.META.get("HTTP_X_FORWARDED_FOR", "")
-        ip = forwarded.split(",")[0].strip() or request.META.get("REMOTE_ADDR", "")
-        payload = {
-            "firstname": data["firstname"],
-            "lastname": data["lastname"],
-            "email": data["email"],
-            "phone": data["phone"],
-            "password": account_password,
-            "userip": ip,
-            "country": data["country"].upper(),
-            "lg": data["lg"].upper(),
-            "affclickid": affclickid,
+
+class LeadSourceForm(forms.ModelForm):
+    """Add/edit an external lead API source from the UI."""
+
+    class Meta:
+        model = LeadSource
+        fields = (
+            "name", "kind", "base_url", "is_active", "token",
+            "username", "password", "ai", "ci", "gi",
+            "affiliate_id", "offer_id", "goal_lead", "goal_ftd",
+            "link_id", "funnel", "source_tag", "notes",
+        )
+        widgets = {
+            "password": forms.PasswordInput(render_value=True),
+            "notes": forms.Textarea(attrs={"rows": 3}),
         }
-        if data.get("so"):
-            payload["so"] = data["so"]
-        if data.get("sub"):
-            payload["sub"] = data["sub"]
-        return payload
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for name, field in self.fields.items():
+            widget = field.widget
+            if isinstance(widget, forms.Textarea):
+                widget.attrs.setdefault(
+                    "class", BASE_INPUT.replace("h-10", "min-h-[90px] py-2"))
+            elif isinstance(widget, forms.CheckboxInput):
+                widget.attrs.setdefault("class", "h-4 w-4 rounded border-input")
+            else:
+                widget.attrs.setdefault("class", BASE_INPUT)
+
+    def clean(self):
+        cleaned = super().clean()
+        kind = cleaned.get("kind")
+        token = cleaned.get("token")
+        if kind and not token:
+            self.add_error("token", _("Token / API key è obbligatorio."))
+        if kind == LeadSource.KIND_TRACKBOX:
+            if not cleaned.get("username") or not cleaned.get("password"):
+                raise forms.ValidationError(
+                    _("TrackBox richiede username e password."))
+        return cleaned

@@ -1,19 +1,19 @@
-"""Pull-sync from the IREV affiliate API into the local Lead table.
+"""Pull/refresh leads from every active source into the local Lead table.
 
-Upserts on uniqueid "irev-<id>" so re-running is idempotent; deposit
-flags come from conversions whose goal matches IREV_GOAL_FTD.
+Each source kind has its own routine; `run_all_sources()` dispatches by
+kind and returns a list of human-readable result lines (one per source).
 """
-from django.conf import settings
 from django.utils.dateparse import parse_datetime
 
-from . import affinitrax, irev
-from .models import Lead
+from . import affinitrax, client, irev
+from .client import CRMAPIError
+from .models import Lead, LeadSource
+from .sources import active_sources
 
-MAX_PAGES = 30  # safety cap: 30 × 100 = 3000 rows per run
+MAX_PAGES = 30  # safety cap per source: 30 × 100 = 3000 rows
 
 
 def _paginate(fetch):
-    """Yield rows across pages until the API reports the last page."""
     page = 1
     while page <= MAX_PAGES:
         response = fetch(page=page) or {}
@@ -25,38 +25,32 @@ def _paginate(fetch):
         page += 1
 
 
-def sync_irev_leads():
-    """Returns (created, updated). Raises CRMAPIError on API failure."""
-    # Conversions first: map lead_id → set of goal ids.
+# ── IREV ─────────────────────────────────────────────────────────────────
+def sync_irev_leads(src):
     goals_by_lead = {}
-    for conv in _paginate(irev.list_conversions):
+    for conv in _paginate(lambda page: irev.list_conversions(src, page=page)):
         lead_id = conv.get("lead_id")
         if lead_id is not None:
             goals_by_lead.setdefault(str(lead_id), set()).add(
                 str(conv.get("goal_type_id") or conv.get("goal_type_uuid") or "")
             )
-
-    ftd_goal = str(settings.IREV_GOAL_FTD or "")
+    ftd_goal = str(src.goal_ftd or "")
     created = updated = 0
-    for row in _paginate(irev.list_leads):
+    for row in _paginate(lambda page: irev.list_leads(src, page=page)):
         irev_id = row.get("id")
         if irev_id is None:
             continue
         uniqueid = f"irev-{irev_id}"
         goals = goals_by_lead.get(str(irev_id), set())
         is_deposit = bool(ftd_goal and ftd_goal in goals)
-        event_at = None
-        if isinstance(row.get("created_at"), str):
-            event_at = parse_datetime(row["created_at"])
-
+        event_at = parse_datetime(row["created_at"]) if isinstance(
+            row.get("created_at"), str) else None
         lead = Lead.objects.filter(uniqueid=uniqueid).first()
         if lead is None:
-            lead = Lead(uniqueid=uniqueid, source="irev")
+            lead = Lead(uniqueid=uniqueid, source=src.slug)
             created += 1
         else:
             updated += 1
-        # The list payload may or may not include profile/contact fields
-        # depending on the IREV setup — map what's there, keep the rest raw.
         for field, keys in (
             ("firstname", ("first_name", "firstname")),
             ("lastname", ("last_name", "lastname")),
@@ -76,32 +70,65 @@ def sync_irev_leads():
         if event_at:
             lead.event_at = event_at
             if lead.pk is None:
-                # New row: date it when IREV created it, not when we synced.
                 lead.created_at = event_at
         merged = dict(lead.payload or {})
         merged.update(row)
         lead.payload = merged
         lead.save()
-    return created, updated
+    return f"{created} nuovi, {updated} aggiornati"
 
 
-def refresh_affinitrax_statuses(limit=100):
-    """Re-query Affinitrax for our non-final leads; returns updated count.
+# ── TrackBox ─────────────────────────────────────────────────────────────
+def sync_trackbox_leads(src):
+    from datetime import datetime, time, timedelta, timezone as dt_tz
 
-    Affinitrax has no bulk listing endpoint, so we poll lead-by-lead the
-    most recent rows still in a non-final status (rate limit 200/min).
-    """
+    today = datetime.now(dt_tz.utc).date()
+    dt_from = datetime.combine(today - timedelta(days=90), time.min, tzinfo=dt_tz.utc)
+    dt_to = datetime.combine(today, time.max, tzinfo=dt_tz.utc)
+    response = client.pull_customers(src, dt_from, dt_to)
+    created = updated = 0
+    for row in client.extract_rows(response):
+        if not isinstance(row, dict):
+            continue
+        uid = str(row.get("uuid") or row.get("id") or "")
+        if not uid:
+            continue
+        uniqueid = f"tb-{uid}"
+        lead = Lead.objects.filter(uniqueid=uniqueid).first()
+        if lead is None:
+            lead = Lead(uniqueid=uniqueid, source=src.slug)
+            created += 1
+        else:
+            updated += 1
+        if row.get("callStatus"):
+            lead.status = str(row["callStatus"])[:120]
+        if row.get("isDeposit"):
+            lead.is_deposit = True
+        event_at = parse_datetime(str(row.get("createdAt", "")).replace(" ", "T"))
+        if event_at:
+            lead.event_at = event_at
+            if lead.pk is None:
+                lead.created_at = event_at
+        merged = dict(lead.payload or {})
+        merged.update(row)
+        lead.payload = merged
+        lead.save()
+    return f"{created} nuovi, {updated} aggiornati"
+
+
+# ── Affinitrax ───────────────────────────────────────────────────────────
+def refresh_affinitrax_statuses(src, limit=100):
     leads = (Lead.objects
-             .filter(source="affinitrax", uniqueid__startswith="afx-")
+             .filter(source=src.slug, uniqueid__startswith="afx-")
              .filter(status__in=affinitrax.NON_FINAL_STATUSES)
              .order_by("-created_at")[:limit])
     updated = 0
     for lead in leads:
         afx_id = lead.uniqueid.removeprefix("afx-")
         try:
-            result = affinitrax.get_lead(afx_id) or {}
+            result = affinitrax.get_lead(src, afx_id) or {}
         except Exception:
-            continue  # one bad lead must not kill the whole refresh
+            continue
         status = result.get("status") if isinstance(result, dict) else None
         if status and status != lead.status:
             lead.status = str(status)[:120]
@@ -112,4 +139,30 @@ def refresh_affinitrax_statuses(limit=100):
             lead.payload = merged
             lead.save()
             updated += 1
-    return updated
+    return f"{updated} stati aggiornati"
+
+
+_DISPATCH = {
+    LeadSource.KIND_IREV: sync_irev_leads,
+    LeadSource.KIND_TRACKBOX: sync_trackbox_leads,
+    LeadSource.KIND_AFFINITRAX: refresh_affinitrax_statuses,
+}
+
+
+def run_all_sources():
+    """Run sync for every active, pull-capable source. Returns (ok, errors)."""
+    ok, errors = [], []
+    for src in active_sources():
+        if not src.can_pull:
+            continue
+        fn = _DISPATCH.get(src.kind)
+        if not fn:
+            continue
+        try:
+            summary = fn(src)
+            ok.append(f"{src.name}: {summary}")
+        except CRMAPIError as exc:
+            errors.append(f"{src.name}: {exc}")
+        except Exception as exc:  # never let one source break the others
+            errors.append(f"{src.name}: errore imprevisto ({exc})")
+    return ok, errors

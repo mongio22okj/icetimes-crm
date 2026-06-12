@@ -10,7 +10,7 @@ from django.urls import reverse_lazy
 from django.utils.dateparse import parse_datetime
 from django.views import View
 from django.views.decorators.csrf import csrf_exempt
-from django.views.generic import FormView
+from django.views.generic import CreateView, FormView, ListView, UpdateView
 
 from apps.accounts.mixins import EmailVerifiedRequiredMixin
 from apps.accounts.views import StaffRequiredMixin
@@ -18,10 +18,12 @@ from apps.core.breadcrumbs import BreadcrumbsMixin
 from apps.core.messages import LEVEL_ERROR, LEVEL_SUCCESS, toast
 from apps.core.tables import BulkAction, Column, Filter, TableConfig, TableView
 
-from . import affinitrax, client, irev
-from .forms import LeadSendForm
-from .models import Lead
-from .sync import refresh_affinitrax_statuses, sync_irev_leads
+from . import affinitrax, client, irev, v3
+from .client import CRMAPIError
+from .forms import LeadSendForm, LeadSourceForm
+from .models import Lead, LeadSource
+from .sources import resolve
+from .sync import run_all_sources
 
 LEADS_TABLE = TableConfig(
     key="leads",
@@ -39,7 +41,8 @@ LEADS_TABLE = TableConfig(
                filter=Filter("text", placeholder="Filter status…")),
         Column("is_deposit", "Deposit", sortable=True,
                formatter=lambda v: "✓ deposit" if v else "—"),
-        Column("source", "Source", priority=3),
+        Column("source", "Source", sortable=True,
+               filter=Filter("text", placeholder="Filter source…")),
     ),
     bulk_actions=(
         BulkAction(slug="delete", label="Delete", icon="trash", destructive=True,
@@ -49,7 +52,7 @@ LEADS_TABLE = TableConfig(
     page_size=25,
     default_sort="-created_at",
     sticky_first=True,
-    caption="Leads ricevuti da TrackBox via postback e invii manuali.",
+    caption="Lead ricevuti dalle sorgenti API collegate e invii manuali.",
 )
 
 
@@ -108,7 +111,7 @@ class LeadListView(BreadcrumbsMixin, LoginRequiredMixin,
 
 class LeadSendView(BreadcrumbsMixin, LoginRequiredMixin,
                    EmailVerifiedRequiredMixin, StaffRequiredMixin, FormView):
-    """Manual lead submission form (TrackBox /api/signup/procform)."""
+    """Manual lead submission towards a chosen active source."""
 
     template_name = "leads/lead_send.html"
     form_class = LeadSendForm
@@ -116,21 +119,79 @@ class LeadSendView(BreadcrumbsMixin, LoginRequiredMixin,
     breadcrumb_title = "Send lead"
     breadcrumb_parent = "leads:list"
 
-    def form_valid(self, form):
-        data = form.cleaned_data
-        target = data.get("target") or "trackbox"
-        if target == "irev":
-            return self._send_irev(form, data)
-        if target == "affinitrax":
-            return self._send_affinitrax(form, data)
-        return self._send_trackbox(form, data)
-
     def _client_ip(self):
         forwarded = self.request.META.get("HTTP_X_FORWARDED_FOR", "")
         return (forwarded.split(",")[0].strip()
                 or self.request.META.get("REMOTE_ADDR", ""))
 
-    def _send_affinitrax(self, form, data):
+    def form_valid(self, form):
+        data = form.cleaned_data
+        src = resolve(data.get("target"))
+        if src is None:
+            form.add_error(None, "Nessuna sorgente valida selezionata.")
+            return self.form_invalid(form)
+        handler = {
+            LeadSource.KIND_TRACKBOX: self._send_trackbox,
+            LeadSource.KIND_IREV: self._send_irev,
+            LeadSource.KIND_AFFINITRAX: self._send_affinitrax,
+            LeadSource.KIND_V3: self._send_v3,
+        }.get(src.kind)
+        if handler is None:
+            form.add_error(None, f"Tipo sorgente non gestito: {src.kind}")
+            return self.form_invalid(form)
+        return handler(form, data, src)
+
+    def _send_trackbox(self, form, data, src):
+        account_password = secrets.token_urlsafe(10)
+        affclickid = f"ice{secrets.token_hex(6)}"
+        payload = {
+            "firstname": data["firstname"],
+            "lastname": data["lastname"],
+            "email": data["email"],
+            "phone": data["phone"],
+            "password": account_password,
+            "userip": self._client_ip(),
+            "country": data["country"].upper(),
+            "lg": data["lg"].upper(),
+            "affclickid": affclickid,
+        }
+        if data.get("so"):
+            payload["so"] = data["so"]
+        if data.get("sub"):
+            payload["sub"] = data["sub"]
+        try:
+            result = client.push_lead(src, payload) or {}
+        except CRMAPIError as exc:
+            form.add_error(None, str(exc))
+            return self.form_invalid(form)
+        self._store_local(data, uniqueid=affclickid, src=src, payload=result)
+        toast(self.request, LEVEL_SUCCESS,
+              f"Lead inviato a {src.name} (rif: {affclickid}).")
+        return super().form_valid(form)
+
+    def _send_irev(self, form, data, src):
+        profile = {
+            "email": data["email"],
+            "phone": data["phone"],
+            "first_name": data["firstname"],
+            "last_name": data["lastname"],
+        }
+        try:
+            result = irev.push_lead(src, profile, ip=self._client_ip()) or {}
+        except CRMAPIError as exc:
+            form.add_error(None, str(exc))
+            return self.form_invalid(form)
+        if isinstance(result, dict) and result.get("validation_errors"):
+            form.add_error(None, f"IREV: {result['validation_errors']}")
+            return self.form_invalid(form)
+        lead_id = result.get("lead_id") if isinstance(result, dict) else None
+        uniqueid = f"irev-{lead_id}" if lead_id else f"irev-man-{secrets.token_hex(5)}"
+        self._store_local(data, uniqueid=uniqueid, src=src, payload=result)
+        toast(self.request, LEVEL_SUCCESS,
+              f"Lead inviato a {src.name} (rif: {lead_id or 'n/d'}).")
+        return super().form_valid(form)
+
+    def _send_affinitrax(self, form, data, src):
         click_id = f"ice{secrets.token_hex(6)}"
         payload = {
             "email": data["email"],
@@ -142,61 +203,43 @@ class LeadSendView(BreadcrumbsMixin, LoginRequiredMixin,
             "click_id": click_id,
         }
         try:
-            result = affinitrax.push_lead(payload) or {}
-        except client.CRMAPIError as exc:
+            result = affinitrax.push_lead(src, payload) or {}
+        except CRMAPIError as exc:
             form.add_error(None, str(exc))
             return self.form_invalid(form)
         lead_id = result.get("lead_id") if isinstance(result, dict) else None
         status = (result.get("status") if isinstance(result, dict) else "") or "sent"
         self._store_local(data, uniqueid=f"afx-{lead_id}" if lead_id else click_id,
-                          source="affinitrax", payload=result, status=status)
+                          src=src, payload=result, status=status)
         toast(self.request, LEVEL_SUCCESS,
-              f"Lead inviato ad Affinitrax (rif: {lead_id or click_id}).")
+              f"Lead inviato a {src.name} (rif: {lead_id or click_id}).")
         return super().form_valid(form)
 
-    def _send_trackbox(self, form, data):
-        # TrackBox creates an account for the lead — generate a strong
-        # one-off password instead of asking the operator for one.
-        account_password = secrets.token_urlsafe(10)
-        # Our click id: echoed back by the {affclickid} postback macro so
-        # status/deposit events update this same Lead row.
-        affclickid = f"ice{secrets.token_hex(6)}"
-        try:
-            result = client.push_lead(
-                form.to_api_payload(self.request, account_password, affclickid)
-            ) or {}
-        except client.CRMAPIError as exc:
-            form.add_error(None, str(exc))
-            return self.form_invalid(form)
-        self._store_local(data, uniqueid=affclickid, source="trackbox",
-                          payload=result)
-        toast(self.request, LEVEL_SUCCESS,
-              f"Lead inviato a TrackBox (rif: {affclickid}).")
-        return super().form_valid(form)
-
-    def _send_irev(self, form, data):
-        profile = {
+    def _send_v3(self, form, data, src):
+        payload = {
+            "fname": data["firstname"],
+            "lname": data["lastname"],
             "email": data["email"],
-            "phone": data["phone"],
-            "first_name": data["firstname"],
-            "last_name": data["lastname"],
+            "fullphone": data["phone"],
+            "ip": self._client_ip(),
+            "country": data["country"].upper(),
+            "language": data["lg"].lower(),
         }
         try:
-            result = irev.push_lead(profile, ip=self._client_ip()) or {}
-        except client.CRMAPIError as exc:
+            result = v3.push_lead(src, payload) or {}
+        except CRMAPIError as exc:
             form.add_error(None, str(exc))
             return self.form_invalid(form)
-        if isinstance(result, dict) and result.get("validation_errors"):
-            form.add_error(None, f"IREV: {result['validation_errors']}")
-            return self.form_invalid(form)
-        lead_id = result.get("lead_id") if isinstance(result, dict) else None
-        uniqueid = f"irev-{lead_id}" if lead_id else f"irev-man-{secrets.token_hex(5)}"
-        self._store_local(data, uniqueid=uniqueid, source="irev", payload=result)
+        ref = ""
+        if isinstance(result, dict):
+            ref = str(result.get("lead_id") or result.get("id") or "")
+        self._store_local(data, uniqueid=ref or f"v3-{secrets.token_hex(5)}",
+                          src=src, payload=result)
         toast(self.request, LEVEL_SUCCESS,
-              f"Lead inviato a IREV (rif: {lead_id or 'n/d'}).")
+              f"Lead inviato a {src.name}{f' (rif: {ref})' if ref else ''}.")
         return super().form_valid(form)
 
-    def _store_local(self, data, *, uniqueid, source, payload, status="sent"):
+    def _store_local(self, data, *, uniqueid, src, payload, status="sent"):
         Lead.objects.create(
             uniqueid=uniqueid,
             firstname=data["firstname"],
@@ -205,45 +248,81 @@ class LeadSendView(BreadcrumbsMixin, LoginRequiredMixin,
             phone=data["phone"],
             country=data.get("country", "").upper(),
             status=status,
-            source=source,
+            source=src.slug,
             payload=payload if isinstance(payload, dict) else {},
         )
 
 
 class LeadSyncView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
                    StaffRequiredMixin, View):
-    """Manual sync of every configured pull-capable source."""
+    """Manual sync of every active, pull-capable source."""
 
     def post(self, request):
-        ran_any = False
-        if irev.is_configured():
-            ran_any = True
-            try:
-                created, updated = sync_irev_leads()
-            except client.CRMAPIError as exc:
-                toast(request, LEVEL_ERROR, f"IREV: {exc}")
-            else:
-                toast(request, LEVEL_SUCCESS,
-                      f"IREV: {created} nuovi, {updated} aggiornati.")
-        if affinitrax.is_configured():
-            ran_any = True
-            try:
-                refreshed = refresh_affinitrax_statuses()
-            except client.CRMAPIError as exc:
-                toast(request, LEVEL_ERROR, f"Affinitrax: {exc}")
-            else:
-                toast(request, LEVEL_SUCCESS,
-                      f"Affinitrax: {refreshed} stati aggiornati.")
-        if not ran_any:
+        ok, errors = run_all_sources()
+        for line in ok:
+            toast(request, LEVEL_SUCCESS, line)
+        for line in errors:
+            toast(request, LEVEL_ERROR, line)
+        if not ok and not errors:
             toast(request, LEVEL_ERROR,
-                  "Nessuna fonte configurata per la sincronizzazione.")
+                  "Nessuna sorgente attiva con lettura disponibile.")
         return redirect("leads:list")
 
 
+# ── Source management (Settings → API sources) ──────────────────────────
+
+class SourceListView(BreadcrumbsMixin, LoginRequiredMixin,
+                     EmailVerifiedRequiredMixin, StaffRequiredMixin, ListView):
+    model = LeadSource
+    template_name = "leads/source_list.html"
+    context_object_name = "sources"
+    breadcrumb_title = "API sources"
+
+
+class SourceCreateView(BreadcrumbsMixin, LoginRequiredMixin,
+                       EmailVerifiedRequiredMixin, StaffRequiredMixin, CreateView):
+    model = LeadSource
+    form_class = LeadSourceForm
+    template_name = "leads/source_form.html"
+    success_url = reverse_lazy("leads:sources")
+    breadcrumb_title = "New API source"
+    breadcrumb_parent = ("API sources", "leads:sources")
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        toast(self.request, LEVEL_SUCCESS,
+              f"Sorgente '{self.object.name}' creata.")
+        return response
+
+
+class SourceUpdateView(BreadcrumbsMixin, LoginRequiredMixin,
+                       EmailVerifiedRequiredMixin, StaffRequiredMixin, UpdateView):
+    model = LeadSource
+    form_class = LeadSourceForm
+    template_name = "leads/source_form.html"
+    success_url = reverse_lazy("leads:sources")
+    breadcrumb_title = "Edit API source"
+    breadcrumb_parent = ("API sources", "leads:sources")
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        toast(self.request, LEVEL_SUCCESS,
+              f"Sorgente '{self.object.name}' aggiornata.")
+        return response
+
+
+class SourceDeleteView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
+                       StaffRequiredMixin, View):
+    def post(self, request, pk):
+        deleted = LeadSource.objects.filter(pk=pk).delete()[0]
+        toast(request, LEVEL_SUCCESS if deleted else LEVEL_ERROR,
+              "Sorgente eliminata." if deleted else "Sorgente non trovata.")
+        return redirect("leads:sources")
+
+
 # ── Postback receiver ────────────────────────────────────────────────────
-# Public endpoint TrackBox calls on lead events. Protected by a shared
-# token (?token=… or X-Postback-Token header) instead of session auth —
-# this is a machine-to-machine hook, not an API-key endpoint.
+# Public endpoint external sources call on lead events. Protected by a
+# shared token (?token=… or X-Postback-Token header).
 
 def _first(data, *keys):
     for key in keys:
@@ -277,12 +356,13 @@ def postback(request):
             data.update(request.POST.items())
     data.pop("token", None)
 
-    uniqueid = str(_first(data, "uniqueid", "clickid", "uuid", "leadId",
-                          "customerId", "id") or "")
+    uniqueid = str(_first(data, "uniqueid", "clickid", "click_id", "uuid",
+                          "leadId", "lead_id", "customerId", "id") or "")
     email = str(_first(data, "email") or "")
     status = str(_first(data, "callStatus", "saleStatus", "status", "statusName",
-                        "event") or "")
-    deposit_raw = _first(data, "isDeposit", "deposit", "ftd", "hasFTD", "type")
+                        "event", "event_type") or "")
+    deposit_raw = _first(data, "isDeposit", "deposit", "ftd", "hasFTD", "type",
+                         "event_type")
     event_raw = _first(data, "createdAt", "date", "time", "eventDate")
     event_at = None
     if isinstance(event_raw, str):
@@ -290,22 +370,25 @@ def postback(request):
 
     lead = None
     if uniqueid:
-        lead = Lead.objects.filter(uniqueid=uniqueid).order_by("-created_at").first()
+        lead = (Lead.objects.filter(uniqueid=uniqueid)
+                .order_by("-created_at").first())
+        if lead is None:
+            # Affinitrax stores ids prefixed afx-; match those too.
+            lead = (Lead.objects.filter(uniqueid=f"afx-{uniqueid}")
+                    .order_by("-created_at").first())
     if lead is None and email:
         lead = Lead.objects.filter(email__iexact=email).order_by("-created_at").first()
     if lead is None:
         lead = Lead(source="postback")
 
-    # Update only with non-empty incoming values so a status-only
-    # postback doesn't blank out contact fields captured earlier.
-    if uniqueid:
+    if uniqueid and not lead.uniqueid:
         lead.uniqueid = uniqueid
     if email:
         lead.email = email
     for field, keys in (
-        ("firstname", ("firstname", "firstName", "name")),
-        ("lastname", ("lastname", "lastName")),
-        ("phone", ("phone", "phoneNumber")),
+        ("firstname", ("firstname", "firstName", "first_name", "name")),
+        ("lastname", ("lastname", "lastName", "last_name")),
+        ("phone", ("phone", "phoneNumber", "fullphone")),
         ("country", ("country", "countryCode", "geo")),
     ):
         value = _first(data, *keys)

@@ -47,6 +47,9 @@ NAV_ITEMS: tuple[NavItem, ...] = (
     NavItem(_("Users"), "users:list", "users",
             keywords=("team", "staff", "members"), group=G_ACCOUNT,
             requires_staff=True),
+    NavItem(_("API sources"), "leads:sources", "sliders-horizontal",
+            keywords=("api", "sources", "token", "broker", "integrations"),
+            group=G_ACCOUNT, requires_staff=True),
     NavItem(_("Settings"), "settings:profile", "settings",
             keywords=("account", "profile", "preferences"), group=G_ACCOUNT),
 )

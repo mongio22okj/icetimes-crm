@@ -1,37 +1,28 @@
-"""Client for the Affinitrax Seller API (affinitrax.com).
+"""Client for the Affinitrax Seller API (e.g. affinitrax.com).
 
-Auth: X-API-Key header (afx_… token). Endpoints (docs/seller-api):
+Config from a LeadSource-like `src` (base_url, token). Auth: X-API-Key
+header. Endpoints:
 
     POST /api/v1/leads        — submit a lead (email, phone, country required)
     GET  /api/v1/leads/<id>   — lead status (in_progress|relayed|ftd|rejected)
-
-Status updates also arrive via postback (configured on the Affinitrax
-side towards /leads/postback/ with {click_id}/{event_type} placeholders).
-Configuration via env: AFFINITRAX_BASE_URL, AFFINITRAX_API_KEY.
 """
 import json
 import urllib.error
 import urllib.request
 
-from django.conf import settings
-
 from .client import CRMAPIError
 
-# Lead statuses that are still expected to change on the Affinitrax side.
 NON_FINAL_STATUSES = ("in_progress", "relayed", "sent")
 
 
-def is_configured() -> bool:
-    return bool(settings.AFFINITRAX_BASE_URL and settings.AFFINITRAX_API_KEY)
+def is_configured(src) -> bool:
+    return bool(src and src.base_url and src.token)
 
 
-def _request(method, path, payload=None, timeout=30):
-    if not is_configured():
-        raise CRMAPIError(
-            "Affinitrax non configurato: impostare AFFINITRAX_BASE_URL e "
-            "AFFINITRAX_API_KEY nelle variabili d'ambiente."
-        )
-    url = settings.AFFINITRAX_BASE_URL.rstrip("/") + path
+def _request(src, method, path, payload=None, timeout=30):
+    if not is_configured(src):
+        raise CRMAPIError("Affinitrax non configurato: servono URL e token nella sorgente.")
+    url = src.base_url.rstrip("/") + path
     data = json.dumps(payload).encode() if payload is not None else None
     req = urllib.request.Request(
         url,
@@ -40,7 +31,7 @@ def _request(method, path, payload=None, timeout=30):
         headers={
             "Content-Type": "application/json",
             "Accept": "application/json",
-            "X-API-Key": settings.AFFINITRAX_API_KEY,
+            "X-API-Key": src.token,
         },
     )
     try:
@@ -63,11 +54,9 @@ def _request(method, path, payload=None, timeout=30):
         raise CRMAPIError(f"Affinitrax JSON non valido: {body[:200]}") from exc
 
 
-def push_lead(payload):
-    """POST a lead; returns {lead_id, status, redirect_url}."""
-    return _request("POST", "/api/v1/leads", payload=payload)
+def push_lead(src, payload):
+    return _request(src, "POST", "/api/v1/leads", payload=payload)
 
 
-def get_lead(lead_id):
-    """Return current status payload for a lead id."""
-    return _request("GET", f"/api/v1/leads/{lead_id}")
+def get_lead(src, lead_id):
+    return _request(src, "GET", f"/api/v1/leads/{lead_id}")
