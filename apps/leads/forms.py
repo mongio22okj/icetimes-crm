@@ -1,7 +1,7 @@
 from django import forms
 from django.utils.translation import gettext_lazy as _
 
-from .models import LeadSource, Partner
+from .models import Campaign, LeadSource, Partner
 from .sources import push_sources
 
 BASE_INPUT = (
@@ -121,5 +121,32 @@ class PartnerForm(forms.ModelForm):
             elif isinstance(widget, forms.Textarea):
                 widget.attrs.setdefault("class",
                                        BASE_INPUT.replace("h-10", "min-h-[90px] py-2"))
+            else:
+                widget.attrs.setdefault("class", BASE_INPUT)
+
+
+class CampaignForm(forms.ModelForm):
+    class Meta:
+        model = Campaign
+        fields = (
+            "name", "platform", "status",
+            "budget", "spent", "clicks", "leads_count",
+            "start_date", "end_date", "notes",
+        )
+        widgets = {
+            "start_date": forms.DateInput(attrs={"type": "date"}),
+            "end_date": forms.DateInput(attrs={"type": "date"}),
+            "notes": forms.Textarea(attrs={"rows": 3}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for name, field in self.fields.items():
+            widget = field.widget
+            if isinstance(widget, forms.CheckboxInput):
+                widget.attrs.setdefault("class", "h-4 w-4 rounded border-input")
+            elif isinstance(widget, forms.Textarea):
+                widget.attrs.setdefault("class",
+                                       BASE_INPUT.replace("h-10", "min-h-[80px] py-2"))
             else:
                 widget.attrs.setdefault("class", BASE_INPUT)

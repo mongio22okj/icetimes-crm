@@ -17,8 +17,8 @@ from apps.core.breadcrumbs import BreadcrumbsMixin
 from apps.core.messages import LEVEL_ERROR, LEVEL_SUCCESS, toast
 from apps.core.tables import BulkAction, Column, Filter, TableConfig, TableView
 
-from .forms import LeadSourceForm, PartnerForm
-from .models import Lead, LeadSource, Partner
+from .forms import CampaignForm, LeadSourceForm, PartnerForm
+from .models import Campaign, Lead, LeadSource, Partner
 from .sync import run_all_sources
 
 
@@ -328,3 +328,202 @@ class PartnerDeleteView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
         partner.delete()
         toast(request, LEVEL_SUCCESS, f"Partner '{name}' eliminato.")
         return redirect("leads:partner_list")
+
+
+# ── Broker dashboard ────────────────────────────────────────────────────
+
+class BrokersDashboardView(BreadcrumbsMixin, LoginRequiredMixin,
+                           EmailVerifiedRequiredMixin, StaffRequiredMixin,
+                           TemplateView):
+    """Card grid of every configured LeadSource with real-data metrics.
+
+    For each LeadSource we compute: total leads, FTD count, conversion
+    rate, last activity timestamp. Matching uses the Lead.source field
+    which carries the source slug (`kind-pk` for DB rows, `kind` for env
+    shims). Replaces the deleted "API Broker" page with a metrics-focused
+    overview rather than a send form.
+    """
+    template_name = "leads/brokers_dashboard.html"
+    breadcrumb_title = "Broker"
+
+    def get_context_data(self, **kwargs):
+        from django.db.models import Count, Max, Q, Sum
+
+        ctx = super().get_context_data(**kwargs)
+        sources = list(LeadSource.objects.all())
+
+        # One pass: aggregate counts grouped by Lead.source so the page is
+        # cheap even with many brokers.
+        per_source = {
+            row["source"]: row for row in
+            Lead.objects.values("source").annotate(
+                leads=Count("id"),
+                ftd=Count("id", filter=Q(is_deposit=True)),
+                last=Max("created_at"),
+            )
+        }
+
+        cards = []
+        total_leads = total_ftd = 0
+        for s in sources:
+            # Match leads whose Lead.source equals slug or starts with kind.
+            matched = [
+                v for k, v in per_source.items()
+                if k == s.slug or k.startswith(f"{s.kind}-") or k == s.kind
+            ]
+            leads = sum(m["leads"] for m in matched)
+            ftd = sum(m["ftd"] for m in matched)
+            last = max((m["last"] for m in matched if m["last"]), default=None)
+            conv = (ftd * 100 / leads) if leads else 0
+            total_leads += leads
+            total_ftd += ftd
+            cards.append({
+                "source": s,
+                "leads": leads,
+                "ftd": ftd,
+                "conv": conv,
+                "last": last,
+            })
+        cards.sort(key=lambda c: c["leads"], reverse=True)
+
+        ctx["cards"] = cards
+        ctx["totals"] = {
+            "leads": total_leads,
+            "ftd": total_ftd,
+            "conv": (total_ftd * 100 / total_leads) if total_leads else 0,
+            "brokers_active": sum(1 for s in sources if s.is_active),
+            "brokers_total": len(sources),
+        }
+        return ctx
+
+
+# ── Campaign CRUD ────────────────────────────────────────────────────────
+
+class CampaignListView(BreadcrumbsMixin, LoginRequiredMixin,
+                       EmailVerifiedRequiredMixin, StaffRequiredMixin,
+                       TemplateView):
+    template_name = "leads/campaign_list.html"
+    breadcrumb_title = "Campagne"
+
+    def get_context_data(self, **kwargs):
+        from decimal import Decimal
+        ctx = super().get_context_data(**kwargs)
+        campaigns = list(Campaign.objects.all())
+        ctx["campaigns"] = campaigns
+        totals = {
+            "budget": sum((c.budget for c in campaigns), Decimal("0")),
+            "spent": sum((c.spent for c in campaigns), Decimal("0")),
+            "leads": sum(c.leads_count for c in campaigns),
+            "clicks": sum(c.clicks for c in campaigns),
+            "active": sum(1 for c in campaigns if c.status == Campaign.STATUS_ACTIVE),
+            "total": len(campaigns),
+        }
+        totals["cpa"] = (totals["spent"] / totals["leads"]) if totals["leads"] else None
+        ctx["totals"] = totals
+        return ctx
+
+
+class CampaignCreateView(BreadcrumbsMixin, LoginRequiredMixin,
+                         EmailVerifiedRequiredMixin, StaffRequiredMixin,
+                         CreateView):
+    model = Campaign
+    form_class = CampaignForm
+    template_name = "leads/campaign_form.html"
+    success_url = reverse_lazy("leads:campaign_list")
+    breadcrumb_title = "Nuova campagna"
+    breadcrumb_parent = ("Campagne", "leads:campaign_list")
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        toast(self.request, LEVEL_SUCCESS,
+              f"Campagna '{self.object.name}' creata.")
+        return response
+
+
+class CampaignUpdateView(BreadcrumbsMixin, LoginRequiredMixin,
+                         EmailVerifiedRequiredMixin, StaffRequiredMixin,
+                         UpdateView):
+    model = Campaign
+    form_class = CampaignForm
+    template_name = "leads/campaign_form.html"
+    success_url = reverse_lazy("leads:campaign_list")
+    breadcrumb_title = "Modifica campagna"
+    breadcrumb_parent = ("Campagne", "leads:campaign_list")
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        toast(self.request, LEVEL_SUCCESS,
+              f"Campagna '{self.object.name}' aggiornata.")
+        return response
+
+
+class CampaignDeleteView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
+                         StaffRequiredMixin, View):
+    def post(self, request, pk):
+        campaign = Campaign.objects.filter(pk=pk).first()
+        if campaign is None:
+            toast(request, LEVEL_ERROR, "Campagna non trovata.")
+            return redirect("leads:campaign_list")
+        name = campaign.name
+        campaign.delete()
+        toast(request, LEVEL_SUCCESS, f"Campagna '{name}' eliminata.")
+        return redirect("leads:campaign_list")
+
+
+# ── Reports (ROI per broker + CPA per campaign) ─────────────────────────
+
+class ReportsView(BreadcrumbsMixin, LoginRequiredMixin,
+                  EmailVerifiedRequiredMixin, StaffRequiredMixin,
+                  TemplateView):
+    """ROI line chart per broker + CPA bar chart per campaign."""
+    template_name = "leads/reports.html"
+    breadcrumb_title = "Report"
+
+    def get_context_data(self, **kwargs):
+        from datetime import timedelta
+
+        from django.db.models import Count, Q
+        from django.utils import timezone
+
+        ctx = super().get_context_data(**kwargs)
+
+        # ── ROI per broker: FTD count per day per broker, last 30 days ──
+        today = timezone.localdate()
+        days = [today - timedelta(days=i) for i in range(29, -1, -1)]
+        labels = [d.strftime("%d/%m") for d in days]
+        sources = list(LeadSource.objects.filter(is_active=True))
+        datasets = []
+        palette = ["#6366f1", "#06b6d4", "#10b981", "#f59e0b",
+                   "#ef4444", "#8b5cf6", "#ec4899", "#84cc16"]
+        for i, s in enumerate(sources[:8]):
+            per_day = (
+                Lead.objects
+                .filter(source__startswith=s.kind, is_deposit=True,
+                        created_at__date__gte=days[0])
+                .extra(select={"d": "DATE(created_at)"})
+                .values("d")
+                .annotate(n=Count("id"))
+            )
+            counts_by_day = {row["d"]: row["n"] for row in per_day}
+            datasets.append({
+                "label": s.name,
+                "data": [counts_by_day.get(d, 0) for d in days],
+                "borderColor": palette[i % len(palette)],
+                "backgroundColor": "transparent",
+                "tension": 0.35,
+            })
+        roi_chart = {"labels": labels, "datasets": datasets}
+
+        # ── CPA per campaign: bar chart ─────────────────────────────────
+        campaigns = Campaign.objects.all()
+        cpa_chart = {
+            "labels": [c.name for c in campaigns],
+            "data": [float(c.cpa) if c.cpa is not None else 0 for c in campaigns],
+            "platforms": [c.get_platform_display() for c in campaigns],
+        }
+
+        ctx["roi_chart_json"] = json.dumps(roi_chart)
+        ctx["cpa_chart_json"] = json.dumps(cpa_chart)
+        ctx["has_brokers"] = bool(sources)
+        ctx["has_campaigns"] = campaigns.exists()
+        return ctx

@@ -1,6 +1,11 @@
 from django.urls import path
 
 from .views import (
+    BrokersDashboardView,
+    CampaignCreateView,
+    CampaignDeleteView,
+    CampaignListView,
+    CampaignUpdateView,
     IntegrationsView,
     LeadListView,
     LeadSyncView,
@@ -8,6 +13,7 @@ from .views import (
     PartnerDeleteView,
     PartnerListView,
     PartnerUpdateView,
+    ReportsView,
     SourceCreateView,
     SourceDeleteView,
     SourceUpdateView,
@@ -18,6 +24,12 @@ app_name = "leads"
 
 urlpatterns = [
     path("", LeadListView.as_view(), name="list"),
+    path("brokers/", BrokersDashboardView.as_view(), name="brokers_dashboard"),
+    path("campaigns/", CampaignListView.as_view(), name="campaign_list"),
+    path("campaigns/new/", CampaignCreateView.as_view(), name="campaign_create"),
+    path("campaigns/<int:pk>/", CampaignUpdateView.as_view(), name="campaign_edit"),
+    path("campaigns/<int:pk>/delete/", CampaignDeleteView.as_view(), name="campaign_delete"),
+    path("reports/", ReportsView.as_view(), name="reports"),
     path("integrations/", IntegrationsView.as_view(), name="integrations"),
     path("sync/", LeadSyncView.as_view(), name="sync"),
     path("postback/", postback, name="postback"),

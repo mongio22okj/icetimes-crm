@@ -163,3 +163,79 @@ class Partner(models.Model):
 
     def get_absolute_url(self) -> str:
         return reverse("leads:partner_edit", kwargs={"pk": self.pk})
+
+
+class Campaign(models.Model):
+    """Ad-platform campaign tracking. Budget vs spend vs leads → CPA.
+
+    Standalone from LeadSource (broker config) — a campaign is what
+    drives traffic to a landing, the broker is where leads are pushed.
+    """
+
+    PLATFORM_FACEBOOK = "facebook"
+    PLATFORM_GOOGLE = "google"
+    PLATFORM_TIKTOK = "tiktok"
+    PLATFORM_INSTAGRAM = "instagram"
+    PLATFORM_LINKEDIN = "linkedin"
+    PLATFORM_OTHER = "other"
+    PLATFORM_CHOICES = (
+        (PLATFORM_FACEBOOK, "Facebook Ads"),
+        (PLATFORM_GOOGLE, "Google Ads"),
+        (PLATFORM_TIKTOK, "TikTok Ads"),
+        (PLATFORM_INSTAGRAM, "Instagram Ads"),
+        (PLATFORM_LINKEDIN, "LinkedIn Ads"),
+        (PLATFORM_OTHER, "Altro"),
+    )
+
+    STATUS_ACTIVE = "active"
+    STATUS_PAUSED = "paused"
+    STATUS_COMPLETED = "completed"
+    STATUS_CHOICES = (
+        (STATUS_ACTIVE, "Attiva"),
+        (STATUS_PAUSED, "In pausa"),
+        (STATUS_COMPLETED, "Completata"),
+    )
+
+    name = models.CharField("Nome campagna", max_length=200)
+    platform = models.CharField("Piattaforma", max_length=20,
+                                choices=PLATFORM_CHOICES,
+                                default=PLATFORM_FACEBOOK)
+    budget = models.DecimalField("Budget (€)", max_digits=12, decimal_places=2,
+                                 default=0)
+    spent = models.DecimalField("Spesa (€)", max_digits=12, decimal_places=2,
+                                default=0,
+                                help_text="Spesa totale ad oggi su questa campagna.")
+    clicks = models.PositiveIntegerField(default=0)
+    leads_count = models.PositiveIntegerField(
+        "Lead", default=0,
+        help_text="Lead ricevuti dalla campagna. Aggiornabile manualmente "
+                  "o (futuro) calcolabile via funnel/source tracking.")
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES,
+                              default=STATUS_ACTIVE, db_index=True)
+    start_date = models.DateField(null=True, blank=True)
+    end_date = models.DateField(null=True, blank=True)
+    notes = models.TextField(blank=True)
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:
+        return f"{self.name} · {self.get_platform_display()}"
+
+    @property
+    def cpa(self):
+        if not self.leads_count:
+            return None
+        return self.spent / self.leads_count
+
+    @property
+    def remaining_budget(self):
+        return self.budget - self.spent
+
+    @property
+    def budget_used_pct(self):
+        if not self.budget:
+            return 0
+        return min(100, float(self.spent) * 100 / float(self.budget))
