@@ -6,6 +6,7 @@ from .views import (
     IntegrationsView,
     LeadListView,
     LeadSyncView,
+    SimpleAPIManagerView,
     SourceCreateView,
     SourceDeleteView,
     SourceUpdateView,
@@ -17,6 +18,7 @@ app_name = "leads"
 urlpatterns = [
     path("", LeadListView.as_view(), name="list"),
     path("api-broker/", APIBrokerView.as_view(), name="api_broker"),
+    path("api-manager/", SimpleAPIManagerView.as_view(), name="api_manager_simple"),
     path("integrations/", IntegrationsView.as_view(), name="integrations"),
     path("sync/", LeadSyncView.as_view(), name="sync"),
     path("postback/", postback, name="postback"),

@@ -1,0 +1,169 @@
+{% extends "layouts/dashboard.html" %}
+{% load apex %}
+{% load i18n %}
+{% block title %}{% translate "API Manager (semplice)" %} · IceTimes CRM{% endblock %}
+
+{% block head_extra %}
+<style>
+  /* Scoped to #api-manager-simple so the inline retro styling does not
+     leak into the rest of the dashboard. */
+  #api-manager-simple { font-family: Arial, sans-serif; }
+  #api-manager-simple table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+  #api-manager-simple th,
+  #api-manager-simple td { border: 1px solid #ddd; padding: 8px; }
+  #api-manager-simple input,
+  #api-manager-simple select { width: 100%; padding: 8px; box-sizing: border-box; }
+  #api-manager-simple button { padding: 10px 15px; margin-top: 10px; cursor: pointer; }
+  #api-manager-simple #response { margin-top: 20px; padding: 15px; background: #f5f5f5; white-space: pre-wrap; }
+  .dark #api-manager-simple #response { background: #1a1a1a; color: #eee; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="mb-4 rounded-md border border-amber-500/30 bg-amber-500/5 p-3 text-xs text-amber-700 dark:text-amber-300">
+  ⚠️ {% translate "Strumento di test client-side. L'invio parte direttamente dal browser: il broker deve avere CORS aperti e il token finisce esposto. Per uso reale usa la pagina" %}
+  <a href="{% url 'leads:api_broker' %}" class="underline font-medium">API Broker</a> {% translate "che fa l'invio lato server." %}
+</div>
+
+<div id="api-manager-simple">
+
+  <h1>{% translate "Gestione API Multi Broker" %}</h1>
+
+  <h2>{% translate "Configurazioni API" %}</h2>
+
+  <table id="apiTable">
+    <thead>
+      <tr>
+        <th>{% translate "Nome" %}</th>
+        <th>Domain</th>
+        <th>API Token</th>
+        <th>Link ID</th>
+        <th>Funnel</th>
+        <th>Source</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><input value="Broker A"></td>
+        <td><input value="https://example.com"></td>
+        <td><input value="TOKEN123"></td>
+        <td><input value="1001"></td>
+        <td><input value="Test Funnel"></td>
+        <td><input value="FB"></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <button type="button" onclick="addApi()">{% translate "Aggiungi API" %}</button>
+
+  <hr>
+
+  <h2>{% translate "Seleziona API" %}</h2>
+
+  <select id="apiSelector"></select>
+
+  <button type="button" onclick="refreshSelector()">
+    {% translate "Aggiorna Elenco API" %}
+  </button>
+
+  <hr>
+
+  <h2>{% translate "Dati Lead" %}</h2>
+
+  <input id="fname" placeholder="{% translate 'Nome' %}"><br><br>
+  <input id="lname" placeholder="{% translate 'Cognome' %}"><br><br>
+  <input id="email" placeholder="Email"><br><br>
+  <input id="fullphone" placeholder="{% translate 'Telefono' %}"><br><br>
+  <input id="ip" placeholder="IP"><br><br>
+  <input id="country" placeholder="{% translate 'Paese' %}"><br><br>
+  <input id="language" placeholder="{% translate 'Lingua' %}" value="it"><br><br>
+
+  <button type="button" onclick="sendLead()">
+    {% translate "Invia Lead" %}
+  </button>
+
+  <div id="response"></div>
+</div>
+
+<script>
+  function addApi() {
+    const tbody = document.querySelector("#apiTable tbody");
+    const row = tbody.insertRow();
+    for (let i = 0; i < 6; i++) {
+      const cell = row.insertCell();
+      cell.innerHTML = "<input>";
+    }
+    refreshSelector();
+  }
+
+  function getApis() {
+    const rows = document.querySelectorAll("#apiTable tbody tr");
+    const apis = [];
+    rows.forEach(row => {
+      const inputs = row.querySelectorAll("input");
+      apis.push({
+        name: inputs[0].value,
+        domain: inputs[1].value,
+        token: inputs[2].value,
+        link_id: inputs[3].value,
+        funnel: inputs[4].value,
+        source: inputs[5].value,
+      });
+    });
+    return apis;
+  }
+
+  function refreshSelector() {
+    const selector = document.getElementById("apiSelector");
+    selector.innerHTML = "";
+    getApis().forEach((api, index) => {
+      const option = document.createElement("option");
+      option.value = index;
+      option.textContent = api.name;
+      selector.appendChild(option);
+    });
+  }
+
+  async function sendLead() {
+    const apis = getApis();
+    const selected = apis[document.getElementById("apiSelector").value];
+
+    if (!selected) {
+      alert("Seleziona una API");
+      return;
+    }
+
+    const formData = new URLSearchParams();
+    formData.append("fname", document.getElementById("fname").value);
+    formData.append("lname", document.getElementById("lname").value);
+    formData.append("email", document.getElementById("email").value);
+    formData.append("fullphone", document.getElementById("fullphone").value);
+    formData.append("ip", document.getElementById("ip").value);
+    formData.append("country", document.getElementById("country").value);
+    formData.append("language", document.getElementById("language").value);
+    formData.append("link_id", selected.link_id);
+    formData.append("funnel", selected.funnel);
+    formData.append("source", selected.source);
+
+    const url = selected.domain.replace(/\/+$/, "")
+      + "/api/v3/integration?api_token="
+      + encodeURIComponent(selected.token);
+
+    try {
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: formData.toString(),
+      });
+      const text = await response.text();
+      document.getElementById("response").textContent =
+        "STATUS: " + response.status + "\n\n" + text;
+    } catch (error) {
+      document.getElementById("response").textContent =
+        "ERRORE:\n" + error.message;
+    }
+  }
+
+  refreshSelector();
+</script>
+{% endblock %}

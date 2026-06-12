@@ -55,6 +55,10 @@ NAV_ITEMS: tuple[NavItem, ...] = (
             keywords=("api", "integrations", "docs", "rest", "webhook",
                       "embed", "affiliate", "code examples"),
             group=G_ACCOUNT, requires_staff=True),
+    NavItem(_("API Manager (semplice)"), "leads:api_manager_simple", "table",
+            keywords=("api", "manager", "simple", "test", "table",
+                      "client-side"),
+            group=G_ACCOUNT, requires_staff=True),
     NavItem(_("Settings"), "settings:profile", "settings",
             keywords=("account", "profile", "preferences"), group=G_ACCOUNT),
 )
