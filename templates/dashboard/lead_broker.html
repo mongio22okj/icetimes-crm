@@ -1,0 +1,189 @@
+{% extends "layouts/dashboard.html" %}
+{% load apex %}
+{% load i18n %}
+{% block title %}Dashboard · IceTimes CRM{% endblock %}
+
+{% block head_extra %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+  <div>
+    <h1 class="text-2xl font-bold tracking-tight">Dashboard</h1>
+    <p class="text-sm text-muted-foreground mt-1">
+      {% translate "Panoramica lead, vendite e performance per sorgente." %}
+    </p>
+  </div>
+  <div class="flex gap-2">
+    <a href="{% url 'leads:list' %}"
+       class="h-10 px-4 rounded-md border border-border inline-flex items-center gap-2 text-sm hover:bg-accent">
+      {% icon "target" %} Lead
+    </a>
+    <a href="{% url 'products:sale_list' %}"
+       class="h-10 px-4 rounded-md bg-primary text-primary-foreground inline-flex items-center gap-2 font-medium hover:opacity-90">
+      {% icon "shopping-bag" %} Vendite
+    </a>
+  </div>
+</div>
+
+{# ── KPI cards ────────────────────────────────────────────────────── #}
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+  {% for k in kpis %}
+  <div class="rounded-lg border border-border bg-card p-5 flex items-center gap-4">
+    <div class="h-12 w-12 rounded-lg bg-gradient-to-br {{ k.gradient }} text-white inline-flex items-center justify-center shrink-0">
+      {% icon k.icon %}
+    </div>
+    <div class="min-w-0 flex-1">
+      <div class="text-2xl font-bold leading-tight">{{ k.value }}</div>
+      <div class="text-xs text-muted-foreground mt-0.5">{{ k.label }}</div>
+      {% if k.delta %}
+        <div class="text-xs mt-1 inline-flex items-center gap-0.5
+                    {% if k.trend == 'up' %}text-emerald-600 dark:text-emerald-400
+                    {% elif k.trend == 'down' %}text-rose-600 dark:text-rose-400
+                    {% else %}text-muted-foreground{% endif %}">
+          {% if k.trend == 'up' %}↑{% elif k.trend == 'down' %}↓{% else %}—{% endif %}
+          {{ k.delta }}
+        </div>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+{# ── Charts row ──────────────────────────────────────────────────── #}
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+  <div class="rounded-lg border border-border bg-card p-5">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="text-base font-semibold">{% translate "Lead per Source" %} <span class="text-xs text-muted-foreground font-normal">(7 giorni)</span></h3>
+    </div>
+    <canvas id="brokerChart" height="220"></canvas>
+  </div>
+  <div class="rounded-lg border border-border bg-card p-5">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="text-base font-semibold">{% translate "Lead per Paese" %} <span class="text-xs text-muted-foreground font-normal">(30 giorni)</span></h3>
+    </div>
+    <canvas id="countryChart" height="220"></canvas>
+  </div>
+</div>
+
+{# ── Bottom row: status pie + activity ──────────────────────────── #}
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+  <div class="rounded-lg border border-border bg-card p-5">
+    <h3 class="text-base font-semibold mb-4">{% translate "Stato Lead" %} <span class="text-xs text-muted-foreground font-normal">(mese corrente)</span></h3>
+    <canvas id="statusChart" height="220"></canvas>
+  </div>
+  <div class="rounded-lg border border-border bg-card p-5">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="text-base font-semibold">{% translate "Attività Recenti" %}</h3>
+      <a href="{% url 'leads:list' %}" class="text-xs text-primary hover:underline">{% translate "Vedi tutti" %} →</a>
+    </div>
+    <ul class="space-y-3">
+      {% for a in activities %}
+      <li class="flex items-start gap-3">
+        <div class="h-8 w-8 rounded-full inline-flex items-center justify-center shrink-0
+                    {% if a.tone == 'success' %}bg-emerald-500/10 text-emerald-600 dark:text-emerald-400
+                    {% elif a.tone == 'warning' %}bg-amber-500/10 text-amber-600 dark:text-amber-400
+                    {% elif a.tone == 'danger' %}bg-rose-500/10 text-rose-600 dark:text-rose-400
+                    {% else %}bg-sky-500/10 text-sky-600 dark:text-sky-400{% endif %}">
+          {% icon a.icon %}
+        </div>
+        <div class="min-w-0 flex-1">
+          <p class="text-sm truncate"><strong>{{ a.title }}</strong> · {{ a.text }}</p>
+          {% if a.extra %}<p class="text-xs text-muted-foreground truncate">{{ a.extra }}</p>{% endif %}
+          <p class="text-xs text-muted-foreground">{{ a.when|timesince }} fa</p>
+        </div>
+      </li>
+      {% empty %}
+      <li class="text-sm text-muted-foreground text-center py-6">{% translate "Nessuna attività recente." %}</li>
+      {% endfor %}
+    </ul>
+  </div>
+</div>
+
+<script>
+(function() {
+  const brokerData = {{ broker_chart_json|safe }};
+  const statusData = {{ status_chart_json|safe }};
+  const countryData = {{ country_chart_json|safe }};
+
+  const palette = [
+    "#6366f1", "#06b6d4", "#10b981", "#f59e0b",
+    "#ef4444", "#8b5cf6", "#ec4899", "#84cc16",
+  ];
+
+  // Detect dark mode for text colors.
+  const isDark = document.documentElement.classList.contains("dark") ||
+                 window.matchMedia("(prefers-color-scheme: dark)").matches;
+  const textColor = isDark ? "#cbd5e1" : "#475569";
+  const gridColor = isDark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)";
+
+  Chart.defaults.color = textColor;
+  Chart.defaults.borderColor = gridColor;
+
+  // Bar — Lead per source
+  if (brokerData.labels.length) {
+    new Chart(document.getElementById("brokerChart"), {
+      type: "bar",
+      data: {
+        labels: brokerData.labels,
+        datasets: [{
+          label: "Lead",
+          data: brokerData.data,
+          backgroundColor: palette,
+          borderRadius: 6,
+        }],
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { grid: { display: false }},
+          y: { beginAtZero: true, ticks: { precision: 0 }},
+        },
+      },
+    });
+  }
+
+  // Doughnut — Lead per status
+  if (statusData.labels.length) {
+    new Chart(document.getElementById("statusChart"), {
+      type: "doughnut",
+      data: {
+        labels: statusData.labels,
+        datasets: [{
+          data: statusData.data,
+          backgroundColor: palette,
+          borderWidth: 0,
+        }],
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { position: "bottom", labels: { boxWidth: 10, padding: 12 }}},
+        cutout: "65%",
+      },
+    });
+  }
+
+  // Doughnut — Lead per country
+  if (countryData.labels.length) {
+    new Chart(document.getElementById("countryChart"), {
+      type: "doughnut",
+      data: {
+        labels: countryData.labels,
+        datasets: [{
+          data: countryData.data,
+          backgroundColor: palette,
+          borderWidth: 0,
+        }],
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { position: "bottom", labels: { boxWidth: 10, padding: 12 }}},
+        cutout: "65%",
+      },
+    });
+  }
+})();
+</script>
+{% endblock %}

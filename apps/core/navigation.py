@@ -34,6 +34,10 @@ G_ACCOUNT = _("Account")
 
 
 NAV_ITEMS: tuple[NavItem, ...] = (
+    NavItem(_("Dashboard"), "dashboard:dashboard", "layout-dashboard",
+            keywords=("dashboard", "home", "overview", "kpi", "stats",
+                      "charts"),
+            group=G_COMMERCE, requires_staff=True),
     NavItem(_("Leads"), "leads:list", "target",
             keywords=("leads", "crm", "integrations", "deposit"),
             group=G_COMMERCE, requires_staff=True),

@@ -1,11 +1,10 @@
 from django.urls import path
-from django.views.generic import RedirectView
 
-# The dashboard pages were removed from the IceTimes CRM — the app is a
-# pure lead CRM now. We keep the URL name "dashboard" alive (logo link,
-# breadcrumb root, post-login + unlock redirects all reverse it) but it
-# simply bounces to the Leads list.
+from .views import LeadBrokerDashboardView
+
+# Real CRM dashboard for IceTimes: KPI cards + charts + activity feed
+# powered by Lead / Sale data. The URL name "dashboard" is reused (logo
+# link, breadcrumb root, post-login + unlock redirects all reverse it).
 urlpatterns = [
-    path("", RedirectView.as_view(pattern_name="leads:list", permanent=False),
-         name="dashboard"),
+    path("", LeadBrokerDashboardView.as_view(), name="dashboard"),
 ]
