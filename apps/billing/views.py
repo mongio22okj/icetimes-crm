@@ -54,7 +54,7 @@ def overview(request):
     # for the current user as a stand-in for billing history.
     try:
         from apps.invoices.models import Invoice
-        recent_invoices = Invoice.objects.order_by("-created_at")[:5]
+        recent_invoices = Invoice.objects.prefetch_related("items").order_by("-created_at")[:5]
     except Exception:  # noqa: BLE001
         recent_invoices = []
     return render(request, "billing/overview.html", {
