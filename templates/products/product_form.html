@@ -135,6 +135,28 @@
     </div>
   </section>
 
+  {# ── Branding landing ────────────────────────────────────────── #}
+  <section class="rounded-lg border border-border bg-card p-6 space-y-4">
+    <div>
+      <h2 class="text-base font-semibold">{% translate "Branding landing" %}</h2>
+      <p class="text-xs text-muted-foreground mt-1">{% translate "Nome e logo mostrati nella navbar della landing pubblica. Lascia vuoto per usare il nome e l'immagine del prodotto." %}</p>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div>
+        <label for="{{ form.nav_name.id_for_label }}" class="block text-sm font-medium mb-1">{{ form.nav_name.label }}</label>
+        {{ form.nav_name }}
+        {% if form.nav_name.help_text %}<p class="text-xs text-muted-foreground mt-1">{{ form.nav_name.help_text }}</p>{% endif %}
+      </div>
+      <div>
+        <label for="{{ form.logo.id_for_label }}" class="block text-sm font-medium mb-1">{{ form.logo.label }}</label>
+        {{ form.logo }}
+        {% if form.instance.logo %}
+          <img src="{{ form.instance.logo.url }}" alt="Logo" class="mt-2 h-16 object-contain rounded-md border border-border">
+        {% endif %}
+      </div>
+    </div>
+  </section>
+
   {# ── Landing customization ───────────────────────────────────── #}
   <section class="rounded-lg border border-border bg-card p-6 space-y-4">
     <h2 class="text-base font-semibold">{% translate "Landing pubblica" %}</h2>

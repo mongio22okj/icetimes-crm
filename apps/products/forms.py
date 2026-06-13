@@ -33,6 +33,8 @@ class ProductForm(forms.ModelForm):
             "video_url", "gallery_image_1", "gallery_image_2", "gallery_image_3",
             # Landing sections
             "facts_table", "features_desc", "features_list", "steps_list", "faq_list",
+            # Nav branding
+            "nav_name", "logo",
             # Landing
             "badge", "cta_label", "accent_color", "theme",
             "success_message", "redirect_url",
@@ -69,4 +71,6 @@ class ProductForm(forms.ModelForm):
             "status_api_url": forms.URLInput(attrs={"class": BASE_INPUT,
                                                      "placeholder": "https://…/api/sale-status"}),
             "status_api_key": forms.TextInput(attrs={"class": BASE_INPUT, "placeholder": "..."}),
+            "nav_name": forms.TextInput(attrs={"class": BASE_INPUT,
+                                               "placeholder": "es. Immediate Edge 3.0"}),
         }

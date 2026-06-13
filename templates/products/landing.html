@@ -132,12 +132,14 @@ footer{background:#fff;border-top:1px solid #e5e7eb;padding:20px 32px;display:fl
 <!-- Nav -->
 <nav>
   <div class="nav-logo">
-    {% if product.image %}
-      <img src="{{ product.image.url }}" alt="{{ product.name }}">
+    {% if product.logo %}
+      <img src="{{ product.logo.url }}" alt="{{ product.nav_name|default:product.name }}">
+    {% elif product.image %}
+      <img src="{{ product.image.url }}" alt="{{ product.nav_name|default:product.name }}">
     {% else %}
       <svg width="36" height="36" viewBox="0 0 36 36" fill="none"><rect width="36" height="36" rx="9" fill="#7c3aed"/><path d="M9 18l6-6 6 6 6-6" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 24l6-6 6 6 6-6" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" opacity=".5"/></svg>
     {% endif %}
-    <span>{{ product.name }}</span>
+    <span>{{ product.nav_name|default:product.name }}</span>
   </div>
   <button class="nav-cta" onclick="document.getElementById('f').scrollIntoView({behavior:'smooth'})">
     {{ product.cta_label|default:"Registrati" }}

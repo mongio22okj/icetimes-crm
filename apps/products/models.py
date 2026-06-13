@@ -63,6 +63,13 @@ class Product(models.Model):
         default=list, blank=True,
         help_text='Es: [{"q":"Domanda?","a":"Risposta."}]')
 
+    # ── Nav branding (override display name and logo). ─────────────────
+    nav_name = models.CharField(
+        max_length=120, blank=True,
+        help_text="Nome mostrato nella nav e nel titolo della landing (lascia vuoto per usare il nome prodotto).")
+    logo = models.ImageField(upload_to="products/logos/", blank=True, null=True,
+                             verbose_name="Logo landing")
+
     # ── Landing-page customization (public URL: /p/<slug>/). ────────────
     badge = models.CharField(
         max_length=80, blank=True,
