@@ -31,6 +31,8 @@ class ProductForm(forms.ModelForm):
             "description", "image",
             # Media
             "video_url", "gallery_image_1", "gallery_image_2", "gallery_image_3",
+            # Landing sections
+            "facts_table", "features_desc", "features_list", "steps_list", "faq_list",
             # Landing
             "badge", "cta_label", "accent_color", "theme",
             "success_message", "redirect_url",
@@ -46,6 +48,15 @@ class ProductForm(forms.ModelForm):
             "status": forms.Select(attrs={"class": BASE_INPUT}),
             "category": forms.Select(attrs={"class": BASE_INPUT}),
             "description": forms.Textarea(attrs={"class": BASE_TEXTAREA}),
+            "facts_table": forms.Textarea(attrs={"class": BASE_TEXTAREA, "rows": 6,
+                                                 "placeholder": '[{"icon":"📊","label":"Tipo","value":"Robot AI"},{"icon":"💰","label":"Costo","value":"Gratuito"}]'}),
+            "features_desc": forms.Textarea(attrs={"class": BASE_TEXTAREA, "rows": 3}),
+            "features_list": forms.Textarea(attrs={"class": BASE_TEXTAREA, "rows": 6,
+                                                    "placeholder": '[{"icon_type":"bolt","title":"Algoritmi avanzati","body":"..."},{"icon_type":"settings","title":"Interfaccia","body":"..."},{"icon_type":"shield","title":"Sicurezza","body":"..."}]'}),
+            "steps_list": forms.Textarea(attrs={"class": BASE_TEXTAREA, "rows": 6,
+                                                 "placeholder": '[{"label":"Primo passo","title":"Registrazione","body":"..."},{"label":"Passo due","title":"Finanziamento","body":"..."},{"label":"Passo tre","title":"Commercio","body":"..."}]'}),
+            "faq_list": forms.Textarea(attrs={"class": BASE_TEXTAREA, "rows": 6,
+                                               "placeholder": '[{"q":"Domanda 1?","a":"Risposta 1."},{"q":"Domanda 2?","a":"Risposta 2."}]'}),
             "video_url": forms.URLInput(attrs={"class": BASE_INPUT,
                                                "placeholder": "https://youtu.be/… oppure https://vimeo.com/…"}),
             "badge": forms.TextInput(attrs={"class": BASE_INPUT, "placeholder": "🔥 OFFERTA LIMITATA"}),

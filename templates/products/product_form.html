@@ -75,6 +75,38 @@
     </div>
   </section>
 
+  {# ── Landing sections (FAQ, Facts, Steps, Features) ─────────── #}
+  <section class="rounded-lg border border-border bg-card p-6 space-y-4">
+    <div>
+      <h2 class="text-base font-semibold">{% translate "Sezioni landing" %}</h2>
+      <p class="text-xs text-muted-foreground mt-1">{% translate "JSON per tabella fatti, caratteristiche, steps e FAQ. Lascia vuoto per usare i valori di default." %}</p>
+    </div>
+    <div class="space-y-4">
+      <div>
+        <label class="block text-sm font-medium mb-1">📊 {{ form.facts_table.label }}</label>
+        {{ form.facts_table }}
+        <p class="text-xs text-muted-foreground mt-1">{{ form.facts_table.help_text }}</p>
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1">✨ {{ form.features_desc.label }}</label>
+        {{ form.features_desc }}
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1">⚙️ {{ form.features_list.label }}</label>
+        {{ form.features_list }}
+        <p class="text-xs text-muted-foreground mt-1">icon_type: bolt | shield | chart | settings | check</p>
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1">🪜 {{ form.steps_list.label }}</label>
+        {{ form.steps_list }}
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1">❓ {{ form.faq_list.label }}</label>
+        {{ form.faq_list }}
+      </div>
+    </div>
+  </section>
+
   {# ── Media: video + gallery ──────────────────────────────────── #}
   <section class="rounded-lg border border-border bg-card p-6 space-y-4">
     <div>

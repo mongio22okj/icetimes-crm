@@ -46,6 +46,23 @@ class Product(models.Model):
     gallery_image_3 = models.ImageField(upload_to="products/gallery/", blank=True, null=True,
                                         verbose_name="Immagine galleria 3")
 
+    # ── Landing sections (JSON — list of objects). ─────────────────────
+    facts_table = models.JSONField(
+        default=list, blank=True,
+        help_text='Es: [{"icon":"📊","label":"Tipo","value":"Robot AI"}]')
+    features_list = models.JSONField(
+        default=list, blank=True,
+        help_text='Es: [{"icon_type":"bolt","title":"Algoritmi","body":"..."}]')
+    features_desc = models.TextField(
+        blank=True,
+        help_text="Testo introduttivo sezione Caratteristiche.")
+    steps_list = models.JSONField(
+        default=list, blank=True,
+        help_text='Es: [{"label":"Primo passo","title":"Registrazione","body":"..."}]')
+    faq_list = models.JSONField(
+        default=list, blank=True,
+        help_text='Es: [{"q":"Domanda?","a":"Risposta."}]')
+
     # ── Landing-page customization (public URL: /p/<slug>/). ────────────
     badge = models.CharField(
         max_length=80, blank=True,

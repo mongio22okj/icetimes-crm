@@ -157,6 +157,37 @@ class ProductLandingView(TemplateView):
         product = get_object_or_404(Product, slug=slug, status="published")
         ctx["product"] = product
         ctx["embed_video_url"] = video_embed_url(product.video_url)
+
+        # Sezioni landing: usa JSON dal prodotto oppure default
+        import json as _json
+
+        def _load(field):
+            raw = getattr(product, field, None) or ""
+            if isinstance(raw, (list, dict)):
+                return raw
+            try:
+                return _json.loads(raw) if raw else []
+            except Exception:
+                return []
+
+        ctx["facts_table"] = _load("facts_table")
+        ctx["features_list"] = _load("features_list")
+        ctx["steps_list"] = _load("steps_list")
+        ctx["faq_list"] = _load("faq_list")
+        ctx["features_desc"] = getattr(product, "features_desc", "") or product.description
+
+        ctx["default_faq"] = [
+            {"q": f"Qual è la nuova versione di {product.name}?",
+             "a": f"{product.name} è la versione più recente della nostra potente applicazione di trading progettata per aiutarti a investire con successo."},
+            {"q": f"Quali nuove funzionalità offre {product.name}?",
+             "a": "La piattaforma include algoritmi avanzati, interfaccia migliorata e maggiore sicurezza con crittografia SSL."},
+            {"q": f"{product.name} è sicura?",
+             "a": "Sì. La piattaforma utilizza crittografia SSL e autenticazione a due fattori per proteggere i tuoi fondi e dati personali."},
+            {"q": f"Posso personalizzare la mia esperienza di trading con {product.name}?",
+             "a": "Assolutamente. Puoi configurare i parametri di trading in base alla tua tolleranza al rischio e ai tuoi obiettivi."},
+            {"q": f"{product.name} è adatta ai principianti?",
+             "a": "Sì, è progettata per essere intuitiva sia per i principianti che per i trader esperti."},
+        ]
         return ctx
 
 
