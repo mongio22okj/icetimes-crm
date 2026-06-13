@@ -134,6 +134,18 @@ class LeadSyncView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
 
 # ── LeadSource CRUD (manageable via direct URL or Django admin) ─────────
 
+class SourceListView(BreadcrumbsMixin, LoginRequiredMixin,
+                     EmailVerifiedRequiredMixin, StaffRequiredMixin, ListView):
+    model = LeadSource
+    template_name = "leads/source_list.html"
+    context_object_name = "sources"
+    ordering = ["priority", "name"]
+    breadcrumb_title = "API Integrate"
+
+    def get_queryset(self):
+        return LeadSource.objects.all().order_by("priority", "name")
+
+
 class SourceCreateView(BreadcrumbsMixin, LoginRequiredMixin,
                        EmailVerifiedRequiredMixin, StaffRequiredMixin, CreateView):
     model = LeadSource
