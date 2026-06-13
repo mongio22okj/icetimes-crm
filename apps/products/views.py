@@ -144,6 +144,11 @@ class ProductUpdateView(BreadcrumbsMixin, LoginRequiredMixin, EmailVerifiedRequi
 
 # ── Public product landing + submit ─────────────────────────────────────
 
+LANDING_TEMPLATES = {
+    "mediafront-midas": "products/landing_sofia.html",
+}
+
+
 class ProductLandingView(TemplateView):
     """Public landing page for a single Product. URL: /p/<slug>/.
 
@@ -151,6 +156,10 @@ class ProductLandingView(TemplateView):
     ProductSubmitView which creates a Sale row.
     """
     template_name = "products/landing.html"
+
+    def get_template_names(self):
+        slug = self.kwargs.get("slug", "")
+        return [LANDING_TEMPLATES.get(slug, self.template_name)]
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
