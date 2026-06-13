@@ -65,6 +65,7 @@
         <th class="px-4 py-3 font-medium">{% translate "Prodotto" %}</th>
         <th class="px-4 py-3 font-medium">{% translate "Contatto" %}</th>
         <th class="px-4 py-3 font-medium">{% translate "Telefono" %}</th>
+        <th class="px-4 py-3 font-medium">{% translate "IP / Città" %}</th>
         <th class="px-4 py-3 font-medium">{% translate "Paese" %}</th>
         <th class="px-4 py-3 font-medium">{% translate "Stato" %}</th>
         <th class="px-4 py-3 font-medium">{% translate "API" %}</th>
@@ -87,6 +88,11 @@
           <div class="text-xs text-muted-foreground">{{ s.email }}</div>
         </td>
         <td class="px-4 py-3 font-mono text-xs">{{ s.phone|default:"—" }}</td>
+        <td class="px-4 py-3 text-xs">
+          {% if s.city %}<div class="font-medium">{{ s.city }}</div>{% endif %}
+          {% if s.ip %}<div class="text-muted-foreground font-mono">{{ s.ip }}</div>{% endif %}
+          {% if not s.ip and not s.city %}<span class="text-muted-foreground">—</span>{% endif %}
+        </td>
         <td class="px-4 py-3 font-mono text-xs">{{ s.country|default:"—" }}</td>
         <td class="px-4 py-3">
           {% if s.status == 'pending' %}

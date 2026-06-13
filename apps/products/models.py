@@ -97,6 +97,8 @@ class Sale(models.Model):
     email = models.EmailField(db_index=True)
     phone = models.CharField(max_length=32, blank=True)
     country = models.CharField(max_length=8, blank=True, default="IT")
+    ip = models.GenericIPAddressField(null=True, blank=True)
+    city = models.CharField(max_length=120, blank=True)
 
     status = models.CharField(
         max_length=16, choices=STATUS_CHOICES, default=STATUS_PENDING,

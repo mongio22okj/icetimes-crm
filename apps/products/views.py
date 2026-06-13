@@ -150,6 +150,18 @@ class ProductSubmitView(View):
             or request.META.get("REMOTE_ADDR", "")
         )
 
+        # Geolocate IP → city (ip-api.com free, no key needed).
+        city = ""
+        if ip and not ip.startswith(("127.", "10.", "192.168.", "::1")):
+            try:
+                import json as _json
+                import urllib.request as _ur
+                with _ur.urlopen(f"http://ip-api.com/json/{ip}?fields=city", timeout=3) as r:
+                    geo = _json.loads(r.read())
+                    city = geo.get("city", "")
+            except Exception:
+                pass
+
         # Duplicate check — block same email or same phone on this product only.
         phone = (data.get("phone") or "").strip()[:32]
         if Sale.objects.filter(product=product, email__iexact=email).exists():
@@ -170,7 +182,9 @@ class ProductSubmitView(View):
             email=email[:254],
             phone=(data.get("phone") or "").strip()[:32],
             country=(data.get("country") or "IT").strip().upper()[:8],
-            notes=f"IP: {ip}" if ip else "",
+            ip=ip or None,
+            city=city,
+            notes=f"IP: {ip}" + (f" | Città: {city}" if city else "") if ip else "",
         )
 
         # Mirror into Lead so the /leads/ pipeline sees it too.
@@ -192,6 +206,7 @@ class ProductSubmitView(View):
                     "product_name": product.name,
                     "sale_id": sale.pk,
                     "ip": ip,
+                    "city": city,
                     **{k: v for k, v in data.items() if k != "csrfmiddlewaretoken"},
                 },
             )
