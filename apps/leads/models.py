@@ -53,16 +53,18 @@ class LeadSource(models.Model):
     KIND_IREV = "irev"
     KIND_AFFINITRAX = "affinitrax"
     KIND_V3 = "v3"
+    KIND_MEDIAFRONT = "mediafront"
     KIND_CHOICES = (
         (KIND_TRACKBOX, "TrackBox"),
         (KIND_IREV, "IREV"),
         (KIND_AFFINITRAX, "Affinitrax"),
         (KIND_V3, "Integration v3 (api_token)"),
+        (KIND_MEDIAFRONT, "Mediafront (Midas)"),
     )
 
     # Kinds that can pull/refresh data, and kinds that can receive pushes.
-    PULL_KINDS = (KIND_TRACKBOX, KIND_IREV, KIND_AFFINITRAX)
-    PUSH_KINDS = (KIND_TRACKBOX, KIND_IREV, KIND_AFFINITRAX, KIND_V3)
+    PULL_KINDS = (KIND_TRACKBOX, KIND_IREV, KIND_AFFINITRAX, KIND_MEDIAFRONT)
+    PUSH_KINDS = (KIND_TRACKBOX, KIND_IREV, KIND_AFFINITRAX, KIND_V3, KIND_MEDIAFRONT)
 
     name = models.CharField(max_length=120)
     kind = models.CharField(max_length=20, choices=KIND_CHOICES)

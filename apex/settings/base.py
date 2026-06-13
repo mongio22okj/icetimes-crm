@@ -257,6 +257,12 @@ IREV_OFFER_ID = os.environ.get("IREV_OFFER_ID", "")
 IREV_GOAL_LEAD = os.environ.get("IREV_GOAL_LEAD", "")
 IREV_GOAL_FTD = os.environ.get("IREV_GOAL_FTD", "")
 
+# ── Mediafront (Midas) affiliate API ─────────────────────────────────────────
+MEDIAFRONT_BASE_URL = os.environ.get("MEDIAFRONT_BASE_URL", "")
+MEDIAFRONT_API_KEY = os.environ.get("MEDIAFRONT_API_KEY", "")
+MEDIAFRONT_BOX = os.environ.get("MEDIAFRONT_BOX", "")
+MEDIAFRONT_SUB1 = os.environ.get("MEDIAFRONT_SUB1", "funnel")
+
 # ── Affinitrax seller API ────────────────────────────────────────────────
 # Third lead source (affinitrax.com). X-API-Key header auth, no IP lock.
 AFFINITRAX_BASE_URL = os.environ.get("AFFINITRAX_BASE_URL", "")

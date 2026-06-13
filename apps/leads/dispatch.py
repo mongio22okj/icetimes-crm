@@ -11,7 +11,7 @@ priority, lead is offered down the list until accepted.
 import secrets
 import time
 
-from . import affinitrax, client, irev, v3
+from . import affinitrax, client, irev, mediafront, v3
 from .client import CRMAPIError
 from .models import DispatchLog, LeadSource
 
@@ -68,6 +68,10 @@ def _push(lead, source):
             "language": (lead.country or "IT").lower(),
         }
         return True, v3.push_lead(source, payload) or {}
+
+    if source.kind == LeadSource.KIND_MEDIAFRONT:
+        result = mediafront.push_lead(source, lead) or {}
+        return True, result
 
     return False, {"error": f"unsupported kind: {source.kind}"}
 

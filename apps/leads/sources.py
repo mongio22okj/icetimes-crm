@@ -49,6 +49,12 @@ def _env_sources():
             LeadSource.KIND_AFFINITRAX, name="Affinitrax (env)",
             base_url=settings.AFFINITRAX_BASE_URL, token=settings.AFFINITRAX_API_KEY,
         ))
+    if settings.MEDIAFRONT_BASE_URL and settings.MEDIAFRONT_API_KEY:
+        shims.append(_env_shim(
+            LeadSource.KIND_MEDIAFRONT, name="Mediafront (env)",
+            base_url=settings.MEDIAFRONT_BASE_URL, token=settings.MEDIAFRONT_API_KEY,
+            offer_id=settings.MEDIAFRONT_BOX, funnel=settings.MEDIAFRONT_SUB1,
+        ))
     return shims
 
 
