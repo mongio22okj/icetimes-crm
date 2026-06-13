@@ -1,4 +1,5 @@
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.db.models import Count, Q
 from django.utils import timezone
 
 from apps.accounts.mixins import EmailVerifiedRequiredMixin
@@ -49,11 +50,9 @@ class ActivityListView(BreadcrumbsMixin, LoginRequiredMixin,
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         ctx["scope"] = self.request.GET.get("scope", "")
-        ctx["counts"] = {
-            "total": ActivityEvent.objects.count(),
-            "today": ActivityEvent.objects.filter(
-                created_at__date=timezone.now().date()
-            ).count(),
-            "mine": ActivityEvent.objects.filter(actor=self.request.user).count(),
-        }
+        ctx["counts"] = ActivityEvent.objects.aggregate(
+            total=Count("id"),
+            today=Count("id", filter=Q(created_at__date=timezone.now().date())),
+            mine=Count("id", filter=Q(actor=self.request.user)),
+        )
         return ctx

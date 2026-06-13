@@ -104,7 +104,7 @@ class CustomerDetailView(BreadcrumbsMixin, LoginRequiredMixin,
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         ctx["recent_orders"] = (
-            self.object.orders.select_related().order_by("-created_at")[:10]
+            self.object.orders.select_related("customer").prefetch_related("items").order_by("-created_at")[:10]
         )
         return ctx
 
