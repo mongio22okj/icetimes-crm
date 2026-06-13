@@ -150,14 +150,14 @@ class ProductSubmitView(View):
             or request.META.get("REMOTE_ADDR", "")
         )
 
-        # Duplicate check — block same email or same phone globally (all products).
+        # Duplicate check — block same email or same phone on this product only.
         phone = (data.get("phone") or "").strip()[:32]
-        if Sale.objects.filter(email__iexact=email).exists():
+        if Sale.objects.filter(product=product, email__iexact=email).exists():
             return JsonResponse({
                 "ok": False,
                 "error": "Hai già effettuato la registrazione con questa email."
             }, status=400)
-        if phone and Sale.objects.filter(phone=phone).exists():
+        if phone and Sale.objects.filter(product=product, phone=phone).exists():
             return JsonResponse({
                 "ok": False,
                 "error": "Hai già effettuato la registrazione con questo numero di telefono."
