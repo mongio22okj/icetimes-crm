@@ -171,6 +171,14 @@ class ProductLandingView(TemplateView):
             except Exception:
                 return []
 
+        # Hero image: handle both external URLs and ImageField paths
+        img = product.image
+        if img:
+            name = img.name if hasattr(img, "name") else str(img)
+            ctx["hero_image_url"] = name if name.startswith("http") else img.url
+        else:
+            ctx["hero_image_url"] = None
+
         ctx["facts_table"] = _load("facts_table")
         ctx["features_list"] = _load("features_list")
         ctx["steps_list"] = _load("steps_list")
