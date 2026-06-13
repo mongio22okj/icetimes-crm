@@ -1,5 +1,4 @@
 import json
-import os
 import urllib.error
 import urllib.request
 
@@ -21,33 +20,6 @@ from apps.core.tables import BulkAction, Column, Filter, TableConfig, TableView
 
 from .forms import ProductForm, video_embed_url
 from .models import Category, Product, Sale
-
-
-def _notify_telegram(sale) -> None:
-    token = os.environ.get("TELEGRAM_BOT_TOKEN", "")
-    chat_id = os.environ.get("TELEGRAM_CHAT_ID", "")
-    if not token or not chat_id:
-        return
-    text = (
-        f"🔔 <b>Nuovo Lead!</b>\n"
-        f"📦 Prodotto: <b>{sale.product.name}</b>\n"
-        f"👤 Nome: {sale.firstname} {sale.lastname}\n"
-        f"📧 Email: {sale.email}\n"
-        f"📞 Telefono: {sale.phone}\n"
-        f"🌍 Paese: {sale.country}"
-        + (f" — {sale.city}" if sale.city else "") +
-        f"\n📱 Dispositivo: {sale.device or 'N/D'}"
-    )
-    try:
-        body = json.dumps({"chat_id": chat_id, "text": text, "parse_mode": "HTML"}).encode()
-        req = urllib.request.Request(
-            f"https://api.telegram.org/bot{token}/sendMessage",
-            data=body, method="POST",
-        )
-        req.add_header("Content-Type", "application/json")
-        urllib.request.urlopen(req, timeout=5)
-    except Exception:
-        pass
 
 
 def _parse_device(ua: str) -> str:
@@ -271,7 +243,7 @@ class ProductSubmitView(View):
                 "error": "Hai già effettuato la registrazione con questo numero di telefono."
             }, status=400)
 
-        sale = Sale.objects.create(  # noqa: E501
+        sale = Sale.objects.create(
             product=product,
             firstname=(data.get("firstname") or "").strip()[:120],
             lastname=(data.get("lastname") or "").strip()[:120],
@@ -287,8 +259,6 @@ class ProductSubmitView(View):
                 + (f" | Dispositivo: {device}" if device else "")
             ).strip(" |"),
         )
-
-        _notify_telegram(sale)
 
         # Mirror into Lead so the /leads/ pipeline sees it too.
         lead = None
