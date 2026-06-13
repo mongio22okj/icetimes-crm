@@ -141,13 +141,11 @@ class ProductUpdateView(BreadcrumbsMixin, LoginRequiredMixin, EmailVerifiedRequi
     def get_breadcrumb_title(self):
         return f"Edit {self.object.name}"
 
-    def get(self, request, *args, **kwargs):
+    def dispatch(self, request, *args, **kwargs):
         try:
-            return super().get(request, *args, **kwargs)
+            return super().dispatch(request, *args, **kwargs)
         except Exception:
-            if request.user.is_staff:
-                return HttpResponse(traceback.format_exc(), content_type="text/plain", status=500)
-            raise
+            return HttpResponse(traceback.format_exc(), content_type="text/plain", status=500)
 
 
 # ── Public product landing + submit ─────────────────────────────────────
