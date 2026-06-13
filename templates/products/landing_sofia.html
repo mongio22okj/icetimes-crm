@@ -1,0 +1,428 @@
+{% load i18n %}<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{{ product.nav_name|default:product.name }}</title>
+<meta name="description" content="{{ product.description|truncatewords:30|striptags }}">
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',system-ui,sans-serif;background:#fdf8f5;color:#1a1a1a;overflow-x:hidden}
+a{color:inherit;text-decoration:none}
+
+/* ── NAV ── */
+nav{display:flex;align-items:center;justify-content:space-between;padding:16px 48px;background:#fff;border-bottom:1px solid #ede8e3;position:sticky;top:0;z-index:100;box-shadow:0 1px 4px rgba(0,0,0,.05)}
+.nav-logo{display:flex;align-items:center;gap:10px}
+.nav-logo-icon{width:38px;height:38px;background:#2d3142;border-radius:8px;display:flex;align-items:center;justify-content:center}
+.nav-logo-icon svg{width:22px;height:22px;stroke:#fff;fill:none;stroke-width:1.8}
+.nav-brand{line-height:1.2}
+.nav-brand-name{font-weight:700;font-size:15px;letter-spacing:.3px;color:#1a1a1a}
+.nav-brand-sub{font-size:10px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:#8a8a8a}
+.nav-links{display:flex;gap:28px;font-size:13px;font-weight:500;color:#555;letter-spacing:.3px}
+.nav-links a{text-transform:uppercase;letter-spacing:.8px;font-size:12px}
+.nav-links a:hover{color:#1a1a1a}
+.nav-cta{background:#fff;color:#1a1a1a;border:1.5px solid #1a1a1a;border-radius:6px;padding:9px 22px;font-size:12px;font-weight:700;cursor:pointer;letter-spacing:.8px;text-transform:uppercase;transition:all .15s}
+.nav-cta:hover{background:#1a1a1a;color:#fff}
+@media(max-width:900px){.nav-links{display:none}}
+
+/* ── HERO ── */
+.hero{display:grid;grid-template-columns:1fr 1fr;min-height:88vh;max-height:92vh;overflow:hidden}
+@media(max-width:900px){.hero{grid-template-columns:1fr;min-height:auto;max-height:none}}
+.hero-left{background:#fdf8f5;padding:64px 56px 64px 64px;display:flex;flex-direction:column;justify-content:center}
+@media(max-width:900px){.hero-left{padding:40px 24px}}
+.hero-eyebrow{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#b5546a;margin-bottom:20px}
+.hero-title{font-family:'Playfair Display',serif;font-size:clamp(36px,4.5vw,58px);font-weight:800;line-height:1.08;color:#1a1a1a;margin-bottom:20px}
+.hero-sub{font-size:15px;color:#5a5a5a;line-height:1.75;margin-bottom:36px;max-width:420px}
+.btn-primary{display:inline-block;background:#b5546a;color:#fff;border:0;border-radius:6px;padding:16px 36px;font-size:13px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;cursor:pointer;transition:background .15s}
+.btn-primary:hover{background:#9d3d58}
+.hero-sub-cta{font-size:11px;color:#9a9a9a;margin-top:10px;letter-spacing:.5px;text-transform:uppercase}
+
+.hero-right{position:relative;background:#e8d5d8;overflow:hidden}
+.hero-right img{width:100%;height:100%;object-fit:cover;object-position:center top;display:block}
+.hero-quote{position:absolute;top:32px;right:28px;background:rgba(253,248,245,.92);border-radius:12px;padding:20px 22px;max-width:220px;text-align:right;backdrop-filter:blur(4px)}
+.hero-quote-mark{font-size:28px;color:#b5546a;font-family:'Playfair Display',serif;line-height:1;margin-bottom:6px}
+.hero-quote-text{font-size:13px;line-height:1.6;color:#333;font-style:italic;font-family:'Playfair Display',serif}
+.hero-quote-sig{font-size:18px;color:#b5546a;font-family:'Playfair Display',serif;margin-top:8px;font-style:italic}
+.hero-badge{position:absolute;bottom:28px;right:28px;background:#fff;border-radius:10px;padding:14px 18px;display:flex;align-items:center;gap:12px;box-shadow:0 4px 20px rgba(0,0,0,.1);max-width:200px}
+.hero-badge-icon{width:32px;height:32px;background:#b5546a;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.hero-badge-icon svg{width:16px;height:16px;stroke:#fff;fill:none;stroke-width:2}
+.hero-badge-label{font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#b5546a;margin-bottom:3px}
+.hero-badge-text{font-size:12px;color:#333;line-height:1.4}
+
+/* ── STORY ── */
+.story{display:grid;grid-template-columns:1fr 1fr;gap:64px;max-width:1200px;margin:0 auto;padding:80px 48px}
+@media(max-width:900px){.story{grid-template-columns:1fr;padding:48px 24px;gap:40px}}
+.story-left{}
+.story-eyebrow{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#b5546a;margin-bottom:16px}
+.story-title{font-family:'Playfair Display',serif;font-size:clamp(28px,3.5vw,42px);font-weight:700;line-height:1.15;margin-bottom:20px}
+.story-body{font-size:15px;color:#555;line-height:1.8;margin-bottom:16px}
+.story-body strong{color:#1a1a1a;font-weight:700}
+.story-right{display:grid;grid-template-columns:1fr 1fr;gap:14px;position:relative}
+.story-photo{border-radius:10px;overflow:hidden;box-shadow:0 8px 30px rgba(0,0,0,.1)}
+.story-photo img{width:100%;height:100%;object-fit:cover;display:block}
+.story-photo-main{grid-column:1;grid-row:1/3;min-height:320px}
+.story-photo-sm1{grid-column:2;min-height:150px}
+.story-photo-sm2{grid-column:2;min-height:150px}
+.story-testimonial{background:#fdf0f2;border-radius:10px;padding:18px;margin-top:16px}
+.story-testimonial-hearts{color:#b5546a;font-size:14px;margin-bottom:6px}
+.story-testimonial-text{font-size:13px;color:#444;line-height:1.6;font-style:italic}
+.story-testimonial-sig{font-family:'Playfair Display',serif;font-size:15px;color:#b5546a;margin-top:6px;text-align:right;font-style:italic}
+
+/* ── FEATURES ── */
+.features{background:#fff;padding:72px 48px;border-top:1px solid #ede8e3;border-bottom:1px solid #ede8e3}
+.features-inner{max-width:1100px;margin:0 auto}
+.features-eyebrow{text-align:center;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#b5546a;margin-bottom:20px}
+.features-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:28px}
+@media(max-width:900px){.features-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:500px){.features-grid{grid-template-columns:1fr}}
+.feature-item{text-align:center}
+.feature-icon{width:52px;height:52px;border-radius:50%;border:1.5px solid #b5546a;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;color:#b5546a}
+.feature-icon svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:1.8}
+.feature-name{font-size:11px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;margin-bottom:8px}
+.feature-desc{font-size:12px;color:#666;line-height:1.6}
+
+/* ── CTA SECTION ── */
+.cta-section{display:grid;grid-template-columns:1fr 1fr;min-height:500px}
+@media(max-width:900px){.cta-section{grid-template-columns:1fr}}
+.cta-photo{overflow:hidden}
+.cta-photo img{width:100%;height:100%;object-fit:cover;object-position:center top;display:block}
+.cta-content{background:#fdf8f5;padding:64px 56px;display:flex;flex-direction:column;justify-content:center}
+@media(max-width:900px){.cta-content{padding:40px 24px}}
+.cta-title{font-family:'Playfair Display',serif;font-size:clamp(28px,3vw,42px);font-weight:700;line-height:1.2;margin-bottom:16px}
+.cta-sub{font-size:15px;color:#555;line-height:1.75;margin-bottom:32px}
+.testimonials{display:flex;flex-direction:column;gap:16px;margin-bottom:32px}
+.testimonial{display:flex;align-items:flex-start;gap:12px}
+.testimonial-avatar{width:40px;height:40px;border-radius:50%;object-fit:cover;flex-shrink:0;background:#e0d0d5}
+.testimonial-body{}
+.testimonial-stars{color:#f59e0b;font-size:12px;margin-bottom:3px}
+.testimonial-text{font-size:13px;color:#444;line-height:1.5;font-style:italic}
+.testimonial-name{font-size:12px;font-weight:600;color:#1a1a1a;margin-top:3px}
+.btn-cta-pink{background:#b5546a;color:#fff;border:0;border-radius:6px;padding:16px 40px;font-size:13px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;cursor:pointer;transition:background .15s;display:inline-block}
+.btn-cta-pink:hover{background:#9d3d58}
+.cta-note{font-size:11px;color:#9a9a9a;margin-top:8px;letter-spacing:.5px;text-transform:uppercase}
+
+/* ── FORM SECTION ── */
+.form-section{background:#fff;padding:72px 48px;border-top:1px solid #ede8e3}
+.form-section-inner{max-width:560px;margin:0 auto;text-align:center}
+.form-section h2{font-family:'Playfair Display',serif;font-size:clamp(24px,3vw,36px);font-weight:700;margin-bottom:8px}
+.form-section-sub{font-size:14px;color:#666;margin-bottom:32px}
+.form-card{background:#fdf8f5;border-radius:16px;padding:36px;text-align:left}
+.field{display:flex;flex-direction:column;gap:5px;margin-bottom:14px}
+.field label{font-size:12px;font-weight:600;color:#444;letter-spacing:.3px}
+.field input,.field select{padding:12px 16px;border:1.5px solid #e0d8d3;border-radius:8px;font-size:14px;font-family:inherit;color:#1a1a1a;background:#fff;transition:border-color .15s}
+.field input:focus,.field select:focus{outline:none;border-color:#b5546a;background:#fff}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:480px){.row2{grid-template-columns:1fr}}
+.phone-row{display:grid;grid-template-columns:110px 1fr;gap:8px}
+.phone-row select{padding:12px 10px;border:1.5px solid #e0d8d3;border-radius:8px;font-size:13px;font-family:inherit;background:#fff;color:#1a1a1a}
+.phone-row select:focus{outline:none;border-color:#b5546a}
+.btn-submit{width:100%;margin-top:8px;padding:16px;color:#fff;background:#b5546a;border:0;border-radius:8px;font-size:14px;font-weight:700;letter-spacing:1px;cursor:pointer;text-transform:uppercase;transition:background .15s}
+.btn-submit:hover{background:#9d3d58}
+.btn-submit:disabled{opacity:.55;cursor:wait}
+.msg{margin-top:12px;padding:12px;border-radius:8px;font-size:13px;text-align:center;display:none}
+.msg.ok{background:#d1fae5;color:#065f46;display:block}
+.msg.err{background:#fee2e2;color:#991b1b;display:block}
+.privacy-note{margin-top:12px;font-size:11px;color:#9ca3af;text-align:center;line-height:1.5}
+.privacy-note a{color:#b5546a;text-decoration:underline}
+
+/* ── FOOTER TRUST ── */
+.trust-bar{background:#2d3142;padding:32px 48px}
+.trust-bar-inner{max-width:1100px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr);gap:24px}
+@media(max-width:700px){.trust-bar-inner{grid-template-columns:repeat(2,1fr)}}
+.trust-item{display:flex;align-items:flex-start;gap:12px}
+.trust-icon{width:32px;height:32px;flex-shrink:0;color:#b5546a}
+.trust-icon svg{width:100%;height:100%;stroke:currentColor;fill:none;stroke-width:1.8}
+.trust-label{font-size:12px;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px}
+.trust-text{font-size:11px;color:#9ca3af;line-height:1.5}
+
+.disclaimer{background:#1a1d2e;padding:16px 48px;text-align:center;font-size:11px;color:#6b7280;line-height:1.6}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">
+    <div class="nav-logo-icon">
+      <svg viewBox="0 0 24 24"><polygon points="12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5"/><line x1="12" y1="2" x2="12" y2="22"/><line x1="2" y1="8.5" x2="22" y2="8.5"/><line x1="2" y1="15.5" x2="22" y2="15.5"/></svg>
+    </div>
+    <div class="nav-brand">
+      <div class="nav-brand-name">{{ product.nav_name|default:"New Mindset" }}</div>
+      <div class="nav-brand-sub">Financial Education</div>
+    </div>
+  </div>
+  <div class="nav-links">
+    <a href="#">Home</a>
+    <a href="#">Percorsi</a>
+    <a href="#">Risorse</a>
+    <a href="#">Chi siamo</a>
+    <a href="#">Contatti</a>
+  </div>
+  <button class="nav-cta" onclick="document.getElementById('form-section').scrollIntoView({behavior:'smooth'})">Accedi</button>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-left">
+    <div class="hero-eyebrow">La storia di Sofia R.</div>
+    <h1 class="hero-title">Dalla passione<br>alla libertà<br>finanziaria.</h1>
+    <p class="hero-sub">Il percorso di Sofia, tra impegni, famiglia e la scoperta di un nuovo modo di investire il suo tempo e le sue risorse.</p>
+    <div>
+      <button class="btn-primary" onclick="document.getElementById('form-section').scrollIntoView({behavior:'smooth'})">
+        {{ product.cta_label|default:"SCOPRI IL PERCORSO" }}
+      </button>
+      <div class="hero-sub-cta">Inizia ora il tuo viaggio</div>
+    </div>
+  </div>
+  <div class="hero-right">
+    {% if hero_image_url %}
+      <img src="{{ hero_image_url }}" alt="Sofia R.">
+    {% else %}
+      <div style="width:100%;height:100%;background:linear-gradient(135deg,#e8d5d8,#d4b8bc);display:flex;align-items:center;justify-content:center;color:#b5546a;font-size:14px;font-weight:600">[ Foto Hero ]</div>
+    {% endif %}
+    <div class="hero-quote">
+      <div class="hero-quote-mark">"</div>
+      <div class="hero-quote-text">Ho imparato a prendermi cura del mio futuro, un passo alla volta.</div>
+      <div class="hero-quote-sig">Sofia R.</div>
+    </div>
+    <div class="hero-badge">
+      <div class="hero-badge-icon">
+        <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>
+      </div>
+      <div>
+        <div class="hero-badge-label">Educazione Finanziaria</div>
+        <div class="hero-badge-text">Strumenti, conoscenze e strategie per scelte consapevoli.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- STORY -->
+<section>
+  <div class="story">
+    <div class="story-left">
+      <div class="story-eyebrow">La mia storia</div>
+      <h2 class="story-title">Crescere, cambiare, scegliere.</h2>
+      <p class="story-body">Negli ultimi anni ho capito quanto sia importante avere controllo sulle proprie scelte. Mi sono avvicinata al mondo degli investimenti e del trading per costruire qualcosa di mio, con costanza e disciplina.</p>
+      <p class="story-body"><strong>Non è stata una scorciatoia, ma un percorso di crescita reale.</strong></p>
+    </div>
+    <div class="story-right">
+      <div class="story-photo story-photo-main">
+        {% if hero_image_url %}
+          <img src="{{ hero_image_url }}" alt="Sofia">
+        {% endif %}
+      </div>
+      <div class="story-photo story-photo-sm1" style="background:#d4b8bc"></div>
+      <div class="story-photo story-photo-sm2" style="background:#c4a0a8"></div>
+      <div class="story-testimonial" style="grid-column:2">
+        <div class="story-testimonial-hearts">♥ ★ ★</div>
+        <p class="story-testimonial-text">Il supporto della mia famiglia, soprattutto di mia sorella, è stato fondamentale nel mio percorso.</p>
+        <div class="story-testimonial-sig">S.R.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="features">
+  <div class="features-inner">
+    <div class="features-eyebrow">Cosa troverai all'interno</div>
+    <div class="features-grid">
+      <div class="feature-item">
+        <div class="feature-icon"><svg viewBox="0 0 24 24"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg></div>
+        <div class="feature-name">Formazione Pratica</div>
+        <div class="feature-desc">Lezioni semplici e chiare per imparare da zero o migliorare le tue skill.</div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-icon"><svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>
+        <div class="feature-name">Strategie e Metodi</div>
+        <div class="feature-desc">Approcci concreti per analizzare i mercati e prendere decisioni consapevoli.</div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-icon"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+        <div class="feature-name">Gestione del Rischio</div>
+        <div class="feature-desc">Impara a proteggere il tuo capitale e a costruire un piano solido.</div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-icon"><svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div>
+        <div class="feature-name">Strumenti Professionali</div>
+        <div class="feature-desc">Piattaforme avanzate e risorse utili per operare in modo efficace.</div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+        <div class="feature-name">Community Esclusiva</div>
+        <div class="feature-desc">Entra in una community di persone motivate e appassionate come te.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA SECTION -->
+<section class="cta-section">
+  <div class="cta-photo">
+    {% if hero_image_url %}
+      <img src="{{ hero_image_url }}" alt="Sofia R.">
+    {% else %}
+      <div style="width:100%;height:100%;min-height:500px;background:#e8d5d8"></div>
+    {% endif %}
+  </div>
+  <div class="cta-content">
+    <h2 class="cta-title">Un nuovo capitolo è possibile.</h2>
+    <p class="cta-sub">Investi su te stessa, acquisci nuove competenze e costruisci il futuro che desideri.</p>
+    <div class="testimonials">
+      <div class="testimonial">
+        <div class="testimonial-avatar" style="background:#d4b8bc;display:flex;align-items:center;justify-content:center;font-weight:700;color:#b5546a;font-size:14px">G</div>
+        <div class="testimonial-body">
+          <div class="testimonial-stars">★★★★★</div>
+          <div class="testimonial-text">"La piattaforma è semplice, completa e mi ha aiutato a capire davvero il mondo degli investimenti."</div>
+          <div class="testimonial-name">Giulia R.</div>
+        </div>
+      </div>
+      <div class="testimonial">
+        <div class="testimonial-avatar" style="background:#c4a0a8;display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;font-size:14px">M</div>
+        <div class="testimonial-body">
+          <div class="testimonial-stars">★★★★★</div>
+          <div class="testimonial-text">"Finalmente un percorso chiaro che mi ha dato sicurezza nelle mie scelte."</div>
+          <div class="testimonial-name">Marco D.</div>
+        </div>
+      </div>
+      <div class="testimonial">
+        <div class="testimonial-avatar" style="background:#b5546a;display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;font-size:14px">A</div>
+        <div class="testimonial-body">
+          <div class="testimonial-stars">★★★★★</div>
+          <div class="testimonial-text">"Community fantastica e contenuti di valore. Consigliatissimo!"</div>
+          <div class="testimonial-name">Alessia T.</div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <button class="btn-cta-pink" onclick="document.getElementById('form-section').scrollIntoView({behavior:'smooth'})">INIZIA OGGI</button>
+      <div class="cta-note">Iscrizione gratuita</div>
+    </div>
+  </div>
+</section>
+
+<!-- FORM -->
+<section class="form-section" id="form-section">
+  <div class="form-section-inner">
+    <h2>Inizia il tuo percorso</h2>
+    <p class="form-section-sub">Registrazione gratuita — inizia in 2 minuti.</p>
+    <div class="form-card">
+      <form id="lead-form">
+        <div class="row2">
+          <div class="field">
+            <label>Nome</label>
+            <input name="firstname" placeholder="Sofia" required>
+          </div>
+          <div class="field">
+            <label>Cognome</label>
+            <input name="lastname" placeholder="Rossi" required>
+          </div>
+        </div>
+        <div class="field">
+          <label>Email</label>
+          <input name="email" type="email" placeholder="sofia@email.com" required>
+        </div>
+        <div class="field">
+          <label>Telefono</label>
+          <div class="phone-row">
+            <select name="phone_prefix">
+              <option value="+39">🇮🇹 +39</option>
+              <option value="+44">🇬🇧 +44</option>
+              <option value="+34">🇪🇸 +34</option>
+              <option value="+49">🇩🇪 +49</option>
+              <option value="+33">🇫🇷 +33</option>
+              <option value="+1">🇺🇸 +1</option>
+              <option value="+55">🇧🇷 +55</option>
+              <option value="+351">🇵🇹 +351</option>
+            </select>
+            <input name="phone_number" type="tel" placeholder="312 345 6789" required>
+          </div>
+        </div>
+        <button type="submit" class="btn-submit" id="btn">
+          {{ product.cta_label|default:"SCOPRI IL PERCORSO" }}
+        </button>
+        <div id="msg" class="msg"></div>
+        <p class="privacy-note">
+          Registrandoti accetti i nostri <a href="#">Termini e condizioni</a> e la <a href="#">Privacy policy</a>.
+        </p>
+      </form>
+    </div>
+  </div>
+</section>
+
+<!-- TRUST BAR -->
+<div class="trust-bar">
+  <div class="trust-bar-inner">
+    <div class="trust-item">
+      <div class="trust-icon"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
+      <div><div class="trust-label">Sicuro e Affidabile</div><div class="trust-text">I tuoi dati sono protetti al 100%.</div></div>
+    </div>
+    <div class="trust-item">
+      <div class="trust-icon"><svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></div>
+      <div><div class="trust-label">Contenuti Aggiornati</div><div class="trust-text">Risorse sempre nuove e al passo con il mercato.</div></div>
+    </div>
+    <div class="trust-item">
+      <div class="trust-icon"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+      <div><div class="trust-label">Supporto Dedicato</div><div class="trust-text">Il nostro team è sempre al tuo fianco.</div></div>
+    </div>
+    <div class="trust-item">
+      <div class="trust-icon"><svg viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg></div>
+      <div><div class="trust-label">Accedi Ovunque</div><div class="trust-text">Da desktop, tablet o smartphone.</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="disclaimer">
+  Avvertenza: I contenuti di questo sito hanno scopo puramente informativo ed educativo e non costituiscono consulenza finanziaria.<br>
+  Il trading comporta rischi e non garantisce profitti. Investi responsabilmente.
+</div>
+
+<script>
+const SUBMIT_URL = "{% url 'products:submit' %}";
+const SUCCESS_MSG = "{{ product.success_message|default:'Registrazione completata! Ti contatteremo presto.' }}";
+const CTA_LABEL = "{{ product.cta_label|default:'SCOPRI IL PERCORSO' }}";
+const qs = new URLSearchParams(location.search);
+const PRODUCT_SLUG = "{{ product.slug }}";
+
+document.getElementById("lead-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const btn = document.getElementById("btn");
+  const msg = document.getElementById("msg");
+  btn.disabled = true;
+  btn.textContent = "…";
+
+  const fd = new FormData(e.target);
+  const prefix = fd.get("phone_prefix") || "+39";
+  const number = fd.get("phone_number") || "";
+  fd.set("phone", prefix + number.replace(/\s/g, ""));
+  fd.delete("phone_prefix");
+  fd.delete("phone_number");
+  fd.append("product_slug", PRODUCT_SLUG);
+
+  for (const k of ["utm_source","utm_medium","utm_campaign","utm_content","utm_term"]) {
+    const v = qs.get(k);
+    if (v) fd.append(k, v);
+  }
+
+  try {
+    const r = await fetch(SUBMIT_URL, { method: "POST", body: fd }).then(r => r.json());
+    if (!r.ok) throw new Error(r.error || "Errore. Riprova.");
+    if (r.redirect) { location.href = r.redirect; return; }
+    msg.className = "msg ok";
+    msg.textContent = "✅ " + SUCCESS_MSG;
+    e.target.reset();
+  } catch (err) {
+    msg.className = "msg err";
+    msg.textContent = "❌ " + err.message;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = CTA_LABEL;
+  }
+});
+</script>
+</body>
+</html>
