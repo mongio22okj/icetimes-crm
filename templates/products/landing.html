@@ -126,9 +126,14 @@ footer{text-align:center;padding:24px;font-size:12px;color:#9ca3af;border-top:1p
     <h1>{{ product.name }}<br><span>{% translate "Trading Automatizzato" %}</span></h1>
     <p class="subtitle">{{ product.description|default:"Accedi alla piattaforma di trading più affidabile. Registrati ora e inizia a investire con il supporto di esperti qualificati." }}</p>
 
-    <!-- Hero image -->
+    <!-- Hero media: video > image > placeholder -->
     <div class="hero-img-wrap">
-      {% if product.image %}
+      {% if product.video_url %}
+        <iframe src="{{ embed_video_url }}" frameborder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowfullscreen
+                style="width:100%;height:100%;border-radius:20px"></iframe>
+      {% elif product.image %}
         <img src="{{ product.image.url }}" alt="{{ product.name }}">
       {% else %}
         <div class="hero-img-placeholder">
@@ -244,6 +249,34 @@ footer{text-align:center;padding:24px;font-size:12px;color:#9ca3af;border-top:1p
     </div>
   </div>
 </section>
+
+{% with imgs=product.gallery_image_1,product.gallery_image_2,product.gallery_image_3 %}
+{% with has_gallery=product.gallery_image_1 or product.gallery_image_2 or product.gallery_image_3 %}
+{% if has_gallery %}
+<section style="background:#f9fafb;border-top:1px solid #f3f4f6;padding:48px 32px">
+  <div style="max-width:1200px;margin:0 auto">
+    <h2 style="text-align:center;font-size:22px;font-weight:800;margin-bottom:28px">{% translate "Gallery" %}</h2>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px">
+      {% if product.gallery_image_1 %}
+      <div style="border-radius:16px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,.10);aspect-ratio:16/9">
+        <img src="{{ product.gallery_image_1.url }}" alt="" style="width:100%;height:100%;object-fit:cover;display:block">
+      </div>
+      {% endif %}
+      {% if product.gallery_image_2 %}
+      <div style="border-radius:16px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,.10);aspect-ratio:16/9">
+        <img src="{{ product.gallery_image_2.url }}" alt="" style="width:100%;height:100%;object-fit:cover;display:block">
+      </div>
+      {% endif %}
+      {% if product.gallery_image_3 %}
+      <div style="border-radius:16px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,.10);aspect-ratio:16/9">
+        <img src="{{ product.gallery_image_3.url }}" alt="" style="width:100%;height:100%;object-fit:cover;display:block">
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</section>
+{% endif %}
+{% endwith %}{% endwith %}
 
 <footer>
   © {{ product.name }} {{ "now"|date:"Y" }} · {% translate "Tutti i diritti riservati" %} ·

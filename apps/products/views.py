@@ -18,7 +18,7 @@ from apps.core.breadcrumbs import BreadcrumbsMixin
 from apps.core.messages import LEVEL_ERROR, LEVEL_SUCCESS, toast
 from apps.core.tables import BulkAction, Column, Filter, TableConfig, TableView
 
-from .forms import ProductForm
+from .forms import ProductForm, video_embed_url
 from .models import Category, Product, Sale
 
 
@@ -156,6 +156,7 @@ class ProductLandingView(TemplateView):
         slug = kwargs.get("slug")
         product = get_object_or_404(Product, slug=slug, status="published")
         ctx["product"] = product
+        ctx["embed_video_url"] = video_embed_url(product.video_url)
         return ctx
 
 

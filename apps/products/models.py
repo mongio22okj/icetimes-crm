@@ -35,6 +35,17 @@ class Product(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    # ── Landing media (video + gallery). ───────────────────────────────
+    video_url = models.URLField(
+        "URL video", blank=True,
+        help_text="YouTube o Vimeo — es. https://youtu.be/xxxx. Mostrato nella sezione hero.")
+    gallery_image_1 = models.ImageField(upload_to="products/gallery/", blank=True, null=True,
+                                        verbose_name="Immagine galleria 1")
+    gallery_image_2 = models.ImageField(upload_to="products/gallery/", blank=True, null=True,
+                                        verbose_name="Immagine galleria 2")
+    gallery_image_3 = models.ImageField(upload_to="products/gallery/", blank=True, null=True,
+                                        verbose_name="Immagine galleria 3")
+
     # ── Landing-page customization (public URL: /p/<slug>/). ────────────
     badge = models.CharField(
         max_length=80, blank=True,

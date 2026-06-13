@@ -75,6 +75,34 @@
     </div>
   </section>
 
+  {# ── Media: video + gallery ──────────────────────────────────── #}
+  <section class="rounded-lg border border-border bg-card p-6 space-y-4">
+    <div>
+      <h2 class="text-base font-semibold">{% translate "Media" %}</h2>
+      <p class="text-xs text-muted-foreground mt-1">{% translate "Video e immagini mostrati nella landing pubblica." %}</p>
+    </div>
+    <div class="space-y-4">
+      <div>
+        <label for="{{ form.video_url.id_for_label }}" class="block text-sm font-medium mb-1">
+          🎬 {% translate "URL Video" %} <span class="text-muted-foreground font-normal">(YouTube / Vimeo)</span>
+        </label>
+        {{ form.video_url }}
+        <p class="text-xs text-muted-foreground mt-1">{% translate "Incolla il link normale — es. https://youtu.be/dQw4w9WgXcQ — viene convertito in embed automaticamente." %}</p>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {% for field in form.gallery_image_1,form.gallery_image_2,form.gallery_image_3 %}
+        <div>
+          <label for="{{ field.id_for_label }}" class="block text-sm font-medium mb-1">{{ field.label }}</label>
+          {{ field }}
+          {% if field.value %}
+            <img src="{{ field.value.url }}" alt="" class="mt-2 h-24 w-full object-cover rounded-md border border-border">
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+
   {# ── Landing customization ───────────────────────────────────── #}
   <section class="rounded-lg border border-border bg-card p-6 space-y-4">
     <h2 class="text-base font-semibold">{% translate "Landing pubblica" %}</h2>
