@@ -1,118 +1,277 @@
 {% load i18n %}<!DOCTYPE html>
-{% with theme=product.theme accent=product.accent_color %}
-<html lang="it" class="{% if theme == 'dark' %}theme-dark{% else %}theme-light{% endif %}">
+<html lang="it">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>{{ product.name }}</title>
 <meta name="description" content="{{ product.description|truncatewords:30|striptags }}">
 <meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
-  *{box-sizing:border-box;font-family:system-ui,-apple-system,sans-serif;margin:0;padding:0}
-  body{min-height:100vh;padding:20px;display:grid;place-items:center}
-  html.theme-dark body{background:#0f172a;color:#fff}
-  html.theme-light body{background:#f1f5f9;color:#111}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',system-ui,sans-serif;min-height:100vh;background:#f0f2f5;color:#111;overflow-x:hidden}
 
-  .wrap{max-width:780px;width:100%;display:grid;grid-template-columns:1fr;gap:24px}
-  @media(min-width:780px){.wrap{grid-template-columns:1.2fr 1fr}}
+/* ── Nav ── */
+nav{display:flex;align-items:center;justify-content:space-between;padding:14px 40px;background:#fff;border-bottom:1px solid #e5e7eb;position:sticky;top:0;z-index:10}
+.nav-logo{display:flex;align-items:center;gap:8px;font-weight:800;font-size:18px;color:#111;text-decoration:none}
+.nav-logo svg{width:32px;height:32px}
+.nav-cta{background:#7c3aed;color:#fff;border:0;border-radius:8px;padding:9px 20px;font-size:13px;font-weight:700;cursor:pointer;letter-spacing:.3px}
+.nav-cta:hover{background:#6d28d9}
 
-  .info,.card{border-radius:16px;padding:32px}
-  html.theme-light .info,html.theme-light .card{background:#fff;box-shadow:0 20px 60px rgba(0,0,0,.08)}
-  html.theme-dark .info,html.theme-dark .card{background:rgba(255,255,255,.05);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.1)}
+/* ── Hero layout ── */
+.hero{max-width:1200px;margin:0 auto;padding:60px 32px 80px;display:grid;grid-template-columns:1fr 420px;gap:48px;align-items:center;position:relative}
+@media(max-width:900px){.hero{grid-template-columns:1fr;padding:40px 20px}}
 
-  .badge{display:inline-block;font-size:11px;font-weight:700;padding:5px 12px;border-radius:99px;letter-spacing:.5px;margin-bottom:14px}
-  html.theme-light .badge{background:#fef3c7;color:#92400e}
-  html.theme-dark .badge{background:rgba(99,102,241,.15);color:#a5b4fc}
+/* ── Blob decoration ── */
+.blob{position:fixed;top:-80px;right:-120px;width:600px;height:600px;border-radius:50%;background:radial-gradient(circle,rgba(139,92,246,.25) 0%,rgba(109,40,217,.08) 60%,transparent 80%);pointer-events:none;z-index:0}
 
-  h1{font-size:28px;line-height:1.15;margin:0 0 12px}
-  .description{font-size:14px;line-height:1.6;margin-bottom:18px;white-space:pre-line}
-  html.theme-light .description{color:#444}
-  html.theme-dark .description{color:#cbd5e1}
-  .price-box{padding:14px 16px;border-radius:10px;font-weight:700;font-size:20px;display:inline-block}
-  html.theme-light .price-box{background:#f1f5f9;color:#111}
-  html.theme-dark .price-box{background:rgba(255,255,255,.08);color:#fff}
-  .price-box small{display:block;font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:1px;opacity:.7;margin-bottom:4px}
+/* ── Left col ── */
+.hero-left{position:relative;z-index:1}
+.badge{display:inline-flex;align-items:center;gap:6px;background:#ede9fe;color:#5b21b6;font-size:12px;font-weight:700;padding:5px 14px;border-radius:99px;margin-bottom:20px;letter-spacing:.4px}
+h1{font-size:clamp(32px,4.5vw,52px);font-weight:800;line-height:1.1;margin-bottom:16px;color:#111}
+h1 span{color:#7c3aed}
+.subtitle{font-size:16px;color:#6b7280;line-height:1.65;margin-bottom:32px;max-width:500px}
 
-  .card h2{font-size:18px;margin:0 0 6px}
-  .card p.sub{margin:0 0 20px;font-size:13px}
-  html.theme-light .card p.sub{color:#666}
-  html.theme-dark .card p.sub{color:#94a3b8}
+/* Hero image */
+.hero-img-wrap{border-radius:20px;overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,.15);aspect-ratio:16/9;background:linear-gradient(135deg,#1e1b4b,#312e81);display:flex;align-items:center;justify-content:center}
+.hero-img-wrap img{width:100%;height:100%;object-fit:cover;display:block}
+.hero-img-placeholder{text-align:center;color:#a5b4fc;padding:40px}
+.hero-img-placeholder svg{width:80px;height:80px;opacity:.5;margin-bottom:12px}
+.hero-img-placeholder p{font-size:14px;opacity:.7}
 
-  label{display:block;font-size:12px;font-weight:600;margin:10px 0 4px}
-  html.theme-light label{color:#444}
-  html.theme-dark label{color:#cbd5e1}
+/* Trust badges */
+.trust{display:flex;flex-wrap:wrap;gap:12px;margin-top:24px}
+.trust-item{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:#374151;background:#fff;border-radius:8px;padding:7px 14px;box-shadow:0 1px 4px rgba(0,0,0,.07)}
+.trust-item svg{width:16px;height:16px;color:#7c3aed}
 
-  input,select{width:100%;padding:11px;border-radius:8px;font-size:14px;font-family:inherit}
-  html.theme-light input,html.theme-light select{border:1px solid #e5e7eb;background:#fff;color:#111}
-  html.theme-dark input,html.theme-dark select{border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.05);color:#fff}
-  html.theme-dark input::placeholder{color:#64748b}
-  input:focus,select:focus{outline:none}
+/* ── Right col — Form card ── */
+.form-card{background:#fff;border-radius:20px;padding:36px 32px;box-shadow:0 20px 60px rgba(0,0,0,.1);position:relative;z-index:1}
+@media(max-width:900px){.form-card{padding:28px 20px}}
+.form-card h2{font-size:22px;font-weight:800;margin-bottom:6px}
+.form-card .form-sub{font-size:13px;color:#6b7280;margin-bottom:24px}
 
-  button{width:100%;margin-top:18px;padding:14px;color:#fff;border:0;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer}
-  button:hover{filter:brightness(.92)}
-  button:disabled{opacity:.5;cursor:wait}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:480px){.row2{grid-template-columns:1fr}}
 
-  .msg{margin-top:14px;padding:10px;border-radius:8px;font-size:14px;text-align:center;display:none}
-  html.theme-light .msg.ok{background:#d1fae5;color:#065f46;display:block}
-  html.theme-light .msg.err{background:#fee2e2;color:#991b1b;display:block}
-  html.theme-dark .msg.ok{background:rgba(34,197,94,.15);color:#86efac;display:block}
-  html.theme-dark .msg.err{background:rgba(239,68,68,.15);color:#fca5a5;display:block}
+.field{display:flex;flex-direction:column;gap:5px;margin-bottom:12px}
+.field label{font-size:12px;font-weight:600;color:#374151}
+.field input,.field select{padding:11px 14px;border:1.5px solid #e5e7eb;border-radius:10px;font-size:14px;font-family:inherit;color:#111;background:#fafafa;transition:border-color .15s}
+.field input:focus,.field select:focus{outline:none;border-color:#7c3aed;background:#fff}
+.field input::placeholder{color:#9ca3af}
 
-  .privacy{margin-top:14px;font-size:11px;text-align:center;opacity:.6}
+/* Phone row */
+.phone-row{display:grid;grid-template-columns:110px 1fr;gap:8px}
+.phone-row select{padding:11px 10px;border:1.5px solid #e5e7eb;border-radius:10px;font-size:13px;font-family:inherit;background:#fafafa;color:#111}
+.phone-row select:focus{outline:none;border-color:#7c3aed}
+
+/* CTA button */
+.btn-cta{width:100%;margin-top:8px;padding:15px;background:linear-gradient(135deg,#7c3aed,#6d28d9);color:#fff;border:0;border-radius:12px;font-size:15px;font-weight:800;letter-spacing:.5px;cursor:pointer;text-transform:uppercase;transition:opacity .15s,transform .1s;box-shadow:0 4px 20px rgba(124,58,237,.35)}
+.btn-cta:hover{opacity:.92;transform:translateY(-1px)}
+.btn-cta:disabled{opacity:.55;cursor:wait;transform:none}
+
+.msg{margin-top:14px;padding:12px;border-radius:10px;font-size:13px;text-align:center;display:none}
+.msg.ok{background:#d1fae5;color:#065f46;display:block}
+.msg.err{background:#fee2e2;color:#991b1b;display:block}
+
+.privacy-note{margin-top:14px;font-size:11px;color:#9ca3af;text-align:center;line-height:1.5}
+.privacy-note a{color:#7c3aed;text-decoration:underline}
+
+/* ── Features strip ── */
+.features{background:#fff;border-top:1px solid #f3f4f6;padding:48px 32px}
+.features-inner{max-width:1200px;margin:0 auto}
+.features h2{text-align:center;font-size:26px;font-weight:800;margin-bottom:36px}
+.features-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:24px}
+.feature-card{background:#f9fafb;border:1px solid #f3f4f6;border-radius:16px;padding:24px;text-align:center}
+.feature-icon{width:48px;height:48px;border-radius:12px;background:linear-gradient(135deg,#ede9fe,#ddd6fe);display:flex;align-items:center;justify-content:center;margin:0 auto 14px}
+.feature-icon svg{width:24px;height:24px;color:#7c3aed}
+.feature-card h3{font-size:15px;font-weight:700;margin-bottom:6px}
+.feature-card p{font-size:13px;color:#6b7280;line-height:1.5}
+
+/* ── Footer ── */
+footer{text-align:center;padding:24px;font-size:12px;color:#9ca3af;border-top:1px solid #f3f4f6}
 </style>
 </head>
 <body>
-<div class="wrap">
 
-  {# ── Product info ──────────────────────────────────────────────── #}
-  <div class="info">
-    {% if product.badge %}<span class="badge">{{ product.badge }}</span>{% endif %}
-    <h1>{{ product.name }}</h1>
-    {% if product.description %}<div class="description">{{ product.description }}</div>{% endif %}
-    {% if product.price %}
-      <div class="price-box">
-        <small>{% translate "Prezzo" %}</small>
-        € {{ product.price }}
-      </div>
+<!-- Nav -->
+<nav>
+  <a href="#" class="nav-logo">
+    <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect width="32" height="32" rx="8" fill="#7c3aed"/>
+      <path d="M8 16L14 10L20 16L26 10" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M8 22L14 16L20 22L26 16" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" opacity=".5"/>
+    </svg>
+    {{ product.name }}
+  </a>
+  <button class="nav-cta" onclick="document.getElementById('f').scrollIntoView({behavior:'smooth'})">
+    Registrati Gratis
+  </button>
+</nav>
+
+<!-- Blob -->
+<div class="blob"></div>
+
+<!-- Hero -->
+<section class="hero">
+
+  <!-- Left -->
+  <div class="hero-left">
+    {% if product.badge %}
+    <div class="badge">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:14px;height:14px"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+      {{ product.badge }}
+    </div>
     {% endif %}
+    <h1>{{ product.name }}<br><span>{% translate "Trading Automatizzato" %}</span></h1>
+    <p class="subtitle">{{ product.description|default:"Accedi alla piattaforma di trading più affidabile. Registrati ora e inizia a investire con il supporto di esperti qualificati." }}</p>
+
+    <!-- Hero image -->
+    <div class="hero-img-wrap">
+      {% if product.image %}
+        <img src="{{ product.image.url }}" alt="{{ product.name }}">
+      {% else %}
+        <div class="hero-img-placeholder">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
+          </svg>
+          <p>{{ product.name }}</p>
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- Trust badges -->
+    <div class="trust">
+      <div class="trust-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        SSL Sicuro
+      </div>
+      <div class="trust-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        Registrazione Gratuita
+      </div>
+      <div class="trust-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+        Risultati in 24h
+      </div>
+    </div>
   </div>
 
-  {# ── Lead form ────────────────────────────────────────────────── #}
-  <div class="card">
-    <h2>{% translate "Iscrizione" %}</h2>
-    <p class="sub">{% translate "Compila i dati per accedere al servizio." %}</p>
+  <!-- Right — Form -->
+  <div class="form-card" id="f">
+    <h2>{% translate "Crea il tuo account" %}</h2>
+    <p class="form-sub">{% translate "Registrazione gratuita — inizia in 2 minuti." %}</p>
 
-    <form id="f">
-      <label>{% translate "Nome" %}</label>
-      <input name="firstname" required>
-      <label>{% translate "Cognome" %}</label>
-      <input name="lastname" required>
-      <label>Email</label>
-      <input name="email" type="email" required>
-      <label>{% translate "Telefono" %}</label>
-      <input name="phone" type="tel" placeholder="+39…" required>
-      <button type="submit" id="btn" style="background:{{ accent }}">{{ product.cta_label }}</button>
+    <form id="lead-form">
+      <div class="row2">
+        <div class="field">
+          <label>{% translate "Nome" %}</label>
+          <input name="firstname" placeholder="Mario" required>
+        </div>
+        <div class="field">
+          <label>{% translate "Cognome" %}</label>
+          <input name="lastname" placeholder="Rossi" required>
+        </div>
+      </div>
+      <div class="field">
+        <label>Email</label>
+        <input name="email" type="email" placeholder="mario@email.com" required>
+      </div>
+      <div class="field">
+        <label>{% translate "Telefono" %}</label>
+        <div class="phone-row">
+          <select name="phone_prefix" id="prefix">
+            <option value="+39">🇮🇹 +39</option>
+            <option value="+44">🇬🇧 +44</option>
+            <option value="+34">🇪🇸 +34</option>
+            <option value="+49">🇩🇪 +49</option>
+            <option value="+33">🇫🇷 +33</option>
+            <option value="+1">🇺🇸 +1</option>
+            <option value="+55">🇧🇷 +55</option>
+            <option value="+351">🇵🇹 +351</option>
+          </select>
+          <input name="phone_number" type="tel" placeholder="312 345 6789" required>
+        </div>
+      </div>
+
+      <button type="submit" class="btn-cta" id="btn" style="background:linear-gradient(135deg,{{ product.accent_color|default:'#7c3aed' }},{{ product.accent_color|default:'#6d28d9' }})">
+        {{ product.cta_label|default:"REGISTRATI GRATUITAMENTE ADESSO" }}
+      </button>
       <div id="msg" class="msg"></div>
-      <p class="privacy">{% translate "Inviando accetti la nostra privacy policy." %}</p>
+      <p class="privacy-note">
+        {% translate "Registrandoti confermi di aver letto e accettato i nostri" %}
+        <a href="#">{% translate "Termini e condizioni" %}</a> {% translate "e la" %}
+        <a href="#">{% translate "Privacy policy" %}</a>.
+      </p>
     </form>
   </div>
-</div>
+
+</section>
+
+<!-- Features -->
+<section class="features">
+  <div class="features-inner">
+    <h2>{% translate "Perché sceglierci?" %}</h2>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+        </div>
+        <h3>{% translate "Trading Automatizzato" %}</h3>
+        <p>{% translate "Algoritmi avanzati operano 24/7 per massimizzare i tuoi profitti." %}</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        </div>
+        <h3>{% translate "Piattaforma Sicura" %}</h3>
+        <p>{% translate "I tuoi fondi e dati personali sono protetti con crittografia SSL." %}</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+        </div>
+        <h3>{% translate "Supporto 24/7" %}</h3>
+        <p>{% translate "Il nostro team di esperti è sempre disponibile per assisterti." %}</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+        </div>
+        <h3>{% translate "Rendimenti Comprovati" %}</h3>
+        <p>{% translate "Migliaia di utenti soddisfatti con rendimenti mensili costanti." %}</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  © {{ product.name }} {{ "now"|date:"Y" }} · {% translate "Tutti i diritti riservati" %} ·
+  <a href="#" style="color:#7c3aed">{% translate "Privacy Policy" %}</a> ·
+  <a href="#" style="color:#7c3aed">{% translate "Termini e Condizioni" %}</a>
+</footer>
 
 <script>
 const SUBMIT_URL = "{% url 'product_submit' slug=product.slug %}";
 const SUCCESS_MSG = "{{ product.success_message|escapejs }}";
 const CTA_LABEL = "{{ product.cta_label|escapejs }}";
-
-// utm_* dalla query string → salvati nel Lead derivato.
 const qs = new URLSearchParams(location.search);
 
-document.getElementById("f").addEventListener("submit", async (e) => {
+document.getElementById("lead-form").addEventListener("submit", async (e) => {
   e.preventDefault();
   const btn = document.getElementById("btn");
   const msg = document.getElementById("msg");
-  btn.disabled = true; btn.textContent = "…";
+  btn.disabled = true;
+  btn.textContent = "…";
 
   const fd = new FormData(e.target);
+  // Combina prefisso + numero
+  const prefix = fd.get("phone_prefix") || "+39";
+  const number = fd.get("phone_number") || "";
+  fd.set("phone", prefix + number.replace(/\s/g, ""));
+  fd.delete("phone_prefix");
+  fd.delete("phone_number");
+
   for (const k of ["utm_source","utm_medium","utm_campaign","utm_content","utm_term"]) {
     const v = qs.get(k);
     if (v) fd.append(k, v);
@@ -120,7 +279,7 @@ document.getElementById("f").addEventListener("submit", async (e) => {
 
   try {
     const r = await fetch(SUBMIT_URL, { method: "POST", body: fd }).then(r => r.json());
-    if (!r.ok) throw new Error(r.error || "errore");
+    if (!r.ok) throw new Error(r.error || "Errore. Riprova.");
     if (r.redirect) { location.href = r.redirect; return; }
     msg.className = "msg ok";
     msg.textContent = "✅ " + SUCCESS_MSG;
@@ -129,10 +288,10 @@ document.getElementById("f").addEventListener("submit", async (e) => {
     msg.className = "msg err";
     msg.textContent = "❌ " + err.message;
   } finally {
-    btn.disabled = false; btn.textContent = CTA_LABEL;
+    btn.disabled = false;
+    btn.textContent = CTA_LABEL;
   }
 });
 </script>
 </body>
 </html>
-{% endwith %}
