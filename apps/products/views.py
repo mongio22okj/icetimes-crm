@@ -176,16 +176,17 @@ class ProductLandingView(TemplateView):
         ctx["faq_list"] = _load("faq_list")
         ctx["features_desc"] = getattr(product, "features_desc", "") or product.description
 
+        dn = product.nav_name or product.name
         ctx["default_faq"] = [
-            {"q": f"Qual è la nuova versione di {product.name}?",
-             "a": f"{product.name} è la versione più recente della nostra potente applicazione di trading progettata per aiutarti a investire con successo."},
-            {"q": f"Quali nuove funzionalità offre {product.name}?",
+            {"q": f"Qual è la nuova versione di {dn}?",
+             "a": f"{dn} è la versione più recente della nostra potente applicazione di trading progettata per aiutarti a investire con successo."},
+            {"q": f"Quali nuove funzionalità offre {dn}?",
              "a": "La piattaforma include algoritmi avanzati, interfaccia migliorata e maggiore sicurezza con crittografia SSL."},
-            {"q": f"{product.name} è sicura?",
+            {"q": f"{dn} è sicura?",
              "a": "Sì. La piattaforma utilizza crittografia SSL e autenticazione a due fattori per proteggere i tuoi fondi e dati personali."},
-            {"q": f"Posso personalizzare la mia esperienza di trading con {product.name}?",
+            {"q": f"Posso personalizzare la mia esperienza di trading con {dn}?",
              "a": "Assolutamente. Puoi configurare i parametri di trading in base alla tua tolleranza al rischio e ai tuoi obiettivi."},
-            {"q": f"{product.name} è adatta ai principianti?",
+            {"q": f"{dn} è adatta ai principianti?",
              "a": "Sì, è progettata per essere intuitiva sia per i principianti che per i trader esperti."},
         ]
         return ctx

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>{{ product.name }}</title>
+<title>{{ product.nav_name|default:product.name }}</title>
 <meta name="description" content="{{ product.description|truncatewords:30|striptags }}">
 <meta name="robots" content="noindex">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -155,7 +155,7 @@ footer{background:#fff;border-top:1px solid #e5e7eb;padding:20px 32px;display:fl
       {% if product.badge %}
       <div class="badge-pill">⚡ {{ product.badge }}</div>
       {% endif %}
-      <h1 class="hero-title">{{ product.name }}<br><span>{% translate "La piattaforma di trading" %}<br>{% translate "più affidabile" %}</span></h1>
+      <h1 class="hero-title">{{ product.nav_name|default:product.name }}<br><span>{% translate "La piattaforma di trading" %}<br>{% translate "più affidabile" %}</span></h1>
       <p class="hero-sub">{{ product.description|default:"Accedi alla piattaforma di trading più affidabile. Registrati ora e inizia a investire con il supporto di esperti qualificati." }}</p>
 
       <!-- Media -->
@@ -246,7 +246,7 @@ footer{background:#fff;border-top:1px solid #e5e7eb;padding:20px 32px;display:fl
 <!-- ── Facts table ── -->
 <section class="section facts-section">
   <div class="section-inner">
-    <h2 class="section-title">{% translate "Momenti" %} {{ product.name }}</h2>
+    <h2 class="section-title">{% translate "Momenti" %} {{ product.nav_name|default:product.name }}</h2>
     <table class="facts-table">
       {% for row in facts_table %}
       <tr>
@@ -276,7 +276,7 @@ footer{background:#fff;border-top:1px solid #e5e7eb;padding:20px 32px;display:fl
 <!-- ── Features / Caratteristiche principali ── -->
 <section class="section features-section">
   <div class="section-inner">
-    <h2 class="section-title">{% translate "Caratteristiche principali di" %} {{ product.name }}</h2>
+    <h2 class="section-title">{% translate "Caratteristiche principali di" %} {{ product.nav_name|default:product.name }}</h2>
     <p class="section-body">{{ features_desc|default:product.description }}</p>
     <div class="features-grid">
       {% for f in features_list %}
@@ -322,7 +322,7 @@ footer{background:#fff;border-top:1px solid #e5e7eb;padding:20px 32px;display:fl
 <section class="section steps-section">
   <div class="section-inner">
     <h2 class="section-title" style="text-align:center;text-transform:uppercase;font-size:clamp(18px,2.5vw,28px)">
-      {% translate "COME POSSO REGISTRARMI PER" %} {{ product.name|upper }}?
+      {% translate "COME POSSO REGISTRARMI PER" %} {{ product.nav_name|default:product.name|upper }}?
     </h2>
     <div class="steps-grid">
       {% for s in steps_list %}
@@ -411,7 +411,7 @@ footer{background:#fff;border-top:1px solid #e5e7eb;padding:20px 32px;display:fl
 <footer>
   <div style="display:flex;align-items:center;gap:10px">
     {% if product.image %}<img src="{{ product.image.url }}" alt="" style="height:28px;border-radius:4px">{% endif %}
-    <span style="font-weight:700;font-size:13px;color:#374151">{{ product.name }}</span>
+    <span style="font-weight:700;font-size:13px;color:#374151">{{ product.nav_name|default:product.name }}</span>
     <span style="font-size:11px">v3.0</span>
   </div>
   <div class="footer-links">
