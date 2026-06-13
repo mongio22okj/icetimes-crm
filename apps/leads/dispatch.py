@@ -11,7 +11,7 @@ priority, lead is offered down the list until accepted.
 import secrets
 import time
 
-from . import affinitrax, client, irev, mediafront, v3
+from . import affinitrax, client, irev, mediafront, spmmonster, v3
 from .client import CRMAPIError
 from .models import DispatchLog, LeadSource
 
@@ -71,6 +71,10 @@ def _push(lead, source):
 
     if source.kind == LeadSource.KIND_MEDIAFRONT:
         result = mediafront.push_lead(source, lead) or {}
+        return True, result
+
+    if source.kind == LeadSource.KIND_SPMMONSTER:
+        result = spmmonster.push_lead(source, lead) or {}
         return True, result
 
     return False, {"error": f"unsupported kind: {source.kind}"}

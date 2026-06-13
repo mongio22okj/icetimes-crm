@@ -55,6 +55,13 @@ def _env_sources():
             base_url=settings.MEDIAFRONT_BASE_URL, token=settings.MEDIAFRONT_API_KEY,
             offer_id=settings.MEDIAFRONT_BOX, funnel=settings.MEDIAFRONT_SUB1,
         ))
+    if settings.SPMMONSTER_BASE_URL and settings.SPMMONSTER_API_KEY:
+        shims.append(_env_shim(
+            LeadSource.KIND_SPMMONSTER, name="SPM Monster (env)",
+            base_url=settings.SPMMONSTER_BASE_URL, token=settings.SPMMONSTER_API_KEY,
+            ai=settings.SPMMONSTER_AFFC, ci=settings.SPMMONSTER_BXC,
+            gi=settings.SPMMONSTER_VTC,
+        ))
     return shims
 
 
