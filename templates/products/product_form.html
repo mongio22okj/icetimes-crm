@@ -122,15 +122,21 @@
         <p class="text-xs text-muted-foreground mt-1">{% translate "Incolla il link normale — es. https://youtu.be/dQw4w9WgXcQ — viene convertito in embed automaticamente." %}</p>
       </div>
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {% for field in form.gallery_image_1,form.gallery_image_2,form.gallery_image_3 %}
         <div>
-          <label for="{{ field.id_for_label }}" class="block text-sm font-medium mb-1">{{ field.label }}</label>
-          {{ field }}
-          {% if field.value %}
-            <img src="{{ field.value.url }}" alt="" class="mt-2 h-24 w-full object-cover rounded-md border border-border">
-          {% endif %}
+          <label for="{{ form.gallery_image_1.id_for_label }}" class="block text-sm font-medium mb-1">{{ form.gallery_image_1.label }}</label>
+          {{ form.gallery_image_1 }}
+          {% if form.gallery_image_1.value %}<img src="{{ form.gallery_image_1.value.url }}" alt="" class="mt-2 h-24 w-full object-cover rounded-md border border-border">{% endif %}
         </div>
-        {% endfor %}
+        <div>
+          <label for="{{ form.gallery_image_2.id_for_label }}" class="block text-sm font-medium mb-1">{{ form.gallery_image_2.label }}</label>
+          {{ form.gallery_image_2 }}
+          {% if form.gallery_image_2.value %}<img src="{{ form.gallery_image_2.value.url }}" alt="" class="mt-2 h-24 w-full object-cover rounded-md border border-border">{% endif %}
+        </div>
+        <div>
+          <label for="{{ form.gallery_image_3.id_for_label }}" class="block text-sm font-medium mb-1">{{ form.gallery_image_3.label }}</label>
+          {{ form.gallery_image_3 }}
+          {% if form.gallery_image_3.value %}<img src="{{ form.gallery_image_3.value.url }}" alt="" class="mt-2 h-24 w-full object-cover rounded-md border border-border">{% endif %}
+        </div>
       </div>
     </div>
   </section>
