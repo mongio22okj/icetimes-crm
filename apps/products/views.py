@@ -144,6 +144,12 @@ class ProductSubmitView(View):
         if not email:
             return JsonResponse({"ok": False, "error": "email required"}, status=400)
 
+        # Capture real visitor IP (Render proxies via X-Forwarded-For).
+        ip = (
+            request.META.get("HTTP_X_FORWARDED_FOR", "").split(",")[0].strip()
+            or request.META.get("REMOTE_ADDR", "")
+        )
+
         sale = Sale.objects.create(
             product=product,
             firstname=(data.get("firstname") or "").strip()[:120],
@@ -151,6 +157,7 @@ class ProductSubmitView(View):
             email=email[:254],
             phone=(data.get("phone") or "").strip()[:32],
             country=(data.get("country") or "IT").strip().upper()[:8],
+            notes=f"IP: {ip}" if ip else "",
         )
 
         # Mirror into Lead so the /leads/ pipeline sees it too.
@@ -164,13 +171,14 @@ class ProductSubmitView(View):
                 email=sale.email,
                 phone=sale.phone,
                 country=sale.country,
-                status="pending",
+                status="New",
                 source=f"product-{product.slug}",
                 payload={
                     "product_id": product.pk,
                     "product_slug": product.slug,
                     "product_name": product.name,
                     "sale_id": sale.pk,
+                    "ip": ip,
                     **{k: v for k, v in data.items() if k != "csrfmiddlewaretoken"},
                 },
             )

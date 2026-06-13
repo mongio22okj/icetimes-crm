@@ -363,6 +363,29 @@ def postback(request):
         except Exception:  # noqa: BLE001
             pass
 
+    # ── Sync Sale status when Lead comes from a product landing. ─────
+    # uniqueid = "sale-<pk>" → update the corresponding Sale record.
+    if lead.uniqueid and lead.uniqueid.startswith("sale-"):
+        try:
+            from django.utils import timezone as _tz
+            from apps.products.models import Sale
+            sale_pk = int(lead.uniqueid.split("-", 1)[1])
+            sale = Sale.objects.filter(pk=sale_pk).first()
+            if sale:
+                if lead.is_deposit and sale.status != Sale.STATUS_SOLD:
+                    sale.status = Sale.STATUS_SOLD
+                    sale.sold_at = _tz.now()
+                    sale.save(update_fields=["status", "sold_at", "updated_at"])
+                elif lead.status.lower() in ("rejected", "invalid", "duplicate", "lost"):
+                    if sale.status == Sale.STATUS_PENDING:
+                        sale.status = Sale.STATUS_LOST
+                        sale.save(update_fields=["status", "updated_at"])
+                elif sale.status == Sale.STATUS_PENDING and lead.status:
+                    sale.notes = f"Broker status: {lead.status}"
+                    sale.save(update_fields=["notes", "updated_at"])
+        except Exception:  # noqa: BLE001
+            pass
+
     return JsonResponse({"ok": True, "id": lead.pk, "score": lead.score})
 
 
