@@ -551,6 +551,12 @@ class LandingPageListView(BreadcrumbsMixin, LoginRequiredMixin,
         from apps.marketing.models import LandingPage
         return LandingPage.objects.all()
 
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        from apps.products.models import Product
+        ctx["product_landings"] = Product.objects.exclude(status="archived").order_by("-created_at")
+        return ctx
+
 
 class LandingPageCreateView(BreadcrumbsMixin, LoginRequiredMixin,
                             EmailVerifiedRequiredMixin, StaffRequiredMixin,

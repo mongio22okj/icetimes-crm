@@ -87,6 +87,53 @@
         </td>
       </tr>
       {% endfor %}
+
+      {# ── Product landings ── #}
+      {% for p in product_landings %}
+      <tr class="border-b border-border last:border-0 hover:bg-accent/40">
+        <td class="px-4 py-3">
+          <div class="flex items-center gap-2">
+            <span class="h-3 w-3 rounded-sm shrink-0 border border-border" style="background:{{ p.accent_color }}"></span>
+            <div class="min-w-0">
+              <div class="font-medium truncate">{{ p.name }}</div>
+              <div class="text-xs text-muted-foreground truncate">{{ p.description|default:"—"|truncatechars:60 }}</div>
+            </div>
+          </div>
+        </td>
+        <td class="px-4 py-3">
+          <a href="/p/{{ p.slug }}/" target="_blank"
+             class="inline-flex items-center gap-1 font-mono text-xs text-primary hover:underline">
+            /p/{{ p.slug }}/ {% icon "arrow-up-right" %}
+          </a>
+        </td>
+        <td class="px-4 py-3 text-xs text-muted-foreground">
+          Modulo completo (nome, cognome, email, telefono)
+        </td>
+        <td class="px-4 py-3 text-xs">
+          <span class="text-muted-foreground">tipo:</span> Prodotto
+        </td>
+        <td class="px-4 py-3">
+          {% if p.status == "published" %}
+            <span class="inline-flex items-center rounded-full bg-emerald-500/10 px-2 py-0.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">Attiva</span>
+          {% elif p.status == "draft" %}
+            <span class="inline-flex items-center rounded-full bg-yellow-500/10 px-2 py-0.5 text-xs font-medium text-yellow-600 dark:text-yellow-400">Bozza</span>
+          {% else %}
+            <span class="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">Archiviato</span>
+          {% endif %}
+        </td>
+        <td class="px-4 py-3 text-right whitespace-nowrap">
+          <button type="button" onclick="navigator.clipboard.writeText(location.protocol+'//'+location.host+'/p/{{ p.slug }}/').then(()=>{this.textContent='✓';setTimeout(()=>{this.textContent='Copia URL'},1200)})"
+                  class="inline-flex h-8 px-3 items-center gap-1 rounded-md border border-border text-xs hover:bg-accent">
+            {% icon "copy" %} Copia URL
+          </button>
+          <a href="{% url 'products:edit' p.pk %}"
+             class="inline-flex h-8 px-3 items-center rounded-md border border-border text-xs hover:bg-accent">
+            Modifica
+          </a>
+        </td>
+      </tr>
+      {% endfor %}
+
     </tbody>
   </table>
 </div>
