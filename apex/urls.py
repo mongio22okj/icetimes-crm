@@ -150,13 +150,15 @@ handler500 = "apps.core.views.error_500"
 def _debug_form(request):
     import traceback as _tb
     from django.http import HttpResponse
+    from django.template.loader import render_to_string
     try:
         from apps.products.models import Product
         from apps.products.forms import ProductForm
         p = Product.objects.get(pk=1)
         form = ProductForm(instance=p)
-        html = form.as_p()
-        return HttpResponse("FORM OK — fields: " + ", ".join(form.fields.keys()), content_type="text/plain")
+        ctx = {"form": form, "object": p, "breadcrumbs": [], "title": "debug"}
+        html = render_to_string("products/product_form.html", ctx, request=request)
+        return HttpResponse("TEMPLATE OK — len=" + str(len(html)), content_type="text/plain")
     except Exception:
         return HttpResponse(_tb.format_exc(), content_type="text/plain", status=500)
 
