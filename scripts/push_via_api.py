@@ -83,6 +83,27 @@ def main():
                 "sha": None,
             })
             continue
+        if os.path.isdir(path):
+            # Expand directory to individual files
+            for root, _, fnames in os.walk(path):
+                for fname in fnames:
+                    fpath = os.path.join(root, fname)
+                    with open(fpath, "rb") as f:
+                        fcontent = f.read()
+                    st, blob = api("POST", f"/repos/{REPO}/git/blobs", {
+                        "content": base64.b64encode(fcontent).decode(),
+                        "encoding": "base64",
+                    })
+                    if st not in (200, 201):
+                        print(f"blob failed for {fpath}: {blob}")
+                        return 1
+                    tree_items.append({
+                        "path": fpath.replace("\\", "/"),
+                        "mode": "100644",
+                        "type": "blob",
+                        "sha": blob["sha"],
+                    })
+            continue
         with open(path, "rb") as f:
             content = f.read()
         status, blob = api("POST", f"/repos/{REPO}/git/blobs", {
