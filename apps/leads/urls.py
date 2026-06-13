@@ -11,7 +11,6 @@ from .views import (
     CampaignListView,
     CampaignUpdateView,
     DispatchLogView,
-    IntegrationsView,
     LeadDispatchTriggerView,
     LeadListView,
     LeadSyncView,
@@ -56,7 +55,6 @@ urlpatterns = [
     # Ping-tree dispatch log + manual trigger.
     path("dispatch/", DispatchLogView.as_view(), name="dispatch_log"),
     path("dispatch/<int:pk>/", LeadDispatchTriggerView.as_view(), name="lead_dispatch"),
-    path("integrations/", IntegrationsView.as_view(), name="integrations"),
     path("sync/", LeadSyncView.as_view(), name="sync"),
     path("postback/", postback, name="postback"),
     # LeadSource CRUD
