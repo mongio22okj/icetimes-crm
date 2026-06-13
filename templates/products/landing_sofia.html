@@ -382,7 +382,7 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:16px 4
 </div>
 
 <script>
-const SUBMIT_URL = "{% url 'products:submit' %}";
+const SUBMIT_URL = "{% url 'product_submit' slug=product.slug %}";
 const SUCCESS_MSG = "{{ product.success_message|default:'Registrazione completata! Ti contatteremo presto.' }}";
 const CTA_LABEL = "{{ product.cta_label|default:'SCOPRI IL PERCORSO' }}";
 const qs = new URLSearchParams(location.search);
