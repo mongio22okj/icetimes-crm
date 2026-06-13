@@ -7,7 +7,8 @@
   <div>
     <h1 class="text-2xl font-bold tracking-tight">{% translate "Auto-email" %}</h1>
     <p class="text-sm text-muted-foreground mt-1">
-      {% translate "Email auto-inviate al lead sull'evento configurato. Variabili supportate" %}: <code class="font-mono">{{ '{{firstname}}' }}</code>, <code class="font-mono">{{ '{{lastname}}' }}</code>, <code class="font-mono">{{ '{{email}}' }}</code>, <code class="font-mono">{{ '{{country}}' }}</code>.
+      {% translate "Email auto-inviate al lead sull'evento configurato. Variabili supportate" %}:
+      {% verbatim %}<code class="font-mono">{{firstname}}</code>, <code class="font-mono">{{lastname}}</code>, <code class="font-mono">{{email}}</code>, <code class="font-mono">{{country}}</code>{% endverbatim %}.
     </p>
   </div>
   <a href="{% url 'leads:auto_message_create' %}"
