@@ -65,7 +65,7 @@
         <th class="px-4 py-3 font-medium">{% translate "Prodotto" %}</th>
         <th class="px-4 py-3 font-medium">{% translate "Contatto" %}</th>
         <th class="px-4 py-3 font-medium">{% translate "Telefono" %}</th>
-        <th class="px-4 py-3 font-medium">{% translate "IP / Città" %}</th>
+        <th class="px-4 py-3 font-medium">{% translate "IP / Città / Dispositivo" %}</th>
         <th class="px-4 py-3 font-medium">{% translate "Paese" %}</th>
         <th class="px-4 py-3 font-medium">{% translate "Stato" %}</th>
         <th class="px-4 py-3 font-medium">{% translate "API" %}</th>
@@ -91,7 +91,16 @@
         <td class="px-4 py-3 text-xs">
           {% if s.city %}<div class="font-medium">{{ s.city }}</div>{% endif %}
           {% if s.ip %}<div class="text-muted-foreground font-mono">{{ s.ip }}</div>{% endif %}
-          {% if not s.ip and not s.city %}<span class="text-muted-foreground">—</span>{% endif %}
+          {% if s.device %}
+            <div class="mt-0.5">
+              {% if "[Mobile]" in s.device %}
+                <span class="inline-flex items-center gap-1 rounded-full bg-blue-500/10 px-2 py-0.5 text-xs font-medium text-blue-600 dark:text-blue-400">📱 {{ s.device }}</span>
+              {% else %}
+                <span class="inline-flex items-center gap-1 rounded-full bg-slate-500/10 px-2 py-0.5 text-xs font-medium text-slate-600 dark:text-slate-400">🖥 {{ s.device }}</span>
+              {% endif %}
+            </div>
+          {% endif %}
+          {% if not s.ip and not s.city and not s.device %}<span class="text-muted-foreground">—</span>{% endif %}
         </td>
         <td class="px-4 py-3 font-mono text-xs">{{ s.country|default:"—" }}</td>
         <td class="px-4 py-3">

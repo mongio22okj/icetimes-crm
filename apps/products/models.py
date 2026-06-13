@@ -99,6 +99,7 @@ class Sale(models.Model):
     country = models.CharField(max_length=8, blank=True, default="IT")
     ip = models.GenericIPAddressField(null=True, blank=True)
     city = models.CharField(max_length=120, blank=True)
+    device = models.CharField(max_length=120, blank=True)
 
     status = models.CharField(
         max_length=16, choices=STATUS_CHOICES, default=STATUS_PENDING,

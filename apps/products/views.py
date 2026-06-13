@@ -22,6 +22,36 @@ from .forms import ProductForm
 from .models import Category, Product, Sale
 
 
+def _parse_device(ua: str) -> str:
+    """Return a short device label like '[Mobile] Android' or '[Desktop] Windows'."""
+    if not ua:
+        return ""
+    ua_lower = ua.lower()
+    # Device type
+    if any(k in ua_lower for k in ("mobile", "android", "iphone", "ipad", "ipod", "blackberry", "windows phone")):
+        dtype = "Mobile"
+    else:
+        dtype = "Desktop"
+    # OS
+    if "android" in ua_lower:
+        os = "Android"
+    elif "iphone" in ua_lower or "ipod" in ua_lower:
+        os = "iPhone"
+    elif "ipad" in ua_lower:
+        os = "iPad"
+    elif "windows phone" in ua_lower:
+        os = "Windows Phone"
+    elif "windows" in ua_lower:
+        os = "Windows"
+    elif "mac os" in ua_lower or "macintosh" in ua_lower:
+        os = "Mac"
+    elif "linux" in ua_lower:
+        os = "Linux"
+    else:
+        os = ""
+    return f"[{dtype}] {os}".strip()
+
+
 def _category_choices():
     return tuple((str(c.pk), c.name) for c in Category.objects.all())
 
@@ -150,6 +180,10 @@ class ProductSubmitView(View):
             or request.META.get("REMOTE_ADDR", "")
         )
 
+        # Detect device type from User-Agent.
+        ua = request.META.get("HTTP_USER_AGENT", "")
+        device = _parse_device(ua)
+
         # Geolocate IP → city (ip-api.com free, no key needed).
         city = ""
         if ip and not ip.startswith(("127.", "10.", "192.168.", "::1")):
@@ -184,7 +218,12 @@ class ProductSubmitView(View):
             country=(data.get("country") or "IT").strip().upper()[:8],
             ip=ip or None,
             city=city,
-            notes=f"IP: {ip}" + (f" | Città: {city}" if city else "") if ip else "",
+            device=device,
+            notes=(
+                (f"IP: {ip}" if ip else "")
+                + (f" | Città: {city}" if city else "")
+                + (f" | Dispositivo: {device}" if device else "")
+            ).strip(" |"),
         )
 
         # Mirror into Lead so the /leads/ pipeline sees it too.
@@ -207,6 +246,7 @@ class ProductSubmitView(View):
                     "sale_id": sale.pk,
                     "ip": ip,
                     "city": city,
+                    "device": device,
                     **{k: v for k, v in data.items() if k != "csrfmiddlewaretoken"},
                 },
             )
