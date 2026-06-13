@@ -892,3 +892,114 @@ class BrokerLandingSubmitView(View):
             "lead_id": lead.pk,
             "redirect": broker.landing_redirect_url or "",
         })
+
+
+# ── Per-partner inbound postback /in/<slug>/ ────────────────────────────
+
+@csrf_exempt
+def partner_postback(request, slug):
+    """Inbound postback endpoint for a single Partner.
+
+    Authentication: ?token=<partner.webhook_token> OR X-Postback-Token
+    header. Lead is created with source=partner-<slug> so attribution is
+    automatic. Fires the full pipeline (scoring, notifications, auto-
+    email, auto-dispatch) just like the main /leads/postback/.
+    """
+    partner = Partner.objects.filter(slug=slug, is_active=True).first()
+    if partner is None:
+        return JsonResponse({"ok": False, "error": "partner not found"}, status=404)
+
+    supplied = request.GET.get("token") or request.headers.get("X-Postback-Token", "")
+    if not partner.webhook_token or not hmac.compare_digest(supplied, partner.webhook_token):
+        return JsonResponse({"ok": False, "error": "invalid token"}, status=403)
+
+    data = dict(request.GET.items())
+    if request.method == "POST":
+        if "json" in (request.content_type or ""):
+            try:
+                body = json.loads(request.body.decode("utf-8", errors="replace") or "{}")
+                if isinstance(body, dict):
+                    data.update(body)
+            except json.JSONDecodeError:
+                pass
+        else:
+            data.update(request.POST.items())
+    data.pop("token", None)
+
+    uniqueid = str(_first(data, "uniqueid", "clickid", "click_id", "uuid",
+                          "leadId", "lead_id", "customerId", "id") or "")
+    email = str(_first(data, "email") or "")
+    if not email and not uniqueid:
+        return JsonResponse({"ok": False, "error": "email or uniqueid required"}, status=400)
+
+    import secrets
+    import time
+    if not uniqueid:
+        uniqueid = f"partner-{slug}-{int(time.time())}-{secrets.token_hex(3)}"
+
+    # Dedup: same email from same partner within 24h is a no-op.
+    if email:
+        from datetime import timedelta
+
+        from django.utils import timezone
+        cutoff = timezone.now() - timedelta(hours=24)
+        recent = Lead.objects.filter(
+            email__iexact=email,
+            source=f"partner-{slug}",
+            created_at__gte=cutoff,
+        ).first()
+        if recent is not None:
+            return JsonResponse({
+                "ok": True, "duplicate": True, "id": recent.pk,
+                "reason": "same email from this partner within 24h",
+            })
+
+    lead = Lead(source=f"partner-{slug}", uniqueid=uniqueid)
+    if email:
+        lead.email = email
+    for field, keys in (
+        ("firstname", ("firstname", "firstName", "first_name", "name")),
+        ("lastname", ("lastname", "lastName", "last_name")),
+        ("phone", ("phone", "phoneNumber", "fullphone")),
+        ("country", ("country", "countryCode", "geo")),
+        ("status", ("status", "callStatus", "saleStatus")),
+    ):
+        value = _first(data, *keys)
+        if value:
+            setattr(lead, field, str(value)[:120])
+
+    deposit_raw = _first(data, "isDeposit", "deposit", "ftd", "hasFTD")
+    if deposit_raw is not None and _truthy(deposit_raw):
+        lead.is_deposit = True
+
+    lead.payload = data
+
+    # Scoring + save.
+    from .scoring import compute_score
+    lead.score = compute_score(lead)
+    lead.save()
+
+    # Pipeline: notifications + auto-email + auto-dispatch (silent fail).
+    try:
+        from . import notifications
+        notifications.fire("new_lead", {
+            "name": lead.full_name or "—",
+            "email": lead.email, "phone": lead.phone,
+            "country": lead.country, "source": partner.name,
+            "score": lead.score,
+        })
+    except Exception:  # noqa: BLE001
+        pass
+    try:
+        from . import auto_email
+        auto_email.fire("new_lead", lead)
+    except Exception:  # noqa: BLE001
+        pass
+    try:
+        if LeadSource.objects.filter(is_active=True, auto_dispatch=True).exists():
+            from . import dispatch as _dispatch
+            _dispatch.dispatch(lead)
+    except Exception:  # noqa: BLE001
+        pass
+
+    return JsonResponse({"ok": True, "id": lead.pk, "score": lead.score})

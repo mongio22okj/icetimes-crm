@@ -224,8 +224,13 @@ class Partner(models.Model):
         help_text="URL della landing del partner (esterna)."
     )
     api_key = models.CharField(
-        "Chiave API", max_length=255, blank=True,
-        help_text="Opzionale — solo se il partner richiede una API key per gli invii."
+        "Chiave API (loro)", max_length=255, blank=True,
+        help_text="Opzionale — chiave API del partner, se serve per inviargli qualcosa."
+    )
+    webhook_token = models.CharField(
+        "Token postback (nostro)", max_length=64, blank=True, unique=False,
+        help_text="Token segreto che il partner usa per fare POST a "
+                  "/in/<slug>/?token=<token>. Auto-generato al primo save."
     )
     note = models.TextField(
         "Nota", blank=True,
@@ -241,8 +246,17 @@ class Partner(models.Model):
     def __str__(self) -> str:
         return f"{self.name} ({self.slug})"
 
+    def save(self, *args, **kwargs):
+        if not self.webhook_token:
+            import secrets
+            self.webhook_token = secrets.token_urlsafe(24)
+        super().save(*args, **kwargs)
+
     def get_absolute_url(self) -> str:
         return reverse("leads:partner_edit", kwargs={"pk": self.pk})
+
+    def get_postback_path(self) -> str:
+        return f"/in/{self.slug}/?token={self.webhook_token}"
 
 
 class Campaign(models.Model):
