@@ -19,15 +19,7 @@ from .views import (
     NotificationListView,
     NotificationTestView,
     NotificationUpdateView,
-    PartnerCreateView,
-    PartnerDeleteView,
-    PartnerListView,
-    PartnerUpdateView,
     ReportsView,
-    SourceCreateView,
-    SourceDeleteView,
-    SourceListView,
-    SourceUpdateView,
     postback,
 )
 
@@ -57,14 +49,4 @@ urlpatterns = [
     path("dispatch/<int:pk>/", LeadDispatchTriggerView.as_view(), name="lead_dispatch"),
     path("sync/", LeadSyncView.as_view(), name="sync"),
     path("postback/", postback, name="postback"),
-    # LeadSource CRUD
-    path("sources/", SourceListView.as_view(), name="source_list"),
-    path("sources/new/", SourceCreateView.as_view(), name="source_create"),
-    path("sources/<int:pk>/", SourceUpdateView.as_view(), name="source_edit"),
-    path("sources/<int:pk>/delete/", SourceDeleteView.as_view(), name="source_delete"),
-    # Partner API — lightweight partner/affiliate registry.
-    path("partners/", PartnerListView.as_view(), name="partner_list"),
-    path("partners/new/", PartnerCreateView.as_view(), name="partner_create"),
-    path("partners/<int:pk>/", PartnerUpdateView.as_view(), name="partner_edit"),
-    path("partners/<int:pk>/delete/", PartnerDeleteView.as_view(), name="partner_delete"),
 ]

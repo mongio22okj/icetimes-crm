@@ -18,7 +18,7 @@ from apps.core.breadcrumbs import BreadcrumbsMixin
 from apps.core.messages import LEVEL_ERROR, LEVEL_SUCCESS, toast
 from apps.core.tables import BulkAction, Column, Filter, TableConfig, TableView
 
-from .forms import CampaignForm, LeadSourceForm, PartnerForm
+from .forms import CampaignForm
 from .models import (
     AutoMessage,
     Campaign,
@@ -28,6 +28,7 @@ from .models import (
     NotificationWebhook,
     Partner,
 )
+
 from .sync import run_all_sources
 
 
@@ -130,64 +131,6 @@ class LeadSyncView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
             toast(request, LEVEL_ERROR,
                   "Nessuna sorgente attiva con lettura disponibile.")
         return redirect("leads:list")
-
-
-# ── LeadSource CRUD (manageable via direct URL or Django admin) ─────────
-
-class SourceListView(BreadcrumbsMixin, LoginRequiredMixin,
-                     EmailVerifiedRequiredMixin, StaffRequiredMixin, ListView):
-    model = LeadSource
-    template_name = "leads/source_list.html"
-    context_object_name = "sources"
-    ordering = ["priority", "name"]
-    breadcrumb_title = "API Integrate"
-
-    def get_queryset(self):
-        return LeadSource.objects.all().order_by("priority", "name")
-
-
-class SourceCreateView(BreadcrumbsMixin, LoginRequiredMixin,
-                       EmailVerifiedRequiredMixin, StaffRequiredMixin, CreateView):
-    model = LeadSource
-    form_class = LeadSourceForm
-    template_name = "leads/source_form.html"
-    success_url = reverse_lazy("leads:list")
-    breadcrumb_title = "New API source"
-    breadcrumb_parent = "leads:list"
-
-    def form_valid(self, form):
-        response = super().form_valid(form)
-        toast(self.request, LEVEL_SUCCESS,
-              f"Sorgente '{self.object.name}' creata.")
-        return response
-
-
-class SourceUpdateView(BreadcrumbsMixin, LoginRequiredMixin,
-                       EmailVerifiedRequiredMixin, StaffRequiredMixin, UpdateView):
-    model = LeadSource
-    form_class = LeadSourceForm
-    template_name = "leads/source_form.html"
-    success_url = reverse_lazy("leads:list")
-    breadcrumb_title = "Edit API source"
-    breadcrumb_parent = "leads:list"
-
-    def form_valid(self, form):
-        response = super().form_valid(form)
-        toast(self.request, LEVEL_SUCCESS,
-              f"Sorgente '{self.object.name}' aggiornata.")
-        return response
-
-
-class SourceDeleteView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
-                       StaffRequiredMixin, View):
-    def post(self, request, pk):
-        deleted = LeadSource.objects.filter(pk=pk).delete()[0]
-        toast(request, LEVEL_SUCCESS if deleted else LEVEL_ERROR,
-              "Sorgente eliminata." if deleted else "Sorgente non trovata.")
-        return redirect("leads:list")
-
-
-# ── API & Integrazioni page (tabs + code examples) ──────────────────────
 
 
 # ── Postback receiver ────────────────────────────────────────────────────
@@ -370,63 +313,6 @@ def postback(request):
             pass
 
     return JsonResponse({"ok": True, "id": lead.pk, "score": lead.score})
-
-
-# ── Partner CRUD (staff-only) ───────────────────────────────────────────
-
-class PartnerListView(BreadcrumbsMixin, LoginRequiredMixin,
-                      EmailVerifiedRequiredMixin, StaffRequiredMixin, ListView):
-    model = Partner
-    template_name = "leads/partner_list.html"
-    context_object_name = "partners"
-    breadcrumb_title = "Partner API"
-
-
-class PartnerCreateView(BreadcrumbsMixin, LoginRequiredMixin,
-                        EmailVerifiedRequiredMixin, StaffRequiredMixin,
-                        CreateView):
-    model = Partner
-    form_class = PartnerForm
-    template_name = "leads/partner_form.html"
-    success_url = reverse_lazy("leads:partner_list")
-    breadcrumb_title = "Nuovo partner"
-    breadcrumb_parent = ("Partner API", "leads:partner_list")
-
-    def form_valid(self, form):
-        response = super().form_valid(form)
-        toast(self.request, LEVEL_SUCCESS,
-              f"Partner '{self.object.name}' creato.")
-        return response
-
-
-class PartnerUpdateView(BreadcrumbsMixin, LoginRequiredMixin,
-                        EmailVerifiedRequiredMixin, StaffRequiredMixin,
-                        UpdateView):
-    model = Partner
-    form_class = PartnerForm
-    template_name = "leads/partner_form.html"
-    success_url = reverse_lazy("leads:partner_list")
-    breadcrumb_title = "Modifica partner"
-    breadcrumb_parent = ("Partner API", "leads:partner_list")
-
-    def form_valid(self, form):
-        response = super().form_valid(form)
-        toast(self.request, LEVEL_SUCCESS,
-              f"Partner '{self.object.name}' aggiornato.")
-        return response
-
-
-class PartnerDeleteView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
-                        StaffRequiredMixin, View):
-    def post(self, request, pk):
-        partner = Partner.objects.filter(pk=pk).first()
-        if partner is None:
-            toast(request, LEVEL_ERROR, "Partner non trovato.")
-            return redirect("leads:partner_list")
-        name = partner.name
-        partner.delete()
-        toast(request, LEVEL_SUCCESS, f"Partner '{name}' eliminato.")
-        return redirect("leads:partner_list")
 
 
 # ── Broker dashboard ────────────────────────────────────────────────────
