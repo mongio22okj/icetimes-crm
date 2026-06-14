@@ -9,31 +9,31 @@
 {% block content %}
 
 {# ── Header ──────────────────────────────────────────────────────────── #}
-<div class="flex items-center justify-between mb-8">
+<div class="flex items-center justify-between mb-4">
   <div>
-    <h1 class="text-2xl font-semibold tracking-tight">Dashboard</h1>
-    <p class="text-sm text-muted-foreground mt-0.5">Performance lead e conversioni in tempo reale</p>
+    <h1 class="text-lg font-semibold tracking-tight">Dashboard</h1>
+    <p class="text-xs text-muted-foreground mt-0.5">Performance lead e conversioni in tempo reale</p>
   </div>
   <a href="{% url 'leads:list' %}"
-     class="h-9 px-4 rounded-md border border-border inline-flex items-center gap-2 text-sm font-medium hover:bg-accent transition-colors">
-    {% icon "target" 15 %} Gestisci Lead
+     class="h-7 px-3 rounded-md border border-border inline-flex items-center gap-1.5 text-xs font-medium hover:bg-accent transition-colors">
+    {% icon "target" 13 %} Gestisci Lead
   </a>
 </div>
 
 {# ── KPI cards ────────────────────────────────────────────────────────── #}
-<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-3">
 
   {% for k in kpis %}
-  <div class="rounded-xl border border-border bg-card p-5">
-    <div class="flex items-center justify-between mb-3">
+  <div class="rounded-lg border border-border bg-card p-3">
+    <div class="flex items-center justify-between mb-2">
       <span class="text-xs font-medium text-muted-foreground uppercase tracking-wider">{{ k.label }}</span>
-      <span class="h-8 w-8 rounded-lg bg-muted inline-flex items-center justify-center text-muted-foreground">
-        {% icon k.icon 16 %}
+      <span class="h-6 w-6 rounded-md bg-muted inline-flex items-center justify-center text-muted-foreground">
+        {% icon k.icon 13 %}
       </span>
     </div>
-    <div class="text-3xl font-bold tracking-tight">{{ k.value }}</div>
+    <div class="text-2xl font-bold tracking-tight">{{ k.value }}</div>
     {% if k.delta %}
-    <div class="mt-2 text-xs inline-flex items-center gap-1
+    <div class="mt-1 text-xs inline-flex items-center gap-1
                 {% if k.trend == 'up' %}text-emerald-600 dark:text-emerald-400
                 {% elif k.trend == 'down' %}text-rose-500 dark:text-rose-400
                 {% else %}text-muted-foreground{% endif %}">
@@ -47,38 +47,38 @@
 </div>
 
 {# ── Charts row ───────────────────────────────────────────────────────── #}
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-3 mb-3">
 
   {# Bar — Lead per source #}
-  <div class="lg:col-span-2 rounded-xl border border-border bg-card p-5">
-    <div class="flex items-center justify-between mb-5">
+  <div class="lg:col-span-2 rounded-lg border border-border bg-card p-3">
+    <div class="flex items-center justify-between mb-3">
       <div>
-        <h3 class="text-sm font-semibold">Lead per Sorgente</h3>
-        <p class="text-xs text-muted-foreground mt-0.5">Ultimi 7 giorni</p>
+        <h3 class="text-xs font-semibold">Lead per Sorgente</h3>
+        <p class="text-xs text-muted-foreground">Ultimi 7 giorni</p>
       </div>
     </div>
     {% if broker_chart_json != '{"labels": [], "data": []}' %}
-    <canvas id="brokerChart" height="180"></canvas>
+    <canvas id="brokerChart" height="120"></canvas>
     {% else %}
-    <div class="flex flex-col items-center justify-center h-40 text-muted-foreground">
-      {% icon "inbox" 32 %}
-      <p class="text-sm mt-2">Nessun lead negli ultimi 7 giorni</p>
+    <div class="flex flex-col items-center justify-center h-28 text-muted-foreground">
+      {% icon "inbox" 24 %}
+      <p class="text-xs mt-1">Nessun lead negli ultimi 7 giorni</p>
     </div>
     {% endif %}
   </div>
 
   {# Doughnut — Lead per country #}
-  <div class="rounded-xl border border-border bg-card p-5">
-    <div class="mb-5">
-      <h3 class="text-sm font-semibold">Lead per Paese</h3>
-      <p class="text-xs text-muted-foreground mt-0.5">Ultimi 30 giorni</p>
+  <div class="rounded-lg border border-border bg-card p-3">
+    <div class="mb-3">
+      <h3 class="text-xs font-semibold">Lead per Paese</h3>
+      <p class="text-xs text-muted-foreground">Ultimi 30 giorni</p>
     </div>
     {% if country_chart_json != '{"labels": [], "data": []}' %}
-    <canvas id="countryChart" height="180"></canvas>
+    <canvas id="countryChart" height="120"></canvas>
     {% else %}
-    <div class="flex flex-col items-center justify-center h-40 text-muted-foreground">
-      {% icon "globe" 32 %}
-      <p class="text-sm mt-2">Nessun dato disponibile</p>
+    <div class="flex flex-col items-center justify-center h-28 text-muted-foreground">
+      {% icon "globe" 24 %}
+      <p class="text-xs mt-1">Nessun dato disponibile</p>
     </div>
     {% endif %}
   </div>
@@ -86,30 +86,30 @@
 </div>
 
 {# ── Bottom row ───────────────────────────────────────────────────────── #}
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-3">
 
   {# Doughnut — Status #}
-  <div class="rounded-xl border border-border bg-card p-5">
-    <div class="mb-5">
-      <h3 class="text-sm font-semibold">Stato Lead</h3>
-      <p class="text-xs text-muted-foreground mt-0.5">Mese corrente</p>
+  <div class="rounded-lg border border-border bg-card p-3">
+    <div class="mb-3">
+      <h3 class="text-xs font-semibold">Stato Lead</h3>
+      <p class="text-xs text-muted-foreground">Mese corrente</p>
     </div>
     {% if status_chart_json != '{"labels": [], "data": []}' %}
-    <canvas id="statusChart" height="180"></canvas>
+    <canvas id="statusChart" height="120"></canvas>
     {% else %}
-    <div class="flex flex-col items-center justify-center h-40 text-muted-foreground">
-      {% icon "pie-chart" 32 %}
-      <p class="text-sm mt-2">Nessun dato disponibile</p>
+    <div class="flex flex-col items-center justify-center h-28 text-muted-foreground">
+      {% icon "pie-chart" 24 %}
+      <p class="text-xs mt-1">Nessun dato disponibile</p>
     </div>
     {% endif %}
   </div>
 
   {# Activity feed #}
-  <div class="lg:col-span-2 rounded-xl border border-border bg-card p-5">
-    <div class="flex items-center justify-between mb-5">
+  <div class="lg:col-span-2 rounded-lg border border-border bg-card p-3">
+    <div class="flex items-center justify-between mb-3">
       <div>
-        <h3 class="text-sm font-semibold">Attività Recenti</h3>
-        <p class="text-xs text-muted-foreground mt-0.5">Ultimi eventi lead e vendite</p>
+        <h3 class="text-xs font-semibold">Attività Recenti</h3>
+        <p class="text-xs text-muted-foreground">Ultimi eventi lead e vendite</p>
       </div>
       <a href="{% url 'leads:list' %}" class="text-xs text-primary hover:underline">Vedi tutti →</a>
     </div>
@@ -117,16 +117,16 @@
     {% if activities %}
     <ul class="divide-y divide-border">
       {% for a in activities %}
-      <li class="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
-        <div class="h-8 w-8 rounded-full shrink-0 inline-flex items-center justify-center
+      <li class="flex items-center gap-2 py-2 first:pt-0 last:pb-0">
+        <div class="h-6 w-6 rounded-full shrink-0 inline-flex items-center justify-center
                     {% if a.tone == 'success' %}bg-emerald-500/10 text-emerald-500
                     {% elif a.tone == 'warning' %}bg-amber-500/10 text-amber-500
                     {% elif a.tone == 'danger' %}bg-rose-500/10 text-rose-500
                     {% else %}bg-primary/10 text-primary{% endif %}">
-          {% icon a.icon 14 %}
+          {% icon a.icon 11 %}
         </div>
         <div class="min-w-0 flex-1">
-          <p class="text-sm font-medium truncate">{{ a.title }}</p>
+          <p class="text-xs font-medium truncate">{{ a.title }}</p>
           <p class="text-xs text-muted-foreground truncate">{{ a.text }}{% if a.extra %} · {{ a.extra }}{% endif %}</p>
         </div>
         <span class="text-xs text-muted-foreground whitespace-nowrap shrink-0">{{ a.when|timesince }}</span>
@@ -134,9 +134,9 @@
       {% endfor %}
     </ul>
     {% else %}
-    <div class="flex flex-col items-center justify-center h-40 text-muted-foreground">
-      {% icon "activity" 32 %}
-      <p class="text-sm mt-2">Nessuna attività recente</p>
+    <div class="flex flex-col items-center justify-center h-28 text-muted-foreground">
+      {% icon "activity" 24 %}
+      <p class="text-xs mt-1">Nessuna attività recente</p>
     </div>
     {% endif %}
   </div>
