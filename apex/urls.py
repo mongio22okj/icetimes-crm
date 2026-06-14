@@ -20,21 +20,12 @@ from apps.core.pwa import manifest as pwa_manifest
 from apps.core.pwa import offline as pwa_offline
 from apps.core.pwa import service_worker as pwa_sw
 from apps.core.search import global_search
-from apps.leads.views import BrokerLandingSubmitView, BrokerLandingView, partner_postback
 from apps.organizations.views import InvitationAcceptView
-from apps.products.views import ProductLandingView, ProductSubmitView
 
 
 def robots_txt(request):
-    body = (
-        "User-agent: *\n"
-        "Allow: /p/\n"
-        "Allow: /b/\n"
-        "Disallow: /admin/\n"
-        "Disallow: /api/\n"
-        "Disallow: /accounts/\n"
-    )
-    return HttpResponse(body, content_type="text/plain")
+    lines = "User-agent: *\nDisallow: /\n"
+    return HttpResponse(lines, content_type="text/plain")
 
 
 urlpatterns = [
@@ -76,11 +67,6 @@ urlpatterns = [
     path("users/", include("apps.accounts.user_urls")),
     path("settings/", include("apps.accounts.settings_urls")),
     path("products/", include("apps.products.urls")),
-    path("p/<slug:slug>/", ProductLandingView.as_view(), name="product_landing"),
-    path("p/<slug:slug>/submit/", ProductSubmitView.as_view(), name="product_submit"),
-    path("b/<slug:slug>/", BrokerLandingView.as_view(), name="broker_landing"),
-    path("b/<slug:slug>/submit/", BrokerLandingSubmitView.as_view(), name="broker_landing_submit"),
-    path("in/<slug:slug>/", partner_postback, name="partner_postback"),
     path("leads/", include("apps.leads.urls")),
     path("notifications/", include("apps.notifications.urls")),
     path("orgs/", include("apps.organizations.urls")),
