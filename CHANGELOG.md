@@ -2,35 +2,6 @@
 
 All notable changes to this project will be documented in this file.
 
-## [unreleased] - 2026-06-12
-
-### Added
-
-- **Unified "API Broker" page** (`/leads/api-broker/`) replaces the previous
-  split `/leads/sources/` (list) + `/leads/send/` (form). Sidebar of broker
-  cards on the left (with kind badges: funnel/source/link_id/affiliate
-  pills + active dot), endpoint preview + send form on the right. Click a
-  card → form updates instantly via Alpine.js, no round-trip.
-- **Modal source create/edit** — "Aggiungi API" and the per-card edit
-  button now open `LeadSourceForm` in a `<dialog>` over the broker page.
-  Views detect `?modal=1` via `_SourceFormMixin` and render
-  `_source_form_modal.html` instead of the full page.
-- **`/leads/integrations/`** — new "API & Integrazioni" page with four
-  tabs (API REST / Affiliati / Embed / Webhook). Reactive Domain + Token
-  inputs interpolate into endpoint URLs and into cURL / PHP / JavaScript /
-  Python code blocks in real time. Yellow "esegui sempre lato server"
-  banners on the token-bearing tabs.
-- **10 new Lucide icons** added to `apps/core/templatetags/apex.py::ICONS`:
-  `send`, `link`, `copy`, `clipboard-list`, `settings-2`, `lightbulb`,
-  `plug`, `code-2`, `code` — used by the new pages and nav entries.
-
-### Changed
-
-- Nav entry renamed: "API sources" → **"API Broker"** (icon `plug`).
-  New nav entry: **"API & Integrazioni"** (icon `code-2`).
-- Legacy URL aliases: `/leads/sources/` and `/leads/send/` redirect 301 to
-  `/leads/api-broker/` so old bookmarks keep working.
-
 ## [0.18.2] - 2026-05-30
 
 **Admin prominence + slimmer distribution.** Two same-day refinements

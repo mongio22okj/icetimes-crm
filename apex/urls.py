@@ -24,9 +24,7 @@ from apps.core.pwa import offline as pwa_offline
 from apps.core.pwa import service_worker as pwa_sw
 from apps.core.search import global_search
 from apps.marketing.sitemaps import MarketingSitemap
-from apps.leads.views import BrokerLandingSubmitView, BrokerLandingView, partner_postback
 from apps.organizations.views import InvitationAcceptView
-from apps.products.views import ProductLandingView, ProductSubmitView
 
 
 def robots_txt(request):
@@ -95,21 +93,12 @@ urlpatterns = [
     path("users/", include("apps.accounts.user_urls")),
     path("settings/", include("apps.accounts.settings_urls")),
     path("products/", include("apps.products.urls")),
-    # Public product landing — short URL, ad-friendly.
-    path("p/<slug:slug>/", ProductLandingView.as_view(), name="product_landing"),
-    path("p/<slug:slug>/submit/", ProductSubmitView.as_view(), name="product_submit"),
-    # Public broker landing — one per LeadSource (when landing_active=True).
-    path("b/<slug:slug>/", BrokerLandingView.as_view(), name="broker_landing"),
-    path("b/<slug:slug>/submit/", BrokerLandingSubmitView.as_view(), name="broker_landing_submit"),
-    # Per-partner inbound postback — short URL for affiliate POSTs.
-    path("in/<slug:slug>/", partner_postback, name="partner_postback"),
     path("customers/", include("apps.customers.urls")),
     path("calendar/", include("apps.events.urls")),
     path("chat/", include("apps.chat.urls")),
     path("files/", include("apps.files.urls")),
     path("invoices/", include("apps.invoices.urls")),
     path("kanban/", include("apps.kanban.urls")),
-    path("leads/", include("apps.leads.urls")),
     path("landing/", include("apps.marketing.urls")),
     path("mail/", include("apps.mail.urls")),
     path("notifications/", include("apps.notifications.urls")),

@@ -1,10 +1,23 @@
 from django.urls import path
 
-from .views import LeadBrokerDashboardView
+from .views import (
+    AnalyticsDashboardView,
+    ChartsShowcaseView,
+    CrmDashboardView,
+    DashboardView,
+    EcommerceDashboardView,
+    SaasDashboardView,
+    revenue_chart_data,
+)
 
-# Real CRM dashboard for IceTimes: KPI cards + charts + activity feed
-# powered by Lead / Sale data. The URL name "dashboard" is reused (logo
-# link, breadcrumb root, post-login + unlock redirects all reverse it).
 urlpatterns = [
-    path("", LeadBrokerDashboardView.as_view(), name="dashboard"),
+    path("", DashboardView.as_view(), name="dashboard"),
+    path("dashboards/analytics/", AnalyticsDashboardView.as_view(),
+         name="dashboard_analytics"),
+    path("dashboards/crm/", CrmDashboardView.as_view(), name="dashboard_crm"),
+    path("dashboards/ecommerce/", EcommerceDashboardView.as_view(),
+         name="dashboard_ecommerce"),
+    path("dashboards/saas/", SaasDashboardView.as_view(), name="dashboard_saas"),
+    path("charts/", ChartsShowcaseView.as_view(), name="charts_showcase"),
+    path("charts/revenue/", revenue_chart_data, name="revenue_chart_data"),
 ]
