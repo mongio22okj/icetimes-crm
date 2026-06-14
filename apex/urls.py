@@ -23,7 +23,6 @@ from apps.core.search import global_search
 from apps.leads.views import BrokerLandingSubmitView, BrokerLandingView, partner_postback
 from apps.organizations.views import InvitationAcceptView
 from apps.products.views import ProductLandingView, ProductSubmitView
-from apps.tracker.views import track as tracker_track, postback as tracker_postback
 
 
 def robots_txt(request):
@@ -89,9 +88,6 @@ urlpatterns = [
     path("realtime/", include("apps.realtime.urls")),
     path("pages/", include("apps.core.urls")),
     path("", include("apps.dashboard.urls")),
-    path("tracker/", include("apps.tracker.urls")),
-    path("t/", tracker_track, name="track"),
-    path("postback/", tracker_postback, name="postback"),
 ]
 
 if getattr(settings, "METRICS_ENABLED", False):
