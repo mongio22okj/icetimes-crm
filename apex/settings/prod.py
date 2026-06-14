@@ -9,7 +9,7 @@ from django.core.exceptions import ImproperlyConfigured
 
 from .base import *  # noqa: F401, F403
 
-DEBUG = False
+DEBUG = os.environ.get("DEBUG", "False") == "True"
 
 SECRET_KEY = os.environ["SECRET_KEY"]
 
