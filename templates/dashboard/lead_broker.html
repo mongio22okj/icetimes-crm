@@ -58,7 +58,7 @@
       </div>
     </div>
     {% if broker_chart_json != '{"labels": [], "data": []}' %}
-    <canvas id="brokerChart" height="120"></canvas>
+    <canvas id="brokerChart" height="70"></canvas>
     {% else %}
     <div class="flex flex-col items-center justify-center h-28 text-muted-foreground">
       {% icon "inbox" 24 %}
@@ -74,7 +74,7 @@
       <p class="text-xs text-muted-foreground">Ultimi 30 giorni</p>
     </div>
     {% if country_chart_json != '{"labels": [], "data": []}' %}
-    <canvas id="countryChart" height="120"></canvas>
+    <canvas id="countryChart" height="70"></canvas>
     {% else %}
     <div class="flex flex-col items-center justify-center h-28 text-muted-foreground">
       {% icon "globe" 24 %}
@@ -95,7 +95,7 @@
       <p class="text-xs text-muted-foreground">Mese corrente</p>
     </div>
     {% if status_chart_json != '{"labels": [], "data": []}' %}
-    <canvas id="statusChart" height="120"></canvas>
+    <canvas id="statusChart" height="70"></canvas>
     {% else %}
     <div class="flex flex-col items-center justify-center h-28 text-muted-foreground">
       {% icon "pie-chart" 24 %}
