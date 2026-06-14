@@ -189,23 +189,6 @@ class SourceDeleteView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
 
 # ── API & Integrazioni page (tabs + code examples) ──────────────────────
 
-class IntegrationsView(BreadcrumbsMixin, LoginRequiredMixin,
-                       EmailVerifiedRequiredMixin, StaffRequiredMixin,
-                       TemplateView):
-    template_name = "leads/integrations.html"
-    breadcrumb_title = "API & Integrazioni"
-
-    def get_context_data(self, **kwargs):
-        ctx = super().get_context_data(**kwargs)
-        host = self.request.get_host()
-        scheme = "https" if self.request.is_secure() else "http"
-        ctx["default_domain"] = f"{scheme}://{host}"
-        ctx["postback_token_preview"] = (
-            (settings.LEADS_POSTBACK_TOKEN[:4] + "…" + settings.LEADS_POSTBACK_TOKEN[-4:])
-            if getattr(settings, "LEADS_POSTBACK_TOKEN", "") else ""
-        )
-        return ctx
-
 
 # ── Postback receiver ────────────────────────────────────────────────────
 # Public endpoint external sources call on lead events. Protected by a

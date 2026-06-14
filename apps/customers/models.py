@@ -8,6 +8,7 @@ still resolves after a customer is archived.
 from decimal import Decimal
 
 from django.db import models
+from django.db.models import F, Sum
 from django.utils import timezone
 
 
@@ -50,6 +51,10 @@ class Customer(models.Model):
     class Meta:
         ordering = ["-created_at"]
         base_manager_name = "all_objects"
+        indexes = [
+            models.Index(fields=["deleted_at"]),
+            models.Index(fields=["status"]),
+        ]
 
     def __str__(self) -> str:
         return self.name
@@ -80,7 +85,7 @@ class Customer(models.Model):
 
     @property
     def total_spent(self) -> Decimal:
-        total = Decimal("0")
-        for order in self.orders.all():
-            total += order.total
-        return total
+        result = self.orders.aggregate(
+            total=Sum(F("items__unit_price") * F("items__quantity"))
+        )["total"]
+        return result if result is not None else Decimal("0")

@@ -9,6 +9,7 @@ SELECT FOR UPDATE approach instead.
 from decimal import Decimal
 
 from django.db import models
+from django.db.models import F, Sum
 
 
 class Order(models.Model):
@@ -31,16 +32,18 @@ class Order(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["status"]),
+            models.Index(fields=["customer", "-created_at"]),
+        ]
 
     def __str__(self):
         return self.number or "Order(unsaved)"
 
     @property
     def total(self):
-        return sum(
-            (item.unit_price * item.quantity for item in self.items.all()),
-            Decimal("0"),
-        )
+        result = self.items.aggregate(t=Sum(F("unit_price") * F("quantity")))["t"]
+        return result if result is not None else Decimal("0")
 
     def save(self, *args, **kwargs):
         is_create = self.pk is None

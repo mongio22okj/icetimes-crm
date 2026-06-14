@@ -144,6 +144,11 @@ class ProductUpdateView(BreadcrumbsMixin, LoginRequiredMixin, EmailVerifiedRequi
 
 # ── Public product landing + submit ─────────────────────────────────────
 
+LANDING_TEMPLATES = {
+    "mediafront-midas": "products/landing_sofia.html",
+}
+
+
 class ProductLandingView(TemplateView):
     """Public landing page for a single Product. URL: /p/<slug>/.
 
@@ -151,6 +156,10 @@ class ProductLandingView(TemplateView):
     ProductSubmitView which creates a Sale row.
     """
     template_name = "products/landing.html"
+
+    def get_template_names(self):
+        slug = self.kwargs.get("slug", "")
+        return [LANDING_TEMPLATES.get(slug, self.template_name)]
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
@@ -170,6 +179,14 @@ class ProductLandingView(TemplateView):
                 return _json.loads(raw) if raw else []
             except Exception:
                 return []
+
+        # Hero image: handle both external URLs and ImageField paths
+        img = product.image
+        if img:
+            name = img.name if hasattr(img, "name") else str(img)
+            ctx["hero_image_url"] = name if name.startswith("http") else img.url
+        else:
+            ctx["hero_image_url"] = None
 
         ctx["facts_table"] = _load("facts_table")
         ctx["features_list"] = _load("features_list")
