@@ -18,7 +18,7 @@ from apps.core.breadcrumbs import BreadcrumbsMixin
 from apps.core.messages import LEVEL_ERROR, LEVEL_SUCCESS, toast
 from apps.core.tables import BulkAction, Column, Filter, TableConfig, TableView
 
-from .forms import CampaignForm
+from .forms import CampaignForm, LeadSourceForm
 from .models import (
     AutoMessage,
     Campaign,
@@ -458,6 +458,73 @@ class CampaignDeleteView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
         campaign.delete()
         toast(request, LEVEL_SUCCESS, f"Campagna '{name}' eliminata.")
         return redirect("leads:campaign_list")
+
+
+# ── Lead Source (broker API) CRUD ────────────────────────────────────────
+
+class LeadSourceListView(BreadcrumbsMixin, LoginRequiredMixin,
+                         EmailVerifiedRequiredMixin, StaffRequiredMixin,
+                         TemplateView):
+    template_name = "leads/leadsource_list.html"
+    breadcrumb_title = "Broker"
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        sources = list(LeadSource.objects.all())
+        ctx["sources"] = sources
+        ctx["totals"] = {
+            "total": len(sources),
+            "active": sum(1 for s in sources if s.is_active),
+            "with_api": sum(1 for s in sources if s.kind),
+        }
+        return ctx
+
+
+class LeadSourceCreateView(BreadcrumbsMixin, LoginRequiredMixin,
+                           EmailVerifiedRequiredMixin, StaffRequiredMixin,
+                           CreateView):
+    model = LeadSource
+    form_class = LeadSourceForm
+    template_name = "leads/leadsource_form.html"
+    success_url = reverse_lazy("leads:source_list")
+    breadcrumb_title = "Nuovo broker"
+    breadcrumb_parent = ("Broker", "leads:source_list")
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        toast(self.request, LEVEL_SUCCESS,
+              f"Broker '{self.object.name}' creato.")
+        return response
+
+
+class LeadSourceUpdateView(BreadcrumbsMixin, LoginRequiredMixin,
+                           EmailVerifiedRequiredMixin, StaffRequiredMixin,
+                           UpdateView):
+    model = LeadSource
+    form_class = LeadSourceForm
+    template_name = "leads/leadsource_form.html"
+    success_url = reverse_lazy("leads:source_list")
+    breadcrumb_title = "Modifica broker"
+    breadcrumb_parent = ("Broker", "leads:source_list")
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        toast(self.request, LEVEL_SUCCESS,
+              f"Broker '{self.object.name}' aggiornato.")
+        return response
+
+
+class LeadSourceDeleteView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
+                           StaffRequiredMixin, View):
+    def post(self, request, pk):
+        source = LeadSource.objects.filter(pk=pk).first()
+        if source is None:
+            toast(request, LEVEL_ERROR, "Broker non trovato.")
+            return redirect("leads:source_list")
+        name = source.name
+        source.delete()
+        toast(request, LEVEL_SUCCESS, f"Broker '{name}' eliminato.")
+        return redirect("leads:source_list")
 
 
 # ── Reports (ROI per broker + CPA per campaign) ─────────────────────────

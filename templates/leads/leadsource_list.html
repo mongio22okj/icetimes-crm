@@ -1,0 +1,90 @@
+{% extends "layouts/dashboard.html" %}
+{% load apex %}
+{% block title %}Broker · IceTimes CRM{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+  <div>
+    <h1 class="text-lg font-semibold tracking-tight">Broker / Lead Sources</h1>
+    <p class="text-xs text-muted-foreground mt-0.5">
+      Connessioni API verso i broker (TrackBox, IREV, Affinitrax, ecc.). Priorità ping-tree e payout.
+    </p>
+  </div>
+  <a href="{% url 'leads:source_create' %}"
+     class="h-9 px-4 rounded-md bg-primary text-primary-foreground inline-flex items-center gap-2 text-sm font-medium hover:opacity-90">
+    {% icon "plus" 15 %} Nuovo broker
+  </a>
+</div>
+
+{# ── Totali ────────────────────────────────────────────────────────── #}
+<div class="grid grid-cols-3 gap-3 mb-6 max-w-md">
+  <div class="rounded-lg border border-border bg-card p-3">
+    <div class="text-xs text-muted-foreground uppercase tracking-wider">Totali</div>
+    <div class="text-2xl font-bold mt-1">{{ totals.total }}</div>
+  </div>
+  <div class="rounded-lg border border-border bg-card p-3">
+    <div class="text-xs text-muted-foreground uppercase tracking-wider">Attivi</div>
+    <div class="text-2xl font-bold mt-1 text-primary">{{ totals.active }}</div>
+  </div>
+  <div class="rounded-lg border border-border bg-card p-3">
+    <div class="text-xs text-muted-foreground uppercase tracking-wider">Con API</div>
+    <div class="text-2xl font-bold mt-1">{{ totals.with_api }}</div>
+  </div>
+</div>
+
+{# ── Tabella ───────────────────────────────────────────────────────── #}
+<div class="rounded-lg border border-border bg-card overflow-x-auto">
+  <table class="w-full text-sm">
+    <thead>
+      <tr class="border-b border-border text-left">
+        <th class="px-3 py-2.5 text-xs font-medium text-muted-foreground uppercase tracking-wider">Nome</th>
+        <th class="px-3 py-2.5 text-xs font-medium text-muted-foreground uppercase tracking-wider">Tipo</th>
+        <th class="px-3 py-2.5 text-xs font-medium text-muted-foreground uppercase tracking-wider">URL base</th>
+        <th class="px-3 py-2.5 text-xs font-medium text-muted-foreground uppercase tracking-wider">Priorità</th>
+        <th class="px-3 py-2.5 text-xs font-medium text-muted-foreground uppercase tracking-wider">Stato</th>
+        <th class="px-3 py-2.5 text-xs font-medium text-muted-foreground uppercase tracking-wider text-right">Azioni</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for s in sources %}
+      <tr class="border-b border-border last:border-0 hover:bg-accent/40">
+        <td class="px-3 py-2.5 font-medium">{{ s.name }}</td>
+        <td class="px-3 py-2.5 text-xs">
+          {% if s.kind %}{{ s.get_kind_display }}{% else %}<span class="text-muted-foreground">— manuale</span>{% endif %}
+        </td>
+        <td class="px-3 py-2.5 text-xs text-muted-foreground truncate max-w-xs">{{ s.base_url|default:"—" }}</td>
+        <td class="px-3 py-2.5 text-xs font-mono">{{ s.priority }}</td>
+        <td class="px-3 py-2.5">
+          {% if s.is_active %}
+            <span class="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">Attivo</span>
+          {% else %}
+            <span class="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">Inattivo</span>
+          {% endif %}
+        </td>
+        <td class="px-3 py-2.5">
+          <div class="flex items-center justify-end gap-2">
+            <a href="{% url 'leads:source_edit' s.pk %}"
+               class="inline-flex h-7 px-3 items-center rounded-md border border-border text-xs hover:bg-accent">
+              Modifica
+            </a>
+            <form method="post" action="{% url 'leads:source_delete' s.pk %}" class="inline"
+                  onsubmit="return confirm('Eliminare il broker \'{{ s.name|escapejs }}\' ? Questa azione è irreversibile.');">
+              {% csrf_token %}
+              <button type="submit"
+                      class="inline-flex h-7 px-3 items-center rounded-md border border-destructive/40 text-xs text-destructive hover:bg-destructive/10">
+                Elimina
+              </button>
+            </form>
+          </div>
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="6" class="px-4 py-10 text-center text-muted-foreground text-sm">
+          Nessun broker configurato — aggiungi il primo.
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

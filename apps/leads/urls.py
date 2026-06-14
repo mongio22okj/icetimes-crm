@@ -13,6 +13,10 @@ from .views import (
     DispatchLogView,
     LeadDispatchTriggerView,
     LeadListView,
+    LeadSourceCreateView,
+    LeadSourceDeleteView,
+    LeadSourceListView,
+    LeadSourceUpdateView,
     LeadSyncView,
     NotificationCreateView,
     NotificationDeleteView,
@@ -28,6 +32,11 @@ app_name = "leads"
 urlpatterns = [
     path("", LeadListView.as_view(), name="list"),
     path("brokers/", BrokersDashboardView.as_view(), name="brokers_dashboard"),
+    # Lead source (broker API) CRUD.
+    path("sources/", LeadSourceListView.as_view(), name="source_list"),
+    path("sources/new/", LeadSourceCreateView.as_view(), name="source_create"),
+    path("sources/<int:pk>/", LeadSourceUpdateView.as_view(), name="source_edit"),
+    path("sources/<int:pk>/delete/", LeadSourceDeleteView.as_view(), name="source_delete"),
     path("campaigns/", CampaignListView.as_view(), name="campaign_list"),
     path("campaigns/new/", CampaignCreateView.as_view(), name="campaign_create"),
     path("campaigns/<int:pk>/", CampaignUpdateView.as_view(), name="campaign_edit"),
