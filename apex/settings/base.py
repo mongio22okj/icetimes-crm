@@ -68,9 +68,6 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
-    # Django 6 built-in CSP — sets Content-Security-Policy header on every
-    # response. Configure via SECURE_CSP / SECURE_CSP_REPORT_ONLY below.
-    "django.middleware.csp.ContentSecurityPolicyMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.locale.LocaleMiddleware",
@@ -98,9 +95,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
-                # Django 6 CSP nonce — exposes request.csp_nonce so inline
-                # <script nonce="{{ request.csp_nonce }}"> tags work.
-                "django.template.context_processors.csp",
+
                 "apps.core.context_processors.navigation",
                 "apps.core.context_processors.demo_mode",
                 "apps.notifications.context_processors.notification_unread_count",

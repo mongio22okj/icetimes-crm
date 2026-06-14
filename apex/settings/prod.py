@@ -85,7 +85,6 @@ else:
             "PASSWORD": _parsed.password,
             "HOST": _parsed.hostname,
             "PORT": _parsed.port or 5432,
-            "CONN_MAX_AGE": 60,
         }
     }
 
