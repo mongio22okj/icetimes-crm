@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     "apps.products",
     "apps.realtime",
     "apps.dashboard",
+    "apps.tracker",
 ]
 
 MIDDLEWARE = [
