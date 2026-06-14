@@ -1,6 +1,5 @@
 {% extends "layouts/dashboard.html" %}
 {% load apex %}
-{% load i18n %}
 {% block title %}Dashboard · IceTimes CRM{% endblock %}
 
 {% block head_extra %}
@@ -8,121 +7,161 @@
 {% endblock %}
 
 {% block content %}
-<div class="flex items-center justify-between mb-6">
+
+{# ── Header ──────────────────────────────────────────────────────────── #}
+<div class="flex items-center justify-between mb-8">
   <div>
-    <h1 class="text-2xl font-bold tracking-tight">Dashboard</h1>
-    <p class="text-sm text-muted-foreground mt-1">
-      {% translate "Panoramica lead, vendite e performance per sorgente." %}
-    </p>
+    <h1 class="text-2xl font-semibold tracking-tight">Dashboard</h1>
+    <p class="text-sm text-muted-foreground mt-0.5">Performance lead e conversioni in tempo reale</p>
   </div>
-  <div class="flex gap-2">
-    <a href="{% url 'leads:list' %}"
-       class="h-10 px-4 rounded-md border border-border inline-flex items-center gap-2 text-sm hover:bg-accent">
-      {% icon "target" %} Lead
-    </a>
-    <a href="{% url 'products:sale_list' %}"
-       class="h-10 px-4 rounded-md bg-primary text-primary-foreground inline-flex items-center gap-2 font-medium hover:opacity-90">
-      {% icon "shopping-bag" %} Vendite
-    </a>
-  </div>
+  <a href="{% url 'leads:list' %}"
+     class="h-9 px-4 rounded-md border border-border inline-flex items-center gap-2 text-sm font-medium hover:bg-accent transition-colors">
+    {% icon "target" 15 %} Gestisci Lead
+  </a>
 </div>
 
-{# ── KPI cards ────────────────────────────────────────────────────── #}
+{# ── KPI cards ────────────────────────────────────────────────────────── #}
 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+
   {% for k in kpis %}
-  <div class="rounded-lg border border-border bg-card p-5 flex items-center gap-4">
-    <div class="h-12 w-12 rounded-lg bg-gradient-to-br {{ k.gradient }} text-white inline-flex items-center justify-center shrink-0">
-      {% icon k.icon %}
+  <div class="rounded-xl border border-border bg-card p-5">
+    <div class="flex items-center justify-between mb-3">
+      <span class="text-xs font-medium text-muted-foreground uppercase tracking-wider">{{ k.label }}</span>
+      <span class="h-8 w-8 rounded-lg bg-muted inline-flex items-center justify-center text-muted-foreground">
+        {% icon k.icon 16 %}
+      </span>
     </div>
-    <div class="min-w-0 flex-1">
-      <div class="text-2xl font-bold leading-tight">{{ k.value }}</div>
-      <div class="text-xs text-muted-foreground mt-0.5">{{ k.label }}</div>
-      {% if k.delta %}
-        <div class="text-xs mt-1 inline-flex items-center gap-0.5
-                    {% if k.trend == 'up' %}text-emerald-600 dark:text-emerald-400
-                    {% elif k.trend == 'down' %}text-rose-600 dark:text-rose-400
-                    {% else %}text-muted-foreground{% endif %}">
-          {% if k.trend == 'up' %}↑{% elif k.trend == 'down' %}↓{% else %}—{% endif %}
-          {{ k.delta }}
-        </div>
-      {% endif %}
+    <div class="text-3xl font-bold tracking-tight">{{ k.value }}</div>
+    {% if k.delta %}
+    <div class="mt-2 text-xs inline-flex items-center gap-1
+                {% if k.trend == 'up' %}text-emerald-600 dark:text-emerald-400
+                {% elif k.trend == 'down' %}text-rose-500 dark:text-rose-400
+                {% else %}text-muted-foreground{% endif %}">
+      {% if k.trend == 'up' %}▲{% elif k.trend == 'down' %}▼{% endif %}
+      <span>{{ k.delta }} vs mese scorso</span>
     </div>
+    {% endif %}
   </div>
   {% endfor %}
+
 </div>
 
-{# ── Charts row ──────────────────────────────────────────────────── #}
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
-  <div class="rounded-lg border border-border bg-card p-5">
-    <div class="flex items-center justify-between mb-4">
-      <h3 class="text-base font-semibold">{% translate "Lead per Source" %} <span class="text-xs text-muted-foreground font-normal">(7 giorni)</span></h3>
+{# ── Charts row ───────────────────────────────────────────────────────── #}
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
+
+  {# Bar — Lead per source #}
+  <div class="lg:col-span-2 rounded-xl border border-border bg-card p-5">
+    <div class="flex items-center justify-between mb-5">
+      <div>
+        <h3 class="text-sm font-semibold">Lead per Sorgente</h3>
+        <p class="text-xs text-muted-foreground mt-0.5">Ultimi 7 giorni</p>
+      </div>
     </div>
-    <canvas id="brokerChart" height="220"></canvas>
-  </div>
-  <div class="rounded-lg border border-border bg-card p-5">
-    <div class="flex items-center justify-between mb-4">
-      <h3 class="text-base font-semibold">{% translate "Lead per Paese" %} <span class="text-xs text-muted-foreground font-normal">(30 giorni)</span></h3>
+    {% if broker_chart_json != '{"labels": [], "data": []}' %}
+    <canvas id="brokerChart" height="180"></canvas>
+    {% else %}
+    <div class="flex flex-col items-center justify-center h-40 text-muted-foreground">
+      {% icon "inbox" 32 %}
+      <p class="text-sm mt-2">Nessun lead negli ultimi 7 giorni</p>
     </div>
-    <canvas id="countryChart" height="220"></canvas>
+    {% endif %}
   </div>
+
+  {# Doughnut — Lead per country #}
+  <div class="rounded-xl border border-border bg-card p-5">
+    <div class="mb-5">
+      <h3 class="text-sm font-semibold">Lead per Paese</h3>
+      <p class="text-xs text-muted-foreground mt-0.5">Ultimi 30 giorni</p>
+    </div>
+    {% if country_chart_json != '{"labels": [], "data": []}' %}
+    <canvas id="countryChart" height="180"></canvas>
+    {% else %}
+    <div class="flex flex-col items-center justify-center h-40 text-muted-foreground">
+      {% icon "globe" 32 %}
+      <p class="text-sm mt-2">Nessun dato disponibile</p>
+    </div>
+    {% endif %}
+  </div>
+
 </div>
 
-{# ── Bottom row: status pie + activity ──────────────────────────── #}
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-  <div class="rounded-lg border border-border bg-card p-5">
-    <h3 class="text-base font-semibold mb-4">{% translate "Stato Lead" %} <span class="text-xs text-muted-foreground font-normal">(mese corrente)</span></h3>
-    <canvas id="statusChart" height="220"></canvas>
-  </div>
-  <div class="rounded-lg border border-border bg-card p-5">
-    <div class="flex items-center justify-between mb-4">
-      <h3 class="text-base font-semibold">{% translate "Attività Recenti" %}</h3>
-      <a href="{% url 'leads:list' %}" class="text-xs text-primary hover:underline">{% translate "Vedi tutti" %} →</a>
+{# ── Bottom row ───────────────────────────────────────────────────────── #}
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+
+  {# Doughnut — Status #}
+  <div class="rounded-xl border border-border bg-card p-5">
+    <div class="mb-5">
+      <h3 class="text-sm font-semibold">Stato Lead</h3>
+      <p class="text-xs text-muted-foreground mt-0.5">Mese corrente</p>
     </div>
-    <ul class="space-y-3">
+    {% if status_chart_json != '{"labels": [], "data": []}' %}
+    <canvas id="statusChart" height="180"></canvas>
+    {% else %}
+    <div class="flex flex-col items-center justify-center h-40 text-muted-foreground">
+      {% icon "pie-chart" 32 %}
+      <p class="text-sm mt-2">Nessun dato disponibile</p>
+    </div>
+    {% endif %}
+  </div>
+
+  {# Activity feed #}
+  <div class="lg:col-span-2 rounded-xl border border-border bg-card p-5">
+    <div class="flex items-center justify-between mb-5">
+      <div>
+        <h3 class="text-sm font-semibold">Attività Recenti</h3>
+        <p class="text-xs text-muted-foreground mt-0.5">Ultimi eventi lead e vendite</p>
+      </div>
+      <a href="{% url 'leads:list' %}" class="text-xs text-primary hover:underline">Vedi tutti →</a>
+    </div>
+
+    {% if activities %}
+    <ul class="divide-y divide-border">
       {% for a in activities %}
-      <li class="flex items-start gap-3">
-        <div class="h-8 w-8 rounded-full inline-flex items-center justify-center shrink-0
-                    {% if a.tone == 'success' %}bg-emerald-500/10 text-emerald-600 dark:text-emerald-400
-                    {% elif a.tone == 'warning' %}bg-amber-500/10 text-amber-600 dark:text-amber-400
-                    {% elif a.tone == 'danger' %}bg-rose-500/10 text-rose-600 dark:text-rose-400
-                    {% else %}bg-sky-500/10 text-sky-600 dark:text-sky-400{% endif %}">
-          {% icon a.icon %}
+      <li class="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
+        <div class="h-8 w-8 rounded-full shrink-0 inline-flex items-center justify-center
+                    {% if a.tone == 'success' %}bg-emerald-500/10 text-emerald-500
+                    {% elif a.tone == 'warning' %}bg-amber-500/10 text-amber-500
+                    {% elif a.tone == 'danger' %}bg-rose-500/10 text-rose-500
+                    {% else %}bg-primary/10 text-primary{% endif %}">
+          {% icon a.icon 14 %}
         </div>
         <div class="min-w-0 flex-1">
-          <p class="text-sm truncate"><strong>{{ a.title }}</strong> · {{ a.text }}</p>
-          {% if a.extra %}<p class="text-xs text-muted-foreground truncate">{{ a.extra }}</p>{% endif %}
-          <p class="text-xs text-muted-foreground">{{ a.when|timesince }} fa</p>
+          <p class="text-sm font-medium truncate">{{ a.title }}</p>
+          <p class="text-xs text-muted-foreground truncate">{{ a.text }}{% if a.extra %} · {{ a.extra }}{% endif %}</p>
         </div>
+        <span class="text-xs text-muted-foreground whitespace-nowrap shrink-0">{{ a.when|timesince }}</span>
       </li>
-      {% empty %}
-      <li class="text-sm text-muted-foreground text-center py-6">{% translate "Nessuna attività recente." %}</li>
       {% endfor %}
     </ul>
+    {% else %}
+    <div class="flex flex-col items-center justify-center h-40 text-muted-foreground">
+      {% icon "activity" 32 %}
+      <p class="text-sm mt-2">Nessuna attività recente</p>
+    </div>
+    {% endif %}
   </div>
+
 </div>
 
 <script>
-(function() {
-  const brokerData = {{ broker_chart_json|safe }};
-  const statusData = {{ status_chart_json|safe }};
+(function () {
+  const brokerData  = {{ broker_chart_json|safe }};
+  const statusData  = {{ status_chart_json|safe }};
   const countryData = {{ country_chart_json|safe }};
 
-  const palette = [
-    "#6366f1", "#06b6d4", "#10b981", "#f59e0b",
-    "#ef4444", "#8b5cf6", "#ec4899", "#84cc16",
-  ];
+  const isDark    = document.documentElement.classList.contains("dark") ||
+                    window.matchMedia("(prefers-color-scheme: dark)").matches;
+  const textColor = isDark ? "#94a3b8" : "#64748b";
+  const gridColor = isDark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.05)";
 
-  // Detect dark mode for text colors.
-  const isDark = document.documentElement.classList.contains("dark") ||
-                 window.matchMedia("(prefers-color-scheme: dark)").matches;
-  const textColor = isDark ? "#cbd5e1" : "#475569";
-  const gridColor = isDark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)";
-
-  Chart.defaults.color = textColor;
+  Chart.defaults.font.family = "inherit";
+  Chart.defaults.font.size   = 12;
+  Chart.defaults.color       = textColor;
   Chart.defaults.borderColor = gridColor;
 
-  // Bar — Lead per source
-  if (brokerData.labels.length) {
+  const palette = ["#6366f1","#06b6d4","#10b981","#f59e0b","#ef4444","#8b5cf6","#ec4899","#84cc16"];
+
+  if (brokerData.labels && brokerData.labels.length) {
     new Chart(document.getElementById("brokerChart"), {
       type: "bar",
       data: {
@@ -132,55 +171,48 @@
           data: brokerData.data,
           backgroundColor: palette,
           borderRadius: 6,
+          borderSkipped: false,
         }],
       },
       options: {
         responsive: true,
-        plugins: { legend: { display: false } },
+        plugins: { legend: { display: false }, tooltip: { callbacks: {
+          label: ctx => ` ${ctx.parsed.y} lead`
+        }}},
         scales: {
-          x: { grid: { display: false }},
-          y: { beginAtZero: true, ticks: { precision: 0 }},
+          x: { grid: { display: false }, border: { display: false } },
+          y: { beginAtZero: true, ticks: { precision: 0 }, border: { display: false } },
         },
       },
     });
   }
 
-  // Doughnut — Lead per status
-  if (statusData.labels.length) {
+  if (statusData.labels && statusData.labels.length) {
     new Chart(document.getElementById("statusChart"), {
       type: "doughnut",
       data: {
         labels: statusData.labels,
-        datasets: [{
-          data: statusData.data,
-          backgroundColor: palette,
-          borderWidth: 0,
-        }],
+        datasets: [{ data: statusData.data, backgroundColor: palette, borderWidth: 0, hoverOffset: 4 }],
       },
       options: {
         responsive: true,
-        plugins: { legend: { position: "bottom", labels: { boxWidth: 10, padding: 12 }}},
-        cutout: "65%",
+        cutout: "70%",
+        plugins: { legend: { position: "bottom", labels: { boxWidth: 8, padding: 14, usePointStyle: true } } },
       },
     });
   }
 
-  // Doughnut — Lead per country
-  if (countryData.labels.length) {
+  if (countryData.labels && countryData.labels.length) {
     new Chart(document.getElementById("countryChart"), {
       type: "doughnut",
       data: {
         labels: countryData.labels,
-        datasets: [{
-          data: countryData.data,
-          backgroundColor: palette,
-          borderWidth: 0,
-        }],
+        datasets: [{ data: countryData.data, backgroundColor: palette, borderWidth: 0, hoverOffset: 4 }],
       },
       options: {
         responsive: true,
-        plugins: { legend: { position: "bottom", labels: { boxWidth: 10, padding: 12 }}},
-        cutout: "65%",
+        cutout: "70%",
+        plugins: { legend: { position: "bottom", labels: { boxWidth: 8, padding: 14, usePointStyle: true } } },
       },
     });
   }
