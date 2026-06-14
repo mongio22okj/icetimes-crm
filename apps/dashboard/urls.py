@@ -4,14 +4,14 @@ from .views import (
     AnalyticsDashboardView,
     ChartsShowcaseView,
     CrmDashboardView,
-    DashboardView,
     EcommerceDashboardView,
+    LeadBrokerDashboardView,
     SaasDashboardView,
     revenue_chart_data,
 )
 
 urlpatterns = [
-    path("", DashboardView.as_view(), name="dashboard"),
+    path("", LeadBrokerDashboardView.as_view(), name="dashboard"),
     path("dashboards/analytics/", AnalyticsDashboardView.as_view(),
          name="dashboard_analytics"),
     path("dashboards/crm/", CrmDashboardView.as_view(), name="dashboard_crm"),
