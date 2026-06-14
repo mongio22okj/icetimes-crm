@@ -38,6 +38,7 @@ urlpatterns = [
     path("i18n/", include("django.conf.urls.i18n")),
     path("search/", global_search, name="search"),
     path("api/v1/", ninja_api.urls),
+    path("api/track/", include("apps.leads.tracking_urls")),
     path("accounts/login/",
          TwoFactorAwareLoginView.as_view(template_name="registration/login.html"),
          name="login"),

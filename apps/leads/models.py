@@ -463,6 +463,39 @@ class AutoMessage(models.Model):
         return f"{self.name} ({self.get_trigger_display()})"
 
 
+class LandingVisit(models.Model):
+    """Visita tracciata su una landing page esterna."""
+    session_id = models.CharField(max_length=255, db_index=True)
+    page = models.CharField(max_length=255)
+    utm_source = models.CharField(max_length=255, blank=True, null=True)
+    utm_campaign = models.CharField(max_length=255, blank=True, null=True)
+    utm_medium = models.CharField(max_length=255, blank=True, null=True)
+    utm_content = models.CharField(max_length=255, blank=True, null=True)
+    ip = models.GenericIPAddressField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"Visit {self.session_id[:8]} — {self.page}"
+
+
+class LandingClick(models.Model):
+    """Click su un bottone CTA tracciato da una landing page esterna."""
+    session_id = models.CharField(max_length=255, db_index=True)
+    button_name = models.CharField(max_length=255)
+    page = models.CharField(max_length=255)
+    ip = models.GenericIPAddressField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"Click '{self.button_name}' — {self.session_id[:8]}"
+
+
 class SyncAudit(models.Model):
     """Log di ogni sincronizzazione leads da sorgenti esterne."""
 

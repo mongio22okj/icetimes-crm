@@ -2,7 +2,7 @@ from django.contrib import admin
 
 from apex.admin import ModelAdmin
 
-from .models import Lead, LeadSource
+from .models import LandingClick, LandingVisit, Lead, LeadSource
 
 
 @admin.register(Lead)
@@ -23,3 +23,18 @@ class LeadSourceAdmin(ModelAdmin):
     list_display = ("name", "kind", "base_url", "is_active", "updated_at")
     list_filter = ("kind", "is_active")
     search_fields = ("name", "base_url")
+
+
+@admin.register(LandingVisit)
+class LandingVisitAdmin(ModelAdmin):
+    list_display = ("created_at", "session_id", "page", "utm_source", "utm_campaign", "ip")
+    list_filter = ("utm_source", "utm_campaign")
+    search_fields = ("session_id", "page", "utm_source")
+    readonly_fields = ("created_at",)
+
+
+@admin.register(LandingClick)
+class LandingClickAdmin(ModelAdmin):
+    list_display = ("created_at", "session_id", "button_name", "page", "ip")
+    search_fields = ("session_id", "button_name", "page")
+    readonly_fields = ("created_at",)
