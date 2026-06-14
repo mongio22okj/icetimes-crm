@@ -8,7 +8,6 @@ from django.shortcuts import render
 from django.views import View
 
 from apps.accounts.mixins import EmailVerifiedRequiredMixin
-from apps.orders.models import Order
 
 User = get_user_model()
 
@@ -48,19 +47,18 @@ class DashboardView(LoginRequiredMixin, EmailVerifiedRequiredMixin, View):
             {"label": "Revenue Target", "current": 34500, "target": 50000},
             {"label": "Feature Adoption", "current": 62, "target": 80},
         ]
-        recent_orders = Order.objects.select_related("customer").prefetch_related("items")[:5]
         activities = [
-            {"user": "Alice Chen",   "action": "created order ORD-00042", "when": "2m ago",  "icon": "shopping-cart"},
-            {"user": "Bob Martinez", "action": "updated product pricing",  "when": "15m ago", "icon": "package"},
-            {"user": "Carol Patel",  "action": "signed up",                "when": "1h ago",  "icon": "users"},
-            {"user": "Dan Wright",   "action": "changed settings",         "when": "3h ago",  "icon": "settings"},
-            {"user": "Ellen Singh",  "action": "created order ORD-00041",  "when": "5h ago",  "icon": "shopping-cart"},
+            {"user": "Alice Chen",   "action": "updated product pricing",  "when": "2m ago",  "icon": "package"},
+            {"user": "Bob Martinez", "action": "nuovo lead registrato",     "when": "15m ago", "icon": "target"},
+            {"user": "Carol Patel",  "action": "signed up",                 "when": "1h ago",  "icon": "users"},
+            {"user": "Dan Wright",   "action": "changed settings",          "when": "3h ago",  "icon": "settings"},
+            {"user": "Ellen Singh",  "action": "nuovo lead registrato",     "when": "5h ago",  "icon": "target"},
         ]
         return render(request, "dashboard/index.html", {
             "stats": stats,
             "traffic_sources": traffic_sources,
             "goals": goals,
-            "recent_orders": recent_orders,
+            "recent_orders": [],
             "activities": activities,
             "breadcrumbs": [("Dashboard", None)],
         })

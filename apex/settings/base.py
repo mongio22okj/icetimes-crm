@@ -28,41 +28,16 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    "django.contrib.sitemaps",
-    # Loaded so the project's TemplatesSetting form renderer can find
-    # Django's built-in widget templates (password.html, etc.). Required
-    # because FORM_RENDERER is customized below to share our project
-    # templates with Phase 12 form widgets.
     "django.forms",
-    # Channels app — exposes its routing primitives + management commands.
     "channels",
-    # apps.* will be added in later tasks as each app is scaffolded
     "apps.core",
     "apps.accounts",
-    "apps.activity",
     "apps.api",
-    "apps.billing",
-    "apps.blog",
-    "apps.chat",
-    "apps.components",
-    "apps.customers",
-    "apps.docs",
-    "apps.events",
-    "apps.files",
-    "apps.help",
-    "apps.invoices",
-    "apps.kanban",
     "apps.leads",
-    "apps.mail",
-    "apps.marketing",
     "apps.notifications",
     "apps.organizations",
     "apps.products",
     "apps.realtime",
-    "apps.orders",
-    "apps.projects",
-    "apps.profiles",
-    "apps.wizard",
     "apps.dashboard",
 ]
 
