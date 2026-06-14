@@ -2,7 +2,7 @@
 from ninja import NinjaAPI
 
 from apps.api.auth import KeyAuth
-from apps.api.routers import notifications, products, webhooks
+from apps.api.routers import notifications, products, sync, webhooks
 
 api = NinjaAPI(
     title="Apex CRM API",
@@ -14,3 +14,4 @@ api = NinjaAPI(
 api.add_router("/products/", products.router, tags=["Products"])
 api.add_router("/notifications/", notifications.router, tags=["Notifications"])
 api.add_router("/webhooks/", webhooks.router, tags=["Webhooks"])
+api.add_router("/sync/", sync.router, tags=["Sync"])

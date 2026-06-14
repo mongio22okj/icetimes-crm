@@ -461,3 +461,26 @@ class AutoMessage(models.Model):
 
     def __str__(self):
         return f"{self.name} ({self.get_trigger_display()})"
+
+
+class SyncAudit(models.Model):
+    """Log di ogni sincronizzazione leads da sorgenti esterne."""
+
+    ACTION_SYNC = "sync"
+    ACTION_ERROR = "error"
+
+    timestamp = models.DateTimeField(default=timezone.now, db_index=True)
+    action = models.CharField(max_length=50, default=ACTION_SYNC)
+    source = models.CharField(max_length=120, blank=True)
+    processed = models.PositiveIntegerField(default=0)
+    created = models.PositiveIntegerField(default=0)
+    updated = models.PositiveIntegerField(default=0)
+    details = models.TextField(blank=True)
+
+    class Meta:
+        ordering = ["-timestamp"]
+        verbose_name = "Sync Audit"
+        verbose_name_plural = "Sync Audits"
+
+    def __str__(self):
+        return f"{self.timestamp:%Y-%m-%d %H:%M} — {self.action} ({self.source or 'all'})"
