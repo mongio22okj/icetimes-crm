@@ -16,7 +16,7 @@ SECRET_KEY = os.environ["SECRET_KEY"]
 # ALLOWED_HOSTS — comma-separated list. Always includes the public demo
 # host so a forgotten env var doesn't lock the demo out.
 _env_hosts = [h.strip() for h in os.environ.get("ALLOWED_HOSTS", "").split(",") if h.strip()]
-ALLOWED_HOSTS = list({*_env_hosts, "apex-django.dashboardpack.com"})
+ALLOWED_HOSTS = list({*_env_hosts})
 
 # CSRF: Django 4+ requires explicit trusted origins for cross-host POST.
 # Cloudflare terminates TLS so requests to origin still arrive over https.
