@@ -113,7 +113,39 @@
           }
         } else if (data.event === "unread_count") {
           this.updateBadge(data.count);
+        } else if (data.event === "new_lead") {
+          this.onNewLead(data.data || {});
         }
+      },
+      onNewLead(lead) {
+        // Toast immediato (speed-to-lead).
+        if (window.apexToast) {
+          const who = lead.name || lead.email || "Nuovo lead";
+          const where = lead.source ? ` · ${lead.source}` : "";
+          window.apexToast({
+            level: "success",
+            body: `🎯 Nuovo lead: ${who}${where}`,
+            action: { label: "Vedi", href: "/leads/" },
+          });
+        }
+        // Beep discreto per richiamare l'attenzione.
+        try {
+          const Ctx = window.AudioContext || window.webkitAudioContext;
+          if (Ctx) {
+            const ctx = new Ctx();
+            const o = ctx.createOscillator();
+            const g = ctx.createGain();
+            o.type = "sine";
+            o.frequency.value = 880;
+            g.gain.value = 0.05;
+            o.connect(g); g.connect(ctx.destination);
+            o.start();
+            o.stop(ctx.currentTime + 0.15);
+            setTimeout(() => ctx.close(), 400);
+          }
+        } catch (_e) {}
+        // Notifica al resto della pagina (es. la dashboard può ricaricare i KPI).
+        document.dispatchEvent(new CustomEvent("apex:new-lead", { detail: lead }));
       },
       updateBadge(count) {
         // Re-render badge inline without waiting on the HTMX refresh.
