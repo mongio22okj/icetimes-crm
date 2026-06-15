@@ -7,12 +7,23 @@ Endpoints:
     POST /api/track/lead/
 """
 import json
+import re
 
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 
 from .models import LandingClick, LandingVisit, Lead
+
+# Un "source" è un identificatore, non testo libero: teniamo solo
+# caratteri sicuri (no '<', '>', '/', '"', ecc.) per evitare che il
+# valore venga usato come vettore in viste a valle.
+_SOURCE_SANITIZE = re.compile(r"[^\w.\-: ]+")
+
+
+def _clean_source(value: str, default: str = "landing") -> str:
+    cleaned = _SOURCE_SANITIZE.sub("", (value or ""))[:64].strip()
+    return cleaned or default
 
 
 def _get_ip(request):
@@ -72,7 +83,7 @@ def create_lead(request):
             "firstname": data.get("first_name", "")[:120],
             "lastname": data.get("last_name", "")[:120],
             "phone": data.get("phone", "")[:32],
-            "source": data.get("source", "landing")[:64],
+            "source": _clean_source(data.get("source", ""), "landing"),
             "status": "new",
             "payload": data,
         },

@@ -57,7 +57,7 @@
         <p class="text-xs text-muted-foreground">Ultimi 7 giorni</p>
       </div>
     </div>
-    {% if broker_chart_json != '{"labels": [], "data": []}' %}
+    {% if broker_has_data %}
     <canvas id="brokerChart" height="40"></canvas>
     {% else %}
     <div class="flex flex-col items-center justify-center h-28 text-muted-foreground">
@@ -73,7 +73,7 @@
       <h3 class="text-xs font-semibold">Lead per Paese</h3>
       <p class="text-xs text-muted-foreground">Ultimi 30 giorni</p>
     </div>
-    {% if country_chart_json != '{"labels": [], "data": []}' %}
+    {% if country_has_data %}
     <canvas id="countryChart" height="40"></canvas>
     {% else %}
     <div class="flex flex-col items-center justify-center h-28 text-muted-foreground">
@@ -94,7 +94,7 @@
       <h3 class="text-xs font-semibold">Stato Lead</h3>
       <p class="text-xs text-muted-foreground">Mese corrente</p>
     </div>
-    {% if status_chart_json != '{"labels": [], "data": []}' %}
+    {% if status_has_data %}
     <canvas id="statusChart" height="40"></canvas>
     {% else %}
     <div class="flex flex-col items-center justify-center h-28 text-muted-foreground">
@@ -143,11 +143,15 @@
 
 </div>
 
+{{ broker_chart|json_script:"broker-chart-data" }}
+{{ status_chart|json_script:"status-chart-data" }}
+{{ country_chart|json_script:"country-chart-data" }}
 <script>
 (function () {
-  const brokerData  = {{ broker_chart_json|safe }};
-  const statusData  = {{ status_chart_json|safe }};
-  const countryData = {{ country_chart_json|safe }};
+  const _read = id => { const el = document.getElementById(id); return el ? JSON.parse(el.textContent) : {labels: [], data: []}; };
+  const brokerData  = _read("broker-chart-data");
+  const statusData  = _read("status-chart-data");
+  const countryData = _read("country-chart-data");
 
   const isDark    = document.documentElement.classList.contains("dark") ||
                     window.matchMedia("(prefers-color-scheme: dark)").matches;

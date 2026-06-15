@@ -496,9 +496,16 @@ class LeadBrokerDashboardView(LoginRequiredMixin, EmailVerifiedRequiredMixin, Vi
 
         return render(request, "dashboard/lead_broker.html", {
             "kpis": kpis,
-            "broker_chart_json": json.dumps(broker_chart),
-            "status_chart_json": json.dumps(status_chart),
-            "country_chart_json": json.dumps(country_chart),
+            # Passiamo i dict grezzi: il template li serializza con
+            # {% ... json_script %}, che escapa < > & in modo sicuro.
+            # (Niente json.dumps + |safe: sarebbe XSS se una label
+            #  contenesse "</script>".)
+            "broker_chart": broker_chart,
+            "status_chart": status_chart,
+            "country_chart": country_chart,
+            "broker_has_data": bool(broker_chart["labels"]),
+            "status_has_data": bool(status_chart["labels"]),
+            "country_has_data": bool(country_chart["labels"]),
             "activities": activities,
             "breadcrumbs": [("Dashboard", None)],
         })
