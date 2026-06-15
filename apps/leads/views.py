@@ -494,6 +494,12 @@ class LeadSourceListView(BreadcrumbsMixin, LoginRequiredMixin,
             "active": sum(1 for s in all_sources if s.is_active),
             "with_api": sum(1 for s in all_sources if s.kind),
         }
+        # Postback endpoint principale da dare ai broker (token reale).
+        from django.urls import reverse
+        token = settings.LEADS_POSTBACK_TOKEN
+        base = self.request.build_absolute_uri(reverse("leads:postback"))
+        ctx["postback_url"] = f"{base}?token={token}" if token else ""
+        ctx["postback_configured"] = bool(token)
         return ctx
 
 

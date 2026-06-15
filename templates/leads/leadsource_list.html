@@ -15,6 +15,32 @@
   </a>
 </div>
 
+{# ── Endpoint postback principale (da dare ai broker) ──────────────── #}
+<div class="rounded-lg border border-primary/30 bg-primary/5 p-4 mb-6"
+     x-data="{ copied: false, copy() { navigator.clipboard.writeText('{{ postback_url|escapejs }}').then(() => { this.copied = true; setTimeout(() => this.copied = false, 1800); }); } }">
+  <div class="flex items-start justify-between gap-3 flex-wrap">
+    <div class="min-w-0">
+      <p class="text-xs font-semibold uppercase tracking-wider text-primary mb-1">
+        {% icon "webhook" 13 %} Endpoint Postback — richiesta principale
+      </p>
+      <p class="text-xs text-muted-foreground mb-2">
+        Dai questo URL ai broker per ricevere lead ed eventi in tempo reale (&lt;1s). Metodo consigliato.
+      </p>
+      {% if postback_configured %}
+      <code class="block text-xs font-mono bg-background border border-border rounded-md px-3 py-2 break-all select-all">{{ postback_url }}</code>
+      {% else %}
+      <p class="text-xs text-rose-500">⚠ Token non configurato — l'endpoint rifiuta le richieste.</p>
+      {% endif %}
+    </div>
+    {% if postback_configured %}
+    <button type="button" @click="copy()"
+            class="h-8 px-3 rounded-md bg-primary text-primary-foreground text-xs font-medium inline-flex items-center gap-1.5 hover:opacity-90 shrink-0">
+      {% icon "copy" 13 %} <span x-text="copied ? 'Copiato!' : 'Copia'"></span>
+    </button>
+    {% endif %}
+  </div>
+</div>
+
 {# ── Totali ────────────────────────────────────────────────────────── #}
 <div class="grid grid-cols-3 gap-3 mb-6 max-w-md">
   <div class="rounded-lg border border-border bg-card p-3">
