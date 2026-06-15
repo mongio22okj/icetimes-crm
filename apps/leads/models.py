@@ -20,10 +20,10 @@ class Lead(models.Model):
     lastname = models.CharField(max_length=120, blank=True)
     email = models.EmailField(blank=True, db_index=True)
     phone = models.CharField(max_length=32, blank=True)
-    country = models.CharField(max_length=8, blank=True)
-    status = models.CharField(max_length=120, blank=True)
+    country = models.CharField(max_length=8, blank=True, db_index=True)
+    status = models.CharField(max_length=120, blank=True, db_index=True)
     is_deposit = models.BooleanField(default=False)
-    source = models.CharField(max_length=64, default="postback")
+    source = models.CharField(max_length=64, default="postback", db_index=True)
     payload = models.JSONField(default=dict, blank=True)
     score = models.PositiveSmallIntegerField(
         default=0,
