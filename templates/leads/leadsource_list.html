@@ -31,10 +31,10 @@
   </div>
 </div>
 
-<div class="flex gap-4" x-data="{ selected: [], get count() { return this.selected.length } }">
+<div x-data="{ selected: [], get count() { return this.selected.length } }">
 
   {# ── Tabella + barra azioni ──────────────────────────────────────── #}
-  <div class="flex-1 min-w-0">
+  <div class="min-w-0">
 
     {# Barra azioni bulk #}
     <form method="post" action="{% url 'leads:source_bulk_delete' %}"
@@ -131,33 +131,6 @@
       </table>
     </div>
   </div>
-
-  {# ── Filtri laterali ─────────────────────────────────────────────── #}
-  <aside class="w-52 shrink-0 hidden lg:block">
-    <div class="rounded-lg border border-border bg-card p-4">
-      <p class="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">Filtro</p>
-
-      <p class="text-xs font-medium mb-1.5">Per tipo</p>
-      <ul class="space-y-1 mb-4 text-sm">
-        <li><a href="?{% if active_filter %}active={{ active_filter }}{% endif %}"
-               class="{% if not kind_filter %}text-primary font-medium{% else %}text-muted-foreground hover:text-foreground{% endif %}">Tutti</a></li>
-        {% for value, label in kind_choices %}
-        <li><a href="?kind={{ value }}{% if active_filter %}&active={{ active_filter }}{% endif %}"
-               class="{% if kind_filter == value %}text-primary font-medium{% else %}text-muted-foreground hover:text-foreground{% endif %}">{{ label }}</a></li>
-        {% endfor %}
-      </ul>
-
-      <p class="text-xs font-medium mb-1.5">Per attivo</p>
-      <ul class="space-y-1 text-sm">
-        <li><a href="?{% if kind_filter %}kind={{ kind_filter }}{% endif %}"
-               class="{% if not active_filter %}text-primary font-medium{% else %}text-muted-foreground hover:text-foreground{% endif %}">Tutti</a></li>
-        <li><a href="?active=yes{% if kind_filter %}&kind={{ kind_filter }}{% endif %}"
-               class="{% if active_filter == 'yes' %}text-primary font-medium{% else %}text-muted-foreground hover:text-foreground{% endif %}">Sì</a></li>
-        <li><a href="?active=no{% if kind_filter %}&kind={{ kind_filter }}{% endif %}"
-               class="{% if active_filter == 'no' %}text-primary font-medium{% else %}text-muted-foreground hover:text-foreground{% endif %}">No</a></li>
-      </ul>
-    </div>
-  </aside>
 
 </div>
 {% endblock %}

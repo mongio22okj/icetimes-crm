@@ -38,6 +38,45 @@
         </ul>
       </div>
     {% endfor %}
+
+    {% if user.is_staff %}
+    {# ── Filtro Broker (al posto della voce Landing) ─────────────────── #}
+    <div>
+      <p class="px-2 pb-2 text-xs uppercase tracking-wider text-sidebar-foreground/60">Filtro Broker</p>
+
+      <p class="px-2 pb-1 text-[11px] font-medium text-sidebar-foreground/50">Per tipo</p>
+      <ul class="space-y-0.5 mb-3">
+        {% with base=request.GET.active %}
+        <li><a href="{% url 'leads:source_list' %}{% if base %}?active={{ base }}{% endif %}" @click="drawer.open = false"
+               class="block rounded-md px-2 py-1.5 text-sm hover:bg-sidebar-accent {% if not request.GET.kind %}text-primary font-medium{% else %}text-sidebar-foreground/80{% endif %}">Tutti</a></li>
+        <li><a href="{% url 'leads:source_list' %}?kind=trackbox{% if base %}&active={{ base }}{% endif %}" @click="drawer.open = false"
+               class="block rounded-md px-2 py-1.5 text-sm hover:bg-sidebar-accent {% if request.GET.kind == 'trackbox' %}text-primary font-medium{% else %}text-sidebar-foreground/80{% endif %}">TrackBox</a></li>
+        <li><a href="{% url 'leads:source_list' %}?kind=irev{% if base %}&active={{ base }}{% endif %}" @click="drawer.open = false"
+               class="block rounded-md px-2 py-1.5 text-sm hover:bg-sidebar-accent {% if request.GET.kind == 'irev' %}text-primary font-medium{% else %}text-sidebar-foreground/80{% endif %}">IREV</a></li>
+        <li><a href="{% url 'leads:source_list' %}?kind=affinitrax{% if base %}&active={{ base }}{% endif %}" @click="drawer.open = false"
+               class="block rounded-md px-2 py-1.5 text-sm hover:bg-sidebar-accent {% if request.GET.kind == 'affinitrax' %}text-primary font-medium{% else %}text-sidebar-foreground/80{% endif %}">Affinitrax</a></li>
+        <li><a href="{% url 'leads:source_list' %}?kind=v3{% if base %}&active={{ base }}{% endif %}" @click="drawer.open = false"
+               class="block rounded-md px-2 py-1.5 text-sm hover:bg-sidebar-accent {% if request.GET.kind == 'v3' %}text-primary font-medium{% else %}text-sidebar-foreground/80{% endif %}">Integration v3</a></li>
+        <li><a href="{% url 'leads:source_list' %}?kind=mediafront{% if base %}&active={{ base }}{% endif %}" @click="drawer.open = false"
+               class="block rounded-md px-2 py-1.5 text-sm hover:bg-sidebar-accent {% if request.GET.kind == 'mediafront' %}text-primary font-medium{% else %}text-sidebar-foreground/80{% endif %}">Mediafront</a></li>
+        <li><a href="{% url 'leads:source_list' %}?kind=spmmonster{% if base %}&active={{ base }}{% endif %}" @click="drawer.open = false"
+               class="block rounded-md px-2 py-1.5 text-sm hover:bg-sidebar-accent {% if request.GET.kind == 'spmmonster' %}text-primary font-medium{% else %}text-sidebar-foreground/80{% endif %}">SPM Monster</a></li>
+        {% endwith %}
+      </ul>
+
+      <p class="px-2 pb-1 text-[11px] font-medium text-sidebar-foreground/50">Per attivo</p>
+      <ul class="space-y-0.5">
+        {% with k=request.GET.kind %}
+        <li><a href="{% url 'leads:source_list' %}{% if k %}?kind={{ k }}{% endif %}" @click="drawer.open = false"
+               class="block rounded-md px-2 py-1.5 text-sm hover:bg-sidebar-accent {% if not request.GET.active %}text-primary font-medium{% else %}text-sidebar-foreground/80{% endif %}">Tutti</a></li>
+        <li><a href="{% url 'leads:source_list' %}?active=yes{% if k %}&kind={{ k }}{% endif %}" @click="drawer.open = false"
+               class="block rounded-md px-2 py-1.5 text-sm hover:bg-sidebar-accent {% if request.GET.active == 'yes' %}text-primary font-medium{% else %}text-sidebar-foreground/80{% endif %}">Sì</a></li>
+        <li><a href="{% url 'leads:source_list' %}?active=no{% if k %}&kind={{ k }}{% endif %}" @click="drawer.open = false"
+               class="block rounded-md px-2 py-1.5 text-sm hover:bg-sidebar-accent {% if request.GET.active == 'no' %}text-primary font-medium{% else %}text-sidebar-foreground/80{% endif %}">No</a></li>
+        {% endwith %}
+      </ul>
+    </div>
+    {% endif %}
   </nav>
   {% if user.is_authenticated %}
     <div class="p-3 border-t border-sidebar-border shrink-0">
