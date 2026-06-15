@@ -15,6 +15,7 @@ from apps.accounts.views import (
     TwoFactorChallengeView,
 )
 from apps.api.api import api as ninja_api
+from apps.leads.views import BrokerLandingSubmitView, BrokerLandingView
 from apps.core.health import health as health_view
 from apps.core.pwa import manifest as pwa_manifest
 from apps.core.pwa import offline as pwa_offline
@@ -72,6 +73,9 @@ urlpatterns = [
     path("notifications/", include("apps.notifications.urls")),
     path("orgs/", include("apps.organizations.urls")),
     path("invitations/<str:token>/", InvitationAcceptView.as_view(), name="invitation_accept"),
+    # Public broker landing pages.
+    path("b/<slug:slug>/", BrokerLandingView.as_view(), name="broker_landing"),
+    path("b/<slug:slug>/submit/", BrokerLandingSubmitView.as_view(), name="broker_landing_submit"),
     path("realtime/", include("apps.realtime.urls")),
     path("pages/", include("apps.core.urls")),
     path("", include("apps.dashboard.urls")),

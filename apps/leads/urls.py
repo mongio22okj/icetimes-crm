@@ -5,6 +5,7 @@ from .views import (
     AutoMessageDeleteView,
     AutoMessageListView,
     AutoMessageUpdateView,
+    BrokerLandingListView,
     BrokersDashboardView,
     CampaignCreateView,
     CampaignDeleteView,
@@ -37,6 +38,8 @@ urlpatterns = [
     path("sources/new/", LeadSourceCreateView.as_view(), name="source_create"),
     path("sources/<int:pk>/", LeadSourceUpdateView.as_view(), name="source_edit"),
     path("sources/<int:pk>/delete/", LeadSourceDeleteView.as_view(), name="source_delete"),
+    # Broker landing pages management.
+    path("landing/", BrokerLandingListView.as_view(), name="landing_list"),
     path("campaigns/", CampaignListView.as_view(), name="campaign_list"),
     path("campaigns/new/", CampaignCreateView.as_view(), name="campaign_create"),
     path("campaigns/<int:pk>/", CampaignUpdateView.as_view(), name="campaign_edit"),

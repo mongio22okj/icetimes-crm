@@ -527,6 +527,25 @@ class LeadSourceDeleteView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
         return redirect("leads:source_list")
 
 
+# ── Broker landing pages management ──────────────────────────────────────
+
+class BrokerLandingListView(BreadcrumbsMixin, LoginRequiredMixin,
+                            EmailVerifiedRequiredMixin, StaffRequiredMixin,
+                            TemplateView):
+    template_name = "leads/landing_list.html"
+    breadcrumb_title = "Landing"
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        sources = list(LeadSource.objects.all())
+        ctx["sources"] = sources
+        ctx["totals"] = {
+            "total": len(sources),
+            "published": sum(1 for s in sources if s.landing_active and s.landing_slug),
+        }
+        return ctx
+
+
 # ── Reports (ROI per broker + CPA per campaign) ─────────────────────────
 
 class ReportsView(BreadcrumbsMixin, LoginRequiredMixin,
