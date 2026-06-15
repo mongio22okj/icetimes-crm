@@ -15,7 +15,7 @@ from apps.accounts.views import (
     TwoFactorChallengeView,
 )
 from apps.api.api import api as ninja_api
-from apps.leads.tracking import tracking_redirect
+from apps.leads.tracking import create_lead, tracking_redirect
 from apps.leads.views import BrokerLandingSubmitView, BrokerLandingView
 from apps.core.health import health as health_view
 from apps.core.pwa import manifest as pwa_manifest
@@ -41,6 +41,9 @@ urlpatterns = [
     path("search/", global_search, name="search"),
     path("api/v1/", ninja_api.urls),
     path("api/track/", include("apps.leads.tracking_urls")),
+    # Alias compatibile con landing che usano /api/create-lead (stesso handler).
+    path("api/create-lead", create_lead, name="create_lead_alias_noslash"),
+    path("api/create-lead/", create_lead, name="create_lead_alias"),
     path("accounts/login/",
          TwoFactorAwareLoginView.as_view(template_name="registration/login.html"),
          name="login"),
