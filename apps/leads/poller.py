@@ -20,6 +20,21 @@ logger = logging.getLogger(__name__)
 _started = False
 _lock = threading.Lock()
 
+# Heartbeat condiviso col processo web (stesso processo Daphne) per
+# mostrare "ultima sync" nella UI senza scrivere sul DB ogni 30s.
+STATE = {
+    "enabled": False,
+    "interval": None,
+    "last_run": None,       # datetime UTC dell'ultimo giro
+    "last_ok": 0,
+    "last_errors": 0,
+    "consecutive_failures": 0,
+}
+
+
+def get_heartbeat() -> dict:
+    return dict(STATE)
+
 
 def _truthy(value: str) -> bool:
     return (value or "").strip().lower() in ("1", "true", "yes", "on")
@@ -27,6 +42,7 @@ def _truthy(value: str) -> bool:
 
 def _loop(interval: int) -> None:
     from django.db import close_old_connections
+    from django.utils import timezone
 
     from apps.leads.models import SyncAudit
     from apps.leads.sync import run_all_sources
@@ -36,6 +52,10 @@ def _loop(interval: int) -> None:
         try:
             close_old_connections()
             ok, errors = run_all_sources()
+            STATE["last_run"] = timezone.now()
+            STATE["last_ok"] = len(ok)
+            STATE["last_errors"] = len(errors)
+            STATE["consecutive_failures"] = 0
             # Scrivi un audit solo quando c'è stata attività reale,
             # per non gonfiare la tabella con righe vuote ogni 30s.
             if ok or errors:
@@ -49,7 +69,15 @@ def _loop(interval: int) -> None:
                 )
                 logger.info("Poller sync: %d ok, %d errori", len(ok), len(errors))
         except Exception:
-            logger.exception("Poller sync fallito")
+            STATE["consecutive_failures"] += 1
+            logger.exception("Poller sync fallito (fallimenti consecutivi: %d)",
+                             STATE["consecutive_failures"])
+            # Backoff esponenziale sugli errori ripetuti, max 5x l'intervallo,
+            # così non martelliamo un'API broker che è temporaneamente down.
+            backoff = min(interval * STATE["consecutive_failures"], interval * 5)
+            close_old_connections()
+            time.sleep(backoff)
+            continue
         finally:
             close_old_connections()
         time.sleep(interval)
@@ -69,6 +97,8 @@ def start_poller() -> None:
         except ValueError:
             interval = 30
         interval = max(5, interval)
+        STATE["enabled"] = True
+        STATE["interval"] = interval
         thread = threading.Thread(
             target=_loop, args=(interval,), daemon=True, name="lead-poller")
         thread.start()

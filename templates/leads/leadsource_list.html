@@ -41,6 +41,16 @@
   </div>
 </div>
 
+{# ── Stato poller speed-to-lead ────────────────────────────────────── #}
+{% if poller.enabled %}
+<div class="flex items-center gap-2 mb-4 text-xs text-muted-foreground">
+  <span class="h-2 w-2 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
+  Sync automatica attiva (ogni {{ poller.interval }}s).
+  {% if poller.last_run %}Ultima: {{ poller.last_run|timesince }} fa{% else %}in attesa del primo giro…{% endif %}
+  {% if poller.consecutive_failures %}<span class="text-rose-500">· {{ poller.consecutive_failures }} errori consecutivi</span>{% endif %}
+</div>
+{% endif %}
+
 {# ── Totali ────────────────────────────────────────────────────────── #}
 <div class="grid grid-cols-3 gap-3 mb-6 max-w-md">
   <div class="rounded-lg border border-border bg-card p-3">

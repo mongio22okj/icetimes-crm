@@ -500,6 +500,9 @@ class LeadSourceListView(BreadcrumbsMixin, LoginRequiredMixin,
         base = self.request.build_absolute_uri(reverse("leads:postback"))
         ctx["postback_url"] = f"{base}?token={token}" if token else ""
         ctx["postback_configured"] = bool(token)
+        # Heartbeat del poller speed-to-lead (sync automatica).
+        from apps.leads.poller import get_heartbeat
+        ctx["poller"] = get_heartbeat()
         return ctx
 
 
