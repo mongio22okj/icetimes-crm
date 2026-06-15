@@ -521,6 +521,37 @@ class LeadSourceBulkDeleteView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
         return redirect("leads:source_list")
 
 
+class TrackBoxView(BreadcrumbsMixin, LoginRequiredMixin,
+                   EmailVerifiedRequiredMixin, StaffRequiredMixin,
+                   TemplateView):
+    """Tabella di riferimento dei tipi di integrazione broker."""
+    template_name = "leads/trackbox.html"
+    breadcrumb_title = "TrackBox"
+
+    def get_context_data(self, **kwargs):
+        from django.db.models import Count, Q
+        ctx = super().get_context_data(**kwargs)
+        # Conteggi per tipo (broker totali e attivi) in una sola query.
+        counts = {
+            row["kind"]: row
+            for row in LeadSource.objects.values("kind").annotate(
+                total=Count("id"),
+                active=Count("id", filter=Q(is_active=True)),
+            )
+        }
+        rows = []
+        for code, label in LeadSource.KIND_CHOICES:
+            c = counts.get(code, {})
+            rows.append({
+                "code": code,
+                "label": label,
+                "total": c.get("total", 0),
+                "active": c.get("active", 0),
+            })
+        ctx["rows"] = rows
+        return ctx
+
+
 class LeadSourceCreateView(BreadcrumbsMixin, LoginRequiredMixin,
                            EmailVerifiedRequiredMixin, StaffRequiredMixin,
                            CreateView):

@@ -20,6 +20,7 @@ from .views import (
     LeadSourceListView,
     LeadSourceUpdateView,
     LeadSyncView,
+    TrackBoxView,
     NotificationCreateView,
     NotificationDeleteView,
     NotificationListView,
@@ -42,6 +43,8 @@ urlpatterns = [
     path("sources/bulk-delete/", LeadSourceBulkDeleteView.as_view(), name="source_bulk_delete"),
     # Broker landing pages management.
     path("landing/", BrokerLandingListView.as_view(), name="landing_list"),
+    # Tabella di riferimento dei tipi integrazione broker.
+    path("trackbox/", TrackBoxView.as_view(), name="trackbox"),
     path("campaigns/", CampaignListView.as_view(), name="campaign_list"),
     path("campaigns/new/", CampaignCreateView.as_view(), name="campaign_create"),
     path("campaigns/<int:pk>/", CampaignUpdateView.as_view(), name="campaign_edit"),
