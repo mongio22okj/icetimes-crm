@@ -69,6 +69,9 @@ class LeadSource(models.Model):
     PUSH_KINDS = (KIND_TRACKBOX, KIND_IREV, KIND_AFFINITRAX, KIND_V3, KIND_MEDIAFRONT, KIND_SPMMONSTER)
 
     name = models.CharField(max_length=120)
+    logo_url = models.URLField(
+        "Foto / Logo (URL)", blank=True,
+        help_text="Link a un'immagine (logo del broker). Mostrato accanto al nome.")
     kind = models.CharField(max_length=20, choices=KIND_CHOICES)
     base_url = models.URLField(help_text="Es. https://stylishwnt.com")
     is_active = models.BooleanField(default=True)

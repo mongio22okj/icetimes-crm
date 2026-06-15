@@ -65,7 +65,7 @@ class LeadSourceForm(forms.ModelForm):
     class Meta:
         model = LeadSource
         fields = (
-            "name", "kind", "base_url", "is_active", "token",
+            "name", "logo_url", "kind", "base_url", "is_active", "token",
             "username", "password", "ai", "ci", "gi",
             "affiliate_id", "offer_id", "goal_lead", "goal_ftd",
             "link_id", "funnel", "source_tag", "notes",
