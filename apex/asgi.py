@@ -27,3 +27,9 @@ application = ProtocolTypeRouter({
         AuthMiddlewareStack(URLRouter(websocket_urlpatterns)),
     ),
 })
+
+# Speed-to-lead: avvia il poller in-process (sync ogni LEAD_POLL_SECONDS).
+# Gira solo qui (processo Daphne), mai durante migrate/collectstatic.
+from apps.leads.poller import start_poller  # noqa: E402
+
+start_poller()
