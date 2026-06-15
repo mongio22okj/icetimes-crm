@@ -9,6 +9,8 @@ Endpoints:
 import json
 import re
 
+from django.core.exceptions import ValidationError
+from django.core.validators import validate_email
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
@@ -21,8 +23,17 @@ from .models import LandingClick, LandingVisit, Lead
 _SOURCE_SANITIZE = re.compile(r"[^\w.\-: ]+")
 
 
-def _clean_source(value: str, default: str = "landing") -> str:
-    cleaned = _SOURCE_SANITIZE.sub("", (value or ""))[:64].strip()
+def _s(value, limit: int | None = None) -> str:
+    """Coerce qualsiasi valore JSON a stringa (un broker può mandare
+    numeri/null), poi opzionalmente tronca. Evita TypeError su slicing."""
+    if value is None:
+        return ""
+    text = value if isinstance(value, str) else str(value)
+    return text[:limit] if limit else text
+
+
+def _clean_source(value, default: str = "landing") -> str:
+    cleaned = _SOURCE_SANITIZE.sub("", _s(value))[:64].strip()
     return cleaned or default
 
 
@@ -45,12 +56,12 @@ def _parse(request):
 def track_visit(request):
     data = _parse(request)
     LandingVisit.objects.create(
-        session_id=data.get("session_id", "")[:255],
-        page=data.get("page", "")[:255],
-        utm_source=data.get("utm_source", "")[:255] or None,
-        utm_campaign=data.get("utm_campaign", "")[:255] or None,
-        utm_medium=data.get("utm_medium", "")[:255] or None,
-        utm_content=data.get("utm_content", "")[:255] or None,
+        session_id=_s(data.get("session_id"), 255),
+        page=_s(data.get("page"), 255),
+        utm_source=_s(data.get("utm_source"), 255) or None,
+        utm_campaign=_s(data.get("utm_campaign"), 255) or None,
+        utm_medium=_s(data.get("utm_medium"), 255) or None,
+        utm_content=_s(data.get("utm_content"), 255) or None,
         ip=_get_ip(request),
     )
     return JsonResponse({"status": "ok"})
@@ -61,9 +72,9 @@ def track_visit(request):
 def track_click(request):
     data = _parse(request)
     LandingClick.objects.create(
-        session_id=data.get("session_id", "")[:255],
-        button_name=data.get("button_name", "")[:255],
-        page=data.get("page", "")[:255],
+        session_id=_s(data.get("session_id"), 255),
+        button_name=_s(data.get("button_name"), 255),
+        page=_s(data.get("page"), 255),
         ip=_get_ip(request),
     )
     return JsonResponse({"status": "ok"})
@@ -73,21 +84,41 @@ def track_click(request):
 @require_POST
 def create_lead(request):
     data = _parse(request)
-    email = data.get("email", "").strip()
+    email = _s(data.get("email")).strip().lower()
     if not email:
         return JsonResponse({"status": "error", "message": "email required"}, status=400)
+    try:
+        validate_email(email)
+    except ValidationError:
+        return JsonResponse({"status": "error", "message": "invalid email"}, status=400)
 
     lead, created = Lead.objects.get_or_create(
         email=email,
         defaults={
-            "firstname": data.get("first_name", "")[:120],
-            "lastname": data.get("last_name", "")[:120],
-            "phone": data.get("phone", "")[:32],
-            "source": _clean_source(data.get("source", ""), "landing"),
+            "firstname": _s(data.get("first_name"), 120),
+            "lastname": _s(data.get("last_name"), 120),
+            "phone": _s(data.get("phone"), 32),
+            "source": _clean_source(data.get("source"), "landing"),
             "status": "new",
-            "payload": data,
+            "payload": data if isinstance(data, dict) else {},
         },
     )
+
+    # Speed-to-lead: notifica istantanea (Slack/Telegram/…) sui lead nuovi.
+    if created:
+        try:
+            from . import notifications
+            notifications.fire("new_lead", {
+                "name": lead.full_name or "—",
+                "email": lead.email,
+                "phone": lead.phone,
+                "country": lead.country,
+                "source": lead.source,
+                "score": lead.score,
+            })
+        except Exception:  # noqa: BLE001
+            pass
+
     return JsonResponse({
         "status": "ok",
         "lead_id": lead.pk,
