@@ -31,60 +31,120 @@
   </div>
 </div>
 
-{# ── Tabella ───────────────────────────────────────────────────────── #}
-<div class="rounded-lg border border-border bg-card overflow-x-auto">
-  <table class="w-full text-sm">
-    <thead>
-      <tr class="border-b border-border text-left">
-        <th class="px-3 py-2.5 text-xs font-medium text-muted-foreground uppercase tracking-wider">Nome</th>
-        <th class="px-3 py-2.5 text-xs font-medium text-muted-foreground uppercase tracking-wider">Tipo</th>
-        <th class="px-3 py-2.5 text-xs font-medium text-muted-foreground uppercase tracking-wider">URL base</th>
-        <th class="px-3 py-2.5 text-xs font-medium text-muted-foreground uppercase tracking-wider">Priorità</th>
-        <th class="px-3 py-2.5 text-xs font-medium text-muted-foreground uppercase tracking-wider">Stato</th>
-        <th class="px-3 py-2.5 text-xs font-medium text-muted-foreground uppercase tracking-wider text-right">Azioni</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for s in sources %}
-      <tr class="border-b border-border last:border-0 hover:bg-accent/40">
-        <td class="px-3 py-2.5 font-medium">{{ s.name }}</td>
-        <td class="px-3 py-2.5 text-xs">
-          {% if s.kind %}{{ s.get_kind_display }}{% else %}<span class="text-muted-foreground">— manuale</span>{% endif %}
-        </td>
-        <td class="px-3 py-2.5 text-xs text-muted-foreground truncate max-w-xs">{{ s.base_url|default:"—" }}</td>
-        <td class="px-3 py-2.5 text-xs font-mono">{{ s.priority }}</td>
-        <td class="px-3 py-2.5">
-          {% if s.is_active %}
-            <span class="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">Attivo</span>
-          {% else %}
-            <span class="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">Inattivo</span>
-          {% endif %}
-        </td>
-        <td class="px-3 py-2.5">
-          <div class="flex items-center justify-end gap-2">
-            <a href="{% url 'leads:source_edit' s.pk %}"
-               class="inline-flex h-7 px-3 items-center rounded-md border border-border text-xs hover:bg-accent">
-              Modifica
-            </a>
-            <form method="post" action="{% url 'leads:source_delete' s.pk %}" class="inline"
-                  onsubmit="return confirm('Eliminare il broker \'{{ s.name|escapejs }}\' ? Questa azione è irreversibile.');">
-              {% csrf_token %}
-              <button type="submit"
-                      class="inline-flex h-7 px-3 items-center rounded-md border border-destructive/40 text-xs text-destructive hover:bg-destructive/10">
-                Elimina
-              </button>
-            </form>
-          </div>
-        </td>
-      </tr>
-      {% empty %}
-      <tr>
-        <td colspan="6" class="px-4 py-10 text-center text-muted-foreground text-sm">
-          Nessun broker configurato — aggiungi il primo.
-        </td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+<div class="flex gap-4" x-data="{ selected: [], get count() { return this.selected.length } }">
+
+  {# ── Tabella + barra azioni ──────────────────────────────────────── #}
+  <div class="flex-1 min-w-0">
+
+    {# Barra azioni bulk #}
+    <form method="post" action="{% url 'leads:source_bulk_delete' %}"
+          @submit="if (!count) { $event.preventDefault(); return; } if (!confirm('Eliminare ' + count + ' broker selezionati? Azione irreversibile.')) $event.preventDefault();">
+      {% csrf_token %}
+      <template x-for="pk in selected" :key="pk">
+        <input type="hidden" name="selected" :value="pk">
+      </template>
+      <div class="flex items-center gap-3 mb-3">
+        <button type="submit" :disabled="!count"
+                class="h-8 px-3 rounded-md border border-destructive/40 text-xs text-destructive hover:bg-destructive/10 disabled:opacity-40 disabled:cursor-not-allowed inline-flex items-center gap-1.5">
+          {% icon "trash-2" 13 %} Elimina selezionati
+        </button>
+        <span class="text-xs text-muted-foreground" x-text="count + ' selezionati'"></span>
+      </div>
+    </form>
+
+    <div class="rounded-lg border border-border bg-card overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b border-border text-left">
+            <th class="px-3 py-2.5 w-8">
+              <input type="checkbox" class="h-4 w-4 rounded border-input align-middle"
+                     @change="selected = $event.target.checked ? [{% for s in sources %}'{{ s.pk }}'{% if not forloop.last %},{% endif %}{% endfor %}] : []">
+            </th>
+            <th class="px-3 py-2.5 text-xs font-medium text-muted-foreground uppercase tracking-wider">Nome</th>
+            <th class="px-3 py-2.5 text-xs font-medium text-muted-foreground uppercase tracking-wider">Tipo</th>
+            <th class="px-3 py-2.5 text-xs font-medium text-muted-foreground uppercase tracking-wider">URL base</th>
+            <th class="px-3 py-2.5 text-xs font-medium text-muted-foreground uppercase tracking-wider">Priorità</th>
+            <th class="px-3 py-2.5 text-xs font-medium text-muted-foreground uppercase tracking-wider">Stato</th>
+            <th class="px-3 py-2.5 text-xs font-medium text-muted-foreground uppercase tracking-wider text-right">Azioni</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in sources %}
+          <tr class="border-b border-border last:border-0 hover:bg-accent/40"
+              :class="selected.includes('{{ s.pk }}') ? 'bg-primary/5' : ''">
+            <td class="px-3 py-2.5">
+              <input type="checkbox" value="{{ s.pk }}" class="h-4 w-4 rounded border-input align-middle"
+                     :checked="selected.includes('{{ s.pk }}')"
+                     @change="$event.target.checked ? selected.push('{{ s.pk }}') : selected = selected.filter(x => x !== '{{ s.pk }}')">
+            </td>
+            <td class="px-3 py-2.5 font-medium">{{ s.name }}</td>
+            <td class="px-3 py-2.5 text-xs">
+              {% if s.kind %}{{ s.get_kind_display }}{% else %}<span class="text-muted-foreground">— manuale</span>{% endif %}
+            </td>
+            <td class="px-3 py-2.5 text-xs text-muted-foreground truncate max-w-xs">{{ s.base_url|default:"—" }}</td>
+            <td class="px-3 py-2.5 text-xs font-mono">{{ s.priority }}</td>
+            <td class="px-3 py-2.5">
+              {% if s.is_active %}
+                <span class="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">Attivo</span>
+              {% else %}
+                <span class="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">Inattivo</span>
+              {% endif %}
+            </td>
+            <td class="px-3 py-2.5">
+              <div class="flex items-center justify-end gap-2">
+                <a href="{% url 'leads:source_edit' s.pk %}"
+                   class="inline-flex h-7 px-3 items-center rounded-md border border-border text-xs hover:bg-accent">
+                  Modifica
+                </a>
+                <form method="post" action="{% url 'leads:source_delete' s.pk %}" class="inline"
+                      onsubmit="return confirm('Eliminare il broker \'{{ s.name|escapejs }}\' ? Questa azione è irreversibile.');">
+                  {% csrf_token %}
+                  <button type="submit"
+                          class="inline-flex h-7 px-3 items-center rounded-md border border-destructive/40 text-xs text-destructive hover:bg-destructive/10">
+                    Elimina
+                  </button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="7" class="px-4 py-10 text-center text-muted-foreground text-sm">
+              Nessun broker — aggiungi il primo o rimuovi i filtri.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  {# ── Filtri laterali ─────────────────────────────────────────────── #}
+  <aside class="w-52 shrink-0 hidden lg:block">
+    <div class="rounded-lg border border-border bg-card p-4">
+      <p class="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">Filtro</p>
+
+      <p class="text-xs font-medium mb-1.5">Per tipo</p>
+      <ul class="space-y-1 mb-4 text-sm">
+        <li><a href="?{% if active_filter %}active={{ active_filter }}{% endif %}"
+               class="{% if not kind_filter %}text-primary font-medium{% else %}text-muted-foreground hover:text-foreground{% endif %}">Tutti</a></li>
+        {% for value, label in kind_choices %}
+        <li><a href="?kind={{ value }}{% if active_filter %}&active={{ active_filter }}{% endif %}"
+               class="{% if kind_filter == value %}text-primary font-medium{% else %}text-muted-foreground hover:text-foreground{% endif %}">{{ label }}</a></li>
+        {% endfor %}
+      </ul>
+
+      <p class="text-xs font-medium mb-1.5">Per attivo</p>
+      <ul class="space-y-1 text-sm">
+        <li><a href="?{% if kind_filter %}kind={{ kind_filter }}{% endif %}"
+               class="{% if not active_filter %}text-primary font-medium{% else %}text-muted-foreground hover:text-foreground{% endif %}">Tutti</a></li>
+        <li><a href="?active=yes{% if kind_filter %}&kind={{ kind_filter }}{% endif %}"
+               class="{% if active_filter == 'yes' %}text-primary font-medium{% else %}text-muted-foreground hover:text-foreground{% endif %}">Sì</a></li>
+        <li><a href="?active=no{% if kind_filter %}&kind={{ kind_filter }}{% endif %}"
+               class="{% if active_filter == 'no' %}text-primary font-medium{% else %}text-muted-foreground hover:text-foreground{% endif %}">No</a></li>
+      </ul>
+    </div>
+  </aside>
+
 </div>
 {% endblock %}

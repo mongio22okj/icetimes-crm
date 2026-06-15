@@ -470,14 +470,46 @@ class LeadSourceListView(BreadcrumbsMixin, LoginRequiredMixin,
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-        sources = list(LeadSource.objects.all())
+        qs = LeadSource.objects.all()
+
+        # ── Filters (admin-style sidebar) ──────────────────────────────
+        kind = self.request.GET.get("kind") or ""
+        active = self.request.GET.get("active") or ""
+        if kind:
+            qs = qs.filter(kind=kind)
+        if active == "yes":
+            qs = qs.filter(is_active=True)
+        elif active == "no":
+            qs = qs.filter(is_active=False)
+
+        sources = list(qs)
         ctx["sources"] = sources
+        ctx["kind_choices"] = LeadSource.KIND_CHOICES
+        ctx["active_filter"] = active
+        ctx["kind_filter"] = kind
+        # Totals computed over the unfiltered set so the cards stay stable.
+        all_sources = list(LeadSource.objects.all())
         ctx["totals"] = {
-            "total": len(sources),
-            "active": sum(1 for s in sources if s.is_active),
-            "with_api": sum(1 for s in sources if s.kind),
+            "total": len(all_sources),
+            "active": sum(1 for s in all_sources if s.is_active),
+            "with_api": sum(1 for s in all_sources if s.kind),
         }
         return ctx
+
+
+class LeadSourceBulkDeleteView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
+                               StaffRequiredMixin, View):
+    def post(self, request):
+        pks = request.POST.getlist("selected")
+        if not pks:
+            toast(request, LEVEL_ERROR, "Nessun broker selezionato.")
+            return redirect("leads:source_list")
+        qs = LeadSource.objects.filter(pk__in=pks)
+        count = qs.count()
+        qs.delete()
+        toast(request, LEVEL_SUCCESS,
+              f"{count} broker eliminat{'o' if count == 1 else 'i'}.")
+        return redirect("leads:source_list")
 
 
 class LeadSourceCreateView(BreadcrumbsMixin, LoginRequiredMixin,

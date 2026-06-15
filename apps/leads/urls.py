@@ -14,6 +14,7 @@ from .views import (
     DispatchLogView,
     LeadDispatchTriggerView,
     LeadListView,
+    LeadSourceBulkDeleteView,
     LeadSourceCreateView,
     LeadSourceDeleteView,
     LeadSourceListView,
@@ -38,6 +39,7 @@ urlpatterns = [
     path("sources/new/", LeadSourceCreateView.as_view(), name="source_create"),
     path("sources/<int:pk>/", LeadSourceUpdateView.as_view(), name="source_edit"),
     path("sources/<int:pk>/delete/", LeadSourceDeleteView.as_view(), name="source_delete"),
+    path("sources/bulk-delete/", LeadSourceBulkDeleteView.as_view(), name="source_bulk_delete"),
     # Broker landing pages management.
     path("landing/", BrokerLandingListView.as_view(), name="landing_list"),
     path("campaigns/", CampaignListView.as_view(), name="campaign_list"),
