@@ -499,6 +499,53 @@ class LandingClick(models.Model):
         return f"Click '{self.button_name}' — {self.session_id[:8]}"
 
 
+class TrackingLink(models.Model):
+    """Link corto di tracciamento (es. /t/jJzR86).
+
+    Al click registra una visita e reindirizza alla destinazione,
+    aggiungendo `cid=<code>` così il postback del broker si può
+    riagganciare al click originale.
+    """
+
+    code = models.CharField(max_length=12, unique=True, db_index=True,
+                            help_text="Codice corto auto-generato (es. jJzR86).")
+    name = models.CharField(max_length=120, blank=True,
+                            help_text="Etichetta interna (es. 'FB - IREV crypto').")
+    source = models.ForeignKey(
+        "LeadSource", null=True, blank=True, on_delete=models.SET_NULL,
+        related_name="tracking_links",
+        help_text="Broker associato (opzionale).")
+    destination = models.URLField(
+        help_text="Dove reindirizzare il click (landing del broker o offerta).")
+    clicks = models.PositiveIntegerField(default=0)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(default=timezone.now, db_index=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"/t/{self.code} → {self.name or self.destination}"
+
+    @staticmethod
+    def _gen_code(length: int = 6) -> str:
+        import secrets
+        import string
+        alphabet = string.ascii_letters + string.digits
+        return "".join(secrets.choice(alphabet) for _ in range(length))
+
+    def save(self, *args, **kwargs):
+        if not self.code:
+            code = self._gen_code()
+            while TrackingLink.objects.filter(code=code).exists():
+                code = self._gen_code()
+            self.code = code
+        super().save(*args, **kwargs)
+
+    def get_short_path(self) -> str:
+        return f"/t/{self.code}"
+
+
 class SyncAudit(models.Model):
     """Log di ogni sincronizzazione leads da sorgenti esterne."""
 

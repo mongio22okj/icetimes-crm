@@ -15,6 +15,7 @@ from apps.accounts.views import (
     TwoFactorChallengeView,
 )
 from apps.api.api import api as ninja_api
+from apps.leads.tracking import tracking_redirect
 from apps.leads.views import BrokerLandingSubmitView, BrokerLandingView
 from apps.core.health import health as health_view
 from apps.core.pwa import manifest as pwa_manifest
@@ -73,6 +74,8 @@ urlpatterns = [
     path("notifications/", include("apps.notifications.urls")),
     path("orgs/", include("apps.organizations.urls")),
     path("invitations/<str:token>/", InvitationAcceptView.as_view(), name="invitation_accept"),
+    # Link corti di tracciamento — /t/<code>/ → redirect tracciato.
+    path("t/<str:code>/", tracking_redirect, name="tracking_redirect"),
     # Public broker landing pages.
     path("b/<slug:slug>/", BrokerLandingView.as_view(), name="broker_landing"),
     path("b/<slug:slug>/submit/", BrokerLandingSubmitView.as_view(), name="broker_landing_submit"),

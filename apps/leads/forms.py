@@ -1,7 +1,14 @@
 from django import forms
 from django.utils.translation import gettext_lazy as _
 
-from .models import AutoMessage, Campaign, LeadSource, NotificationWebhook, Partner
+from .models import (
+    AutoMessage,
+    Campaign,
+    LeadSource,
+    NotificationWebhook,
+    Partner,
+    TrackingLink,
+)
 from .sources import push_sources
 
 BASE_INPUT = (
@@ -156,6 +163,27 @@ class CampaignForm(forms.ModelForm):
             elif isinstance(widget, forms.Textarea):
                 widget.attrs.setdefault("class",
                                        BASE_INPUT.replace("h-10", "min-h-[80px] py-2"))
+            else:
+                widget.attrs.setdefault("class", BASE_INPUT)
+
+
+class TrackingLinkForm(forms.ModelForm):
+    class Meta:
+        model = TrackingLink
+        fields = ("name", "source", "destination", "is_active")
+        widgets = {
+            "destination": forms.URLInput(attrs={
+                "placeholder": "https://icetimes.it/b/slug-broker/ oppure URL offerta"}),
+            "name": forms.TextInput(attrs={"placeholder": "Es. FB - IREV crypto"}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["source"].empty_label = "— nessun broker —"
+        for name, field in self.fields.items():
+            widget = field.widget
+            if isinstance(widget, forms.CheckboxInput):
+                widget.attrs.setdefault("class", "h-4 w-4 rounded border-input")
             else:
                 widget.attrs.setdefault("class", BASE_INPUT)
 

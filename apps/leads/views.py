@@ -27,6 +27,7 @@ from .models import (
     LeadSource,
     NotificationWebhook,
     Partner,
+    TrackingLink,
 )
 
 from .sync import run_all_sources
@@ -550,6 +551,43 @@ class TrackBoxView(BreadcrumbsMixin, LoginRequiredMixin,
             })
         ctx["rows"] = rows
         return ctx
+
+
+class TrackingLinkListView(BreadcrumbsMixin, LoginRequiredMixin,
+                           EmailVerifiedRequiredMixin, StaffRequiredMixin,
+                           CreateView):
+    """Lista + creazione dei link corti di tracciamento."""
+    model = TrackingLink
+    template_name = "leads/tracking_links.html"
+    breadcrumb_title = "Link tracciamento"
+
+    def get_form_class(self):
+        from .forms import TrackingLinkForm
+        return TrackingLinkForm
+
+    def get_success_url(self):
+        return reverse_lazy("leads:tracking_links")
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        toast(self.request, LEVEL_SUCCESS,
+              f"Link creato: /t/{self.object.code}")
+        return response
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx["links"] = list(TrackingLink.objects.select_related("source").all())
+        ctx["base_url"] = self.request.build_absolute_uri("/").rstrip("/")
+        return ctx
+
+
+class TrackingLinkDeleteView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
+                             StaffRequiredMixin, View):
+    def post(self, request, pk):
+        from .models import TrackingLink
+        TrackingLink.objects.filter(pk=pk).delete()
+        toast(request, LEVEL_SUCCESS, "Link eliminato.")
+        return redirect("leads:tracking_links")
 
 
 class LeadSourceCreateView(BreadcrumbsMixin, LoginRequiredMixin,
