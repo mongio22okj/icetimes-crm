@@ -45,6 +45,7 @@ MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.middleware.gzip.GZipMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
+    "apps.core.middleware.SiteGateMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.locale.LocaleMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -217,6 +218,27 @@ TRACKBOX_GI = os.environ.get("TRACKBOX_GI", "")
 # Shared secret for the public TrackBox postback receiver (/leads/postback/).
 # When unset, the endpoint rejects everything.
 LEADS_POSTBACK_TOKEN = os.environ.get("LEADS_POSTBACK_TOKEN", "")
+
+# ── Site access gate (HTTP Basic Auth) ───────────────────────────────────
+# Quando SITE_GATE_USER e SITE_GATE_PASSWORD sono impostate, l'intero sito
+# è protetto da una password del browser TRANNE gli endpoint pubblici qui
+# sotto, necessari al flusso lead. Lasciare vuote = gate disattivato.
+SITE_GATE_USER = os.environ.get("SITE_GATE_USER", "")
+SITE_GATE_PASSWORD = os.environ.get("SITE_GATE_PASSWORD", "")
+SITE_GATE_REALM = os.environ.get("SITE_GATE_REALM", "IceTimes")
+SITE_GATE_EXEMPT_PREFIXES = (
+    "/b/",                 # landing pubbliche dei broker
+    "/t/",                 # link corti di tracciamento
+    "/api/track/",         # endpoint track visit/click/lead
+    "/api/create-lead",    # alias create-lead
+    "/leads/postback/",    # postback broker (TrackBox & co.)
+    "/__health",           # health check
+    "/robots.txt",
+    "/sw.js",              # service worker PWA
+    "/manifest.webmanifest",
+    "/offline/",
+    "/static/",            # asset
+)
 
 # ── IREV affiliate API ───────────────────────────────────────────────────
 # Second lead source (stylishwnt.com). Token is IP-whitelisted on the
