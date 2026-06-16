@@ -113,6 +113,11 @@ def _post_json(src, url, body, timeout=30):
         "Content-Type": "application/json",
         "Accept": "application/json",
         "Authorization": src.token,  # token grezzo, senza "Bearer"
+        # Cloudflare di stylishwnt.com blocca lo UA "Python-urllib" (403):
+        # serve uno UA da browser per passare il WAF.
+        "User-Agent": ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                       "AppleWebKit/537.36 (KHTML, like Gecko) "
+                       "Chrome/124.0.0.0 Safari/537.36"),
     }
     req = urllib.request.Request(url, data=data, method="POST", headers=headers)
     try:
