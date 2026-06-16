@@ -9,7 +9,6 @@ visualizzatore può loggarsi e vedere i lead — niente modifica, niente CRM
 from django import forms
 from django.contrib.auth import get_user_model
 from django.contrib.auth import views as auth_views
-from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.models import Group
 from django.http import JsonResponse
@@ -73,22 +72,27 @@ class ViewerRegisterView(FormView):
 
 
 # ── Login / logout ───────────────────────────────────────────────────────
-class ViewerAuthForm(AuthenticationForm):
-    def confirm_login_allowed(self, user):
-        if not user.is_active:
-            raise forms.ValidationError(
-                "Il tuo accesso è ancora in attesa di approvazione.",
-                code="pending")
-
-
 class ViewerLoginView(auth_views.LoginView):
     template_name = "viewer/login.html"
-    authentication_form = ViewerAuthForm
     redirect_authenticated_user = True
     next_page = reverse_lazy("viewer:dashboard")
 
     def get_success_url(self):
         return str(self.next_page)
+
+    def form_invalid(self, form):
+        # ModelBackend rifiuta gli utenti inattivi come "credenziali errate".
+        # Se le credenziali sono giuste ma l'account è in attesa, mostriamo
+        # un messaggio chiaro invece di "utente/password non validi".
+        username = (self.request.POST.get("username") or "").strip()
+        password = self.request.POST.get("password") or ""
+        if username and password:
+            u = User.objects.filter(username__iexact=username,
+                                    is_active=False).first()
+            if u and u.check_password(password):
+                return self.render_to_response(
+                    self.get_context_data(form=form, pending=True))
+        return super().form_invalid(form)
 
 
 class ViewerLogoutView(auth_views.LogoutView):
