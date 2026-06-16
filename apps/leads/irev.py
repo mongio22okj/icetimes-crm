@@ -71,15 +71,61 @@ def list_conversions(src, created_from=None, created_to=None, page=1, per_page=1
 
 
 def push_lead(src, profile, ip, tp_source="icetimes-crm", subs=None, aff_sub5=None):
-    form = {"ip": ip, "tp_source": tp_source}
-    if src.offer_id:
-        form["tp_offer_id"] = src.offer_id
-    for key, value in (profile or {}).items():
-        form[f"profile[{key}]"] = value
-    for i, value in enumerate(subs or [], start=1):
-        suffix = "" if i == 1 else str(i)
-        form[f"tp_aff_sub{suffix}"] = value
-    # IREV vuole il nostro click id in aff_sub5 (lo rimanda nel postback).
-    if aff_sub5:
-        form["tp_aff_sub5"] = aff_sub5
-    return _request(src, "POST", "/api/v1/affiliates/leads", form=form)
+    """Push a lead via l'endpoint v2 (quello reale usato dalla funnel).
+
+    POST {base_url}/affiliates/v2/leads, body JSON, token nell'header
+    ``Authorization``. Mappatura ricavata dal send.php funzionante:
+    aff_sub2=affiliate_id, aff_sub4=funnel/offerta, aff_sub5=click id.
+    Risposta 200: {lead_uuid, auto_login_url}.
+    """
+    import secrets
+
+    body = {
+        "first_name": profile.get("first_name") or profile.get("firstname") or "",
+        "last_name": profile.get("last_name") or profile.get("lastname") or "",
+        "email": profile.get("email") or "",
+        "phone": profile.get("phone") or "",
+        "password": secrets.token_urlsafe(8),
+        "ip": ip or "",
+        "aff_sub2": src.affiliate_id or "",
+        "aff_sub5": aff_sub5 or "",
+    }
+    if src.funnel:
+        body["aff_sub4"] = src.funnel
+    if str(src.offer_id).isdigit():
+        body["offer_id"] = int(src.offer_id)
+    elif src.offer_id:
+        body["offer_id"] = src.offer_id
+    if str(src.affiliate_id).isdigit():
+        body["affiliate_id"] = int(src.affiliate_id)
+    elif src.affiliate_id:
+        body["affiliate_id"] = src.affiliate_id
+
+    url = src.base_url.rstrip("/") + "/affiliates/v2/leads"
+    return _post_json(src, url, body)
+
+
+def _post_json(src, url, body, timeout=30):
+    if not is_configured(src):
+        raise CRMAPIError("IREV non configurato: servono URL e token nella sorgente.")
+    data = json.dumps(body).encode()
+    headers = {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+        "Authorization": src.token,  # token grezzo, senza "Bearer"
+    }
+    req = urllib.request.Request(url, data=data, method="POST", headers=headers)
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            raw = resp.read().decode("utf-8", errors="replace")
+    except urllib.error.HTTPError as exc:
+        detail = exc.read().decode("utf-8", errors="replace")[:400]
+        raise CRMAPIError(f"IREV HTTP {exc.code}: {detail}") from exc
+    except urllib.error.URLError as exc:
+        raise CRMAPIError(f"IREV non raggiungibile: {exc.reason}") from exc
+    except TimeoutError as exc:
+        raise CRMAPIError("IREV: timeout della richiesta.") from exc
+    try:
+        return json.loads(raw) if raw else {}
+    except json.JSONDecodeError as exc:
+        raise CRMAPIError(f"IREV JSON non valido: {raw[:200]}") from exc
