@@ -1037,8 +1037,9 @@ class BrokerLandingSubmitView(View):
             firstname=(data.get("firstname") or data.get("nome") or "").strip()[:120],
             lastname=(data.get("lastname") or data.get("cognome") or "").strip()[:120],
             email=email[:254],
-            phone=(data.get("phone") or data.get("telefono") or "").strip()[:32],
-            country=(data.get("country") or "IT").strip().upper()[:8],
+            phone=(data.get("phone") or data.get("telefono")
+                   or data.get("tel") or data.get("full_phone") or "").strip()[:32],
+            country=(data.get("country") or data.get("iso") or "IT").strip().upper()[:8],
             status="lead",
             source=broker.slug,
             payload=payload,
@@ -1081,10 +1082,18 @@ class BrokerLandingSubmitView(View):
         except Exception:  # noqa: BLE001
             pass
 
+        # POST nativo del form (es. funnel statica self-hostata): il browser
+        # si aspetta una navigazione, non JSON → reindirizziamo direttamente.
+        # Le nostre landing in fetch (Accept */*) ricevono invece il JSON.
+        target = auto_login or broker.landing_redirect_url or "/"
+        if "text/html" in request.headers.get("Accept", ""):
+            from django.http import HttpResponseRedirect
+            return HttpResponseRedirect(target)
+
         return JsonResponse({
             "ok": True,
             "lead_id": lead.pk,
-            "redirect": auto_login or broker.landing_redirect_url or "",
+            "redirect": target,
         })
 
 
