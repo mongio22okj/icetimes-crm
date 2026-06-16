@@ -100,11 +100,14 @@ def tracking_redirect(request, code):
     )
     TrackingLink.objects.filter(pk=link.pk).update(clicks=F("clicks") + 1)
 
-    # Aggiunge cid=<code> alla destinazione (per matchare il postback),
-    # preservando eventuali UTM in arrivo.
+    # Aggiunge cid=<code> alla destinazione (per matchare il postback) e
+    # click_id=<code> per l'attribuzione lato affiliate (es. funnel IREV).
+    # Un click_id esplicito nel query string vince (override manuale),
+    # altrimenti usiamo il codice del link. Preserva gli UTM in arrivo.
     parts = urlparse(link.destination)
     params = dict(p.split("=", 1) for p in parts.query.split("&") if "=" in p)
     params["cid"] = code
+    params["click_id"] = q.get("click_id") or code
     for k in ("utm_source", "utm_campaign", "utm_medium", "utm_content"):
         if q.get(k):
             params[k] = q.get(k)
