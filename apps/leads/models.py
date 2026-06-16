@@ -55,17 +55,13 @@ class LeadSource(models.Model):
     KIND_V3 = "v3"
     KIND_MEDIAFRONT = "mediafront"
     KIND_SPMMONSTER = "spmmonster"
-    KIND_CHOICES = (
-        (KIND_TRACKBOX, "TrackBox"),
-        (KIND_AFFINITRAX, "Affinitrax"),
-        (KIND_V3, "Integration v3 (api_token)"),
-        (KIND_MEDIAFRONT, "Mediafront (Midas)"),
-        (KIND_SPMMONSTER, "SPM Monster"),
-    )
+    # Tipi di API rimossi dal sito su richiesta utente: nessuna integrazione
+    # selezionabile. I costanti restano definiti per non rompere gli import.
+    KIND_CHOICES = ()
 
     # Kinds that can pull/refresh data, and kinds that can receive pushes.
-    PULL_KINDS = (KIND_TRACKBOX, KIND_AFFINITRAX, KIND_MEDIAFRONT, KIND_SPMMONSTER)
-    PUSH_KINDS = (KIND_TRACKBOX, KIND_AFFINITRAX, KIND_V3, KIND_MEDIAFRONT, KIND_SPMMONSTER)
+    PULL_KINDS = ()
+    PUSH_KINDS = ()
 
     name = models.CharField(max_length=120)
     logo_url = models.URLField(
