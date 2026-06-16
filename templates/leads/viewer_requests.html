@@ -1,0 +1,87 @@
+{% extends "layouts/dashboard.html" %}
+{% load apex %}
+{% block title %}Visualizzatori · IceTimes CRM{% endblock %}
+{% block content %}
+<div class="mb-6">
+  <h1 class="text-lg font-semibold tracking-tight">Visualizzatori lead</h1>
+  <p class="text-xs text-muted-foreground mt-0.5">
+    Account sola-lettura per vedere i lead in arrivo. Si registrano da soli su
+    <code class="font-mono">/viewer/register/</code> e restano in attesa finché non approvi qui.
+  </p>
+</div>
+
+{# ── In attesa di approvazione ─────────────────────────────────────── #}
+<div class="mb-8">
+  <h2 class="text-sm font-semibold mb-2 flex items-center gap-2">
+    In attesa
+    {% if pending %}<span class="inline-flex items-center rounded-full bg-amber-500/10 px-2 py-0.5 text-xs font-medium text-amber-600 dark:text-amber-400">{{ pending|length }}</span>{% endif %}
+  </h2>
+  <div class="rounded-lg border border-border bg-card overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="border-b border-border text-left">
+          <th class="px-3 py-2.5 text-xs font-medium text-muted-foreground uppercase tracking-wider">Utente</th>
+          <th class="px-3 py-2.5 text-xs font-medium text-muted-foreground uppercase tracking-wider">Richiesto il</th>
+          <th class="px-3 py-2.5 text-xs font-medium text-muted-foreground uppercase tracking-wider text-right">Azioni</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in pending %}
+        <tr class="border-b border-border last:border-0">
+          <td class="px-3 py-2.5 font-medium">{{ u.username }}</td>
+          <td class="px-3 py-2.5 text-muted-foreground">{{ u.date_joined|date:"d/m/Y H:i" }}</td>
+          <td class="px-3 py-2.5 text-right whitespace-nowrap">
+            <form method="post" action="{% url 'leads:viewer_approve' u.pk %}" class="inline">
+              {% csrf_token %}
+              <button type="submit" class="h-7 px-3 rounded-md bg-primary text-primary-foreground text-xs font-medium hover:opacity-90">Approva</button>
+            </form>
+            <form method="post" action="{% url 'leads:viewer_revoke' u.pk %}" class="inline ml-1"
+                  onsubmit="return confirm('Rifiutare e rimuovere {{ u.username|escapejs }}?');">
+              {% csrf_token %}
+              <button type="submit" class="h-7 px-3 rounded-md border border-destructive/40 text-xs text-destructive hover:bg-destructive/10">Rifiuta</button>
+            </form>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="3" class="px-4 py-8 text-center text-muted-foreground text-sm">Nessuna richiesta in attesa.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{# ── Attivi ────────────────────────────────────────────────────────── #}
+<div>
+  <h2 class="text-sm font-semibold mb-2">Attivi {% if active %}<span class="text-muted-foreground font-normal">({{ active|length }})</span>{% endif %}</h2>
+  <div class="rounded-lg border border-border bg-card overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="border-b border-border text-left">
+          <th class="px-3 py-2.5 text-xs font-medium text-muted-foreground uppercase tracking-wider">Utente</th>
+          <th class="px-3 py-2.5 text-xs font-medium text-muted-foreground uppercase tracking-wider">Ultimo accesso</th>
+          <th class="px-3 py-2.5 text-xs font-medium text-muted-foreground uppercase tracking-wider text-right">Azioni</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in active %}
+        <tr class="border-b border-border last:border-0">
+          <td class="px-3 py-2.5 font-medium">{{ u.username }}
+            <span class="inline-flex items-center rounded-full bg-emerald-500/10 px-2 py-0.5 text-xs font-medium text-emerald-600 dark:text-emerald-400 ml-1">attivo</span>
+          </td>
+          <td class="px-3 py-2.5 text-muted-foreground">{{ u.last_login|date:"d/m/Y H:i"|default:"—" }}</td>
+          <td class="px-3 py-2.5 text-right">
+            <form method="post" action="{% url 'leads:viewer_revoke' u.pk %}" class="inline"
+                  onsubmit="return confirm('Revocare l\'accesso a {{ u.username|escapejs }}?');">
+              {% csrf_token %}
+              <button type="submit" class="h-7 px-3 rounded-md border border-destructive/40 text-xs text-destructive hover:bg-destructive/10">Revoca</button>
+            </form>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="3" class="px-4 py-8 text-center text-muted-foreground text-sm">Nessun visualizzatore attivo.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

@@ -1,19 +1,33 @@
 """Area visualizzatori — accesso SOLA LETTURA ai lead in arrivo.
 
-Utenti non-staff entrano col proprio login (l'area /viewer/ è esente dal
-gate Basic-Auth del sito, vedi SITE_GATE_EXEMPT_PREFIXES) e vedono solo la
-lista dei lead, senza poter modificare nulla né raggiungere il CRM (le
-pagine staff restano dietro il gate + StaffRequiredMixin).
+Flusso: il visualizzatore si auto-registra (user + password) → l'account
+nasce DISATTIVO (is_active=False) e non può entrare. Lo staff, dal pannello
+centrale (/leads/viewers/), approva o rifiuta. Solo dopo l'approvazione il
+visualizzatore può loggarsi e vedere i lead — niente modifica, niente CRM
+(le pagine staff restano dietro il gate Basic-Auth + StaffRequiredMixin).
 """
+from django import forms
+from django.contrib.auth import get_user_model
 from django.contrib.auth import views as auth_views
+from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.models import Group
 from django.http import JsonResponse
+from django.shortcuts import redirect
 from django.urls import reverse_lazy
 from django.utils import timezone
 from django.views import View
-from django.views.generic import TemplateView
+from django.views.generic import FormView, TemplateView
 
 from .models import Lead
+
+User = get_user_model()
+VIEWER_GROUP = "Viewers"
+
+
+def viewer_group() -> Group:
+    grp, _ = Group.objects.get_or_create(name=VIEWER_GROUP)
+    return grp
 
 
 def _lead_rows(limit: int = 100):
@@ -32,8 +46,44 @@ def _lead_rows(limit: int = 100):
     return rows
 
 
+# ── Registrazione ────────────────────────────────────────────────────────
+class ViewerRegisterForm(forms.Form):
+    username = forms.CharField(max_length=150, label="Utente")
+    password = forms.CharField(min_length=8, widget=forms.PasswordInput,
+                               label="Password", help_text="Almeno 8 caratteri.")
+
+    def clean_username(self):
+        u = (self.cleaned_data["username"] or "").strip()
+        if User.objects.filter(username__iexact=u).exists():
+            raise forms.ValidationError("Username già in uso, scegline un altro.")
+        return u
+
+
+class ViewerRegisterView(FormView):
+    template_name = "viewer/register.html"
+    form_class = ViewerRegisterForm
+
+    def form_valid(self, form):
+        user = User(username=form.cleaned_data["username"],
+                    is_active=False, is_staff=False)
+        user.set_password(form.cleaned_data["password"])
+        user.save()
+        user.groups.add(viewer_group())
+        return self.render_to_response(self.get_context_data(submitted=True))
+
+
+# ── Login / logout ───────────────────────────────────────────────────────
+class ViewerAuthForm(AuthenticationForm):
+    def confirm_login_allowed(self, user):
+        if not user.is_active:
+            raise forms.ValidationError(
+                "Il tuo accesso è ancora in attesa di approvazione.",
+                code="pending")
+
+
 class ViewerLoginView(auth_views.LoginView):
     template_name = "viewer/login.html"
+    authentication_form = ViewerAuthForm
     redirect_authenticated_user = True
     next_page = reverse_lazy("viewer:dashboard")
 
@@ -45,6 +95,7 @@ class ViewerLogoutView(auth_views.LogoutView):
     next_page = reverse_lazy("viewer:login")
 
 
+# ── Dashboard sola lettura ───────────────────────────────────────────────
 class ViewerDashboardView(LoginRequiredMixin, TemplateView):
     template_name = "viewer/dashboard.html"
     login_url = reverse_lazy("viewer:login")

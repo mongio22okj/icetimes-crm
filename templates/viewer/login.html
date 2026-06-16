@@ -16,9 +16,14 @@
     <input id="id_password" type="password" name="password" required autocomplete="current-password"
            class="w-full h-10 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring/50 focus:border-ring transition-colors">
   </div>
-  {% if form.errors %}
+  {% if form.non_field_errors %}
+    <p class="text-xs text-destructive">{{ form.non_field_errors|striptags }}</p>
+  {% elif form.errors %}
     <p class="text-xs text-destructive">Utente o password non validi.</p>
   {% endif %}
   <button type="submit" class="w-full h-10 rounded-md bg-primary text-primary-foreground font-medium hover:opacity-90">Entra</button>
 </form>
+<div class="mt-4 text-sm">
+  <a href="{% url 'viewer:register' %}" class="text-primary">Non hai un accesso? Richiedilo</a>
+</div>
 {% endblock %}

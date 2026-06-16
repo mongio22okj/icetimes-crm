@@ -618,6 +618,49 @@ class TrackingLinkDeleteView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
         return redirect(_safe_next(request, "leads:tracking_links"))
 
 
+# ── Visualizzatori: pannello centrale di approvazione ────────────────────
+def _viewer_queryset():
+    """Solo account visualizzatore (gruppo Viewers, non staff)."""
+    from django.contrib.auth import get_user_model
+    from .viewer import viewer_group
+    User = get_user_model()
+    return User.objects.filter(groups=viewer_group(), is_staff=False)
+
+
+class ViewerRequestListView(BreadcrumbsMixin, LoginRequiredMixin,
+                            EmailVerifiedRequiredMixin, StaffRequiredMixin,
+                            TemplateView):
+    template_name = "leads/viewer_requests.html"
+    breadcrumb_title = "Visualizzatori"
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        viewers = list(_viewer_queryset().order_by("-date_joined"))
+        ctx["pending"] = [u for u in viewers if not u.is_active]
+        ctx["active"] = [u for u in viewers if u.is_active]
+        return ctx
+
+
+class ViewerApproveView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
+                        StaffRequiredMixin, View):
+    def post(self, request, pk):
+        user = get_object_or_404(_viewer_queryset(), pk=pk)
+        user.is_active = True
+        user.save(update_fields=["is_active"])
+        toast(request, LEVEL_SUCCESS, f"Accesso approvato per '{user.username}'.")
+        return redirect("leads:viewer_requests")
+
+
+class ViewerRevokeView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
+                       StaffRequiredMixin, View):
+    def post(self, request, pk):
+        user = get_object_or_404(_viewer_queryset(), pk=pk)
+        username = user.username
+        user.delete()
+        toast(request, LEVEL_SUCCESS, f"Accesso rimosso per '{username}'.")
+        return redirect("leads:viewer_requests")
+
+
 class LeadSourceCreateView(BreadcrumbsMixin, LoginRequiredMixin,
                            EmailVerifiedRequiredMixin, StaffRequiredMixin,
                            CreateView):
