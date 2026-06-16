@@ -29,6 +29,11 @@ def _request(src, method, path, params=None, body=None, timeout=30):
     req = urllib.request.Request(url, data=data, method=method, headers={
         "Content-Type": "application/json",
         "x-api-key": src.token,
+        # Cloudflare blocca lo UA "Python-urllib" (403 error 1010):
+        # serve uno UA da browser per passare il WAF.
+        "User-Agent": ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                       "AppleWebKit/537.36 (KHTML, like Gecko) "
+                       "Chrome/124.0.0.0 Safari/537.36"),
     })
     try:
         with urllib.request.urlopen(req, timeout=timeout) as resp:
