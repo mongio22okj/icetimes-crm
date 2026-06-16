@@ -1,0 +1,95 @@
+{% load apex %}
+{# Tabella link di tracciamento, completamente editabile.
+   Context richiesto: links, brokers, base_url, next_url (path di ritorno). #}
+{% with inp="h-9 w-full rounded-md border border-input bg-background px-2 text-sm" %}
+
+{# ── Crea nuovo link ───────────────────────────────────────────────── #}
+<form method="post" action="{% url 'leads:tracking_links' %}"
+      class="rounded-lg border border-border bg-card p-4 mb-4">
+  {% csrf_token %}
+  <input type="hidden" name="next" value="{{ next_url }}">
+  <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
+    <div class="md:col-span-3">
+      <label class="block text-xs font-medium mb-1">Nome</label>
+      <input type="text" name="name" placeholder="Es. FB - IREV crypto" class="{{ inp }}">
+    </div>
+    <div class="md:col-span-3">
+      <label class="block text-xs font-medium mb-1">Broker</label>
+      <select name="source" class="{{ inp }}">
+        <option value="">— nessun broker —</option>
+        {% for b in brokers %}<option value="{{ b.pk }}">{{ b.name }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="md:col-span-4">
+      <label class="block text-xs font-medium mb-1">Destinazione</label>
+      <input type="url" name="destination" required
+             placeholder="https://icetimes.it/b/slug-broker/" class="{{ inp }}">
+    </div>
+    <div class="md:col-span-2 flex items-center justify-between gap-2">
+      <label class="inline-flex items-center gap-1.5 text-sm">
+        <input type="checkbox" name="is_active" checked class="h-4 w-4 rounded border-input"> Attivo
+      </label>
+      <button type="submit"
+              class="h-9 px-3 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 inline-flex items-center gap-1.5">
+        {% icon "plus" 14 %} Crea
+      </button>
+    </div>
+  </div>
+</form>
+
+{# ── Lista / modifica inline ───────────────────────────────────────── #}
+<div class="rounded-lg border border-border bg-card overflow-x-auto">
+  <table class="w-full text-sm">
+    <thead>
+      <tr class="border-b border-border text-left">
+        <th class="px-3 py-2.5 text-xs font-medium text-muted-foreground uppercase tracking-wider">Link corto</th>
+        <th class="px-3 py-2.5 text-xs font-medium text-muted-foreground uppercase tracking-wider">Nome</th>
+        <th class="px-3 py-2.5 text-xs font-medium text-muted-foreground uppercase tracking-wider">Broker</th>
+        <th class="px-3 py-2.5 text-xs font-medium text-muted-foreground uppercase tracking-wider">Destinazione</th>
+        <th class="px-3 py-2.5 text-xs font-medium text-muted-foreground uppercase tracking-wider text-center">Attivo</th>
+        <th class="px-3 py-2.5 text-xs font-medium text-muted-foreground uppercase tracking-wider text-center">Click</th>
+        <th class="px-3 py-2.5 text-xs font-medium text-muted-foreground uppercase tracking-wider text-right">Azioni</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for l in links %}
+      <tr class="border-b border-border last:border-0 align-middle"
+          x-data="{ copied: false, copy() { navigator.clipboard.writeText('{{ base_url }}/t/{{ l.code }}').then(() => { this.copied = true; setTimeout(() => this.copied = false, 1500); }); } }">
+        <td class="px-3 py-2.5 whitespace-nowrap">
+          <div class="flex items-center gap-2">
+            <code class="font-mono text-xs bg-background border border-border rounded px-2 py-1 select-all">/t/{{ l.code }}</code>
+            <button type="button" @click="copy()" class="h-7 px-2 rounded-md border border-border text-xs hover:bg-accent inline-flex items-center gap-1">
+              {% icon "copy" 12 %}<span x-text="copied ? 'Ok!' : 'Copia'"></span>
+            </button>
+          </div>
+        </td>
+        {# Tutta la riga è un unico form di modifica #}
+        <td class="px-3 py-2.5"><input form="lf-{{ l.pk }}" type="text" name="name" value="{{ l.name }}" class="{{ inp }} min-w-[120px]"></td>
+        <td class="px-3 py-2.5">
+          <select form="lf-{{ l.pk }}" name="source" class="{{ inp }} min-w-[140px]">
+            <option value="">— nessuno —</option>
+            {% for b in brokers %}<option value="{{ b.pk }}" {% if l.source_id == b.pk %}selected{% endif %}>{{ b.name }}</option>{% endfor %}
+          </select>
+        </td>
+        <td class="px-3 py-2.5"><input form="lf-{{ l.pk }}" type="url" name="destination" value="{{ l.destination }}" class="{{ inp }} min-w-[220px]"></td>
+        <td class="px-3 py-2.5 text-center"><input form="lf-{{ l.pk }}" type="checkbox" name="is_active" {% if l.is_active %}checked{% endif %} class="h-4 w-4 rounded border-input"></td>
+        <td class="px-3 py-2.5 text-center font-semibold">{{ l.clicks }}</td>
+        <td class="px-3 py-2.5 text-right whitespace-nowrap">
+          <form method="post" action="{% url 'leads:tracking_link_edit' l.pk %}" id="lf-{{ l.pk }}" class="inline">
+            {% csrf_token %}<input type="hidden" name="next" value="{{ next_url }}">
+            <button type="submit" class="h-7 px-3 rounded-md bg-primary text-primary-foreground text-xs font-medium hover:opacity-90">Salva</button>
+          </form>
+          <form method="post" action="{% url 'leads:tracking_link_delete' l.pk %}" class="inline ml-1"
+                onsubmit="return confirm('Eliminare questo link?');">
+            {% csrf_token %}<input type="hidden" name="next" value="{{ next_url }}">
+            <button type="submit" class="h-7 px-3 rounded-md border border-destructive/40 text-xs text-destructive hover:bg-destructive/10">Elimina</button>
+          </form>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="7" class="px-4 py-10 text-center text-muted-foreground text-sm">Nessun link ancora — creane uno qui sopra.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endwith %}

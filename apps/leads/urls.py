@@ -23,6 +23,7 @@ from .views import (
     TrackBoxView,
     TrackingLinkDeleteView,
     TrackingLinkListView,
+    TrackingLinkUpdateView,
     NotificationCreateView,
     NotificationDeleteView,
     NotificationListView,
@@ -49,6 +50,7 @@ urlpatterns = [
     path("trackbox/", TrackBoxView.as_view(), name="trackbox"),
     # Link corti di tracciamento.
     path("links/", TrackingLinkListView.as_view(), name="tracking_links"),
+    path("links/<int:pk>/edit/", TrackingLinkUpdateView.as_view(), name="tracking_link_edit"),
     path("links/<int:pk>/delete/", TrackingLinkDeleteView.as_view(), name="tracking_link_delete"),
     path("campaigns/", CampaignListView.as_view(), name="campaign_list"),
     path("campaigns/new/", CampaignCreateView.as_view(), name="campaign_create"),

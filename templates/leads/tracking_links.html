@@ -5,83 +5,11 @@
 <div class="mb-6">
   <h1 class="text-lg font-semibold tracking-tight">Link di tracciamento</h1>
   <p class="text-xs text-muted-foreground mt-0.5">
-    Link corti (es. <code class="font-mono">/t/jJzR86</code>) che tracciano il click e reindirizzano alla destinazione. Ogni click è conteggiato nel CRM.
+    Link corti (es. <code class="font-mono">/t/jJzR86</code>) che tracciano il click e reindirizzano alla destinazione. Modifica broker, destinazione e stato direttamente in tabella.
   </p>
 </div>
 
-{# ── Form crea nuovo link ──────────────────────────────────────────── #}
-<form method="post" class="rounded-lg border border-border bg-card p-4 mb-6 max-w-3xl">
-  {% csrf_token %}
-  {% if form.non_field_errors %}
-    <div class="rounded-md border border-destructive/30 bg-destructive/5 p-2 text-sm text-destructive mb-3">{{ form.non_field_errors }}</div>
-  {% endif %}
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-    <div>
-      <label class="block text-xs font-medium mb-1">{{ form.name.label }}</label>
-      {{ form.name }}
-    </div>
-    <div>
-      <label class="block text-xs font-medium mb-1">Broker</label>
-      {{ form.source }}
-    </div>
-    <div class="md:col-span-2">
-      <label class="block text-xs font-medium mb-1">{{ form.destination.label }}</label>
-      {{ form.destination }}
-      {% if form.destination.errors %}<p class="text-xs text-destructive mt-1">{{ form.destination.errors|striptags }}</p>{% endif %}
-    </div>
-    <div class="flex items-center gap-2">
-      {{ form.is_active }}
-      <label class="text-sm">Attivo</label>
-    </div>
-  </div>
-  <div class="flex justify-end mt-3">
-    <button type="submit" class="h-9 px-4 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 inline-flex items-center gap-1.5">
-      {% icon "plus" 14 %} Crea link
-    </button>
-  </div>
-</form>
-
-{# ── Lista link ────────────────────────────────────────────────────── #}
-<div class="rounded-lg border border-border bg-card overflow-x-auto">
-  <table class="w-full text-sm">
-    <thead>
-      <tr class="border-b border-border text-left">
-        <th class="px-3 py-2.5 text-xs font-medium text-muted-foreground uppercase tracking-wider">Link</th>
-        <th class="px-3 py-2.5 text-xs font-medium text-muted-foreground uppercase tracking-wider">Nome</th>
-        <th class="px-3 py-2.5 text-xs font-medium text-muted-foreground uppercase tracking-wider">Broker</th>
-        <th class="px-3 py-2.5 text-xs font-medium text-muted-foreground uppercase tracking-wider">Destinazione</th>
-        <th class="px-3 py-2.5 text-xs font-medium text-muted-foreground uppercase tracking-wider text-center">Click</th>
-        <th class="px-3 py-2.5 text-xs font-medium text-muted-foreground uppercase tracking-wider text-right">Azioni</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for l in links %}
-      <tr class="border-b border-border last:border-0 hover:bg-accent/40"
-          x-data="{ copied: false, copy() { navigator.clipboard.writeText('{{ base_url }}/t/{{ l.code }}').then(() => { this.copied = true; setTimeout(() => this.copied = false, 1500); }); } }">
-        <td class="px-3 py-2.5">
-          <div class="flex items-center gap-2">
-            <code class="font-mono text-xs bg-background border border-border rounded px-2 py-1 select-all">{{ base_url }}/t/{{ l.code }}</code>
-            <button type="button" @click="copy()" class="h-7 px-2 rounded-md border border-border text-xs hover:bg-accent inline-flex items-center gap-1">
-              {% icon "copy" 12 %}<span x-text="copied ? 'Ok!' : 'Copia'"></span>
-            </button>
-          </div>
-        </td>
-        <td class="px-3 py-2.5 text-xs">{{ l.name|default:"—" }}</td>
-        <td class="px-3 py-2.5 text-xs">{% if l.source %}{{ l.source.name }}{% else %}<span class="text-muted-foreground">—</span>{% endif %}</td>
-        <td class="px-3 py-2.5 text-xs text-muted-foreground truncate max-w-xs">{{ l.destination }}</td>
-        <td class="px-3 py-2.5 text-center font-semibold">{{ l.clicks }}</td>
-        <td class="px-3 py-2.5 text-right">
-          <form method="post" action="{% url 'leads:tracking_link_delete' l.pk %}" class="inline"
-                onsubmit="return confirm('Eliminare questo link?');">
-            {% csrf_token %}
-            <button type="submit" class="h-7 px-3 rounded-md border border-destructive/40 text-xs text-destructive hover:bg-destructive/10">Elimina</button>
-          </form>
-        </td>
-      </tr>
-      {% empty %}
-      <tr><td colspan="6" class="px-4 py-10 text-center text-muted-foreground text-sm">Nessun link ancora — creane uno qui sopra.</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
-</div>
+{% with next_url=request.path %}
+  {% include "leads/_tracking_links_table.html" %}
+{% endwith %}
 {% endblock %}

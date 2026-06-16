@@ -4,8 +4,8 @@ import json
 from django.conf import settings
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import JsonResponse
-from django.shortcuts import redirect
-from django.urls import reverse_lazy
+from django.shortcuts import get_object_or_404, redirect
+from django.urls import reverse, reverse_lazy
 from django.utils.dateparse import parse_datetime
 from django.utils.decorators import method_decorator
 from django.views import View
@@ -31,6 +31,14 @@ from .models import (
 )
 
 from .sync import run_all_sources
+
+
+def _safe_next(request, default_name):
+    """Ritorna il path `next` (relativo) se valido, altrimenti il default."""
+    nxt = request.POST.get("next") or request.GET.get("next")
+    if nxt and nxt.startswith("/") and not nxt.startswith("//"):
+        return nxt
+    return reverse(default_name)
 
 
 LEADS_TABLE = TableConfig(
@@ -411,6 +419,12 @@ class CampaignListView(BreadcrumbsMixin, LoginRequiredMixin,
         }
         totals["cpa"] = (totals["spent"] / totals["leads"]) if totals["leads"] else None
         ctx["totals"] = totals
+        # Tabella link di tracciamento editabile, integrata nelle Campagne.
+        from .forms import TrackingLinkForm
+        ctx["link_form"] = TrackingLinkForm()
+        ctx["links"] = list(TrackingLink.objects.select_related("source").all())
+        ctx["brokers"] = list(LeadSource.objects.order_by("name"))
+        ctx["base_url"] = self.request.build_absolute_uri("/").rstrip("/")
         return ctx
 
 
@@ -566,7 +580,7 @@ class TrackingLinkListView(BreadcrumbsMixin, LoginRequiredMixin,
         return TrackingLinkForm
 
     def get_success_url(self):
-        return reverse_lazy("leads:tracking_links")
+        return _safe_next(self.request, "leads:tracking_links")
 
     def form_valid(self, form):
         response = super().form_valid(form)
@@ -577,8 +591,28 @@ class TrackingLinkListView(BreadcrumbsMixin, LoginRequiredMixin,
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         ctx["links"] = list(TrackingLink.objects.select_related("source").all())
+        ctx["brokers"] = list(LeadSource.objects.order_by("name"))
         ctx["base_url"] = self.request.build_absolute_uri("/").rstrip("/")
         return ctx
+
+
+class TrackingLinkUpdateView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
+                             StaffRequiredMixin, View):
+    """Salvataggio inline di un link dalla tabella editabile."""
+
+    def post(self, request, pk):
+        link = get_object_or_404(TrackingLink, pk=pk)
+        link.name = (request.POST.get("name") or "").strip()[:120]
+        link.destination = (request.POST.get("destination") or "").strip()
+        sid = request.POST.get("source") or ""
+        link.source_id = int(sid) if sid.isdigit() else None
+        link.is_active = request.POST.get("is_active") == "on"
+        if not link.destination:
+            toast(request, LEVEL_ERROR, "La destinazione non può essere vuota.")
+        else:
+            link.save()
+            toast(request, LEVEL_SUCCESS, f"Link /t/{link.code} aggiornato.")
+        return redirect(_safe_next(request, "leads:tracking_links"))
 
 
 class TrackingLinkDeleteView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
@@ -587,7 +621,7 @@ class TrackingLinkDeleteView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
         from .models import TrackingLink
         TrackingLink.objects.filter(pk=pk).delete()
         toast(request, LEVEL_SUCCESS, "Link eliminato.")
-        return redirect("leads:tracking_links")
+        return redirect(_safe_next(request, "leads:tracking_links"))
 
 
 class LeadSourceCreateView(BreadcrumbsMixin, LoginRequiredMixin,
