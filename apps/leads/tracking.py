@@ -108,6 +108,9 @@ def tracking_redirect(request, code):
     params = dict(p.split("=", 1) for p in parts.query.split("&") if "=" in p)
     params["cid"] = code
     params["click_id"] = q.get("click_id") or code
+    # IREV richiede il nostro click id nel campo aff_sub5: lo rimanda nel
+    # postback per agganciare il lead al click.
+    params["aff_sub5"] = q.get("aff_sub5") or q.get("click_id") or code
     for k in ("utm_source", "utm_campaign", "utm_medium", "utm_content"):
         if q.get(k):
             params[k] = q.get(k)
