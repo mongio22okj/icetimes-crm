@@ -1060,7 +1060,8 @@ class BrokerLandingSubmitView(View):
                .order_by("-id").first())
         if _dl and isinstance(_dl.response, dict):
             auto_login = (_dl.response.get("auto_login_url")
-                          or _dl.response.get("autoLoginUrl") or "")
+                          or _dl.response.get("autoLoginUrl")
+                          or _dl.response.get("redirect_url") or "")
 
         # Notifications (silent fail).
         try:

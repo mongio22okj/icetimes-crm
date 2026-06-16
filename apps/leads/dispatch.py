@@ -49,14 +49,16 @@ def _push(lead, source):
         return True, result
 
     if source.kind == LeadSource.KIND_AFFINITRAX:
-        click_id = f"ice{secrets.token_hex(6)}"
+        p = lead.payload or {}
+        click_id = (p.get("aff_sub5") or p.get("click_id") or p.get("cid")
+                    or f"ice{secrets.token_hex(6)}")
         payload = {
             "email": lead.email,
             "phone": lead.phone,
             "first_name": lead.firstname,
             "last_name": lead.lastname,
             "country": (lead.country or "IT").upper(),
-            "ip": "",
+            "ip": p.get("ip") or "",
             "click_id": click_id,
         }
         return True, affinitrax.push_lead(source, payload) or {}
