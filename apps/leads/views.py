@@ -1017,6 +1017,12 @@ class BrokerLandingSubmitView(View):
         import time
         uniqueid = f"land-{broker.slug}-{int(time.time())}-{secrets.token_hex(3)}"
         payload = {k: v for k, v in data.items() if k != "csrfmiddlewaretoken"}
+        # IP reale del visitatore (dietro Cloudflare → nginx). IREV lo richiede.
+        real_ip = (request.META.get("HTTP_CF_CONNECTING_IP")
+                   or request.META.get("HTTP_X_FORWARDED_FOR", "").split(",")[0].strip()
+                   or request.META.get("REMOTE_ADDR", ""))
+        if real_ip:
+            payload.setdefault("ip", real_ip)
 
         lead = Lead.objects.create(
             uniqueid=uniqueid,
@@ -1037,6 +1043,15 @@ class BrokerLandingSubmitView(View):
             _dispatch.dispatch(lead, sources=[broker])
         except Exception:  # noqa: BLE001
             pass
+
+        # Auto-login: se il broker ha risposto con un auto_login_url, mandiamo
+        # la persona dritta sulla sua piattaforma (massima conversione).
+        auto_login = ""
+        _dl = (DispatchLog.objects.filter(lead=lead, source=broker, success=True)
+               .order_by("-id").first())
+        if _dl and isinstance(_dl.response, dict):
+            auto_login = (_dl.response.get("auto_login_url")
+                          or _dl.response.get("autoLoginUrl") or "")
 
         # Notifications (silent fail).
         try:
@@ -1061,7 +1076,7 @@ class BrokerLandingSubmitView(View):
         return JsonResponse({
             "ok": True,
             "lead_id": lead.pk,
-            "redirect": broker.landing_redirect_url or "",
+            "redirect": auto_login or broker.landing_redirect_url or "",
         })
 
 

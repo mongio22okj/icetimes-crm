@@ -129,7 +129,8 @@ document.getElementById("f").addEventListener("submit", async (e) => {
   btn.disabled = true; btn.textContent = "Invio in corso...";
 
   const fd = new FormData(e.target);
-  for (const k of ["utm_source","utm_medium","utm_campaign","utm_content","utm_term"]) {
+  for (const k of ["utm_source","utm_medium","utm_campaign","utm_content","utm_term",
+                   "cid","click_id","aff_sub5"]) {
     const v = qs.get(k);
     if (v) fd.append(k, v);
   }
