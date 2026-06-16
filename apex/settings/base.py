@@ -227,6 +227,7 @@ SITE_GATE_USER = os.environ.get("SITE_GATE_USER", "")
 SITE_GATE_PASSWORD = os.environ.get("SITE_GATE_PASSWORD", "")
 SITE_GATE_REALM = os.environ.get("SITE_GATE_REALM", "IceTimes")
 SITE_GATE_EXEMPT_PREFIXES = (
+    "/viewer/",            # area visualizzatori (login proprio, sola lettura)
     "/b/",                 # landing pubbliche dei broker
     "/t/",                 # link corti di tracciamento
     "/api/track/",         # endpoint track visit/click/lead

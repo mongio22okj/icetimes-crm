@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% load apex %}
+{% block title %}Lead in arrivo · IceTimes{% endblock %}
+{% block body %}
+<main class="min-h-screen bg-background text-foreground">
+  <header class="border-b border-border">
+    <div class="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
+      <div class="flex items-center gap-2.5 font-semibold">
+        <span class="h-8 w-8 rounded-md bg-primary text-primary-foreground inline-flex items-center justify-center">
+          {% icon "target" 18 %}
+        </span>
+        <span class="tracking-tight">Lead in arrivo</span>
+      </div>
+      <div class="flex items-center gap-4">
+        <span class="text-xs text-muted-foreground">Totale: <span id="lead-total" class="font-semibold text-foreground">{{ total }}</span></span>
+        <span id="live-dot" class="hidden sm:inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+          <span class="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span> live
+        </span>
+        <form method="post" action="{% url 'viewer:logout' %}">
+          {% csrf_token %}
+          <button type="submit" class="h-8 px-3 rounded-md border border-border text-xs hover:bg-accent">Esci</button>
+        </form>
+      </div>
+    </div>
+  </header>
+
+  <div class="max-w-6xl mx-auto px-4 py-6">
+    <div class="rounded-lg border border-border bg-card overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b border-border text-left">
+            <th class="px-3 py-2.5 text-xs font-medium text-muted-foreground uppercase tracking-wider">Data/ora</th>
+            <th class="px-3 py-2.5 text-xs font-medium text-muted-foreground uppercase tracking-wider">Nome</th>
+            <th class="px-3 py-2.5 text-xs font-medium text-muted-foreground uppercase tracking-wider">Email</th>
+            <th class="px-3 py-2.5 text-xs font-medium text-muted-foreground uppercase tracking-wider">Telefono</th>
+            <th class="px-3 py-2.5 text-xs font-medium text-muted-foreground uppercase tracking-wider">Paese</th>
+            <th class="px-3 py-2.5 text-xs font-medium text-muted-foreground uppercase tracking-wider">Sorgente</th>
+            <th class="px-3 py-2.5 text-xs font-medium text-muted-foreground uppercase tracking-wider">Stato</th>
+            <th class="px-3 py-2.5 text-xs font-medium text-muted-foreground uppercase tracking-wider text-center">Score</th>
+          </tr>
+        </thead>
+        <tbody id="lead-rows">
+          {% for l in leads %}
+          <tr class="border-b border-border last:border-0 hover:bg-accent/40">
+            <td class="px-3 py-2.5 whitespace-nowrap text-muted-foreground">{{ l.created }}</td>
+            <td class="px-3 py-2.5 font-medium">{{ l.name }}</td>
+            <td class="px-3 py-2.5">{{ l.email }}</td>
+            <td class="px-3 py-2.5 whitespace-nowrap">{{ l.phone }}</td>
+            <td class="px-3 py-2.5">{{ l.country }}</td>
+            <td class="px-3 py-2.5">{{ l.source }}</td>
+            <td class="px-3 py-2.5">{{ l.status }}</td>
+            <td class="px-3 py-2.5 text-center font-semibold">{{ l.score }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="8" class="px-4 py-10 text-center text-muted-foreground">Nessun lead ancora.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <p class="text-xs text-muted-foreground mt-3">Aggiornamento automatico ogni 15 secondi · sola lettura.</p>
+  </div>
+</main>
+
+<script>
+  (function () {
+    const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, m => (
+      { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m]));
+    async function refresh() {
+      try {
+        const r = await fetch("{% url 'viewer:data' %}", { headers: { "X-Requested-With": "fetch" } });
+        if (!r.ok) return;
+        const d = await r.json();
+        document.getElementById("lead-total").textContent = d.total;
+        const tb = document.getElementById("lead-rows");
+        if (!d.leads.length) {
+          tb.innerHTML = '<tr><td colspan="8" class="px-4 py-10 text-center text-muted-foreground">Nessun lead ancora.</td></tr>';
+          return;
+        }
+        tb.innerHTML = d.leads.map(l => (
+          '<tr class="border-b border-border last:border-0 hover:bg-accent/40">' +
+          '<td class="px-3 py-2.5 whitespace-nowrap text-muted-foreground">' + esc(l.created) + '</td>' +
+          '<td class="px-3 py-2.5 font-medium">' + esc(l.name) + '</td>' +
+          '<td class="px-3 py-2.5">' + esc(l.email) + '</td>' +
+          '<td class="px-3 py-2.5 whitespace-nowrap">' + esc(l.phone) + '</td>' +
+          '<td class="px-3 py-2.5">' + esc(l.country) + '</td>' +
+          '<td class="px-3 py-2.5">' + esc(l.source) + '</td>' +
+          '<td class="px-3 py-2.5">' + esc(l.status) + '</td>' +
+          '<td class="px-3 py-2.5 text-center font-semibold">' + esc(l.score) + '</td>' +
+          '</tr>'
+        )).join("");
+      } catch (e) { /* silenzioso */ }
+    }
+    setInterval(refresh, 15000);
+  })();
+</script>
+{% endblock %}

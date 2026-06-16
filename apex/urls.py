@@ -74,6 +74,8 @@ urlpatterns = [
     path("settings/", include("apps.accounts.settings_urls")),
     path("products/", include("apps.products.urls")),
     path("leads/", include("apps.leads.urls")),
+    # Area visualizzatori (sola lettura lead) — esente dal gate del sito.
+    path("viewer/", include("apps.leads.viewer_urls")),
     path("notifications/", include("apps.notifications.urls")),
     path("orgs/", include("apps.organizations.urls")),
     path("invitations/<str:token>/", InvitationAcceptView.as_view(), name="invitation_accept"),

@@ -1,0 +1,24 @@
+{% extends "layouts/auth.html" %}
+{% block title %}Accesso visualizzatore · IceTimes{% endblock %}
+{% block auth_content %}
+<h1 class="text-2xl font-bold tracking-tight mb-1">Accesso lead</h1>
+<p class="text-sm text-muted-foreground mb-6">Inserisci le tue credenziali per vedere i lead in arrivo.</p>
+
+<form method="post" class="space-y-4">
+  {% csrf_token %}
+  <div>
+    <label for="id_username" class="block text-sm font-medium mb-1">Utente</label>
+    <input id="id_username" type="text" name="username" required autofocus autocomplete="username"
+           class="w-full h-10 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring/50 focus:border-ring transition-colors">
+  </div>
+  <div>
+    <label for="id_password" class="block text-sm font-medium mb-1">Password</label>
+    <input id="id_password" type="password" name="password" required autocomplete="current-password"
+           class="w-full h-10 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring/50 focus:border-ring transition-colors">
+  </div>
+  {% if form.errors %}
+    <p class="text-xs text-destructive">Utente o password non validi.</p>
+  {% endif %}
+  <button type="submit" class="w-full h-10 rounded-md bg-primary text-primary-foreground font-medium hover:opacity-90">Entra</button>
+</form>
+{% endblock %}
