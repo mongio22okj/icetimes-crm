@@ -419,12 +419,6 @@ class CampaignListView(BreadcrumbsMixin, LoginRequiredMixin,
         }
         totals["cpa"] = (totals["spent"] / totals["leads"]) if totals["leads"] else None
         ctx["totals"] = totals
-        # Tabella link di tracciamento editabile, integrata nelle Campagne.
-        from .forms import TrackingLinkForm
-        ctx["link_form"] = TrackingLinkForm()
-        ctx["links"] = list(TrackingLink.objects.select_related("source").all())
-        ctx["brokers"] = list(LeadSource.objects.order_by("name"))
-        ctx["base_url"] = self.request.build_absolute_uri("/").rstrip("/")
         return ctx
 
 
