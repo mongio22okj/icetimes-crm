@@ -1086,10 +1086,19 @@ class BrokerLandingSubmitView(View):
         # POST nativo del form (es. funnel statica self-hostata): il browser
         # si aspetta una navigazione, non JSON → reindirizziamo direttamente.
         # Le nostre landing in fetch (Accept */*) ricevono invece il JSON.
-        target = auto_login or broker.landing_redirect_url or "/"
+        target = auto_login or broker.landing_redirect_url or ""
         if "text/html" in request.headers.get("Accept", ""):
-            from django.http import HttpResponseRedirect
-            return HttpResponseRedirect(target)
+            if target:
+                from django.http import HttpResponseRedirect
+                return HttpResponseRedirect(target)
+            # Nessun auto-login: mostra una pagina di conferma (non rimandare
+            # il visitatore su "/" che è dietro il gate).
+            from django.http import HttpResponse
+            msg = broker.landing_success_message or "Registrazione completata!"
+            return HttpResponse(
+                "<!doctype html><meta charset=utf-8>"
+                "<div style='font-family:system-ui;text-align:center;padding:64px'>"
+                f"<h2>✅ {msg}</h2></div>")
 
         return JsonResponse({
             "ok": True,
