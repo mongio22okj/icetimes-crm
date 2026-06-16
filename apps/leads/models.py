@@ -57,7 +57,6 @@ class LeadSource(models.Model):
     KIND_SPMMONSTER = "spmmonster"
     KIND_CHOICES = (
         (KIND_TRACKBOX, "TrackBox"),
-        (KIND_IREV, "IREV"),
         (KIND_AFFINITRAX, "Affinitrax"),
         (KIND_V3, "Integration v3 (api_token)"),
         (KIND_MEDIAFRONT, "Mediafront (Midas)"),
@@ -65,8 +64,8 @@ class LeadSource(models.Model):
     )
 
     # Kinds that can pull/refresh data, and kinds that can receive pushes.
-    PULL_KINDS = (KIND_TRACKBOX, KIND_IREV, KIND_AFFINITRAX, KIND_MEDIAFRONT, KIND_SPMMONSTER)
-    PUSH_KINDS = (KIND_TRACKBOX, KIND_IREV, KIND_AFFINITRAX, KIND_V3, KIND_MEDIAFRONT, KIND_SPMMONSTER)
+    PULL_KINDS = (KIND_TRACKBOX, KIND_AFFINITRAX, KIND_MEDIAFRONT, KIND_SPMMONSTER)
+    PUSH_KINDS = (KIND_TRACKBOX, KIND_AFFINITRAX, KIND_V3, KIND_MEDIAFRONT, KIND_SPMMONSTER)
 
     name = models.CharField(max_length=120)
     logo_url = models.URLField(
