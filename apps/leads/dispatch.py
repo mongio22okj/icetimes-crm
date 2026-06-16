@@ -39,7 +39,11 @@ def _push(lead, source):
             "first_name": lead.firstname,
             "last_name": lead.lastname,
         }
-        result = irev.push_lead(source, profile, ip="") or {}
+        payload = lead.payload or {}
+        click = (payload.get("aff_sub5") or payload.get("click_id")
+                 or payload.get("cid") or "")
+        ip = payload.get("ip") or "8.8.8.8"  # IREV richiede un ip valido
+        result = irev.push_lead(source, profile, ip=ip, aff_sub5=click) or {}
         if isinstance(result, dict) and result.get("validation_errors"):
             return False, result
         return True, result

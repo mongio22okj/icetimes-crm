@@ -70,7 +70,7 @@ def list_conversions(src, created_from=None, created_to=None, page=1, per_page=1
     return _request(src, "GET", "/api/v1/affiliates/conversions", params=params)
 
 
-def push_lead(src, profile, ip, tp_source="icetimes-crm", subs=None):
+def push_lead(src, profile, ip, tp_source="icetimes-crm", subs=None, aff_sub5=None):
     form = {"ip": ip, "tp_source": tp_source}
     if src.offer_id:
         form["tp_offer_id"] = src.offer_id
@@ -79,4 +79,7 @@ def push_lead(src, profile, ip, tp_source="icetimes-crm", subs=None):
     for i, value in enumerate(subs or [], start=1):
         suffix = "" if i == 1 else str(i)
         form[f"tp_aff_sub{suffix}"] = value
+    # IREV vuole il nostro click id in aff_sub5 (lo rimanda nel postback).
+    if aff_sub5:
+        form["tp_aff_sub5"] = aff_sub5
     return _request(src, "POST", "/api/v1/affiliates/leads", form=form)
