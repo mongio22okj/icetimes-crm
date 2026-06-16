@@ -76,7 +76,12 @@ def _push(lead, source):
         return True, v3.push_lead(source, payload) or {}
 
     if source.kind == LeadSource.KIND_MEDIAFRONT:
-        result = mediafront.push_lead(source, lead) or {}
+        p = lead.payload or {}
+        result = mediafront.push_lead(
+            source, lead,
+            ip=p.get("ip") or "",
+            user_agent=p.get("user_agent") or p.get("userAgent") or "",
+        ) or {}
         return True, result
 
     if source.kind == LeadSource.KIND_SPMMONSTER:
