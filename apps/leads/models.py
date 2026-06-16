@@ -40,6 +40,20 @@ class Lead(models.Model):
     def full_name(self):
         return f"{self.firstname} {self.lastname}".strip()
 
+    # ── Valori derivati dal payload (per la tabella stile pannello broker) ──
+    @property
+    def ip(self):
+        return (self.payload or {}).get("ip") or ""
+
+    @property
+    def click_id(self):
+        p = self.payload or {}
+        return p.get("click_id") or p.get("aff_sub5") or p.get("cid") or ""
+
+    @property
+    def device(self):
+        return (self.payload or {}).get("device") or ""
+
 
 class LeadSource(models.Model):
     """A configurable external lead API (TrackBox / IREV / Affinitrax).

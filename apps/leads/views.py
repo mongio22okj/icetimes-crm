@@ -44,22 +44,27 @@ def _safe_next(request, default_name):
 LEADS_TABLE = TableConfig(
     key="leads",
     columns=(
-        Column("created_at", "Received", sortable=True, pinned=True,
+        Column("created_at", "Creato il", sortable=True, pinned=True,
                filter=Filter("daterange"),
                formatter=lambda v: v.strftime("%d/%m/%Y %H:%M") if v else ""),
-        Column("firstname", "First name", searchable=True),
-        Column("lastname", "Last name", searchable=True),
+        Column("is_deposit", "Depositare", sortable=True,
+               formatter=lambda v: "✅ sì" if v else "—"),
+        Column("firstname", "Nome", searchable=True),
+        Column("lastname", "Cognome", searchable=True),
         Column("email", "Email", searchable=True),
-        Column("phone", "Phone"),
-        Column("country", "Country",
+        Column("phone", "Telefono", searchable=True),
+        Column("ip", "IP", sortable=False),
+        Column("country", "Paese",
                filter=Filter("text", placeholder="IT, ES…")),
-        Column("status", "Status", sortable=True,
-               filter=Filter("text", placeholder="Filter status…"),
+        Column("status", "Stato", sortable=True,
+               filter=Filter("text", placeholder="Filtra stato…"),
                template="leads/_table_cells.html#status"),
-        Column("is_deposit", "Deposit", sortable=True,
-               formatter=lambda v: "✓ deposit" if v else "—"),
-        Column("source", "Source", sortable=True,
-               filter=Filter("text", placeholder="Filter source…")),
+        Column("source", "Broker", sortable=True,
+               filter=Filter("text", placeholder="Filtra broker…")),
+        Column("event_at", "Aggiornato il", sortable=True,
+               formatter=lambda v: v.strftime("%d/%m/%Y %H:%M") if v else "—"),
+        Column("click_id", "ID cliccato", sortable=False,
+               formatter=lambda v: v or "—"),
     ),
     bulk_actions=(
         BulkAction(slug="delete", label="Delete", icon="trash", destructive=True,
@@ -102,15 +107,18 @@ class LeadListView(BreadcrumbsMixin, LoginRequiredMixin,
 
         today = timezone.localdate()
         week_start = today - timedelta(days=today.weekday())
+        last_week_start = week_start - timedelta(days=7)
+        last_week_end = week_start - timedelta(days=1)
         month_start = today.replace(day=1)
         last_month_end = month_start - timedelta(days=1)
         periods = (
-            (_("Today"), today, today),
-            (_("Yesterday"), today - timedelta(days=1), today - timedelta(days=1)),
-            (_("This week"), week_start, today),
-            (_("This month"), month_start, today),
-            (_("Last month"), last_month_end.replace(day=1), last_month_end),
-            (_("Total"), None, None),
+            ("Ieri", today - timedelta(days=1), today - timedelta(days=1)),
+            ("Oggi", today, today),
+            ("Settimana", week_start, today),
+            ("La settimana scorsa", last_week_start, last_week_end),
+            ("Mese", month_start, today),
+            ("Il mese scorso", last_month_end.replace(day=1), last_month_end),
+            ("Totale", None, None),
         )
         stats = []
         for label, start, end in periods:
