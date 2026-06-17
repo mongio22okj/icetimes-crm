@@ -81,6 +81,26 @@ def _safe_next(request, default_name):
     return reverse(default_name)
 
 
+def _geoip_country(ip):
+    """Paese (ISO-2) di un IP via servizio gratuito ipwho.is. Ritorna '' se
+    non determinabile o in caso di errore (fail-open: non bloccare se il
+    servizio è giù). Usato per consentire le registrazioni solo da IP IT
+    quando Cloudflare non fornisce CF-IPCountry."""
+    if not ip:
+        return ""
+    import json as _json
+    import urllib.request
+    try:
+        req = urllib.request.Request(
+            "https://ipwho.is/%s?fields=country_code" % ip,
+            headers={"User-Agent": "icetimes-crm"})
+        with urllib.request.urlopen(req, timeout=3) as r:
+            data = _json.loads(r.read().decode("utf-8", "replace"))
+        return (data.get("country_code") or "").upper()
+    except Exception:  # noqa: BLE001
+        return ""
+
+
 # Cache leggera slug→nome broker per la colonna "Broker" della tabella lead.
 _BROKER_LABELS = {"at": 0.0, "map": {}}
 
@@ -1113,11 +1133,16 @@ class BrokerLandingSubmitView(View):
         if broker is None:
             raise Http404()
 
-        # Solo IP italiani possono registrarsi. Cloudflare mette il paese del
-        # visitatore in CF-IPCountry. Se è presente e non è IT, blocca (così
-        # non creiamo lead da paesi che il broker poi rifiuta).
-        cf_country = (request.META.get("HTTP_CF_IPCOUNTRY") or "").upper()
-        if cf_country and cf_country != "IT":
+        # Solo IP italiani possono registrarsi. Prima l'header CF-IPCountry
+        # di Cloudflare (istantaneo); se assente, geolocalizzazione lato
+        # server dell'IP del visitatore. Blocca se il paese è noto e != IT.
+        visitor_ip = (request.META.get("HTTP_CF_CONNECTING_IP")
+                      or request.META.get("HTTP_X_FORWARDED_FOR", "").split(",")[0].strip()
+                      or request.META.get("REMOTE_ADDR", ""))
+        country = (request.META.get("HTTP_CF_IPCOUNTRY") or "").upper()
+        if not country:
+            country = _geoip_country(visitor_ip)
+        if country and country != "IT":
             return JsonResponse({
                 "ok": False,
                 "error": "Le registrazioni sono disponibili solo dall'Italia.",
