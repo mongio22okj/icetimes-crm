@@ -142,11 +142,11 @@ def refresh_affinitrax_statuses(src, limit=100):
     return f"{updated} stati aggiornati"
 
 
-# IREV è escluso dal pull: la sua API di lettura è ristretta per IP (403) e
-# non serve, perché IREV ci manda lead e FTD in tempo reale via POSTBACK.
-# La funzione sync_irev_leads resta disponibile ma non viene più richiamata.
+# IREV escluso dal pull (API di lettura ristretta per IP, e arriva via
+# POSTBACK). TrackBox escluso finché non abbiamo la x-api-key di PULL corretta
+# (la pull dà 401 'user and password doesnt match' con la chiave di push).
+# Le rispettive funzioni sync_* restano disponibili ma non vengono richiamate.
 _DISPATCH = {
-    LeadSource.KIND_TRACKBOX: sync_trackbox_leads,
     LeadSource.KIND_AFFINITRAX: refresh_affinitrax_statuses,
 }
 
