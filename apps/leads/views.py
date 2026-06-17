@@ -240,8 +240,11 @@ def postback(request):
     # Priorità all'id-lead UNICO del broker (lead_id/uuid/…). Il click_id
     # è il codice del LINK (condiviso da tutti i lead di quel link), quindi
     # ambiguo: lo usiamo solo come ultima spiaggia.
+    # NB: niente click_id qui. Il click_id è il codice del LINK, condiviso da
+    # tutti i lead di quel link → usarlo come uniqueid collassa lead diversi
+    # sulla stessa riga. Solo id-lead realmente univoci del broker.
     uniqueid = str(_first(data, "uniqueid", "lead_id", "leadId", "uuid",
-                          "id", "customerId", "clickid", "click_id") or "")
+                          "id", "customerId") or "")
     email = str(_first(data, "email") or "")
     status = str(_first(data, "callStatus", "saleStatus", "status", "statusName",
                         "event", "event_type") or "")
@@ -1212,8 +1215,11 @@ def partner_postback(request, slug):
     # Priorità all'id-lead UNICO del broker (lead_id/uuid/…). Il click_id
     # è il codice del LINK (condiviso da tutti i lead di quel link), quindi
     # ambiguo: lo usiamo solo come ultima spiaggia.
+    # NB: niente click_id qui. Il click_id è il codice del LINK, condiviso da
+    # tutti i lead di quel link → usarlo come uniqueid collassa lead diversi
+    # sulla stessa riga. Solo id-lead realmente univoci del broker.
     uniqueid = str(_first(data, "uniqueid", "lead_id", "leadId", "uuid",
-                          "id", "customerId", "clickid", "click_id") or "")
+                          "id", "customerId") or "")
     email = str(_first(data, "email") or "")
     if not email and not uniqueid:
         return JsonResponse({"ok": False, "error": "email or uniqueid required"}, status=400)

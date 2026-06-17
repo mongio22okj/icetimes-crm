@@ -199,17 +199,24 @@ def create_lead(request):
     source = broker.slug if broker else _clean_source(
         _first(data, "source", "utm_source"), "landing")
 
-    lead, created = Lead.objects.get_or_create(
-        email=email,
-        defaults={
-            "firstname": firstname,
-            "lastname": lastname,
-            "phone": phone,
-            "source": source,
-            "status": "new",
-            "payload": data,
-        },
-    )
+    try:
+        lead, created = Lead.objects.get_or_create(
+            email=email,
+            defaults={
+                "firstname": firstname,
+                "lastname": lastname,
+                "phone": phone,
+                "source": source,
+                "status": "new",
+                "payload": data,
+            },
+        )
+    except Lead.MultipleObjectsReturned:
+        # Lead.email NON è univoca: se esistono già più righe con questa email
+        # (storico o submission concorrenti) get_or_create solleverebbe 500.
+        # Riusa la più recente invece di esplodere.
+        lead = Lead.objects.filter(email=email).order_by("-created_at").first()
+        created = False
 
     if created:
         # Speed-to-lead: notifica istantanea sui lead nuovi.
