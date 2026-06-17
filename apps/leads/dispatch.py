@@ -96,13 +96,17 @@ def validate_and_normalize(lead):
 def _push(lead, source):
     """Call the kind-specific push_lead and return (ok, response)."""
     if source.kind == LeadSource.KIND_TRACKBOX:
+        p = lead.payload or {}
         payload = {
             "firstname": lead.firstname,
             "lastname": lead.lastname,
             "email": lead.email,
             "phone": lead.phone,
             "password": secrets.token_urlsafe(10),
-            "userip": "",
+            # TrackBox richiede un userip valido: usa l'IP reale del
+            # visitatore (catturato dalla landing in payload['ip']), con
+            # fallback per non far fallire il push se manca.
+            "userip": p.get("ip") or "8.8.8.8",
             "country": (lead.country or "IT").upper(),
             "lg": (lead.country or "IT").upper(),
             "affclickid": f"ice{secrets.token_hex(6)}",
