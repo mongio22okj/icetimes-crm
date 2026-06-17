@@ -67,10 +67,14 @@ def _request(src, path, payload, timeout=25):
         raise CRMAPIError(f"TrackBox JSON non valido: {body[:200]}") from exc
 
     if isinstance(data, dict) and data.get("status") is False:
-        raise CRMAPIError(
-            f"TrackBox: {data.get('message', 'errore sconosciuto')} "
-            f"(code {data.get('code', '?')})"
-        )
+        # TrackBox mette il motivo del rifiuto in 'error' (spesso una lista),
+        # a volte in 'message'/'addonData'. Prendi il primo non vuoto così
+        # vediamo la causa vera invece di "errore sconosciuto".
+        detail = (data.get("error") or data.get("message")
+                  or data.get("addonData") or "errore sconosciuto")
+        if isinstance(detail, (list, dict)):
+            detail = json.dumps(detail, ensure_ascii=False)
+        raise CRMAPIError(f"TrackBox: {detail} (code {data.get('code', '?')})")
     return data
 
 
