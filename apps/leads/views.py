@@ -1,5 +1,7 @@
 import hmac
 import json
+import logging
+from concurrent.futures import ThreadPoolExecutor
 
 from django.conf import settings
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -31,6 +33,44 @@ from .models import (
 )
 
 from .sync import run_all_sources
+
+logger = logging.getLogger(__name__)
+
+# Pool per eseguire il ping-tree FUORI dalla request del postback: il broker
+# che ci chiama deve ricevere subito la risposta, non aspettare i push HTTP
+# verso gli altri broker (fino a ~30s ciascuno → rischio timeout lato loro).
+_DISPATCH_POOL = ThreadPoolExecutor(max_workers=4,
+                                    thread_name_prefix="postback-dispatch")
+
+
+def _dispatch_async(lead_pk):
+    """Esegue il dispatch ping-tree in un thread separato.
+
+    Riceve il pk (non l'oggetto) e ri-carica il lead con una connessione DB
+    propria del thread. Best-effort: qualsiasi errore viene loggato, mai
+    propagato (la risposta al broker è già partita).
+    """
+    from django.db import close_old_connections
+    close_old_connections()
+    try:
+        lead = Lead.objects.filter(pk=lead_pk).first()
+        if lead is not None:
+            from . import dispatch as _dispatch
+            _dispatch.dispatch(lead)
+    except Exception:  # noqa: BLE001
+        logger.exception("Dispatch asincrono fallito per lead %s", lead_pk)
+    finally:
+        close_old_connections()
+
+
+def _schedule_dispatch(lead_pk):
+    """Lancia il dispatch async solo dopo il commit della transazione corrente.
+
+    Con autocommit (nessun ATOMIC_REQUESTS) `on_commit` parte subito; se in
+    futuro si abilitano le request atomiche, evita che il thread non trovi
+    ancora il lead non committato."""
+    from django.db import transaction
+    transaction.on_commit(lambda: _DISPATCH_POOL.submit(_dispatch_async, lead_pk))
 
 
 def _safe_next(request, default_name):
@@ -321,8 +361,8 @@ def postback(request):
         try:
             from .models import LeadSource as _LS
             if _LS.objects.filter(is_active=True, auto_dispatch=True).exists():
-                from . import dispatch as _dispatch
-                _dispatch.dispatch(lead)
+                # Non bloccare la risposta al broker: il ping-tree gira async.
+                _schedule_dispatch(lead.pk)
         except Exception:  # noqa: BLE001
             pass
 
@@ -1243,8 +1283,8 @@ def partner_postback(request, slug):
         pass
     try:
         if LeadSource.objects.filter(is_active=True, auto_dispatch=True).exists():
-            from . import dispatch as _dispatch
-            _dispatch.dispatch(lead)
+            # Postback partner: dispatch async, risposta immediata al caller.
+            _schedule_dispatch(lead.pk)
     except Exception:  # noqa: BLE001
         pass
 
