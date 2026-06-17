@@ -3,9 +3,9 @@
 Single table row. Caller provides `row` (a model instance or dict).
 First cell is the selection checkbox when bulk actions are configured.
 {% endcomment %}
-<tr data-slot="table-row" class="hover:bg-accent/30">
+<tr data-slot="table-row" class="even:bg-muted/20 hover:bg-accent/40 transition-colors">
   {% if config.bulk_actions %}
-    <td data-slot="table-cell" class="px-3 w-10">
+    <td data-slot="table-cell" class="px-4 py-3 w-10 align-middle">
       <input type="checkbox" :value='"{{ row.pk }}"' x-model="selected"
              aria-label="Select row"
              class="h-4 w-4 rounded border-input">
@@ -14,7 +14,7 @@ First cell is the selection checkbox when bulk actions are configured.
   {% for col in config.columns %}
     {% if col.key in visible_columns %}
       <td data-slot="table-cell"
-          class="px-3
+          class="px-4 py-3 align-middle whitespace-nowrap
                  {% if col.align == 'right' %}text-right{% elif col.align == 'center' %}text-center{% endif %}
                  {% if col.priority >= 2 %}hidden md:table-cell{% endif %}
                  {% if col.priority >= 3 %}hidden lg:table-cell{% endif %}">

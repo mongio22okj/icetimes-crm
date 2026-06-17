@@ -55,7 +55,12 @@ LEADS_TABLE = TableConfig(
         Column("phone", "Telefono", searchable=True),
         Column("ip", "IP", sortable=False),
         Column("country", "Paese",
-               filter=Filter("text", placeholder="IT, ES…")),
+               filter=Filter("select", choices=(
+                   ("IT", "🇮🇹 Italia (IT)"),
+                   ("ES", "🇪🇸 Spagna (ES)"),
+                   ("DE", "🇩🇪 Germania (DE)"),
+                   ("SE", "🇸🇪 Svezia (SE)"),
+               ))),
         Column("status", "Stato", sortable=True,
                filter=Filter("text", placeholder="Filtra stato…"),
                template="leads/_table_cells.html#status"),
@@ -95,6 +100,12 @@ class LeadListView(BreadcrumbsMixin, LoginRequiredMixin,
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         ctx["lead_stats"] = self._period_stats()
+        ctx["country_options"] = [
+            ("IT", "🇮🇹", "Italia"),
+            ("ES", "🇪🇸", "Spagna"),
+            ("DE", "🇩🇪", "Germania"),
+            ("SE", "🇸🇪", "Svezia"),
+        ]
         return ctx
 
     @staticmethod
