@@ -258,6 +258,19 @@ tbody [data-slot="table-row"]:hover > [data-slot="table-cell"] {
   background: oklch(0.30 0.06 292);
 }
 
+/* Contorno VERDE sull'intera riga dei lead con FTD confermato. */
+tbody [data-slot="table-row"].ftd-row > [data-slot="table-cell"] {
+  border-top-color: #22c55e;
+  border-bottom-color: #22c55e;
+  background: oklch(0.27 0.07 160);
+}
+tbody [data-slot="table-row"].ftd-row > [data-slot="table-cell"]:first-child {
+  border-left-color: #22c55e;
+}
+tbody [data-slot="table-row"].ftd-row > [data-slot="table-cell"]:last-child {
+  border-right-color: #22c55e;
+}
+
 /* Checkbox quadrato PIENO verde per i lead con FTD confermato (is_deposit). */
 input.ftd-box {
   appearance: none;
