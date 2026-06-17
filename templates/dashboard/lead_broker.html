@@ -7,141 +7,129 @@
 {% endblock %}
 
 {% block content %}
+{# ── Dribbble-style dark navy dashboard. Colori/gradienti inline così non
+   serve ricompilare Tailwind sul server. ─────────────────────────────── #}
+<div style="background:radial-gradient(1200px 500px at 15% -10%,#2a2150 0%,#171327 55%);
+            margin:-1rem;padding:1.25rem;border-radius:0;min-height:calc(100vh - 1rem)">
 
 {# ── Header ──────────────────────────────────────────────────────────── #}
-<div class="flex items-center justify-between mb-4">
+<div class="flex items-center justify-between mb-5">
   <div>
-    <h1 class="text-lg font-semibold tracking-tight">Dashboard</h1>
-    <p class="text-xs text-muted-foreground mt-0.5">Performance lead e conversioni in tempo reale</p>
+    <h1 class="text-xl font-bold tracking-tight" style="color:#f4f2ff">Dashboard</h1>
+    <p class="text-xs mt-0.5" style="color:#9b93c4">Performance lead e conversioni in tempo reale</p>
   </div>
   <a href="{% url 'leads:list' %}"
-     class="h-7 px-3 rounded-md border border-border inline-flex items-center gap-1.5 text-xs font-medium hover:bg-accent transition-colors">
-    {% icon "target" 13 %} Gestisci Lead
+     class="h-9 px-4 rounded-lg inline-flex items-center gap-2 text-sm font-semibold transition-opacity hover:opacity-90"
+     style="background:linear-gradient(135deg,#7b5cff,#9f5cff);color:#fff;box-shadow:0 6px 20px -6px rgba(123,92,255,.7)">
+    {% icon "target" 15 %} Genera Report
   </a>
 </div>
 
-{# ── KPI cards ────────────────────────────────────────────────────────── #}
-<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-3">
-
+{# ── KPI cards (gradienti vivaci + onda) ─────────────────────────────── #}
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
   {% for k in kpis %}
-  <div class="rounded-lg border border-border bg-card p-3">
-    <div class="flex items-center justify-between mb-2">
-      <span class="text-xs font-medium text-muted-foreground uppercase tracking-wider">{{ k.label }}</span>
-      <span class="h-6 w-6 rounded-md bg-muted inline-flex items-center justify-center text-muted-foreground">
-        {% icon k.icon 13 %}
-      </span>
+  <div class="relative overflow-hidden rounded-2xl p-4"
+       style="background:{% cycle 'linear-gradient(135deg,#7b5cff,#6741d9)' 'linear-gradient(135deg,#22d3ee,#3b82f6)' 'linear-gradient(135deg,#ff8a73,#ff5d8f)' 'linear-gradient(135deg,#b794f6,#9f7aea)' %};
+              box-shadow:0 10px 30px -12px rgba(0,0,0,.6);min-height:118px">
+    <div class="relative z-10">
+      <div class="text-2xl font-extrabold tracking-tight" style="color:#fff">{{ k.value }}</div>
+      <div class="text-sm font-medium mt-0.5" style="color:rgba(255,255,255,.88)">{{ k.label }}</div>
+      {% if k.delta %}
+      <div class="mt-1 text-xs font-medium" style="color:rgba(255,255,255,.85)">
+        {% if k.trend == 'up' %}▲{% elif k.trend == 'down' %}▼{% endif %} {{ k.delta }} vs mese scorso
+      </div>
+      {% endif %}
     </div>
-    <div class="text-2xl font-bold tracking-tight">{{ k.value }}</div>
-    {% if k.delta %}
-    <div class="mt-1 text-xs inline-flex items-center gap-1
-                {% if k.trend == 'up' %}text-emerald-600 dark:text-emerald-400
-                {% elif k.trend == 'down' %}text-rose-500 dark:text-rose-400
-                {% else %}text-muted-foreground{% endif %}">
-      {% if k.trend == 'up' %}▲{% elif k.trend == 'down' %}▼{% endif %}
-      <span>{{ k.delta }} vs mese scorso</span>
-    </div>
-    {% endif %}
+    {# onda decorativa in basso #}
+    <svg class="absolute left-0 bottom-0 w-full" height="46" viewBox="0 0 400 46" preserveAspectRatio="none" style="opacity:.55">
+      <path d="M0,30 C40,10 80,42 120,28 C160,14 200,40 240,26 C280,12 320,38 360,26 C380,20 400,30 400,30 L400,46 L0,46 Z" fill="rgba(255,255,255,.18)"/>
+      <path d="M0,34 C40,18 80,44 120,32 C160,20 200,42 240,30 C280,18 320,40 360,30 C380,24 400,32 400,32" fill="none" stroke="rgba(255,255,255,.65)" stroke-width="2.5"/>
+    </svg>
   </div>
   {% endfor %}
-
 </div>
 
-{# ── Charts row ───────────────────────────────────────────────────────── #}
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-3 mb-3">
-
-  {# Bar — Lead per source #}
-  <div class="lg:col-span-2 rounded-lg border border-border bg-card p-3">
-    <div class="flex items-center justify-between mb-3">
-      <div>
-        <h3 class="text-xs font-semibold">Lead per Sorgente</h3>
-        <p class="text-xs text-muted-foreground">Ultimi 7 giorni</p>
-      </div>
-    </div>
-    {% if broker_has_data %}
-    <canvas id="brokerChart" height="40"></canvas>
-    {% else %}
-    <div class="flex flex-col items-center justify-center h-28 text-muted-foreground">
-      {% icon "inbox" 24 %}
-      <p class="text-xs mt-1">Nessun lead negli ultimi 7 giorni</p>
-    </div>
-    {% endif %}
-  </div>
-
-  {# Doughnut — Lead per country #}
-  <div class="rounded-lg border border-border bg-card p-3">
-    <div class="mb-3">
-      <h3 class="text-xs font-semibold">Lead per Paese</h3>
-      <p class="text-xs text-muted-foreground">Ultimi 30 giorni</p>
-    </div>
+{# ── Charts row 1 ─────────────────────────────────────────────────────── #}
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
+  {# Doughnut radiale — Lead per Paese #}
+  <div class="rounded-2xl p-4" style="background:#221d3a;border:1px solid rgba(255,255,255,.06)">
+    <h3 class="text-sm font-semibold mb-1" style="color:#f4f2ff">Lead per Paese</h3>
+    <p class="text-xs mb-2" style="color:#9b93c4">Ultimi 30 giorni</p>
     {% if country_has_data %}
-    <canvas id="countryChart" height="40"></canvas>
+    <canvas id="countryChart" height="150"></canvas>
     {% else %}
-    <div class="flex flex-col items-center justify-center h-28 text-muted-foreground">
-      {% icon "globe" 24 %}
-      <p class="text-xs mt-1">Nessun dato disponibile</p>
+    <div class="flex flex-col items-center justify-center h-32" style="color:#6f6896">
+      {% icon "globe" 24 %}<p class="text-xs mt-1">Nessun dato</p>
     </div>
     {% endif %}
   </div>
 
+  {# Bar — Lead per Sorgente #}
+  <div class="lg:col-span-2 rounded-2xl p-4" style="background:#221d3a;border:1px solid rgba(255,255,255,.06)">
+    <h3 class="text-sm font-semibold mb-1" style="color:#f4f2ff">Lead per Sorgente</h3>
+    <p class="text-xs mb-2" style="color:#9b93c4">Ultimi 7 giorni</p>
+    {% if broker_has_data %}
+    <canvas id="brokerChart" height="120"></canvas>
+    {% else %}
+    <div class="flex flex-col items-center justify-center h-32" style="color:#6f6896">
+      {% icon "inbox" 24 %}<p class="text-xs mt-1">Nessun lead negli ultimi 7 giorni</p>
+    </div>
+    {% endif %}
+  </div>
 </div>
 
-{# ── Bottom row ───────────────────────────────────────────────────────── #}
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-3">
-
-  {# Doughnut — Status #}
-  <div class="rounded-lg border border-border bg-card p-3">
-    <div class="mb-3">
-      <h3 class="text-xs font-semibold">Stato Lead</h3>
-      <p class="text-xs text-muted-foreground">Mese corrente</p>
-    </div>
+{# ── Charts row 2 ─────────────────────────────────────────────────────── #}
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+  {# Doughnut — Stato Lead #}
+  <div class="rounded-2xl p-4" style="background:#221d3a;border:1px solid rgba(255,255,255,.06)">
+    <h3 class="text-sm font-semibold mb-1" style="color:#f4f2ff">Stato Lead</h3>
+    <p class="text-xs mb-2" style="color:#9b93c4">Mese corrente</p>
     {% if status_has_data %}
-    <canvas id="statusChart" height="40"></canvas>
+    <canvas id="statusChart" height="150"></canvas>
     {% else %}
-    <div class="flex flex-col items-center justify-center h-28 text-muted-foreground">
-      {% icon "pie-chart" 24 %}
-      <p class="text-xs mt-1">Nessun dato disponibile</p>
+    <div class="flex flex-col items-center justify-center h-32" style="color:#6f6896">
+      {% icon "pie-chart" 24 %}<p class="text-xs mt-1">Nessun dato</p>
     </div>
     {% endif %}
   </div>
 
   {# Activity feed #}
-  <div class="lg:col-span-2 rounded-lg border border-border bg-card p-3">
+  <div class="lg:col-span-2 rounded-2xl p-4" style="background:#221d3a;border:1px solid rgba(255,255,255,.06)">
     <div class="flex items-center justify-between mb-3">
       <div>
-        <h3 class="text-xs font-semibold">Attività Recenti</h3>
-        <p class="text-xs text-muted-foreground">Ultimi eventi lead e vendite</p>
+        <h3 class="text-sm font-semibold" style="color:#f4f2ff">Attività Recenti</h3>
+        <p class="text-xs" style="color:#9b93c4">Ultimi eventi lead e vendite</p>
       </div>
-      <a href="{% url 'leads:list' %}" class="text-xs text-primary hover:underline">Vedi tutti →</a>
+      <a href="{% url 'leads:list' %}" class="text-xs hover:underline" style="color:#a78bfa">Vedi tutti →</a>
     </div>
-
     {% if activities %}
-    <ul class="divide-y divide-border">
+    <ul style="divide-color:rgba(255,255,255,.06)">
       {% for a in activities %}
-      <li class="flex items-center gap-2 py-2 first:pt-0 last:pb-0">
-        <div class="h-6 w-6 rounded-full shrink-0 inline-flex items-center justify-center
-                    {% if a.tone == 'success' %}bg-emerald-500/10 text-emerald-500
-                    {% elif a.tone == 'warning' %}bg-amber-500/10 text-amber-500
-                    {% elif a.tone == 'danger' %}bg-rose-500/10 text-rose-500
-                    {% else %}bg-primary/10 text-primary{% endif %}">
-          {% icon a.icon 11 %}
+      <li class="flex items-center gap-3 py-2 first:pt-0" style="border-top:1px solid rgba(255,255,255,.05){% if forloop.first %};border-top:none{% endif %}">
+        <div class="h-7 w-7 rounded-full shrink-0 inline-flex items-center justify-center"
+             style="{% if a.tone == 'success' %}background:rgba(52,211,153,.15);color:#34d399
+                    {% elif a.tone == 'warning' %}background:rgba(251,191,36,.15);color:#fbbf24
+                    {% elif a.tone == 'danger' %}background:rgba(244,63,94,.15);color:#fb7185
+                    {% else %}background:rgba(167,139,250,.15);color:#a78bfa{% endif %}">
+          {% icon a.icon 12 %}
         </div>
         <div class="min-w-0 flex-1">
-          <p class="text-xs font-medium truncate">{{ a.title }}</p>
-          <p class="text-xs text-muted-foreground truncate">{{ a.text }}{% if a.extra %} · {{ a.extra }}{% endif %}</p>
+          <p class="text-xs font-medium truncate" style="color:#e7e4f5">{{ a.title }}</p>
+          <p class="text-xs truncate" style="color:#9b93c4">{{ a.text }}{% if a.extra %} · {{ a.extra }}{% endif %}</p>
         </div>
-        <span class="text-xs text-muted-foreground whitespace-nowrap shrink-0">{{ a.when|timesince }}</span>
+        <span class="text-xs whitespace-nowrap shrink-0" style="color:#6f6896">{{ a.when|timesince }}</span>
       </li>
       {% endfor %}
     </ul>
     {% else %}
-    <div class="flex flex-col items-center justify-center h-28 text-muted-foreground">
-      {% icon "activity" 24 %}
-      <p class="text-xs mt-1">Nessuna attività recente</p>
+    <div class="flex flex-col items-center justify-center h-32" style="color:#6f6896">
+      {% icon "activity" 24 %}<p class="text-xs mt-1">Nessuna attività recente</p>
     </div>
     {% endif %}
   </div>
-
 </div>
+
+</div>{# /navy wrapper #}
 
 {{ broker_chart|json_script:"broker-chart-data" }}
 {{ status_chart|json_script:"status-chart-data" }}
@@ -153,71 +141,55 @@
   const statusData  = _read("status-chart-data");
   const countryData = _read("country-chart-data");
 
-  const isDark    = document.documentElement.classList.contains("dark") ||
-                    window.matchMedia("(prefers-color-scheme: dark)").matches;
-  const textColor = isDark ? "#94a3b8" : "#64748b";
-  const gridColor = isDark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.05)";
-
   Chart.defaults.font.family = "inherit";
   Chart.defaults.font.size   = 12;
-  Chart.defaults.color       = textColor;
-  Chart.defaults.borderColor = gridColor;
+  Chart.defaults.color       = "#9b93c4";
+  Chart.defaults.borderColor = "rgba(255,255,255,.06)";
 
-  const palette = ["#D4AF37","#B8960C","#F0D060","#8B6914","#E8C840","#A07820","#C8A030","#F8E070"];
+  // Palette vivace stile mockup: viola, giallo, ciano, magenta, blu, lilla.
+  const palette = ["#8b5cf6","#fbbf24","#22d3ee","#ec4899","#3b82f6","#a78bfa"];
 
   if (brokerData.labels && brokerData.labels.length) {
-    new Chart(document.getElementById("brokerChart"), {
+    const cv = document.getElementById("brokerChart");
+    const ctx = cv.getContext("2d");
+    const grad = ctx.createLinearGradient(0, 0, 0, 260);
+    grad.addColorStop(0, "#a78bfa");
+    grad.addColorStop(1, "#6d28d9");
+    new Chart(cv, {
       type: "bar",
-      data: {
-        labels: brokerData.labels,
-        datasets: [{
-          label: "Lead",
-          data: brokerData.data,
-          backgroundColor: palette,
-          borderRadius: 6,
-          borderSkipped: false,
-        }],
-      },
+      data: { labels: brokerData.labels, datasets: [{
+        label: "Lead", data: brokerData.data,
+        backgroundColor: grad, borderRadius: 8, borderSkipped: false, maxBarThickness: 38,
+      }]},
       options: {
         responsive: true,
-        plugins: { legend: { display: false }, tooltip: { callbacks: {
-          label: ctx => ` ${ctx.parsed.y} lead`
-        }}},
+        plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => ` ${c.parsed.y} lead` } } },
         scales: {
           x: { grid: { display: false }, border: { display: false } },
-          y: { beginAtZero: true, ticks: { precision: 0 }, border: { display: false } },
+          y: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: "rgba(255,255,255,.05)" }, border: { display: false } },
         },
       },
+    });
+  }
+
+  const doughnutOpts = {
+    responsive: true, cutout: "68%",
+    plugins: { legend: { position: "bottom", labels: { color: "#c9c4e3", boxWidth: 8, padding: 12, usePointStyle: true } } },
+  };
+
+  if (countryData.labels && countryData.labels.length) {
+    new Chart(document.getElementById("countryChart"), {
+      type: "doughnut",
+      data: { labels: countryData.labels, datasets: [{ data: countryData.data, backgroundColor: palette, borderWidth: 0, hoverOffset: 6 }] },
+      options: doughnutOpts,
     });
   }
 
   if (statusData.labels && statusData.labels.length) {
     new Chart(document.getElementById("statusChart"), {
       type: "doughnut",
-      data: {
-        labels: statusData.labels,
-        datasets: [{ data: statusData.data, backgroundColor: palette, borderWidth: 0, hoverOffset: 4 }],
-      },
-      options: {
-        responsive: true,
-        cutout: "70%",
-        plugins: { legend: { position: "bottom", labels: { boxWidth: 8, padding: 14, usePointStyle: true } } },
-      },
-    });
-  }
-
-  if (countryData.labels && countryData.labels.length) {
-    new Chart(document.getElementById("countryChart"), {
-      type: "doughnut",
-      data: {
-        labels: countryData.labels,
-        datasets: [{ data: countryData.data, backgroundColor: palette, borderWidth: 0, hoverOffset: 4 }],
-      },
-      options: {
-        responsive: true,
-        cutout: "70%",
-        plugins: { legend: { position: "bottom", labels: { boxWidth: 8, padding: 14, usePointStyle: true } } },
-      },
+      data: { labels: statusData.labels, datasets: [{ data: statusData.data, backgroundColor: palette, borderWidth: 0, hoverOffset: 6 }] },
+      options: doughnutOpts,
     });
   }
 })();
