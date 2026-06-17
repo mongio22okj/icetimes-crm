@@ -207,6 +207,11 @@ class LeadSource(models.Model):
     landing_success_message = models.CharField(
         "Messaggio successo", max_length=200,
         default="Grazie! Ti contatteremo entro pochi minuti.")
+    landing_custom_html = models.TextField(
+        "HTML landing personalizzato", blank=True,
+        help_text="Se valorizzato, /b/<slug>/ serve questo HTML grezzo "
+                  "(landing clonata) invece del template. Il form deve "
+                  "postare a /b/<slug>/submit/.")
 
     class Meta:
         ordering = ["priority", "name"]

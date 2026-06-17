@@ -1097,8 +1097,24 @@ class LeadDispatchTriggerView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
 # ── Public broker landing /b/<slug>/ ────────────────────────────────────
 
 class BrokerLandingView(TemplateView):
-    """Public landing for a single broker. Form posts to BrokerLandingSubmit."""
+    """Public landing for a single broker. Form posts to BrokerLandingSubmit.
+
+    Se il broker ha `landing_custom_html` (landing clonata), serve quell'HTML
+    grezzo invece del template standard.
+    """
     template_name = "leads/broker_landing.html"
+
+    def get(self, request, *args, **kwargs):
+        from django.http import Http404, HttpResponse
+        slug = kwargs.get("slug")
+        broker = LeadSource.objects.filter(
+            landing_slug=slug, landing_active=True, is_active=True,
+        ).first()
+        if broker is None:
+            raise Http404()
+        if broker.landing_custom_html:
+            return HttpResponse(broker.landing_custom_html)
+        return super().get(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
         from django.http import Http404
