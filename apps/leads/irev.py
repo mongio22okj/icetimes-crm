@@ -37,9 +37,12 @@ def _request(src, method, path, params=None, form=None, timeout=30):
         detail = exc.read().decode("utf-8", errors="replace")[:400]
         if exc.code == 403:
             raise CRMAPIError(
-                "IREV ha rifiutato la connessione (403): l'IP del server non è "
-                "nella whitelist del token. Far autorizzare gli IP outbound di "
-                "Render dal partner IREV."
+                "IREV pull rifiutato (403): l'API di lettura "
+                "/api/v1/affiliates/ è ristretta per IP lato IREV e l'IP del "
+                "nostro server (80.211.136.232) non è autorizzato. NB: il push "
+                "dei lead funziona comunque — i lead arrivano in tempo reale "
+                "via postback. Per abilitare la sync manuale, chiedere a IREV "
+                "di mettere in whitelist l'IP 80.211.136.232 sull'API affiliati."
             ) from exc
         raise CRMAPIError(f"IREV HTTP {exc.code}: {detail}") from exc
     except urllib.error.URLError as exc:
