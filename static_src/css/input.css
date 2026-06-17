@@ -258,6 +258,28 @@ tbody [data-slot="table-row"]:hover > [data-slot="table-cell"] {
   background: oklch(0.30 0.06 292);
 }
 
+/* Checkbox quadrato PIENO verde per i lead con FTD confermato (is_deposit). */
+input.ftd-box {
+  appearance: none;
+  -webkit-appearance: none;
+  background-color: #22c55e;
+  border: 1px solid #16a34a;
+  border-radius: 4px;
+  position: relative;
+  cursor: pointer;
+}
+input.ftd-box:checked::after {
+  content: "";
+  position: absolute;
+  left: 5px;
+  top: 1px;
+  width: 4px;
+  height: 8px;
+  border: solid #fff;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
 :is(.density-compact, .density-comfortable, .density-spacious) [data-slot="card-header"],
 :is(.density-compact, .density-comfortable, .density-spacious) [data-slot="card-content"],
 :is(.density-compact, .density-comfortable, .density-spacious) [data-slot="card-footer"] {
