@@ -133,7 +133,12 @@
           <div class="field"><label>Cognome</label><input name="lastname" placeholder="Rossi" required></div>
         </div>
         <div class="field"><label>Email</label><input name="email" type="email" placeholder="mario.rossi@email.it" required></div>
-        <div class="field"><label>Telefono</label><input name="phone" type="tel" placeholder="+39 340 1234567" required></div>
+        <div class="field"><label>Telefono</label>
+          <div style="display:flex;gap:8px;align-items:stretch">
+            <span style="display:flex;align-items:center;padding:0 13px;background:#0a0e17;border:1.5px solid var(--line);border-radius:11px;color:var(--txt);font-size:15px;white-space:nowrap;font-weight:600">🇮🇹 +39</span>
+            <input name="phone" type="tel" inputmode="tel" placeholder="340 1234567" required style="flex:1">
+          </div>
+        </div>
         <input type="hidden" name="country" value="IT">
         <button type="submit" class="btn" id="btn">{{ broker.landing_cta_label|default:"Registrati Gratis" }}</button>
         <div class="secure">🔒 Dati protetti e trattati in modo sicuro</div>
@@ -186,6 +191,9 @@ document.getElementById("f").addEventListener("submit", async (e) => {
   const btn = document.getElementById("btn"), msg = document.getElementById("msg");
   btn.disabled = true; btn.textContent = "Invio in corso...";
   const fd = new FormData(e.target);
+  // Telefono sempre in formato italiano: solo cifre + prefisso +39.
+  const ph = (fd.get("phone") || "").replace(/\D/g, "");
+  if (ph) fd.set("phone", "+39" + ph);
   for (const k of ["utm_source","utm_medium","utm_campaign","utm_content","utm_term","cid","click_id","aff_sub5"]) {
     const v = qs.get(k); if (v) fd.append(k, v);
   }
