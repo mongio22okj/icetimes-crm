@@ -217,6 +217,10 @@ def postback(request):
             # Affinitrax stores ids prefixed afx-; match those too.
             lead = (Lead.objects.filter(uniqueid=f"afx-{uniqueid}")
                     .order_by("-created_at").first())
+        if lead is None:
+            # Match anche per l'ID-lead broker salvato nel payload al push.
+            lead = (Lead.objects.filter(payload__broker_lead_id=uniqueid)
+                    .order_by("-created_at").first())
     if lead is None and email:
         lead = Lead.objects.filter(email__iexact=email).order_by("-created_at").first()
     if lead is None:
@@ -1073,6 +1077,16 @@ class BrokerLandingSubmitView(View):
             auto_login = (_dl.response.get("auto_login_url")
                           or _dl.response.get("autoLoginUrl")
                           or _dl.response.get("redirect_url") or "")
+            # Memorizza l'ID-lead lato broker: il loro postback lo rimanda,
+            # così agganciamo l'aggiornamento di stato al lead esatto.
+            broker_lead_id = (_dl.response.get("lead_uuid")
+                              or _dl.response.get("lead_id")
+                              or _dl.response.get("id"))
+            if broker_lead_id:
+                lead.uniqueid = str(broker_lead_id)[:128]
+                lead.payload = {**(lead.payload or {}),
+                                "broker_lead_id": str(broker_lead_id)}
+                lead.save(update_fields=["uniqueid", "payload"])
 
         # Notifications (silent fail).
         try:
