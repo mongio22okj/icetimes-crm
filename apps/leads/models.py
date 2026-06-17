@@ -2,6 +2,9 @@ from django.db import models
 from django.urls import reverse
 from django.utils import timezone
 
+# Cache leggera slug→nome broker per la colonna "Broker" della tabella lead.
+_BROKER_NAME_CACHE = {"at": 0.0, "map": {}}
+
 
 class Lead(models.Model):
     """A lead received from TrackBox (postback) or sent manually.
@@ -53,6 +56,22 @@ class Lead(models.Model):
     @property
     def device(self):
         return (self.payload or {}).get("device") or ""
+
+    @property
+    def broker_name(self):
+        """Nome del broker risolto dallo slug in `source` (es. 'trackbox-14'
+        → 'CONNOR LINK SPECIAL 9'), per mostrarlo nella tabella al posto
+        dello slug. Cache 30s per non interrogare il DB a ogni riga."""
+        import time
+        src = self.source or ""
+        if not src:
+            return ""
+        now = time.time()
+        c = _BROKER_NAME_CACHE
+        if now - c["at"] > 30:
+            c["map"] = {s.slug: s.name for s in LeadSource.objects.all()}
+            c["at"] = now
+        return c["map"].get(src, src)
 
 
 class LeadSource(models.Model):

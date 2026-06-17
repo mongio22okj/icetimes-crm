@@ -11,6 +11,8 @@ Reference from apps/leads/views.py:
 {% include "leads/_table_cells.html#status_pill" with status=row.status %}
 {% endpartialdef %}
 
+{% partialdef broker %}{{ row.broker_name|default:"—" }}{% endpartialdef %}
+
 {% partialdef status_pill inline %}
 {% with s=status|lower %}
   {% if s == "ftd" or s == "deposit" or s == "depositor" or s == "sold" %}
