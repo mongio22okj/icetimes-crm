@@ -240,19 +240,22 @@
   border-spacing: 0 0.5rem;
 }
 tbody [data-slot="table-row"] > [data-slot="table-cell"] {
-  background: var(--secondary);
-  border-top: 0;
+  background: oklch(0.255 0.045 288);
+  border-top: 1px solid oklch(0.42 0.04 288 / 0.35);
+  border-bottom: 1px solid oklch(0.42 0.04 288 / 0.35);
 }
 tbody [data-slot="table-row"] > [data-slot="table-cell"]:first-child {
   border-top-left-radius: 0.6rem;
   border-bottom-left-radius: 0.6rem;
+  border-left: 1px solid oklch(0.42 0.04 288 / 0.35);
 }
 tbody [data-slot="table-row"] > [data-slot="table-cell"]:last-child {
   border-top-right-radius: 0.6rem;
   border-bottom-right-radius: 0.6rem;
+  border-right: 1px solid oklch(0.42 0.04 288 / 0.35);
 }
 tbody [data-slot="table-row"]:hover > [data-slot="table-cell"] {
-  background: var(--accent);
+  background: oklch(0.30 0.06 292);
 }
 
 :is(.density-compact, .density-comfortable, .density-spacious) [data-slot="card-header"],
