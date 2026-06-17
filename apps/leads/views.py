@@ -197,8 +197,11 @@ def postback(request):
             data.update(request.POST.items())
     data.pop("token", None)
 
-    uniqueid = str(_first(data, "uniqueid", "clickid", "click_id", "uuid",
-                          "leadId", "lead_id", "customerId", "id") or "")
+    # Priorità all'id-lead UNICO del broker (lead_id/uuid/…). Il click_id
+    # è il codice del LINK (condiviso da tutti i lead di quel link), quindi
+    # ambiguo: lo usiamo solo come ultima spiaggia.
+    uniqueid = str(_first(data, "uniqueid", "lead_id", "leadId", "uuid",
+                          "id", "customerId", "clickid", "click_id") or "")
     email = str(_first(data, "email") or "")
     status = str(_first(data, "callStatus", "saleStatus", "status", "statusName",
                         "event", "event_type") or "")
@@ -1164,8 +1167,11 @@ def partner_postback(request, slug):
             data.update(request.POST.items())
     data.pop("token", None)
 
-    uniqueid = str(_first(data, "uniqueid", "clickid", "click_id", "uuid",
-                          "leadId", "lead_id", "customerId", "id") or "")
+    # Priorità all'id-lead UNICO del broker (lead_id/uuid/…). Il click_id
+    # è il codice del LINK (condiviso da tutti i lead di quel link), quindi
+    # ambiguo: lo usiamo solo come ultima spiaggia.
+    uniqueid = str(_first(data, "uniqueid", "lead_id", "leadId", "uuid",
+                          "id", "customerId", "clickid", "click_id") or "")
     email = str(_first(data, "email") or "")
     if not email and not uniqueid:
         return JsonResponse({"ok": False, "error": "email or uniqueid required"}, status=400)
