@@ -124,8 +124,7 @@ Phase 11 commit 3 ships:
       </div>
     {% endif %}
 
-    {# Column visibility menu — spunta più colonne, si applicano insieme
-       quando chiudi il menu (clic fuori) o premi "Applica". #}
+    {# Column visibility menu: tick several columns, apply on close or Applica. #}
     <div x-data="{...apexPopover(), dirty:false}" class="relative inline-block">
       <button type="button" @click="toggle()" :aria-expanded="open"
               class="h-9 px-3 rounded-md border border-border text-xs hover:bg-accent inline-flex items-center gap-1.5">
