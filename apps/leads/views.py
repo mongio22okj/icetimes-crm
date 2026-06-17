@@ -245,7 +245,9 @@ def postback(request):
     was_deposit_before = bool(lead.pk and lead.is_deposit)
     if status:
         lead.status = status[:120]
-    deposit_now = deposit_raw is not None and _truthy(deposit_raw)
+    # Deposito/FTD: o da un campo dedicato (ftd/deposit/…), o dallo stato
+    # stesso quando vale "ftd"/"deposit" (IREV manda l'FTD come status=ftd).
+    deposit_now = (deposit_raw is not None and _truthy(deposit_raw)) or _truthy(status)
     if deposit_now:
         lead.is_deposit = True
     if event_at:
