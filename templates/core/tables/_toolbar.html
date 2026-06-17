@@ -125,13 +125,15 @@ Phase 11 commit 3 ships:
     {% endif %}
 
     {# Column visibility menu: tick several columns, apply on close or Applica. #}
-    <div x-data="{...apexPopover(), dirty:false}" class="relative inline-block">
-      <button type="button" @click="toggle()" :aria-expanded="open"
+    <div x-data="{ open:false, dirty:false }" class="relative inline-block">
+      <button type="button" @click="open=!open" :aria-expanded="open"
               class="h-9 px-3 rounded-md border border-border text-xs hover:bg-accent inline-flex items-center gap-1.5">
         Colonne
         {% icon "chevron-down" 12 %}
       </button>
-      <div x-show="open" x-cloak @click.outside="dirty ? $refs.cform.submit() : close()" @keydown.escape.window="close()"
+      <div x-show="open" x-cloak
+           @click.outside="open && dirty ? $refs.cform.submit() : (open=false)"
+           @keydown.escape.window="open=false"
            role="dialog"
            class="absolute z-30 right-0 top-full mt-1 w-56 rounded-md border border-border bg-popover shadow-lg p-1">
         <form method="get" action="{{ request.path }}" x-ref="cform" @change="dirty=true">
