@@ -43,6 +43,12 @@ def _request(src, path, payload, timeout=25):
             "x-trackbox-username": src.username,
             "x-trackbox-password": src.password,
             "x-api-key": src.token,
+            # Cloudflare blocca lo UA "Python-urllib" (403 error 1010):
+            # serve uno UA da browser per passare il WAF, come per gli
+            # altri client (irev, mediafront).
+            "User-Agent": ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                           "AppleWebKit/537.36 (KHTML, like Gecko) "
+                           "Chrome/124.0.0.0 Safari/537.36"),
         },
     )
     try:
