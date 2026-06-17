@@ -270,6 +270,20 @@ def postback(request):
     if lead is None and email:
         lead = Lead.objects.filter(email__iexact=email).order_by("-created_at").first()
     if lead is None:
+        # Nessun lead da agganciare. Crea una riga nuova SOLO se il postback
+        # porta dati di contatto reali. Un postback di solo-stato (lead_id +
+        # status, senza email/telefono/nome — o con placeholder template non
+        # sostituiti) per un lead sconosciuto NON deve generare un orfano
+        # vuoto: lo accettiamo e basta. Chiude il leak dei lead vuoti.
+        has_contact = bool(email) or bool(_first(
+            data, "phone", "phoneNumber", "fullphone",
+            "firstname", "firstName", "first_name", "name",
+            "lastname", "lastName", "last_name"))
+        if not has_contact:
+            return JsonResponse({
+                "ok": True, "ignored": True,
+                "reason": "status update for unknown lead, no contact data",
+            })
         lead = Lead(source="postback")
 
     if uniqueid and not lead.uniqueid:
