@@ -1191,6 +1191,7 @@ class BrokerLandingSubmitView(View):
             country=(data.get("country") or data.get("iso") or "IT").strip().upper()[:8],
             status="lead",
             source=broker.slug,
+            gclid=(data.get("gclid") or "").strip()[:255],
             payload=payload,
         )
         lead.score = compute_score(lead)

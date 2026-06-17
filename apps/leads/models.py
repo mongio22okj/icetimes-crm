@@ -33,6 +33,17 @@ class Lead(models.Model):
         help_text="Qualità del lead 0-100. Calcolato automaticamente in "
                   "base alla completezza/validità dei dati al postback.")
 
+    # ── Attribuzione Google Ads ──────────────────────────────────────
+    gclid = models.CharField(
+        max_length=255, blank=True, db_index=True,
+        help_text="Google Ads click id catturato dalla landing. Lega il "
+                  "lead alla campagna/click e serve all'Offline Conversion "
+                  "Import (invio FTD a Google).")
+    gads_uploaded_at = models.DateTimeField(
+        null=True, blank=True,
+        help_text="Quando la conversione è stata caricata su Google Ads "
+                  "(null = non ancora). Evita invii duplicati.")
+
     class Meta:
         ordering = ["-created_at"]
 

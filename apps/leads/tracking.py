@@ -111,7 +111,10 @@ def tracking_redirect(request, code):
     # IREV richiede il nostro click id nel campo aff_sub5: lo rimanda nel
     # postback per agganciare il lead al click.
     params["aff_sub5"] = q.get("aff_sub5") or q.get("click_id") or code
-    for k in ("utm_source", "utm_campaign", "utm_medium", "utm_content"):
+    # Attribuzione Google Ads: inoltra il gclid (e i suoi cugini iOS
+    # wbraid/gbraid) alla landing, così il form li può rimandare col lead.
+    for k in ("utm_source", "utm_campaign", "utm_medium", "utm_content",
+              "gclid", "wbraid", "gbraid"):
         if q.get(k):
             params[k] = q.get(k)
     dest = urlunparse(parts._replace(query=urlencode(params)))
@@ -208,6 +211,7 @@ def create_lead(request):
                 "phone": phone,
                 "source": source,
                 "status": "new",
+                "gclid": _s(_first(data, "gclid"), 255),
                 "payload": data,
             },
         )
