@@ -234,6 +234,27 @@
   height: var(--table-row-height);
 }
 
+/* Righe "staccate" tipo card: gap verticale + sfondo + angoli arrotondati */
+[data-slot="table"] {
+  border-collapse: separate;
+  border-spacing: 0 0.5rem;
+}
+tbody [data-slot="table-row"] > [data-slot="table-cell"] {
+  background: var(--secondary);
+  border-top: 0;
+}
+tbody [data-slot="table-row"] > [data-slot="table-cell"]:first-child {
+  border-top-left-radius: 0.6rem;
+  border-bottom-left-radius: 0.6rem;
+}
+tbody [data-slot="table-row"] > [data-slot="table-cell"]:last-child {
+  border-top-right-radius: 0.6rem;
+  border-bottom-right-radius: 0.6rem;
+}
+tbody [data-slot="table-row"]:hover > [data-slot="table-cell"] {
+  background: var(--accent);
+}
+
 :is(.density-compact, .density-comfortable, .density-spacious) [data-slot="card-header"],
 :is(.density-compact, .density-comfortable, .density-spacious) [data-slot="card-content"],
 :is(.density-compact, .density-comfortable, .density-spacious) [data-slot="card-footer"] {
