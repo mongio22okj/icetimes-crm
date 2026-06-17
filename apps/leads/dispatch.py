@@ -14,10 +14,33 @@ import time
 
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
+from django.utils import timezone
 
 from . import affinitrax, client, irev, mediafront, spmmonster, v3
 from .client import CRMAPIError
-from .models import DispatchLog, LeadSource
+from .models import DispatchLog, Lead, LeadSource
+
+
+def _extract_broker_lead_id(response):
+    """Normalizza l'id-lead ritornato dai vari broker dopo un push accettato.
+
+    Serve a riagganciare i postback di stato/FTD al lead esatto: il broker
+    rimanda questo id, noi lo salviamo in payload['broker_lead_id'] così il
+    postback fa match preciso invece di ripiegare sull'email (ambigua).
+    """
+    if not isinstance(response, dict):
+        return None
+    for key in ("lead_uuid", "lead_id", "leadId", "id", "customerId", "uuid"):
+        val = response.get(key)
+        if val:
+            return str(val)[:128]
+    # Alcuni broker annidano: {"data": {"id": …}}.
+    data = response.get("data")
+    if isinstance(data, dict):
+        for key in ("id", "lead_id", "uuid"):
+            if data.get(key):
+                return str(data[key])[:128]
+    return None
 
 
 def validate_and_normalize(lead):
@@ -200,11 +223,40 @@ def dispatch(lead, sources=None, stop_on_success=True):
             latency_ms=latency_ms,
             error=error_msg,
         )
+
+        broker_lead_id = _extract_broker_lead_id(response) if success else None
+        if success:
+            # Persisti l'attribuzione per agganciare i postback futuri al
+            # lead esatto. Mappa per-broker (non sovrascrive gli altri) +
+            # 'broker_lead_id' top-level = ultimo accettante (winner del
+            # ping-tree), che è quello che riceverà i postback di stato/FTD.
+            payload = dict(lead.payload or {})
+            attributions = dict(payload.get("broker_attributions") or {})
+            attributions[source.slug] = {
+                "broker_lead_id": broker_lead_id,
+                "at": timezone.now().isoformat(),
+            }
+            payload["broker_attributions"] = attributions
+            if broker_lead_id:
+                payload["broker_lead_id"] = broker_lead_id
+                # uniqueid resta vuoto se il lead arriva da postback senza id;
+                # lo settiamo solo se mancante per non rompere match esistenti.
+                if not lead.uniqueid:
+                    lead.uniqueid = broker_lead_id
+                    Lead.objects.filter(pk=lead.pk).update(
+                        payload=payload, uniqueid=broker_lead_id)
+                else:
+                    Lead.objects.filter(pk=lead.pk).update(payload=payload)
+            else:
+                Lead.objects.filter(pk=lead.pk).update(payload=payload)
+            lead.payload = payload
+
         attempts.append({
             "source": source,
             "success": success,
             "latency_ms": latency_ms,
             "error": error_msg,
+            "broker_lead_id": broker_lead_id,
         })
         if success and stop_on_success:
             break
