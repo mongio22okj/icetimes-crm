@@ -143,6 +143,7 @@ Phase 11 commit 3 ships:
               <input type="checkbox" name="columns" value="{{ col.key }}"
                      {% if col.key in visible_columns %}checked{% endif %}
                      {% if col.pinned %}disabled{% endif %}
+                     onchange="this.form.submit()"
                      class="h-4 w-4 rounded border-input">
               <span class="flex-1">{{ col.label }}</span>
               {% if col.pinned %}<span class="text-[10px] text-muted-foreground uppercase">Pinned</span>{% endif %}
