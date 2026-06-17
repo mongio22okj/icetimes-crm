@@ -227,8 +227,8 @@
   height: var(--table-row-height, 2.5rem);
 }
 [data-slot="table-cell"] {
-  padding-top: var(--table-cell-py, 0.5rem);
-  padding-bottom: var(--table-cell-py, 0.5rem);
+  padding-top: var(--table-cell-py, 1rem);
+  padding-bottom: var(--table-cell-py, 1rem);
 }
 [data-slot="table-row"] {
   height: var(--table-row-height);
