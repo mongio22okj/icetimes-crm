@@ -1113,6 +1113,16 @@ class BrokerLandingSubmitView(View):
         if broker is None:
             raise Http404()
 
+        # Solo IP italiani possono registrarsi. Cloudflare mette il paese del
+        # visitatore in CF-IPCountry. Se è presente e non è IT, blocca (così
+        # non creiamo lead da paesi che il broker poi rifiuta).
+        cf_country = (request.META.get("HTTP_CF_IPCOUNTRY") or "").upper()
+        if cf_country and cf_country != "IT":
+            return JsonResponse({
+                "ok": False,
+                "error": "Le registrazioni sono disponibili solo dall'Italia.",
+            }, status=403)
+
         data = request.POST
         email = (data.get("email") or "").strip()
         if not email:
