@@ -169,12 +169,13 @@ def _push(lead, source):
 
 
 def dispatch(lead, sources=None, stop_on_success=True):
-    """Run the ping-tree for `lead`. Returns list of attempt dicts.
+    """Push `lead` to its broker. Returns list of attempt dicts.
 
-    `sources`: explicit ordered list; defaults to every active push-
-    capable LeadSource ordered by priority.
-    `stop_on_success`: True = stop at first accepting broker (classic
-    ping-tree). False = always offer to every broker.
+    `sources`: explicit list of broker(s) to push to. If None, il lead va
+    SOLO al suo broker di provenienza (lead.source) — i lead non vengono
+    MAI smistati a cascata su più broker.
+    `stop_on_success`: si ferma al primo broker che accetta (rilevante solo
+    se viene passata una lista esplicita di più broker).
     """
     ok, reason = validate_and_normalize(lead)
     if not ok:
@@ -191,11 +192,16 @@ def dispatch(lead, sources=None, stop_on_success=True):
                  "error": f"Lead bloccato pre-push: {reason}"}]
 
     if sources is None:
-        sources = list(
-            LeadSource.objects.filter(is_active=True)
-            .order_by("priority", "name")
+        # I lead NON vengono MAI smistati tra broker: ogni lead va SOLO al
+        # suo broker di provenienza (lead.source = slug del broker, es.
+        # "trackbox-14"). Se non si risale a un broker push-capable preciso,
+        # non si fa alcun dispatch — niente cascata sugli altri broker.
+        own = next(
+            (s for s in LeadSource.objects.filter(is_active=True)
+             if s.slug == (lead.source or "") and s.can_push),
+            None,
         )
-        sources = [s for s in sources if s.can_push]
+        sources = [own] if own else []
 
     attempts = []
     for source in sources:
