@@ -8,12 +8,66 @@ accepts. Every attempt — success or failure — is logged to DispatchLog.
 This implements the "ping-tree" pattern: multiple buyers ranked by
 priority, lead is offered down the list until accepted.
 """
+import re
 import secrets
 import time
+
+from django.core.validators import validate_email
+from django.core.exceptions import ValidationError
 
 from . import affinitrax, client, irev, mediafront, spmmonster, v3
 from .client import CRMAPIError
 from .models import DispatchLog, LeadSource
+
+
+def validate_and_normalize(lead):
+    """Pulisce e valida un lead prima del push verso i broker.
+
+    Normalizza email (lower/strip) e telefono (mantiene un eventuale +
+    iniziale, rimuove tutto ciò che non è cifra) e li ri-salva sul lead
+    se cambiati. Ritorna (ok, reason). I broker rifiutano i lead con
+    email/telefono/nome mancanti o invalidi con HTTP 422, quindi è inutile
+    tentare il dispatch: meglio bloccarli qui.
+    """
+    changed = []
+
+    email = (lead.email or "").strip().lower()
+    if email != (lead.email or ""):
+        lead.email = email
+        changed.append("email")
+
+    raw_phone = (lead.phone or "").strip()
+    plus = raw_phone.startswith("+")
+    digits = re.sub(r"\D", "", raw_phone)
+    norm_phone = ("+" if plus else "") + digits
+    if norm_phone != (lead.phone or ""):
+        lead.phone = norm_phone
+        changed.append("phone")
+
+    first = (lead.firstname or "").strip()
+    if first != (lead.firstname or ""):
+        lead.firstname = first
+        changed.append("firstname")
+
+    if changed:
+        lead.save(update_fields=changed)
+
+    problems = []
+    if not email:
+        problems.append("email mancante")
+    else:
+        try:
+            validate_email(email)
+        except ValidationError:
+            problems.append("email non valida")
+    if len(digits) < 7:
+        problems.append("telefono mancante/non valido")
+    if not first:
+        problems.append("nome mancante")
+
+    if problems:
+        return False, "; ".join(problems)
+    return True, ""
 
 
 def _push(lead, source):
@@ -99,6 +153,20 @@ def dispatch(lead, sources=None, stop_on_success=True):
     `stop_on_success`: True = stop at first accepting broker (classic
     ping-tree). False = always offer to every broker.
     """
+    ok, reason = validate_and_normalize(lead)
+    if not ok:
+        DispatchLog.objects.create(
+            lead=lead,
+            source=None,
+            source_name="(validazione)",
+            success=False,
+            response={"blocked": reason},
+            latency_ms=0,
+            error=f"Lead bloccato pre-push: {reason}"[:255],
+        )
+        return [{"source": None, "success": False, "latency_ms": 0,
+                 "error": f"Lead bloccato pre-push: {reason}"}]
+
     if sources is None:
         sources = list(
             LeadSource.objects.filter(is_active=True)
