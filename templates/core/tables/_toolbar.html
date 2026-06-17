@@ -124,17 +124,18 @@ Phase 11 commit 3 ships:
       </div>
     {% endif %}
 
-    {# Column visibility menu — persists choice via _save_columns redirect #}
-    <div x-data="apexPopover()" class="relative inline-block">
+    {# Column visibility menu — spunta più colonne, si applicano insieme
+       quando chiudi il menu (clic fuori) o premi "Applica". #}
+    <div x-data="{...apexPopover(), dirty:false}" class="relative inline-block">
       <button type="button" @click="toggle()" :aria-expanded="open"
               class="h-9 px-3 rounded-md border border-border text-xs hover:bg-accent inline-flex items-center gap-1.5">
-        Columns
+        Colonne
         {% icon "chevron-down" 12 %}
       </button>
-      <div x-show="open" x-cloak @click.outside="close()" @keydown.escape.window="close()"
+      <div x-show="open" x-cloak @click.outside="dirty ? $refs.cform.submit() : close()" @keydown.escape.window="close()"
            role="dialog"
            class="absolute z-30 right-0 top-full mt-1 w-56 rounded-md border border-border bg-popover shadow-lg p-1">
-        <form method="get" action="{{ request.path }}">
+        <form method="get" action="{{ request.path }}" x-ref="cform" @change="dirty=true">
           <input type="hidden" name="_save_columns" value="1">
           {# Preserve current filters/sort/search in the form too. #}
           {% for k, vs in request.GET.lists %}{% if k != 'columns' and k != '_save_columns' and k != '_partial' and k != 'page' %}{% for v in vs %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endfor %}{% endif %}{% endfor %}
@@ -143,15 +144,14 @@ Phase 11 commit 3 ships:
               <input type="checkbox" name="columns" value="{{ col.key }}"
                      {% if col.key in visible_columns %}checked{% endif %}
                      {% if col.pinned %}disabled{% endif %}
-                     onchange="this.form.submit()"
                      class="h-4 w-4 rounded border-input">
               <span class="flex-1">{{ col.label }}</span>
-              {% if col.pinned %}<span class="text-[10px] text-muted-foreground uppercase">Pinned</span>{% endif %}
+              {% if col.pinned %}<span class="text-[10px] text-muted-foreground uppercase">Fissato</span>{% endif %}
             </label>
           {% endfor %}
           <div class="px-2 py-2 border-t border-border mt-1">
             <button type="submit" class="w-full h-8 rounded-md bg-primary text-primary-foreground text-xs font-medium hover:opacity-90">
-              Save view
+              Applica
             </button>
           </div>
         </form>
