@@ -81,6 +81,25 @@ def _safe_next(request, default_name):
     return reverse(default_name)
 
 
+# Cache leggera slug→nome broker per la colonna "Broker" della tabella lead.
+_BROKER_LABELS = {"at": 0.0, "map": {}}
+
+
+def _broker_label(slug):
+    """Mostra il NOME del broker invece dello slug nella colonna Broker
+    (es. 'trackbox-14' → 'CONNOR LINK SPECIAL 9'). Cache 30s per non
+    interrogare il DB a ogni cella. Slug non-broker (postback, landing…)
+    restano mostrati così come sono."""
+    if not slug:
+        return "—"
+    import time
+    now = time.time()
+    if now - _BROKER_LABELS["at"] > 30:
+        _BROKER_LABELS["map"] = {s.slug: s.name for s in LeadSource.objects.all()}
+        _BROKER_LABELS["at"] = now
+    return _BROKER_LABELS["map"].get(slug, slug)
+
+
 LEADS_TABLE = TableConfig(
     key="leads",
     columns=(
@@ -105,7 +124,8 @@ LEADS_TABLE = TableConfig(
                filter=Filter("text", placeholder="Filtra stato…"),
                template="leads/_table_cells.html#status"),
         Column("source", "Broker", sortable=True,
-               filter=Filter("text", placeholder="Filtra broker…")),
+               filter=Filter("text", placeholder="Filtra broker…"),
+               formatter=_broker_label),
         Column("event_at", "Aggiornato il", sortable=True,
                formatter=lambda v: v.strftime("%d/%m/%Y %H:%M") if v else "—"),
         Column("click_id", "ID cliccato", sortable=False,
