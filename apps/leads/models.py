@@ -44,6 +44,24 @@ class Lead(models.Model):
         help_text="Quando la conversione è stata caricata su Google Ads "
                   "(null = non ancora). Evita invii duplicati.")
 
+    # ── Attribuzione Meta (Facebook/Instagram) e TikTok ──────────────
+    fbclid = models.CharField(
+        max_length=255, blank=True, db_index=True,
+        help_text="Meta (Facebook/Instagram) click id. Per attribuzione e "
+                  "invio conversioni via Conversions API (CAPI).")
+    ttclid = models.CharField(
+        max_length=255, blank=True, db_index=True,
+        help_text="TikTok click id. Per attribuzione e invio conversioni "
+                  "via TikTok Events API.")
+    meta_uploaded_at = models.DateTimeField(
+        null=True, blank=True,
+        help_text="Quando la conversione è stata inviata a Meta (CAPI). "
+                  "Null = non ancora.")
+    tiktok_uploaded_at = models.DateTimeField(
+        null=True, blank=True,
+        help_text="Quando la conversione è stata inviata a TikTok (Events "
+                  "API). Null = non ancora.")
+
     class Meta:
         ordering = ["-created_at"]
 

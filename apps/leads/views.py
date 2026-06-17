@@ -1192,6 +1192,8 @@ class BrokerLandingSubmitView(View):
             status="lead",
             source=broker.slug,
             gclid=(data.get("gclid") or "").strip()[:255],
+            fbclid=(data.get("fbclid") or "").strip()[:255],
+            ttclid=(data.get("ttclid") or "").strip()[:255],
             payload=payload,
         )
         lead.score = compute_score(lead)
