@@ -1211,14 +1211,23 @@ class BrokerLandingSubmitView(View):
         _dl = (DispatchLog.objects.filter(lead=lead, source=broker, success=True)
                .order_by("-id").first())
         if _dl and isinstance(_dl.response, dict):
+            # TrackBox mette l'auto-login in `data` (stringa URL) o in
+            # `addonData.data.loginURL`; IREV in auto_login_url/redirect_url.
+            _addon = _dl.response.get("addonData") or {}
+            _addon_data = _addon.get("data") if isinstance(_addon, dict) else {}
+            _addon_data = _addon_data if isinstance(_addon_data, dict) else {}
+            _top_data = _dl.response.get("data")
             auto_login = (_dl.response.get("auto_login_url")
                           or _dl.response.get("autoLoginUrl")
-                          or _dl.response.get("redirect_url") or "")
+                          or _dl.response.get("redirect_url")
+                          or _addon_data.get("loginURL")
+                          or (_top_data if isinstance(_top_data, str)
+                              and _top_data.startswith("http") else "")
+                          or "")
             # Memorizza l'ID-lead lato broker: il loro postback lo rimanda,
             # così agganciamo l'aggiornamento di stato al lead esatto.
-            broker_lead_id = (_dl.response.get("lead_uuid")
-                              or _dl.response.get("lead_id")
-                              or _dl.response.get("id"))
+            # Usa l'estrattore condiviso (gestisce anche addonData.data di TrackBox).
+            broker_lead_id = _dispatch._extract_broker_lead_id(_dl.response)
             if broker_lead_id:
                 lead.uniqueid = str(broker_lead_id)[:128]
                 lead.payload = {**(lead.payload or {}),

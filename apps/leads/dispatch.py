@@ -34,12 +34,15 @@ def _extract_broker_lead_id(response):
         val = response.get(key)
         if val:
             return str(val)[:128]
-    # Alcuni broker annidano: {"data": {"id": …}}.
-    data = response.get("data")
-    if isinstance(data, dict):
-        for key in ("id", "lead_id", "uuid"):
-            if data.get(key):
-                return str(data[key])[:128]
+    # Alcuni broker annidano: {"data": {"id": …}} oppure, come TrackBox,
+    # {"addonData": {"data": {"id"/"customerId": …}}}.
+    addon = response.get("addonData") or {}
+    for container in (response.get("data"),
+                      addon.get("data") if isinstance(addon, dict) else None):
+        if isinstance(container, dict):
+            for key in ("id", "customerId", "lead_id", "uuid", "uniqueid"):
+                if container.get(key):
+                    return str(container[key])[:128]
     return None
 
 
