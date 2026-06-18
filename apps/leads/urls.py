@@ -1,6 +1,7 @@
 from django.urls import path
 
 from .views import (
+    ApiSettingsView,
     AutoMessageCreateView,
     AutoMessageDeleteView,
     AutoMessageListView,
@@ -41,6 +42,7 @@ app_name = "leads"
 urlpatterns = [
     path("", LeadListView.as_view(), name="list"),
     path("brokers/", BrokersDashboardView.as_view(), name="brokers_dashboard"),
+    path("api-settings/", ApiSettingsView.as_view(), name="api_settings"),
     # Lead source (broker API) CRUD.
     path("sources/", LeadSourceListView.as_view(), name="source_list"),
     path("sources/new/", LeadSourceCreateView.as_view(), name="source_create"),

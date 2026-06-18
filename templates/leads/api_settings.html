@@ -1,0 +1,118 @@
+{% extends "layouts/dashboard.html" %}
+{% load apex %}
+{% block title %}Setting API · IceTimes CRM{% endblock %}
+{% block content %}
+<div class="mb-6">
+  <h1 class="text-2xl font-bold tracking-tight">Setting API</h1>
+  <p class="text-sm text-muted-foreground mt-1">
+    Aggiungi un broker <strong>TrackBox</strong>: tutti funzionano allo stesso modo,
+    cambiano solo dati d'accesso e chiavi. Alla conferma il sistema crea in automatico
+    <strong>sorgente + landing dedicata + codice di tracciamento</strong>, e gli status
+    girano via <strong>API pull</strong>.
+  </p>
+</div>
+
+<form method="post" action="{% url 'leads:api_settings' %}" class="max-w-3xl space-y-5">
+  {% csrf_token %}
+
+  <section class="rounded-lg border border-border bg-card p-6 space-y-4">
+    <h2 class="text-base font-semibold">Identità & landing</h2>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <label class="block text-sm font-medium">Nome broker
+        <input name="name" required placeholder="es. Algo Link 11"
+               class="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+      </label>
+      <label class="block text-sm font-medium">Slug landing (URL)
+        <input name="slug" placeholder="auto dal nome — es. algo11"
+               class="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+        <span class="text-xs text-muted-foreground">La landing sarà <code class="font-mono">/b/&lt;slug&gt;/</code></span>
+      </label>
+    </div>
+    <label class="block text-sm font-medium">base_url (dominio del tracker)
+      <input name="base_url" required placeholder="https://tracker.nomebroker.com"
+             class="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+    </label>
+  </section>
+
+  <section class="rounded-lg border border-border bg-card p-6 space-y-4">
+    <h2 class="text-base font-semibold">Credenziali d'accesso</h2>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <label class="block text-sm font-medium">Username (x-trackbox-username)
+        <input name="username" autocomplete="off"
+               class="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+      </label>
+      <label class="block text-sm font-medium">Password (x-trackbox-password)
+        <input name="password" autocomplete="off"
+               class="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+      </label>
+    </div>
+    <div class="grid grid-cols-3 gap-4">
+      <label class="block text-sm font-medium">ai
+        <input name="ai" class="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+      </label>
+      <label class="block text-sm font-medium">ci
+        <input name="ci" value="1" class="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+      </label>
+      <label class="block text-sm font-medium">gi
+        <input name="gi" class="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+      </label>
+    </div>
+  </section>
+
+  <section class="rounded-lg border border-border bg-card p-6 space-y-4">
+    <h2 class="text-base font-semibold">Chiavi API <span class="text-xs font-normal text-muted-foreground">(diverse per ogni broker)</span></h2>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <label class="block text-sm font-medium">Push key (x-api-key di registrazione)
+        <input name="token" autocomplete="off" placeholder="x-api-key push"
+               class="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono">
+      </label>
+      <label class="block text-sm font-medium">Pull key (x-api-key stati/depositi)
+        <input name="pull_token" autocomplete="off" placeholder="x-api-key pull"
+               class="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono">
+        <span class="text-xs text-muted-foreground">Serve per leggere gli status via API.</span>
+      </label>
+    </div>
+  </section>
+
+  <button type="submit"
+          class="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90 transition">
+    Crea broker + landing + tracciamento
+  </button>
+</form>
+
+<div class="mt-10">
+  <h2 class="text-base font-semibold mb-3">Broker TrackBox attivi</h2>
+  {% if brokers %}
+  <div class="overflow-x-auto rounded-lg border border-border">
+    <table class="w-full text-sm">
+      <thead class="bg-muted/40 text-muted-foreground">
+        <tr class="text-left">
+          <th class="px-4 py-2 font-medium">Nome</th>
+          <th class="px-4 py-2 font-medium">Landing</th>
+          <th class="px-4 py-2 font-medium">Tracciamento</th>
+          <th class="px-4 py-2 font-medium">Pull key</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for b in brokers %}
+        <tr class="border-t border-border">
+          <td class="px-4 py-2 font-medium">{{ b.name }}</td>
+          <td class="px-4 py-2 font-mono text-xs">
+            {% if b.landing_active %}<a class="text-primary hover:underline" href="/b/{{ b.landing_slug }}/" target="_blank">/b/{{ b.landing_slug }}/</a>{% else %}—{% endif %}
+          </td>
+          <td class="px-4 py-2 font-mono text-xs">
+            {% for tl in b.tracking_links.all %}<a class="text-primary hover:underline" href="/t/{{ tl.code }}/" target="_blank">/t/{{ tl.code }}/</a> {% empty %}—{% endfor %}
+          </td>
+          <td class="px-4 py-2">
+            {% if b.pull_token %}<span class="text-emerald-400">✓ status via API</span>{% else %}<span class="text-amber-400">solo postback</span>{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="text-sm text-muted-foreground">Nessun broker TrackBox ancora. Aggiungine uno col modulo sopra.</p>
+  {% endif %}
+</div>
+{% endblock %}
