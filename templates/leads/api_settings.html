@@ -132,7 +132,7 @@
           <td class="px-4 py-2"><span class="rounded bg-muted px-2 py-0.5 text-xs font-mono">{{ b.kind }}</span></td>
           <td class="px-4 py-2 font-mono text-xs">{% if b.landing_active and b.landing_slug %}<a class="text-primary hover:underline" href="/b/{{ b.landing_slug }}/" target="_blank">/b/{{ b.landing_slug }}/</a>{% else %}—{% endif %}</td>
           <td class="px-4 py-2 font-mono text-xs">{% for tl in b.tracking_links.all %}<a class="text-primary hover:underline" href="/t/{{ tl.code }}/" target="_blank">/t/{{ tl.code }}/</a> {% empty %}—{% endfor %}</td>
-          <td class="px-4 py-2 text-xs">{% if b.kind == 'irev' or b.pull_token %}<span class="text-emerald-400">✓ via API</span>{% else %}<span class="text-amber-400">solo postback</span>{% endif %}</td>
+          <td class="px-4 py-2 text-xs">{% if b.kind == 'irev' or b.kind == 'hypernet' or b.pull_token %}<span class="text-emerald-400">✓ via API</span>{% else %}<span class="text-amber-400">solo postback</span>{% endif %}</td>
         </tr>
         {% endfor %}
       </tbody>
