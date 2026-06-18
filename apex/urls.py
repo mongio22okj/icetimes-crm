@@ -4,6 +4,7 @@ from django.contrib import admin
 from django.contrib.auth import views as auth_views
 from django.http import HttpResponse
 from django.urls import include, path
+from django.views.generic import TemplateView
 
 from apps.accounts.views import (
     ConfirmPasswordView,
@@ -37,6 +38,8 @@ urlpatterns = [
     path("sw.js", pwa_sw, name="pwa_sw"),
     path("offline/", pwa_offline, name="pwa_offline"),
     path("robots.txt", robots_txt, name="robots"),
+    path("comparatore/", TemplateView.as_view(template_name="comparatore.html"),
+         name="comparatore"),
     path("i18n/", include("django.conf.urls.i18n")),
     path("search/", global_search, name="search"),
     path("api/v1/", ninja_api.urls),
