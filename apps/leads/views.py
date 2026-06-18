@@ -1199,13 +1199,25 @@ class BrokerLandingSubmitView(View):
         if real_ip:
             payload.setdefault("ip", real_ip)
 
+        firstname = (data.get("firstname") or data.get("nome") or "").strip()[:120]
+        lastname = (data.get("lastname") or data.get("cognome") or "").strip()[:120]
+        phone = (data.get("phone") or data.get("telefono")
+                 or data.get("tel") or data.get("full_phone") or "").strip()[:32]
+
         # ── Blocco doppia registrazione (segregazione per broker) ─────────
-        # Un lead appartiene SOLO al broker della sua landing. Se la stessa
-        # persona (stessa email + stesso IP) si è già registrata a QUESTO
-        # broker, NON creiamo un duplicato (il broker lo rifiuterebbe e
-        # sporcherebbe i dati). La stessa persona può diventare lead di un
-        # altro broker solo registrandosi dalla landing di quell'altro broker.
-        dup_qs = Lead.objects.filter(source=broker.slug, email__iexact=email)
+        # Un lead appartiene SOLO al broker della sua landing. Se la STESSA
+        # persona si registra di nuovo a QUESTO broker — stesso telefono,
+        # stesso nome+cognome, stessa email E stesso IP — NON creiamo un
+        # duplicato (il broker lo rifiuterebbe e sporcherebbe i dati). La
+        # stessa persona può diventare lead di un altro broker solo
+        # registrandosi dalla landing di quell'altro broker.
+        dup_qs = Lead.objects.filter(
+            source=broker.slug,
+            email__iexact=email,
+            phone=phone,
+            firstname__iexact=firstname,
+            lastname__iexact=lastname,
+        )
         if real_ip:
             dup_qs = dup_qs.filter(payload__ip=real_ip)
         dup = dup_qs.order_by("-id").first()
@@ -1228,11 +1240,10 @@ class BrokerLandingSubmitView(View):
 
         lead = Lead.objects.create(
             uniqueid=uniqueid,
-            firstname=(data.get("firstname") or data.get("nome") or "").strip()[:120],
-            lastname=(data.get("lastname") or data.get("cognome") or "").strip()[:120],
+            firstname=firstname,
+            lastname=lastname,
             email=email[:254],
-            phone=(data.get("phone") or data.get("telefono")
-                   or data.get("tel") or data.get("full_phone") or "").strip()[:32],
+            phone=phone,
             country=(data.get("country") or data.get("iso") or "IT").strip().upper()[:8],
             status="lead",
             source=broker.slug,
