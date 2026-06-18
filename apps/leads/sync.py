@@ -31,11 +31,16 @@ def sync_irev_leads(src):
     Update-only: aggancia per `leadUuid` (= il nostro `uniqueid`) e aggiorna
     `saleStatus` + FTD (`goalTypeUuid == goal_ftd`). NON importa lead esterni
     (segregazione per broker). La v1 era ristretta per IP → la v2 no."""
+    from datetime import datetime, timedelta, timezone as dt_tz
     ftd_goal = str(src.goal_ftd or "")
+    # API IREV: per_page max 100; senza created_from torna i lead più VECCHI
+    # per primi → senza bound non vedremmo i recenti. Finestra 90gg + paginazione.
+    PER_PAGE = 100
+    created_from = (datetime.now(dt_tz.utc) - timedelta(days=90)).strftime("%Y-%m-%dT%H:%M:%SZ")
     updated = 0
     page = 1
     while page <= MAX_PAGES:
-        rows = irev.pull_leads_v2(src, page=page, per_page=500)
+        rows = irev.pull_leads_v2(src, page=page, per_page=PER_PAGE, created_from=created_from)
         if not rows:
             break
         for row in rows:
@@ -68,7 +73,7 @@ def sync_irev_leads(src):
                 lead.payload = merged
                 lead.save()
                 updated += 1
-        if len(rows) < 500:
+        if len(rows) < PER_PAGE:
             break
         page += 1
     return f"{updated} stati aggiornati (pull v2)"

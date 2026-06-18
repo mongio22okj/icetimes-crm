@@ -139,16 +139,23 @@ def _post_json(src, url, body, timeout=30):
         raise CRMAPIError(f"IREV JSON non valido: {raw[:200]}") from exc
 
 
-def pull_leads_v2(src, page=1, per_page=500, timeout=30):
+def pull_leads_v2(src, page=1, per_page=100, created_from=None, created_to=None, timeout=30):
     """Pull leads/stati via la **v2** (GET /affiliates/v2/leads). Ritorna una
     LISTA di lead (uuid, leadUuid, saleStatus, goalTypeUuid, email, …).
     NB: la v1 (/api/v1/affiliates/) è ristretta per IP lato IREV; la v2 no,
-    e usa lo stesso token del push nell'header Authorization."""
+    e usa lo stesso token del push nell'header Authorization.
+    `per_page` ha **max 100** lato IREV (valori più alti vengono tagliati);
+    senza `created_from` l'API torna i lead più VECCHI per primi → per i
+    recenti bisogna paginare e/o passare una finestra `created_from`."""
     from urllib.parse import urlencode
     if not is_configured(src):
         raise CRMAPIError("IREV non configurato: servono URL e token nella sorgente.")
-    url = (src.base_url.rstrip("/") + "/affiliates/v2/leads?"
-           + urlencode({"per_page": per_page, "page": page}))
+    query = {"per_page": per_page, "page": page}
+    if created_from:
+        query["created_from"] = created_from
+    if created_to:
+        query["created_to"] = created_to
+    url = src.base_url.rstrip("/") + "/affiliates/v2/leads?" + urlencode(query)
     headers = {
         "Accept": "application/json",
         "Authorization": src.token,  # token grezzo, come il push v2
