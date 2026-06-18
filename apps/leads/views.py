@@ -734,39 +734,56 @@ class TrackingLinkListView(BreadcrumbsMixin, LoginRequiredMixin,
         return ctx
 
 
-# ── Setting API: provisioning broker TrackBox in un colpo ───────────────────
-def provision_trackbox_broker(*, name, slug, base_url, username, password,
-                              ai, ci, gi, token, pull_token):
-    """Crea sorgente TrackBox + landing dedicata + tracking link insieme.
-    Tutti i TrackBox funzionano uguale: cambiano solo credenziali e chiavi.
-    Ogni broker = la SUA landing e il SUO codice di tracciamento."""
+# ── Setting API: provisioning broker (qualsiasi tipo) in un colpo ───────────
+# Tipi gestiti dal modulo Setting API (campi diversi per tipo).
+BROKER_KINDS = ("trackbox", "irev", "v3", "affinitrax")
+
+
+def provision_broker(kind, data):
+    """Crea sorgente broker (tipo `kind`) + landing dedicata + tracking link.
+    Comuni: name, slug, base_url, token. Extra per tipo. Ogni broker = la SUA
+    landing e il SUO codice di tracciamento. Gli status girano via API pull."""
     from django.utils.text import slugify
-    slug = (slugify(slug or name) or "broker")[:50]
-    base_url = (base_url or "").strip()
+    name = (data.get("name") or "").strip()
+    slug = (slugify(data.get("slug") or name) or "broker")[:50]
+    base_url = (data.get("base_url") or "").strip()
     if base_url and not base_url.startswith("http"):
         base_url = "https://" + base_url
 
-    src = LeadSource(kind=LeadSource.KIND_TRACKBOX)
-    src.name = (name or "").strip()[:120]
+    src = LeadSource(kind=kind)
+    src.name = name[:120]
     src.base_url = base_url
-    src.username = (username or "").strip()[:120]
-    src.password = (password or "").strip()[:255]
-    src.token = (token or "").strip()[:255]            # x-api-key push
-    src.pull_token = (pull_token or "").strip()[:255]  # x-api-key pull
-    src.ai = (ai or "").strip()[:64]
-    src.ci = ((ci or "1").strip() or "1")[:64]
-    src.gi = (gi or "").strip()[:64]
+    src.token = (data.get("token") or "").strip()[:255]
+    if kind == LeadSource.KIND_TRACKBOX:
+        src.username = (data.get("username") or "").strip()[:120]
+        src.password = (data.get("password") or "").strip()[:255]
+        src.pull_token = (data.get("pull_token") or "").strip()[:255]
+        src.ai = (data.get("ai") or "").strip()[:64]
+        src.ci = ((data.get("ci") or "1").strip() or "1")[:64]
+        src.gi = (data.get("gi") or "").strip()[:64]
+    elif kind == LeadSource.KIND_IREV:
+        src.affiliate_id = (data.get("affiliate_id") or "").strip()[:64]
+        src.offer_id = (data.get("offer_id") or "").strip()[:64]
+        src.goal_lead = (data.get("goal_lead") or "").strip()[:64]
+        src.goal_ftd = (data.get("goal_ftd") or "").strip()[:64]
+    elif kind == LeadSource.KIND_V3:
+        src.link_id = (data.get("link_id") or "").strip()[:64]
+        src.funnel = (data.get("funnel") or "").strip()[:120]
+        src.source_tag = (data.get("source_tag") or "").strip()[:64]
+    elif kind == LeadSource.KIND_AFFINITRAX:
+        src.offer_id = (data.get("offer_id") or "").strip()[:64]
     src.is_active = True
     src.auto_dispatch = False
     src.landing_slug = slug
     src.landing_active = True
     src.landing_success_message = "Registrazione completata! Ti stiamo reindirizzando..."
 
-    # Landing dedicata: clona da una landing TrackBox esistente (template),
-    # cambiando solo l'URL di submit verso il nuovo slug.
-    ref = (LeadSource.objects.filter(kind=LeadSource.KIND_TRACKBOX)
-           .exclude(landing_custom_html="").exclude(landing_slug="")
-           .order_by("id").first())
+    # Landing dedicata: clona da una sorgente dello STESSO tipo con landing
+    # (template); fallback a una qualsiasi. Cambia solo l'URL di submit.
+    ref = (LeadSource.objects.filter(kind=kind)
+           .exclude(landing_custom_html="").exclude(landing_slug="").order_by("id").first()
+           or LeadSource.objects.exclude(landing_custom_html="")
+           .exclude(landing_slug="").order_by("id").first())
     if ref and ref.landing_custom_html:
         src.landing_custom_html = ref.landing_custom_html.replace(
             "b/%s/submit/" % ref.landing_slug, "b/%s/submit/" % slug)
@@ -780,38 +797,35 @@ def provision_trackbox_broker(*, name, slug, base_url, username, password,
 
 class ApiSettingsView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
                       StaffRequiredMixin, View):
-    """Pagina 'Setting API': modulo per aggiungere un broker TrackBox.
-    Alla conferma crea sorgente + landing + tracking; gli status poi girano
-    via API pull (poller)."""
+    """Pagina 'Setting API': modulo per aggiungere un broker scegliendo il
+    TIPO (TrackBox / IREV / v3 / Affinitrax). Alla conferma crea sorgente +
+    landing + tracking; gli status poi girano via API pull (poller)."""
 
     template_name = "leads/api_settings.html"
 
     def get(self, request):
         return render(request, self.template_name, {
-            "brokers": list(LeadSource.objects.filter(
-                kind=LeadSource.KIND_TRACKBOX).order_by("-id")),
+            "brokers": list(LeadSource.objects.order_by("-id")),
             "base_url": request.build_absolute_uri("/").rstrip("/"),
         })
 
     def post(self, request):
         d = request.POST
-        name = (d.get("name") or "").strip()
-        base_url = (d.get("base_url") or "").strip()
-        if not name or not base_url:
+        kind = (d.get("kind") or "trackbox").strip()
+        if kind not in BROKER_KINDS:
+            toast(request, LEVEL_ERROR, "Tipo API non valido.")
+            return redirect("leads:api_settings")
+        if not (d.get("name") or "").strip() or not (d.get("base_url") or "").strip():
             toast(request, LEVEL_ERROR, "Nome e base_url sono obbligatori.")
             return redirect("leads:api_settings")
         try:
-            src, tl = provision_trackbox_broker(
-                name=name, slug=d.get("slug") or "", base_url=base_url,
-                username=d.get("username") or "", password=d.get("password") or "",
-                ai=d.get("ai") or "", ci=d.get("ci") or "1", gi=d.get("gi") or "",
-                token=d.get("token") or "", pull_token=d.get("pull_token") or "")
+            src, tl = provision_broker(kind, d)
         except Exception as exc:  # noqa: BLE001
             toast(request, LEVEL_ERROR, "Errore nella creazione: %s" % exc)
             return redirect("leads:api_settings")
         toast(request, LEVEL_SUCCESS,
-              "Broker '%s' creato — landing /b/%s/ · link /t/%s/" % (
-                  src.name, src.landing_slug, tl.code))
+              "Broker '%s' (%s) creato — landing /b/%s/ · link /t/%s/" % (
+                  src.name, kind, src.landing_slug, tl.code))
         return redirect("leads:api_settings")
 
 
