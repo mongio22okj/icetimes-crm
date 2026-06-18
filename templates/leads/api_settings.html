@@ -24,6 +24,7 @@
         <option value="irev">IREV</option>
         <option value="v3">Integration v3</option>
         <option value="affinitrax">Affinitrax</option>
+        <option value="hypernet">Hypernet (HTN-AFF-SDK)</option>
       </select>
     </label>
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -90,6 +91,18 @@
       <label class="block text-sm font-medium">Token / API key<input name="token" autocomplete="off" class="{{ inp }} font-mono"></label>
       <label class="block text-sm font-medium">offer_id<input name="offer_id" class="{{ inp }}"></label>
     </div>
+  </section>
+
+  {# ── Hypernet (HTN-AFF-SDK) ─────────────────────────────── #}
+  <section data-kind="hypernet" class="rounded-lg border border-border bg-card p-6 space-y-4">
+    <h2 class="text-base font-semibold">Hypernet — x-api-key & id <span class="text-xs font-normal text-muted-foreground">(stessa chiave push+pull)</span></h2>
+    <label class="block text-sm font-medium">x-api-key<input name="token" autocomplete="off" class="{{ inp }} font-mono"></label>
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <label class="block text-sm font-medium">affc (affiliate id)<input name="affiliate_id" placeholder="AFF-…" class="{{ inp }} font-mono"></label>
+      <label class="block text-sm font-medium">bxc (hub id)<input name="hub_id" placeholder="BX-…" class="{{ inp }} font-mono"></label>
+      <label class="block text-sm font-medium">vtc (vertical id)<input name="vertical_id" placeholder="VT-…" class="{{ inp }} font-mono"></label>
+    </div>
+    <label class="block text-sm font-medium">funnel<input name="funnel" placeholder="es. tesler" class="{{ inp }}"></label>
   </section>
 
   <button type="submit" class="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90 transition">

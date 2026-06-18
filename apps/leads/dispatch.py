@@ -16,7 +16,7 @@ from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 
-from . import affinitrax, client, irev, mediafront, spmmonster, v3
+from . import affinitrax, client, hypernet, irev, mediafront, spmmonster, v3
 from .client import CRMAPIError
 from .models import DispatchLog, Lead, LeadSource
 
@@ -158,6 +158,28 @@ def _push(lead, source):
             "language": (lead.country or "IT").lower(),
         }
         return True, v3.push_lead(source, payload) or {}
+
+    if source.kind == LeadSource.KIND_HYPERNET:
+        p = lead.payload or {}
+        geo = (lead.country or "IT").upper()
+        click = (p.get("aff_sub5") or p.get("click_id") or p.get("cid")
+                 or p.get("gclid") or p.get("fbclid") or "")
+        profile = {
+            "firstName": lead.firstname,
+            "lastName": lead.lastname,
+            "email": lead.email,
+            "phone": lead.phone,
+            "password": secrets.token_urlsafe(10),
+        }
+        result = hypernet.push_lead(
+            source, profile,
+            ip=p.get("ip") or "8.8.8.8",
+            geo=geo,
+            sub_id=click,
+            user_agent=p.get("user_agent") or p.get("userAgent") or None,
+        ) or {}
+        # Il POST risponde 201 anche in errore: il successo è in `success`.
+        return bool(result.get("success")), result
 
     if source.kind == LeadSource.KIND_MEDIAFRONT:
         p = lead.payload or {}

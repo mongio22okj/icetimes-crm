@@ -271,6 +271,7 @@ def _extract_auto_login(response):
     return (response.get("auto_login_url")
             or response.get("autoLoginUrl")
             or response.get("redirect_url")
+            or response.get("redirectUrl")   # Hypernet
             or addon_data.get("loginURL")
             or (top if isinstance(top, str) and top.startswith("http") else "")
             or "")
@@ -736,7 +737,7 @@ class TrackingLinkListView(BreadcrumbsMixin, LoginRequiredMixin,
 
 # ── Setting API: provisioning broker (qualsiasi tipo) in un colpo ───────────
 # Tipi gestiti dal modulo Setting API (campi diversi per tipo).
-BROKER_KINDS = ("trackbox", "irev", "v3", "affinitrax")
+BROKER_KINDS = ("trackbox", "irev", "v3", "affinitrax", "hypernet")
 
 
 def provision_broker(kind, data):
@@ -772,6 +773,11 @@ def provision_broker(kind, data):
         src.source_tag = (data.get("source_tag") or "").strip()[:64]
     elif kind == LeadSource.KIND_AFFINITRAX:
         src.offer_id = (data.get("offer_id") or "").strip()[:64]
+    elif kind == LeadSource.KIND_HYPERNET:
+        src.affiliate_id = (data.get("affiliate_id") or "").strip()[:64]  # affc
+        src.hub_id = (data.get("hub_id") or "").strip()[:64]              # bxc
+        src.vertical_id = (data.get("vertical_id") or "").strip()[:64]    # vtc
+        src.funnel = (data.get("funnel") or "").strip()[:120]
     src.is_active = True
     src.auto_dispatch = False
     src.landing_slug = slug

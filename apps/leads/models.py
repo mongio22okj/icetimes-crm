@@ -115,6 +115,7 @@ class LeadSource(models.Model):
     KIND_IREV = "irev"
     KIND_AFFINITRAX = "affinitrax"
     KIND_V3 = "v3"
+    KIND_HYPERNET = "hypernet"
     KIND_MEDIAFRONT = "mediafront"
     KIND_SPMMONSTER = "spmmonster"
     KIND_CHOICES = (
@@ -122,13 +123,14 @@ class LeadSource(models.Model):
         (KIND_IREV, "IREV"),
         (KIND_AFFINITRAX, "Affinitrax"),
         (KIND_V3, "Integration v3 (api_token)"),
+        (KIND_HYPERNET, "Hypernet (HTN-AFF-SDK)"),
         (KIND_MEDIAFRONT, "Mediafront (Midas)"),
         (KIND_SPMMONSTER, "SPM Monster"),
     )
 
     # Kinds that can pull/refresh data, and kinds that can receive pushes.
-    PULL_KINDS = (KIND_TRACKBOX, KIND_IREV, KIND_AFFINITRAX, KIND_MEDIAFRONT, KIND_SPMMONSTER)
-    PUSH_KINDS = (KIND_TRACKBOX, KIND_IREV, KIND_AFFINITRAX, KIND_V3, KIND_MEDIAFRONT, KIND_SPMMONSTER)
+    PULL_KINDS = (KIND_TRACKBOX, KIND_IREV, KIND_AFFINITRAX, KIND_HYPERNET, KIND_MEDIAFRONT, KIND_SPMMONSTER)
+    PUSH_KINDS = (KIND_TRACKBOX, KIND_IREV, KIND_AFFINITRAX, KIND_V3, KIND_HYPERNET, KIND_MEDIAFRONT, KIND_SPMMONSTER)
 
     name = models.CharField(max_length=120)
     logo_url = models.URLField(
@@ -171,9 +173,15 @@ class LeadSource(models.Model):
     link_id = models.CharField(max_length=64, blank=True,
                                help_text="Solo Integration v3")
     funnel = models.CharField(max_length=120, blank=True,
-                              help_text="Solo Integration v3")
+                              help_text="Integration v3 / Hypernet")
     source_tag = models.CharField("Source", max_length=64, blank=True,
                                   help_text="Solo Integration v3 (es. FB)")
+
+    # Hypernet (HTN-AFF-SDK) extras. token=x-api-key, affiliate_id=affc.
+    hub_id = models.CharField("Hub id (bxc)", max_length=64, blank=True,
+                              help_text="Solo Hypernet — es. BX-…")
+    vertical_id = models.CharField("Vertical id (vtc)", max_length=64, blank=True,
+                                   help_text="Solo Hypernet — es. VT-…")
 
     notes = models.TextField(blank=True)
     created_at = models.DateTimeField(default=timezone.now)

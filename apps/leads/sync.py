@@ -5,7 +5,7 @@ kind and returns a list of human-readable result lines (one per source).
 """
 from django.utils.dateparse import parse_datetime
 
-from . import affinitrax, client, irev
+from . import affinitrax, client, hypernet, irev
 from .client import CRMAPIError
 from .models import Lead, LeadSource
 from .sources import active_sources
@@ -120,6 +120,58 @@ def sync_trackbox_leads(src):
     return f"{updated} stati aggiornati (pull)"
 
 
+# ── Hypernet (pull: GET /api/external/integration/lead) ──────────────────
+def sync_hypernet_leads(src):
+    """Aggiorna gli stati dei NOSTRI lead Hypernet via la pull. Update-only:
+    aggancia per `id` (= il nostro `uniqueid`, ovvero il leadId del push),
+    status da `registration.status`, FTD da `isDeposited`/`depositedAt`. Non
+    importa lead esterni (segregazione per broker)."""
+    from datetime import datetime, timedelta, timezone as dt_tz
+    now = datetime.now(dt_tz.utc)
+    dt_from = (now - timedelta(days=90)).strftime("%Y-%m-%dT%H:%M:%S.000Z")
+    dt_to = now.strftime("%Y-%m-%dT%H:%M:%S.999Z")
+    TAKE = 250
+    updated = 0
+    skip = 0
+    while skip < TAKE * MAX_PAGES:
+        rows = hypernet.pull_leads(src, skip=skip, take=TAKE,
+                                   dt_from=dt_from, dt_to=dt_to)
+        if not rows:
+            break
+        for row in rows:
+            if not isinstance(row, dict):
+                continue
+            rid = str(row.get("id") or "")
+            if not rid:
+                continue
+            lead = Lead.objects.filter(uniqueid=rid).first()
+            if lead is None:
+                continue  # solo i nostri lead, niente import esterni
+            changed = False
+            reg = row.get("registration") if isinstance(row.get("registration"), dict) else {}
+            status = reg.get("status") or reg.get("rawStatus")
+            if status and lead.status != str(status)[:120]:
+                lead.status = str(status)[:120]
+                changed = True
+            if row.get("isDeposited") and not lead.is_deposit:
+                lead.is_deposit = True
+                changed = True
+            dep = row.get("depositedAt")
+            if isinstance(dep, str) and not lead.event_at:
+                lead.event_at = parse_datetime(dep.replace(" ", "T"))
+                changed = True
+            if changed:
+                merged = dict(lead.payload or {})
+                merged.update(row)
+                lead.payload = merged
+                lead.save()
+                updated += 1
+        if len(rows) < TAKE:
+            break
+        skip += TAKE
+    return f"{updated} stati aggiornati (pull)"
+
+
 # ── Affinitrax ───────────────────────────────────────────────────────────
 def refresh_affinitrax_statuses(src, limit=100):
     leads = (Lead.objects
@@ -154,6 +206,7 @@ _DISPATCH = {
     LeadSource.KIND_AFFINITRAX: refresh_affinitrax_statuses,
     LeadSource.KIND_IREV: sync_irev_leads,
     LeadSource.KIND_TRACKBOX: sync_trackbox_leads,
+    LeadSource.KIND_HYPERNET: sync_hypernet_leads,
 }
 
 
