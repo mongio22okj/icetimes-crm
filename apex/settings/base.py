@@ -230,6 +230,7 @@ SITE_GATE_EXEMPT_PREFIXES = (
     "/viewer/",            # area visualizzatori (login proprio, sola lettura)
     "/b/",                 # landing pubbliche dei broker
     "/t/",                 # link corti di tracciamento
+    "/comparatore/",       # comparatore pubblico broker
     "/api/track/",         # endpoint track visit/click/lead
     "/api/create-lead",    # alias create-lead
     "/leads/postback/",    # postback broker (TrackBox & co.)
