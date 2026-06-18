@@ -25,57 +25,53 @@ def _paginate(fetch):
         page += 1
 
 
-# ── IREV ─────────────────────────────────────────────────────────────────
+# ── IREV (pull v2: GET /affiliates/v2/leads) ─────────────────────────────
 def sync_irev_leads(src):
-    goals_by_lead = {}
-    for conv in _paginate(lambda page: irev.list_conversions(src, page=page)):
-        lead_id = conv.get("lead_id")
-        if lead_id is not None:
-            goals_by_lead.setdefault(str(lead_id), set()).add(
-                str(conv.get("goal_type_id") or conv.get("goal_type_uuid") or "")
-            )
+    """Aggiorna gli stati dei NOSTRI lead IREV via la pull **v2**.
+    Update-only: aggancia per `leadUuid` (= il nostro `uniqueid`) e aggiorna
+    `saleStatus` + FTD (`goalTypeUuid == goal_ftd`). NON importa lead esterni
+    (segregazione per broker). La v1 era ristretta per IP → la v2 no."""
     ftd_goal = str(src.goal_ftd or "")
-    created = updated = 0
-    for row in _paginate(lambda page: irev.list_leads(src, page=page)):
-        irev_id = row.get("id")
-        if irev_id is None:
-            continue
-        uniqueid = f"irev-{irev_id}"
-        goals = goals_by_lead.get(str(irev_id), set())
-        is_deposit = bool(ftd_goal and ftd_goal in goals)
-        event_at = parse_datetime(row["created_at"]) if isinstance(
-            row.get("created_at"), str) else None
-        lead = Lead.objects.filter(uniqueid=uniqueid).first()
-        if lead is None:
-            lead = Lead(uniqueid=uniqueid, source=src.slug)
-            created += 1
-        else:
-            updated += 1
-        for field, keys in (
-            ("firstname", ("first_name", "firstname")),
-            ("lastname", ("last_name", "lastname")),
-            ("email", ("email",)),
-            ("phone", ("phone",)),
-        ):
-            for key in keys:
-                if row.get(key):
-                    setattr(lead, field, str(row[key])[:120])
-                    break
-        if row.get("country_code"):
-            lead.country = str(row["country_code"])[:8]
-        if row.get("sale_status"):
-            lead.status = str(row["sale_status"])[:120]
-        if is_deposit:
-            lead.is_deposit = True
-        if event_at:
-            lead.event_at = event_at
-            if lead.pk is None:
-                lead.created_at = event_at
-        merged = dict(lead.payload or {})
-        merged.update(row)
-        lead.payload = merged
-        lead.save()
-    return f"{created} nuovi, {updated} aggiornati"
+    updated = 0
+    page = 1
+    while page <= MAX_PAGES:
+        rows = irev.pull_leads_v2(src, page=page, per_page=500)
+        if not rows:
+            break
+        for row in rows:
+            if not isinstance(row, dict):
+                continue
+            lead_uuid = str(row.get("leadUuid") or row.get("uuid") or "")
+            if not lead_uuid:
+                continue
+            lead = Lead.objects.filter(uniqueid=lead_uuid).first()
+            if lead is None:
+                continue  # solo i nostri lead, niente import esterni
+            changed = False
+            status = row.get("saleStatus")
+            if status and lead.status != str(status)[:120]:
+                lead.status = str(status)[:120]
+                changed = True
+            goal = str(row.get("goalTypeUuid") or "")
+            is_dep = (bool(ftd_goal) and goal == ftd_goal) or \
+                str(status or "").strip().lower() in {"ftd", "deposit", "depositor"}
+            if is_dep and not lead.is_deposit:
+                lead.is_deposit = True
+                changed = True
+            ev = row.get("createdAt")
+            if isinstance(ev, str) and not lead.event_at:
+                lead.event_at = parse_datetime(ev.replace(" ", "T"))
+                changed = True
+            if changed:
+                merged = dict(lead.payload or {})
+                merged.update(row)
+                lead.payload = merged
+                lead.save()
+                updated += 1
+        if len(rows) < 500:
+            break
+        page += 1
+    return f"{updated} stati aggiornati (pull v2)"
 
 
 # ── TrackBox ─────────────────────────────────────────────────────────────
@@ -142,12 +138,13 @@ def refresh_affinitrax_statuses(src, limit=100):
     return f"{updated} stati aggiornati"
 
 
-# IREV escluso dal pull (API di lettura ristretta per IP, e arriva via
-# POSTBACK). TrackBox escluso finché non abbiamo la x-api-key di PULL corretta
-# (la pull dà 401 'user and password doesnt match' con la chiave di push).
-# Le rispettive funzioni sync_* restano disponibili ma non vengono richiamate.
+# Gli STATUS si leggono via PULL API (non dal postback). IREV ora usa la **v2**
+# (`/affiliates/v2/leads`) che NON è ristretta per IP (la v1 lo era), quindi è
+# attiva. TrackBox resta escluso finché non gestiamo la sua chiave di PULL
+# (diversa da quella di push).
 _DISPATCH = {
     LeadSource.KIND_AFFINITRAX: refresh_affinitrax_statuses,
+    LeadSource.KIND_IREV: sync_irev_leads,
 }
 
 

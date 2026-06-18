@@ -137,3 +137,38 @@ def _post_json(src, url, body, timeout=30):
         return json.loads(raw) if raw else {}
     except json.JSONDecodeError as exc:
         raise CRMAPIError(f"IREV JSON non valido: {raw[:200]}") from exc
+
+
+def pull_leads_v2(src, page=1, per_page=500, timeout=30):
+    """Pull leads/stati via la **v2** (GET /affiliates/v2/leads). Ritorna una
+    LISTA di lead (uuid, leadUuid, saleStatus, goalTypeUuid, email, …).
+    NB: la v1 (/api/v1/affiliates/) è ristretta per IP lato IREV; la v2 no,
+    e usa lo stesso token del push nell'header Authorization."""
+    from urllib.parse import urlencode
+    if not is_configured(src):
+        raise CRMAPIError("IREV non configurato: servono URL e token nella sorgente.")
+    url = (src.base_url.rstrip("/") + "/affiliates/v2/leads?"
+           + urlencode({"per_page": per_page, "page": page}))
+    headers = {
+        "Accept": "application/json",
+        "Authorization": src.token,  # token grezzo, come il push v2
+        "User-Agent": ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                       "AppleWebKit/537.36 (KHTML, like Gecko) "
+                       "Chrome/124.0.0.0 Safari/537.36"),
+    }
+    req = urllib.request.Request(url, method="GET", headers=headers)
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            raw = resp.read().decode("utf-8", errors="replace")
+    except urllib.error.HTTPError as exc:
+        detail = exc.read().decode("utf-8", errors="replace")[:400]
+        raise CRMAPIError(f"IREV HTTP {exc.code}: {detail}") from exc
+    except urllib.error.URLError as exc:
+        raise CRMAPIError(f"IREV non raggiungibile: {exc.reason}") from exc
+    except TimeoutError as exc:
+        raise CRMAPIError("IREV: timeout della richiesta.") from exc
+    try:
+        data = json.loads(raw) if raw else []
+    except json.JSONDecodeError as exc:
+        raise CRMAPIError(f"IREV JSON non valido: {raw[:200]}") from exc
+    return data if isinstance(data, list) else (data.get("data") or [])
