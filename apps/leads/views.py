@@ -258,6 +258,24 @@ def _truthy(value):
     return str(value).strip().lower() in {"1", "true", "yes", "deposit", "ftd", "depositor"}
 
 
+def _extract_auto_login(response):
+    """URL di auto-login dalla risposta di un push broker.
+    IREV: auto_login_url/autoLoginUrl/redirect_url. TrackBox: `data` (stringa
+    URL) o `addonData.data.loginURL`."""
+    if not isinstance(response, dict):
+        return ""
+    addon = response.get("addonData") or {}
+    addon_data = addon.get("data") if isinstance(addon, dict) else {}
+    addon_data = addon_data if isinstance(addon_data, dict) else {}
+    top = response.get("data")
+    return (response.get("auto_login_url")
+            or response.get("autoLoginUrl")
+            or response.get("redirect_url")
+            or addon_data.get("loginURL")
+            or (top if isinstance(top, str) and top.startswith("http") else "")
+            or "")
+
+
 @csrf_exempt
 def postback(request):
     expected = settings.LEADS_POSTBACK_TOKEN
@@ -1181,6 +1199,33 @@ class BrokerLandingSubmitView(View):
         if real_ip:
             payload.setdefault("ip", real_ip)
 
+        # ── Blocco doppia registrazione (segregazione per broker) ─────────
+        # Un lead appartiene SOLO al broker della sua landing. Se la stessa
+        # persona (stessa email + stesso IP) si è già registrata a QUESTO
+        # broker, NON creiamo un duplicato (il broker lo rifiuterebbe e
+        # sporcherebbe i dati). La stessa persona può diventare lead di un
+        # altro broker solo registrandosi dalla landing di quell'altro broker.
+        dup_qs = Lead.objects.filter(source=broker.slug, email__iexact=email)
+        if real_ip:
+            dup_qs = dup_qs.filter(payload__ip=real_ip)
+        dup = dup_qs.order_by("-id").first()
+        if dup is not None:
+            _prev = (DispatchLog.objects.filter(lead=dup, source=broker, success=True)
+                     .order_by("-id").first())
+            _target = _extract_auto_login(_prev.response) if _prev else ""
+            _target = _target or broker.landing_redirect_url or ""
+            if "text/html" in request.headers.get("Accept", ""):
+                if _target:
+                    from django.http import HttpResponseRedirect
+                    return HttpResponseRedirect(_target)
+                from django.http import HttpResponse
+                return HttpResponse(
+                    "<!doctype html><meta charset=utf-8>"
+                    "<div style='font-family:system-ui;text-align:center;padding:64px'>"
+                    "<h2>✅ Sei già registrato</h2></div>")
+            return JsonResponse({"ok": True, "duplicate": True,
+                                 "lead_id": dup.pk, "redirect": _target})
+
         lead = Lead.objects.create(
             uniqueid=uniqueid,
             firstname=(data.get("firstname") or data.get("nome") or "").strip()[:120],
@@ -1211,22 +1256,9 @@ class BrokerLandingSubmitView(View):
         _dl = (DispatchLog.objects.filter(lead=lead, source=broker, success=True)
                .order_by("-id").first())
         if _dl and isinstance(_dl.response, dict):
-            # TrackBox mette l'auto-login in `data` (stringa URL) o in
-            # `addonData.data.loginURL`; IREV in auto_login_url/redirect_url.
-            _addon = _dl.response.get("addonData") or {}
-            _addon_data = _addon.get("data") if isinstance(_addon, dict) else {}
-            _addon_data = _addon_data if isinstance(_addon_data, dict) else {}
-            _top_data = _dl.response.get("data")
-            auto_login = (_dl.response.get("auto_login_url")
-                          or _dl.response.get("autoLoginUrl")
-                          or _dl.response.get("redirect_url")
-                          or _addon_data.get("loginURL")
-                          or (_top_data if isinstance(_top_data, str)
-                              and _top_data.startswith("http") else "")
-                          or "")
+            auto_login = _extract_auto_login(_dl.response)
             # Memorizza l'ID-lead lato broker: il loro postback lo rimanda,
             # così agganciamo l'aggiornamento di stato al lead esatto.
-            # Usa l'estrattore condiviso (gestisce anche addonData.data di TrackBox).
             broker_lead_id = _dispatch._extract_broker_lead_id(_dl.response)
             if broker_lead_id:
                 lead.uniqueid = str(broker_lead_id)[:128]
