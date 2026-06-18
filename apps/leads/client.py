@@ -27,7 +27,7 @@ def is_configured(src) -> bool:
     return bool(src and src.base_url and src.username and src.password and src.token)
 
 
-def _request(src, path, payload, timeout=25):
+def _request(src, path, payload, timeout=25, api_key=None):
     if not is_configured(src):
         raise CRMAPIError(
             "TrackBox non configurato: servono URL, username, password e "
@@ -42,7 +42,7 @@ def _request(src, path, payload, timeout=25):
             "Content-Type": "application/json",
             "x-trackbox-username": src.username,
             "x-trackbox-password": src.password,
-            "x-api-key": src.token,
+            "x-api-key": api_key or src.token,
             # Cloudflare blocca lo UA "Python-urllib" (403 error 1010):
             # serve uno UA da browser per passare il WAF, come per gli
             # altri client (irev, mediafront).
@@ -87,7 +87,9 @@ def pull_customers(src, date_from, date_to, pull_type=PULL_LEADS_AND_DEPOSITS, p
         "type": str(pull_type),
         "page": str(page),
     }
-    return _request(src, "/api/pull/customers", payload)
+    # La pull usa la SUA chiave (x-api-key di pull), diversa da quella di push.
+    return _request(src, "/api/pull/customers", payload,
+                    api_key=(src.pull_token or src.token))
 
 
 def push_lead(src, payload):

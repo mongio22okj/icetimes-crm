@@ -152,6 +152,10 @@ class LeadSource(models.Model):
                           help_text="Solo TrackBox")
     gi = models.CharField("gi", max_length=64, blank=True,
                           help_text="Solo TrackBox")
+    pull_token = models.CharField(
+        "Pull x-api-key", max_length=255, blank=True,
+        help_text="Solo TrackBox: chiave x-api-key per la PULL (stati/depositi), "
+                  "DIVERSA da quella di push in `token`. Specifica per broker.")
 
     # IREV extras.
     affiliate_id = models.CharField(max_length=64, blank=True,

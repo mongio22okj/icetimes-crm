@@ -74,42 +74,45 @@ def sync_irev_leads(src):
     return f"{updated} stati aggiornati (pull v2)"
 
 
-# ── TrackBox ─────────────────────────────────────────────────────────────
+# ── TrackBox (pull: POST /api/pull/customers) ────────────────────────────
 def sync_trackbox_leads(src):
+    """Aggiorna gli stati dei NOSTRI lead TrackBox via la pull. La chiave di
+    pull (DIVERSA dal push) sta in `src.pull_token`. Update-only: aggancia per
+    `customerData.uniqueid` (= il nostro `uniqueid`), status da `call_status`,
+    FTD da `depositor`. Non importa lead esterni (segregazione)."""
+    if not src.pull_token:
+        return "pull key (pull_token) mancante — skip"
     from datetime import datetime, time, timedelta, timezone as dt_tz
-
     today = datetime.now(dt_tz.utc).date()
     dt_from = datetime.combine(today - timedelta(days=90), time.min, tzinfo=dt_tz.utc)
     dt_to = datetime.combine(today, time.max, tzinfo=dt_tz.utc)
     response = client.pull_customers(src, dt_from, dt_to)
-    created = updated = 0
+    updated = 0
     for row in client.extract_rows(response):
         if not isinstance(row, dict):
             continue
-        uid = str(row.get("uuid") or row.get("id") or "")
+        cd = row.get("customerData") if isinstance(row.get("customerData"), dict) else row
+        uid = str(cd.get("uniqueid") or cd.get("customer_id") or "")
         if not uid:
             continue
-        uniqueid = f"tb-{uid}"
-        lead = Lead.objects.filter(uniqueid=uniqueid).first()
+        lead = Lead.objects.filter(uniqueid=uid).first()
         if lead is None:
-            lead = Lead(uniqueid=uniqueid, source=src.slug)
-            created += 1
-        else:
-            updated += 1
-        if row.get("callStatus"):
-            lead.status = str(row["callStatus"])[:120]
-        if row.get("isDeposit"):
+            continue  # solo i nostri lead, niente import esterni
+        changed = False
+        status = cd.get("call_status")
+        if status and lead.status != str(status)[:120]:
+            lead.status = str(status)[:120]
+            changed = True
+        if str(cd.get("depositor")) in ("1", "True", "true") and not lead.is_deposit:
             lead.is_deposit = True
-        event_at = parse_datetime(str(row.get("createdAt", "")).replace(" ", "T"))
-        if event_at:
-            lead.event_at = event_at
-            if lead.pk is None:
-                lead.created_at = event_at
-        merged = dict(lead.payload or {})
-        merged.update(row)
-        lead.payload = merged
-        lead.save()
-    return f"{created} nuovi, {updated} aggiornati"
+            changed = True
+        if changed:
+            merged = dict(lead.payload or {})
+            merged.update(cd)
+            lead.payload = merged
+            lead.save()
+            updated += 1
+    return f"{updated} stati aggiornati (pull)"
 
 
 # ── Affinitrax ───────────────────────────────────────────────────────────
@@ -145,6 +148,7 @@ def refresh_affinitrax_statuses(src, limit=100):
 _DISPATCH = {
     LeadSource.KIND_AFFINITRAX: refresh_affinitrax_statuses,
     LeadSource.KIND_IREV: sync_irev_leads,
+    LeadSource.KIND_TRACKBOX: sync_trackbox_leads,
 }
 
 
