@@ -128,6 +128,53 @@
   </div>
 </div>
 
+{# Ultime registrazioni lead #}
+<div class="rounded-2xl p-4 mt-4" style="background:#221d3a;border:1px solid rgba(255,255,255,.06)">
+  <div class="flex items-center justify-between mb-3">
+    <div>
+      <h3 class="text-sm font-semibold" style="color:#f4f2ff">Ultime registrazioni</h3>
+      <p class="text-xs" style="color:#9b93c4">Lead registrati di recente — clicca per i dettagli</p>
+    </div>
+    <a href="{% url 'leads:list' %}" class="text-xs hover:underline" style="color:#a78bfa">Vedi tutti →</a>
+  </div>
+  {% if recent_leads %}
+  <div class="overflow-x-auto">
+    <table class="w-full text-xs" style="color:#e7e4f5">
+      <thead>
+        <tr style="color:#9b93c4;border-bottom:1px solid rgba(255,255,255,.08)">
+          <th class="text-left py-2 px-2 font-medium">Nome</th>
+          <th class="text-left py-2 px-2 font-medium">Email</th>
+          <th class="text-left py-2 px-2 font-medium">Telefono</th>
+          <th class="text-left py-2 px-2 font-medium">Paese</th>
+          <th class="text-left py-2 px-2 font-medium">Sorgente</th>
+          <th class="text-left py-2 px-2 font-medium">Stato</th>
+          <th class="text-left py-2 px-2 font-medium">FTD</th>
+          <th class="text-right py-2 px-2 font-medium">Quando</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for ld in recent_leads %}
+        <tr style="border-bottom:1px solid rgba(255,255,255,.04)">
+          <td class="py-2 px-2 font-medium">{{ ld.firstname }} {{ ld.lastname|default:"" }}{% if not ld.firstname and not ld.lastname %}<span style="color:#6f6896">—</span>{% endif %}</td>
+          <td class="py-2 px-2 truncate" style="color:#c4bde0;max-width:200px">{{ ld.email|default:"—" }}</td>
+          <td class="py-2 px-2" style="color:#c4bde0">{{ ld.phone|default:"—" }}</td>
+          <td class="py-2 px-2" style="color:#c4bde0">{{ ld.country|upper|default:"—" }}</td>
+          <td class="py-2 px-2"><span class="inline-block px-2 py-0.5 rounded text-xs" style="background:rgba(139,92,246,.15);color:#c4b5fd">{{ ld.source|default:"—" }}</span></td>
+          <td class="py-2 px-2"><span class="inline-block px-2 py-0.5 rounded text-xs" style="background:rgba(251,191,36,.12);color:#fbbf24">{{ ld.status|default:"lead" }}</span></td>
+          <td class="py-2 px-2">{% if ld.is_deposit %}<span style="color:#34d399">✓</span>{% else %}<span style="color:#6f6896">—</span>{% endif %}</td>
+          <td class="py-2 px-2 text-right whitespace-nowrap" style="color:#9b93c4">{{ ld.created_at|timesince }} fa</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="flex flex-col items-center justify-center h-32" style="color:#6f6896">
+    {% icon "inbox" 24 %}<p class="text-xs mt-1">Nessuna registrazione</p>
+  </div>
+  {% endif %}
+</div>
+
 </div>{# /navy wrapper #}
 
 {{ broker_chart|json_script:"broker-chart-data" }}

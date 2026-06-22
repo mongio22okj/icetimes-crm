@@ -494,8 +494,14 @@ class LeadBrokerDashboardView(LoginRequiredMixin, EmailVerifiedRequiredMixin, Vi
         activities.sort(key=lambda a: a["when"], reverse=True)
         activities = activities[:8]
 
+        # ── Tabella ultime registrazioni lead ─────────────────────────
+        recent_leads = list(
+            Lead.objects.order_by("-created_at")[:20]
+        )
+
         return render(request, "dashboard/lead_broker.html", {
             "kpis": kpis,
+            "recent_leads": recent_leads,
             # Passiamo i dict grezzi: il template li serializza con
             # {% ... json_script %}, che escapa < > & in modo sicuro.
             # (Niente json.dumps + |safe: sarebbe XSS se una label
