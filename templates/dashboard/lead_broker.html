@@ -239,5 +239,18 @@
     });
   }
 })();
+
+{# Auto-refresh ogni 30s: ricarica la dashboard per vedere nuovi lead/FTD. Si mette in pausa se la tab e' in background, per non sprecare richieste. #}
+(function(){
+  var INTERVAL = 30000;
+  function tick(){
+    if (!document.hidden) {
+      window.location.reload();
+    } else {
+      setTimeout(tick, 2000);
+    }
+  }
+  setTimeout(tick, INTERVAL);
+})();
 </script>
 {% endblock %}
