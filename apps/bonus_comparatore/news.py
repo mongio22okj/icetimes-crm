@@ -6,6 +6,7 @@ Cache 15 minuti in Redis (default cache) per non interrogare le fonti a ogni
 visita. Best-effort: se un feed non risponde, viene semplicemente saltato e la
 pagina non si rompe mai.
 """
+import html
 import urllib.request
 from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
@@ -45,7 +46,10 @@ def _fetch_feed(name, url, per_feed):
     root = ET.fromstring(raw)
     items = []
     for it in root.iter("item"):
-        title = (it.findtext("title") or "").strip()
+        # I feed codificano le entità dentro il CDATA (es. "l&#39;addio"):
+        # html.unescape le riporta a caratteri reali, poi Django ri-escapa in
+        # modo sicuro al render.
+        title = html.unescape((it.findtext("title") or "").strip())
         link = (it.findtext("link") or "").strip()
         if not title or not link:
             continue
