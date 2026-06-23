@@ -19,10 +19,26 @@ _CACHE_KEY = "ablecoin_news_v1"
 _CACHE_TTL = 900  # 15 minuti
 
 # (nome mostrato, url feed RSS)
+# NB: il feed Gazzetta è il "dynamic-feed" di sezione, che è cronologico e
+# aggiornato in tempo reale; /rss/calcio.xml invece è editoriale e con date
+# vecchie (fermo al 2023).
 SOURCES = [
-    ("Gazzetta", "https://www.gazzetta.it/rss/calcio.xml"),
+    ("Gazzetta", "https://www.gazzetta.it/dynamic-feed/rss/section/Calcio.xml"),
     ("Corriere dello Sport", "https://www.corrieredellosport.it/rss/calcio"),
 ]
+
+
+def _item_image(it):
+    """URL immagine da un <item>: prima <enclosure url>, poi qualsiasi tag
+    in namespace media (media:thumbnail / media:content) con attributo url."""
+    enc = it.find("enclosure")
+    if enc is not None and enc.get("url"):
+        return enc.get("url")
+    for ch in it:
+        tag = ch.tag.split("}")[-1]  # toglie il namespace
+        if tag in ("thumbnail", "content") and ch.get("url"):
+            return ch.get("url")
+    return ""
 
 
 def _parse_date(raw):
@@ -53,8 +69,7 @@ def _fetch_feed(name, url, per_feed):
         link = (it.findtext("link") or "").strip()
         if not title or not link:
             continue
-        enc = it.find("enclosure")
-        image = (enc.get("url") if enc is not None else "") or ""
+        image = _item_image(it)
         items.append({
             "title": title,
             "link": link,
