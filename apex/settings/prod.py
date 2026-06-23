@@ -174,8 +174,10 @@ if SENTRY_DSN:
 # only, but lets the app boot without Redis if you don't need realtime).
 REDIS_URL = os.environ.get("REDIS_URL")
 
-# SportMonks API — risultati live sul comparatore scommesse
-SPORTMONKS_API_TOKEN = os.environ.get("SPORTMONKS_API_TOKEN", "")
+# Live scores — aggregatore multi-fonte
+FOOTBALL_DATA_API_TOKEN = os.environ.get("FOOTBALL_DATA_API_TOKEN", "")
+API_FOOTBALL_TOKEN = os.environ.get("API_FOOTBALL_TOKEN", "")
+ALLSPORTS_API_TOKEN = os.environ.get("ALLSPORTS_API_TOKEN", "")
 if REDIS_URL:
     CHANNEL_LAYERS = {
         "default": {
