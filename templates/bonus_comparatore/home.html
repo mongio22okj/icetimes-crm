@@ -157,6 +157,17 @@ nav a:hover{color:#fff}
 .bm-card .bm-cta.ph{background:#8a96ab}
 .bm-card .bm-cta:hover{filter:brightness(1.07)}
 
+/* ── fila bookmaker orizzontale ── */
+.bm-row{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap}
+.bm-row-card{flex:1 1 0;min-width:120px;background:#fff;border:1px solid #e2e7ef;border-radius:12px;padding:12px 10px;display:flex;flex-direction:column;align-items:center;gap:5px;text-align:center}
+.bm-row-logo{height:36px;display:flex;align-items:center;justify-content:center}
+.bm-row-logo img{max-height:34px;max-width:90px;object-fit:contain}
+.bm-row-name{font-size:12px;font-weight:800;color:#0e1d36}
+.bm-row-offer{font-size:10.5px;color:#3a6ea5;font-weight:600;line-height:1.3}
+.bm-row-cta{margin-top:4px;display:block;width:100%;background:#0e1d36;color:#fff;font-size:11px;font-weight:700;padding:6px 0;border-radius:8px;text-decoration:none;text-align:center}
+.bm-row-cta.ph{background:#8a9ab5}
+.bm-row-cta:hover{filter:brightness(1.1)}
+
 /* toggle sport/casino */
 .bm-tabs{display:flex;gap:4px;margin:5px 0 6px}
 .bm-tab{border:1px solid #d6dde8;background:#f3f5f9;color:#5b6b86;font-size:10.5px;font-weight:700;padding:3px 8px;border-radius:999px;cursor:pointer}
@@ -236,35 +247,8 @@ nav a:hover{color:#fff}
   {# ── 3-column layout: sidebar sinistra | live scores | sidebar destra ── #}
   <div class="page-layout">
 
-    {# ── SIDEBAR SINISTRA: bookmaker dispari + prime 2 notizie ── #}
+    {# ── SIDEBAR SINISTRA: notizie ── #}
     <aside class="sidebar">
-      {% for bm in bookmakers %}
-        {% if not forloop.counter|divisibleby:2 %}
-        {% with bonus=bm.primary_bonus %}
-        <div class="sb-card">
-          <div class="sb-logobox">
-            {% if bm.logo %}<img src="{{ bm.logo.url }}" alt="{{ bm.name }}">
-            {% elif bm.logo_url and 's2/favicons' not in bm.logo_url %}<img src="{{ bm.logo_url }}" alt="{{ bm.name }}">
-            {% else %}<span class="sb-brandmark">{% if bm.logo_url %}<img src="{{ bm.logo_url }}" alt="">{% endif %}{{ bm.name }}</span>
-            {% endif %}
-          </div>
-          <div class="sb-name">{{ bm.name }}</div>
-          {% if bm.license_type == 'adm' %}<span class="sb-badge adm">ADM</span>{% endif %}
-          {% if bonus %}
-          <div class="sb-offer">{{ bonus.title }}{% if bonus.amount_text %}<br>{{ bonus.amount_text }}{% endif %}</div>
-          {% if bonus.terms_summary %}<div class="sb-terms">{{ bonus.terms_summary }}</div>{% endif %}
-          {% else %}
-          <div class="sb-offer">Bonus in aggiornamento</div>
-          {% endif %}
-          <a class="sb-cta {% if not bm.has_affiliate %}ph{% endif %}"
-             href="{% url 'bonus_comparatore:go' bm.slug %}"
-             target="_blank" rel="sponsored nofollow noopener">
-            {% if bm.has_affiliate %}Ottieni bonus{% else %}Visita il sito{% endif %}
-          </a>
-        </div>
-        {% endwith %}
-        {% endif %}
-      {% endfor %}
       {# prime 2 notizie nella sidebar sinistra #}
       {% for n in news|slice:":2" %}
       <a class="sb-news" href="{{ n.link }}" target="_blank" rel="nofollow noopener">
@@ -286,6 +270,26 @@ nav a:hover{color:#fff}
         <span class="ls-refresh" id="ls-refresh-time">aggiornamento in corso…</span>
       </div>
       <div id="ls-container" class="ls-loading">Caricamento partite…</div>
+
+      {# ── fila bookmaker sotto la tabella ── #}
+      {% if bookmakers %}
+      <div class="bm-row">
+        {% for bm in bookmakers %}
+        {% with bonus=bm.primary_bonus %}
+        <div class="bm-row-card">
+          <div class="bm-row-logo">
+            {% if bm.logo %}<img src="{{ bm.logo.url }}" alt="{{ bm.name }}">
+            {% elif bm.logo_url %}<img src="{{ bm.logo_url }}" alt="{{ bm.name }}">
+            {% else %}<span style="font-size:11px;font-weight:800;color:#0e1d36">{{ bm.name }}</span>{% endif %}
+          </div>
+          <div class="bm-row-name">{{ bm.name }}</div>
+          <div class="bm-row-offer">{% if bonus %}{{ bonus.title }}{% if bonus.amount_text %} · {{ bonus.amount_text }}{% endif %}{% else %}Bonus in aggiornamento{% endif %}</div>
+          <a class="bm-row-cta {% if not bm.has_affiliate %}ph{% endif %}" href="{% url 'bonus_comparatore:go' bm.slug %}" target="_blank" rel="sponsored nofollow noopener">{% if bm.has_affiliate %}Ottieni{% else %}Visita{% endif %}</a>
+        </div>
+        {% endwith %}
+        {% endfor %}
+      </div>
+      {% endif %}
 
       {% if False %}{# sezioni bookmaker rimosse: già presenti nei banner laterali #}
 
@@ -372,35 +376,8 @@ nav a:hover{color:#fff}
 
     </div>
 
-    {# ── SIDEBAR DESTRA: bookmaker pari + notizie 3-4 ── #}
+    {# ── SIDEBAR DESTRA: notizie 3-4 ── #}
     <aside class="sidebar">
-      {% for bm in bookmakers %}
-        {% if forloop.counter|divisibleby:2 %}
-        {% with bonus=bm.primary_bonus %}
-        <div class="sb-card">
-          <div class="sb-logobox">
-            {% if bm.logo %}<img src="{{ bm.logo.url }}" alt="{{ bm.name }}">
-            {% elif bm.logo_url and 's2/favicons' not in bm.logo_url %}<img src="{{ bm.logo_url }}" alt="{{ bm.name }}">
-            {% else %}<span class="sb-brandmark">{% if bm.logo_url %}<img src="{{ bm.logo_url }}" alt="">{% endif %}{{ bm.name }}</span>
-            {% endif %}
-          </div>
-          <div class="sb-name">{{ bm.name }}</div>
-          {% if bm.license_type == 'adm' %}<span class="sb-badge adm">ADM</span>{% endif %}
-          {% if bonus %}
-          <div class="sb-offer">{{ bonus.title }}{% if bonus.amount_text %}<br>{{ bonus.amount_text }}{% endif %}</div>
-          {% if bonus.terms_summary %}<div class="sb-terms">{{ bonus.terms_summary }}</div>{% endif %}
-          {% else %}
-          <div class="sb-offer">Bonus in aggiornamento</div>
-          {% endif %}
-          <a class="sb-cta {% if not bm.has_affiliate %}ph{% endif %}"
-             href="{% url 'bonus_comparatore:go' bm.slug %}"
-             target="_blank" rel="sponsored nofollow noopener">
-            {% if bm.has_affiliate %}Ottieni bonus{% else %}Visita il sito{% endif %}
-          </a>
-        </div>
-        {% endwith %}
-        {% endif %}
-      {% endfor %}
       {# notizie 3-4 nella sidebar destra #}
       {% for n in news|slice:"2:4" %}
       <a class="sb-news" href="{{ n.link }}" target="_blank" rel="nofollow noopener">
