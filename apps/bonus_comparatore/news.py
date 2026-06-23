@@ -8,7 +8,7 @@ pagina non si rompe mai.
 """
 import html
 import urllib.request
-from datetime import datetime, timezone
+from datetime import timezone
 from email.utils import parsedate_to_datetime
 from xml.etree import ElementTree as ET
 
@@ -76,24 +76,28 @@ def fetch_news(limit=9, per_feed=8):
     if cached is not None:
         return cached[:limit]
 
-    collected = []
+    # Ogni feed mantenuto nel suo ordine nativo (Gazzetta = ranking editoriale,
+    # Corriere = cronologico). NON ordino globalmente per data, altrimenti la
+    # Gazzetta (che ha date editoriali non recenti) sparirebbe sotto al
+    # Corriere: invece ALTERNO le due fonti così appaiono entrambe.
+    per_source = []
     for name, url in SOURCES:
         try:
-            collected.extend(_fetch_feed(name, url, per_feed))
+            per_source.append(_fetch_feed(name, url, per_feed))
         except Exception:  # noqa: BLE001 — feed giù: si salta
-            continue
+            per_source.append([])
 
-    _floor = datetime.min.replace(tzinfo=timezone.utc)
-    collected.sort(key=lambda x: x["published"] or _floor, reverse=True)
-
-    # de-dup per titolo (le due testate a volte rilanciano la stessa notizia)
     seen, merged = set(), []
-    for x in collected:
-        key = x["title"].lower()
-        if key in seen:
-            continue
-        seen.add(key)
-        merged.append(x)
+    idx = 0
+    while any(idx < len(s) for s in per_source):
+        for s in per_source:
+            if idx < len(s):
+                x = s[idx]
+                key = x["title"].lower()
+                if key not in seen:
+                    seen.add(key)
+                    merged.append(x)
+        idx += 1
 
     cache.set(_CACHE_KEY, merged, _CACHE_TTL)
     return merged[:limit]
