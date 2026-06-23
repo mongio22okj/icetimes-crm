@@ -120,6 +120,12 @@ def _broker_label(slug):
     return _BROKER_LABELS["map"].get(slug, slug)
 
 
+def _broker_filter_choices():
+    """Opzioni del filtro Broker (slug → nome) risolte a render-time dal DB,
+    così il menu di filtro elenca i broker reali e non valori statici."""
+    return tuple((s.slug, s.name) for s in LeadSource.objects.order_by("id"))
+
+
 LEADS_TABLE = TableConfig(
     key="leads",
     columns=(
@@ -144,7 +150,7 @@ LEADS_TABLE = TableConfig(
                filter=Filter("text", placeholder="Filtra stato…"),
                template="leads/_table_cells.html#status"),
         Column("source", "Broker", sortable=True,
-               filter=Filter("text", placeholder="Filtra broker…"),
+               filter=Filter("select", choices=_broker_filter_choices),
                formatter=_broker_label,
                template="leads/_table_cells.html#broker"),
         Column("event_at", "Aggiornato il", sortable=True,
@@ -180,23 +186,42 @@ class LeadListView(BreadcrumbsMixin, LoginRequiredMixin,
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-        ctx["lead_stats"] = self._period_stats()
+        # Report (conteggi + FTD per periodo) coerente coi filtri attivi:
+        # se è selezionato un broker e/o un paese, le statistiche in alto
+        # mostrano SOLO le registrazioni di quel broker/paese.
+        country = (self.request.GET.get("country") or "").strip().upper()
+        source = (self.request.GET.get("source") or "").strip()
+        base = Lead.objects.all()
+        if country:
+            base = base.filter(country=country)
+        if source:
+            base = base.filter(source=source)
+        ctx["lead_stats"] = self._period_stats(base)
         ctx["country_options"] = [
             ("IT", "🇮🇹", "Italia"),
             ("ES", "🇪🇸", "Spagna"),
             ("DE", "🇩🇪", "Germania"),
             ("SE", "🇸🇪", "Svezia"),
         ]
+        # Pillole filtro Broker (slug → nome) per la barra sopra la tabella.
+        ctx["broker_options"] = [
+            (s.slug, s.name) for s in LeadSource.objects.order_by("id")
+        ]
+        ctx["current_broker"] = source
         return ctx
 
     @staticmethod
-    def _period_stats():
-        """Counts + deposit conversion per period (doctorback-style panel)."""
+    def _period_stats(base_qs=None):
+        """Counts + deposit conversion per period (doctorback-style panel).
+
+        `base_qs` permette di calcolare il report su un sottoinsieme già
+        filtrato (es. per broker/paese); se None usa tutti i lead.
+        """
         from datetime import timedelta
 
         from django.utils import timezone
-        from django.utils.translation import gettext as _
 
+        base_qs = base_qs if base_qs is not None else Lead.objects.all()
         today = timezone.localdate()
         week_start = today - timedelta(days=today.weekday())
         last_week_start = week_start - timedelta(days=7)
@@ -214,7 +239,7 @@ class LeadListView(BreadcrumbsMixin, LoginRequiredMixin,
         )
         stats = []
         for label, start, end in periods:
-            qs = Lead.objects.all()
+            qs = base_qs
             if start:
                 qs = qs.filter(created_at__date__gte=start,
                                created_at__date__lte=end)

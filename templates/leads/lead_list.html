@@ -50,5 +50,22 @@
   {% endwith %}
 </div>
 
+{# ── Filtro Broker ────────────────────────────────────────────────── #}
+<div class="flex items-center gap-2 mb-4 flex-wrap">
+  <span class="text-xs font-semibold uppercase tracking-wider text-muted-foreground mr-1">Broker</span>
+  {% with cur=request.GET.source %}
+  <a href="{% querystring source=None %}"
+     class="h-8 px-3 inline-flex items-center rounded-full text-sm border transition-colors
+            {% if not cur %}bg-primary text-primary-foreground border-primary{% else %}border-border hover:bg-accent{% endif %}">Tutti</a>
+  {% for slug,name in broker_options %}
+  <a href="{% querystring source=slug %}"
+     class="h-8 px-3 inline-flex items-center rounded-full text-sm border transition-colors
+            {% if cur == slug %}bg-primary text-primary-foreground border-primary{% else %}border-border hover:bg-accent{% endif %}">
+    {{ name }}
+  </a>
+  {% endfor %}
+  {% endwith %}
+</div>
+
 {% include "core/tables/_table.html" %}
 {% endblock %}
