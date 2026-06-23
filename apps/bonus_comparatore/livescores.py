@@ -121,15 +121,30 @@ def fetch_todays_schedule():
     today = date.today()
     base = f"?api_token={token}&include=scores;participants;league;state"
 
-    # 1) Partite di oggi (programma completo + risultati in corso)
+    # 1) Partite in corso adesso (livescores)
+    try:
+        payload = _fetch_json(
+            f"https://api.sportmonks.com/v3/football/livescores{base}"
+        )
+        live = _parse_fixtures(payload.get("data") or [])
+        for m in live:
+            m["is_live"] = True
+    except Exception:
+        live = []
+
+    # 2) Partite di oggi (programma completo)
     try:
         payload = _fetch_json(
             f"https://api.sportmonks.com/v3/football/fixtures/date/{today.isoformat()}{base}"
         )
-        matches = _parse_fixtures(payload.get("data") or [])
-        matches.sort(key=lambda x: x["starting_at"])
+        today_fix = _parse_fixtures(payload.get("data") or [])
     except Exception:
-        matches = []
+        today_fix = []
+
+    # Unisci senza duplicati: live ha precedenza
+    live_keys = {(m["home"], m["away"]) for m in live}
+    merged = live + [m for m in today_fix if (m["home"], m["away"]) not in live_keys]
+    matches = sorted(merged, key=lambda x: (not x["is_live"], x["starting_at"]))
 
     # 3) Se oggi è vuoto, cerca le prossime partite nei prossimi 90 giorni
     if not matches:
