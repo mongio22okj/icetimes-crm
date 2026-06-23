@@ -82,6 +82,22 @@ main{padding-bottom:40px}
 .method p{margin:0 0 8px;font-size:13.5px;color:#5b6b86}
 .method ul{margin:6px 0 0 16px;padding:0;font-size:13.5px;color:#5b6b86}
 
+/* news */
+.news{margin:28px 0}
+.news h2{font-size:20px;color:#0e1d36;margin:0 0 4px}
+.news .sub{color:#5b6b86;font-size:13.5px;margin:0 0 16px}
+.news-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.ncard{background:#fff;border:1px solid #e2e7ef;border-radius:12px;overflow:hidden;display:flex;flex-direction:column;transition:box-shadow .15s,transform .15s}
+.ncard:hover{box-shadow:0 8px 24px rgba(20,40,80,.1);transform:translateY(-2px)}
+.ncard .thumb{aspect-ratio:16/9;background:#e8edf4 center/cover no-repeat;display:block}
+.ncard .body{padding:12px 14px;display:flex;flex-direction:column;gap:7px;flex:1}
+.ncard .src{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.3px;color:#1f9d63}
+.ncard .src .dot{width:6px;height:6px;border-radius:50%;background:#1f9d63}
+.ncard .t{font-size:14px;font-weight:700;color:#1a2335;line-height:1.35;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.ncard .when{font-size:11.5px;color:#9aa3b5;margin-top:auto}
+.news .credit{font-size:11.5px;color:#9aa3b5;margin-top:12px}
+@media(max-width:760px){.news-grid{grid-template-columns:1fr}}
+
 /* responsible gaming */
 .responsible{background:#0e1d36;color:#c8d3e3;font-size:12.5px;line-height:1.7;margin-top:30px}
 .responsible .wrap{padding:22px 18px}
@@ -112,6 +128,7 @@ main{padding-bottom:40px}
       <a href="?">Tutti</a>
       <a href="?c=sport">Scommesse</a>
       <a href="?c=casino">Casinò</a>
+      <a href="#news">Notizie</a>
       <a href="#metodo">Come valutiamo</a>
     </nav>
   </div>
@@ -207,6 +224,26 @@ main{padding-bottom:40px}
       <p style="text-align:center;color:#5b6b86;padding:40px 0">Nessun bookmaker disponibile in questa categoria.</p>
     {% endfor %}
   </div>
+
+  {% if news %}
+  <section class="news" id="news">
+    <h2>⚽ Ultime notizie sul calcio</h2>
+    <p class="sub">Titoli aggiornati dalle principali testate sportive italiane. Clicca per leggere l'articolo completo sulla fonte.</p>
+    <div class="news-grid">
+      {% for n in news %}
+      <a class="ncard" href="{{ n.link }}" target="_blank" rel="nofollow noopener">
+        {% if n.image %}<span class="thumb" style="background-image:url('{{ n.image }}')"></span>{% endif %}
+        <span class="body">
+          <span class="src"><span class="dot"></span>{{ n.source }}</span>
+          <span class="t">{{ n.title }}</span>
+          {% if n.published %}<span class="when">{{ n.published|date:"d/m/Y · H:i" }}</span>{% endif %}
+        </span>
+      </a>
+      {% endfor %}
+    </div>
+    <p class="credit">Notizie da Gazzetta dello Sport e Corriere dello Sport. Tutti i diritti dei contenuti appartengono alle rispettive testate.</p>
+  </section>
+  {% endif %}
 
   <div class="method" id="metodo">
     <h2>Come valutiamo i bookmaker</h2>

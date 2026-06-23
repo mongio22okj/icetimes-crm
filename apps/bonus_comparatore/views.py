@@ -29,6 +29,12 @@ class BonusHomeView(ListView):
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         ctx["active_category"] = self.request.GET.get("c", "")
+        # Notizie calcio (best-effort: mai bloccare la pagina se i feed sono giù)
+        try:
+            from .news import fetch_news
+            ctx["news"] = fetch_news(limit=9)
+        except Exception:  # noqa: BLE001
+            ctx["news"] = []
         return ctx
 
 
