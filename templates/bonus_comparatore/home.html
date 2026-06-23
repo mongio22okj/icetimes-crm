@@ -157,16 +157,29 @@ nav a:hover{color:#fff}
 .bm-card .bm-cta.ph{background:#8a96ab}
 .bm-card .bm-cta:hover{filter:brightness(1.07)}
 
-/* ── fila bookmaker orizzontale ── */
-.bm-row{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap}
-.bm-row-card{flex:1 1 0;min-width:120px;background:#fff;border:1px solid #e2e7ef;border-radius:12px;padding:12px 10px;display:flex;flex-direction:column;align-items:center;gap:5px;text-align:center}
-.bm-row-logo{height:36px;display:flex;align-items:center;justify-content:center}
-.bm-row-logo img{max-height:34px;max-width:90px;object-fit:contain}
-.bm-row-name{font-size:12px;font-weight:800;color:#0e1d36}
-.bm-row-offer{font-size:10.5px;color:#3a6ea5;font-weight:600;line-height:1.3}
-.bm-row-cta{margin-top:4px;display:block;width:100%;background:#0e1d36;color:#fff;font-size:11px;font-weight:700;padding:6px 0;border-radius:8px;text-decoration:none;text-align:center}
-.bm-row-cta.ph{background:#8a9ab5}
-.bm-row-cta:hover{filter:brightness(1.1)}
+/* ── banner promozionali bookmaker ── */
+.bm-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;margin-top:18px}
+@keyframes bm-glow{
+  0%,100%{box-shadow:0 2px 8px rgba(14,29,54,.08);border-color:#dde4ef}
+  50%{box-shadow:0 0 22px 5px rgba(220,160,0,.45),0 2px 8px rgba(14,29,54,.1);border-color:#e8a900}
+}
+.bm-row-card{background:linear-gradient(145deg,#0e1d36 0%,#1a3560 100%);border:2px solid #dde4ef;border-radius:14px;padding:14px 12px 12px;display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;position:relative;overflow:hidden;animation:bm-glow 2.5s ease-in-out infinite}
+.bm-row-card:nth-child(2){animation-delay:.55s}
+.bm-row-card:nth-child(3){animation-delay:1.1s}
+.bm-row-card:nth-child(4){animation-delay:1.65s}
+.bm-row-card:nth-child(5){animation-delay:2.2s}
+.bm-row-card:nth-child(6){animation-delay:.3s}
+.bm-row-card:nth-child(7){animation-delay:.85s}
+.bm-row-card:nth-child(8){animation-delay:1.4s}
+.bm-row-card:nth-child(9){animation-delay:1.95s}
+.bm-row-card::before{content:'🏆 OFFERTA';position:absolute;top:0;left:0;right:0;background:#e8a900;color:#0e1d36;font-size:9px;font-weight:900;letter-spacing:1px;padding:3px 0;text-align:center}
+.bm-row-logo{margin-top:14px;height:38px;display:flex;align-items:center;justify-content:center;background:#fff;border-radius:8px;width:100%;padding:4px 8px}
+.bm-row-logo img{max-height:32px;max-width:110px;object-fit:contain}
+.bm-row-name{font-size:13px;font-weight:900;color:#fff;margin-top:2px}
+.bm-row-offer{font-size:11px;color:#ffd84d;font-weight:700;line-height:1.35;min-height:28px}
+.bm-row-cta{margin-top:6px;display:block;width:100%;background:#e8a900;color:#0e1d36;font-size:12px;font-weight:900;padding:8px 0;border-radius:9px;text-decoration:none;text-align:center;letter-spacing:.3px}
+.bm-row-cta.ph{background:#4a6080;color:#bcc8d8}
+.bm-row-cta:hover{filter:brightness(1.1);transform:scale(1.02)}
 
 /* toggle sport/casino */
 .bm-tabs{display:flex;gap:4px;margin:5px 0 6px}
