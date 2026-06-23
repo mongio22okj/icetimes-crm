@@ -4,7 +4,7 @@ Cache 60s per rispettare i rate-limit del piano free.
 Best-effort: se l'API non risponde la sezione sparisce senza rompere la pagina.
 """
 import json
-import urllib.request
+import subprocess
 
 from django.conf import settings
 from django.core.cache import cache
@@ -39,6 +39,7 @@ def fetch_livescores():
         )
     except Exception:
         return []
+    # _fetch_json usa curl che bypassa il blocco Python-urllib di SportMonks
 
     matches = _parse_fixtures(payload.get("data") or [])
 
@@ -95,9 +96,14 @@ def _parse_fixtures(data):
 
 
 def _fetch_json(url):
-    req = urllib.request.Request(url, headers={"Accept": "application/json"})
-    with urllib.request.urlopen(req, timeout=10) as resp:
-        return json.loads(resp.read())
+    """SportMonks blocca Python-urllib con 403; usiamo subprocess curl."""
+    result = subprocess.run(
+        ["curl", "-s", "--max-time", "10", "-A", "curl/7.81.0", url],
+        capture_output=True, text=True, timeout=12,
+    )
+    if result.returncode != 0 or not result.stdout.strip():
+        raise RuntimeError(f"curl failed: {result.stderr[:200]}")
+    return json.loads(result.stdout)
 
 
 def fetch_todays_schedule():
@@ -115,28 +121,15 @@ def fetch_todays_schedule():
     today = date.today()
     base = f"?api_token={token}&include=scores;participants;league;state"
 
-    # 1) Livescores: partite in corso + appena finite (endpoint principale)
-    try:
-        payload = _fetch_json(
-            f"https://api.sportmonks.com/v3/football/livescores{base}"
-        )
-        live = _parse_fixtures(payload.get("data") or [])
-    except Exception:
-        live = []
-
-    # 2) Partite di oggi (programma completo)
+    # 1) Partite di oggi (programma completo + risultati in corso)
     try:
         payload = _fetch_json(
             f"https://api.sportmonks.com/v3/football/fixtures/date/{today.isoformat()}{base}"
         )
-        today_fix = _parse_fixtures(payload.get("data") or [])
+        matches = _parse_fixtures(payload.get("data") or [])
+        matches.sort(key=lambda x: x["starting_at"])
     except Exception:
-        today_fix = []
-
-    # Unisci: i live sovrascrivono i fixture con lo stesso nome
-    live_names = {(m["home"], m["away"]) for m in live}
-    merged = live + [m for m in today_fix if (m["home"], m["away"]) not in live_names]
-    matches = sorted(merged, key=lambda x: x["starting_at"])
+        matches = []
 
     # 3) Se oggi è vuoto, cerca le prossime partite nei prossimi 90 giorni
     if not matches:
