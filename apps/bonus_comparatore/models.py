@@ -64,6 +64,29 @@ class Bookmaker(models.Model):
         help_text="Elenco punti deboli, uno per riga.",
     )
 
+    brand_color = models.CharField(
+        max_length=20,
+        default="#111827",
+        blank=True,
+        help_text="Colore di sfondo del banner (es. #ffffff per bianco, #1b5e20 per verde Sisal).",
+    )
+    cta_color = models.CharField(
+        max_length=20,
+        default="#ffd600",
+        blank=True,
+        help_text="Colore del bottone CTA nel banner (es. #1565c0 per blu).",
+    )
+    cta_text_color = models.CharField(
+        max_length=20,
+        default="#111111",
+        blank=True,
+        help_text="Colore del testo nel bottone CTA (es. #ffffff per bianco).",
+    )
+    brand_text_dark = models.BooleanField(
+        default=False,
+        help_text="Testo scuro (nero) sul banner. Spuntare per sfondi chiari (es. Lottomatica bianco).",
+    )
+
     is_published = models.BooleanField(
         default=True,
         help_text="Se False, il bookmaker non appare sul sito pubblico.",

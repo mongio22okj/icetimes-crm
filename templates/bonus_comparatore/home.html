@@ -334,20 +334,22 @@ body{background:#e8f0fa!important}
       <div class="bm-row">
         {% for bm in bookmakers %}
         {% with bonus=bm.primary_bonus %}
-        <div class="bm-row-card">
+        {% with bgc=bm.brand_color|default:"#111827" txtc=bm.cta_color|default:"#ffd600" txttc=bm.cta_text_color|default:"#111111" %}
+        <div class="bm-row-card" style="background:{{ bgc }}">
           <div class="bm-row-hd">
             <div class="bm-row-logo">
               {% if bm.logo %}<img src="{{ bm.logo.url }}" alt="{{ bm.name }}">
               {% elif bm.logo_url %}<img src="{{ bm.logo_url }}" alt="{{ bm.name }}">
               {% else %}<span style="font-size:9px;font-weight:900;color:#0e1d36;text-align:center;line-height:1.1">{{ bm.name|slice:":4" }}</span>{% endif %}
             </div>
-            <span class="bm-row-name">{{ bm.name }}</span>
-            <span class="bm-row-arrow">∧</span>
+            <span class="bm-row-name" style="{% if bm.brand_text_dark %}color:#111{% endif %}">{{ bm.name }}</span>
+            <span class="bm-row-arrow" style="{% if bm.brand_text_dark %}color:rgba(0,0,0,.35){% endif %}">∧</span>
           </div>
-          <div class="bm-row-title">{% if bonus %}{{ bonus.title }}{% if bonus.amount_text %} {{ bonus.amount_text }}{% endif %}{% else %}Bonus in aggiornamento{% endif %}</div>
-          <div class="bm-row-desc">{% if bm.short_description %}{{ bm.short_description }}{% elif bonus and bonus.description %}{{ bonus.description }}{% else %}Offerta di benvenuto per nuovi iscritti. T&amp;C applicabili.{% endif %}</div>
-          <a class="bm-row-cta {% if not bm.has_affiliate %}ph{% endif %}" href="{% url 'bonus_comparatore:go' bm.slug %}" target="_blank" rel="sponsored nofollow noopener">Visita il sito</a>
+          <div class="bm-row-title" style="{% if bm.brand_text_dark %}color:#111{% endif %}">{% if bonus %}{{ bonus.title }}{% if bonus.amount_text %} {{ bonus.amount_text }}{% endif %}{% else %}Bonus in aggiornamento{% endif %}</div>
+          <div class="bm-row-desc" style="{% if bm.brand_text_dark %}color:rgba(0,0,0,.55){% endif %}">{% if bm.short_description %}{{ bm.short_description }}{% elif bonus.description %}{{ bonus.description }}{% else %}Offerta di benvenuto per nuovi iscritti. T&amp;C applicabili.{% endif %}</div>
+          <a class="bm-row-cta {% if not bm.has_affiliate %}ph{% endif %}" style="{% if bm.has_affiliate %}background:{{ txtc }};color:{{ txttc }}{% endif %}" href="{% url 'bonus_comparatore:go' bm.slug %}" target="_blank" rel="sponsored nofollow noopener">Visita il sito</a>
         </div>
+        {% endwith %}
         {% endwith %}
         {% endfor %}
       </div>
