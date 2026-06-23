@@ -68,29 +68,40 @@ nav a:hover{color:#fff}
 .center-col{display:flex;flex-direction:column;gap:0}
 
 /* ── live scores ── */
-.ls-head{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.ls-head{display:flex;align-items:center;gap:8px;margin-bottom:6px}
 .ls-head h2{font-size:17px;color:#0e1d36;margin:0;font-weight:800}
 .ls-pulse{width:9px;height:9px;border-radius:50%;background:#e53935;flex-shrink:0;animation:pulse 1.4s infinite}
 @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.75)}}
 .ls-refresh{font-size:11px;color:#9aa3b5;margin-left:auto}
-.ls-table{width:100%;border-collapse:collapse;background:#fff;border:1px solid #e2e7ef;border-radius:12px;overflow:hidden;font-size:13.5px}
-.ls-table thead tr{background:#f3f5f9;border-bottom:2px solid #e2e7ef}
-.ls-table th{padding:9px 11px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:#7a879c;text-align:left}
-.ls-table th.center,.ls-table td.center{text-align:center}
-.ls-table tbody tr{border-bottom:1px solid #f0f3f8;transition:background .12s}
-.ls-table tbody tr:last-child{border-bottom:none}
-.ls-table tbody tr:hover{background:#fafbfd}
-.ls-table tbody tr.is-live{border-left:3px solid #e53935}
-.ls-table tbody tr.is-done{opacity:.75}
-.ls-table td{padding:9px 11px;vertical-align:middle}
-.td-league{display:flex;align-items:center;gap:5px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:#7a879c;white-space:nowrap}
-.td-team{display:flex;align-items:center;gap:5px;font-weight:600;color:#1a2335;white-space:nowrap;overflow:hidden;max-width:120px}
-.td-score{font-size:16px;font-weight:900;color:#0e1d36;text-align:center;min-width:50px}
-.td-score.ns{font-size:12px;color:#9aa3b5;font-weight:500}
-.ls-badge{display:inline-block;font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:999px;white-space:nowrap}
-.ls-badge.live{background:#fde8e8;color:#c62828}
-.ls-badge.ft{background:#e8f5e9;color:#2e7d32}
-.ls-badge.ns{background:#f3f5f9;color:#5b6b86}
+/* filtri */
+.ls-filters{display:flex;gap:0;border-bottom:2px solid #e2e7ef;margin-bottom:10px}
+.ls-fbtn{background:none;border:none;border-bottom:2px solid transparent;margin-bottom:-2px;padding:8px 14px;font-size:12px;font-weight:700;color:#7a879c;cursor:pointer;text-transform:uppercase;letter-spacing:.5px}
+.ls-fbtn.active{color:#0e1d36;border-bottom-color:#0e1d36}
+.ls-fbtn.flive.active{color:#e53935;border-bottom-color:#e53935}
+/* gruppi per competizione */
+.ls-group{margin-bottom:6px;border:1px solid #e2e7ef;border-radius:10px;overflow:hidden}
+.ls-comp-hd{display:flex;align-items:center;gap:7px;padding:7px 12px;background:#0e1d36;color:#fff}
+.ls-comp-logo{width:15px;height:15px;object-fit:contain;flex-shrink:0}
+.ls-comp-name{font-size:11.5px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;flex:1}
+.ls-comp-dot{width:7px;height:7px;border-radius:50%;background:#e53935;flex-shrink:0;animation:pulse 1.4s infinite}
+/* righe partita */
+.ls-row{display:grid;grid-template-columns:54px 1fr 48px 66px;align-items:center;padding:6px 12px;border-bottom:1px solid #f0f3f8;background:#fff;transition:background .1s}
+.ls-row:last-child{border-bottom:none}
+.ls-row.is-live{background:#fff8f8;border-left:3px solid #e53935}
+.ls-row:hover{background:#f5f8ff}
+.ls-stat{font-size:11px;font-weight:700;color:#7a879c;text-align:center;line-height:1.3}
+.ls-stat.red{color:#e53935}
+.ls-teams{display:flex;flex-direction:column;gap:5px}
+.ls-team{display:flex;align-items:center;gap:6px;font-size:13px;color:#1a2335;font-weight:500;overflow:hidden}
+.ls-team img{width:16px;height:16px;object-fit:contain;flex-shrink:0}
+.ls-team .bold{font-weight:800}
+.ls-scores{display:flex;flex-direction:column;align-items:center;gap:5px}
+.ls-sc{font-size:14px;font-weight:700;color:#1a2335;text-align:center;line-height:1}
+.ls-sc.red{color:#e53935;font-weight:900}
+.ls-sc.muted{font-size:11px;color:#9aa3b5;font-weight:400}
+.ls-bdg{display:flex;align-items:center;justify-content:flex-end}
+.ls-bdg-live{background:#e53935;color:#fff;font-size:9px;font-weight:900;padding:3px 7px;border-radius:4px;letter-spacing:.5px}
+.ls-bdg-ft{background:#e8f5e9;color:#2e7d32;font-size:9px;font-weight:700;padding:3px 7px;border-radius:4px}
 .ls-empty{text-align:center;color:#7a879c;font-size:13px;padding:24px;background:#fff;border:1px solid #e2e7ef;border-radius:12px}
 .ls-loading{text-align:center;color:#9aa3b5;font-size:12.5px;padding:20px;background:#fff;border:1px solid #e2e7ef;border-radius:12px}
 
@@ -282,8 +293,14 @@ body{background:#e8f0fa!important}
     <div class="center-col" id="live">
       <div class="ls-head">
         <span class="ls-pulse"></span>
-        <h2>Risultati del giorno</h2>
+        <h2 id="ls-title">Risultati del giorno</h2>
         <span class="ls-refresh" id="ls-refresh-time">aggiornamento in corso…</span>
+      </div>
+      <div class="ls-filters">
+        <button class="ls-fbtn flive active" onclick="lsFilter('live',this)">⬤ Live</button>
+        <button class="ls-fbtn" onclick="lsFilter('all',this)">Tutti</button>
+        <button class="ls-fbtn" onclick="lsFilter('finished',this)">Conclusi</button>
+        <button class="ls-fbtn" onclick="lsFilter('scheduled',this)">Programma</button>
       </div>
       <div id="ls-container" class="ls-loading">Caricamento partite…</div>
 
@@ -467,97 +484,107 @@ body{background:#e8f0fa!important}
   var container = document.getElementById("ls-container");
   var refreshLabel = document.getElementById("ls-refresh-time");
 
-  function statusClass(m){ return m.is_live?"is-live":m.is_finished?"is-done":""; }
-  function badgeClass(m){ return m.is_live?"live":m.is_finished?"ft":"ns"; }
+  var allMatches=[], currentFilter='live';
+  window._lsRender=function(f){currentFilter=f;render(allMatches);};
 
-  function scoreHtml(m){
-    if(m.home_score===null||m.home_score===undefined){
-      var t="";
-      if(m.starting_at){
-        var raw=m.starting_at;
-        if(raw.indexOf('T')===-1) raw=raw.replace(' ','T');
-        if(raw.slice(-1)!=='Z') raw+='Z';
-        var d=new Date(raw);
-        t=d.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});
-      }
-      return '<span class="td-score ns">'+(t||"–")+'</span>';
-    }
-    var min=m.is_live&&m.minute?" <small style='font-size:9px;color:#e53935'>"+m.minute+"'</small>":"";
-    return '<span class="td-score">'+m.home_score+' – '+m.away_score+min+'</span>';
+  function fmtTime(s){
+    if(!s) return '';
+    var raw=s; if(raw.indexOf('T')===-1) raw=raw.replace(' ','T');
+    if(raw.slice(-1)!=='Z'&&raw.indexOf('+')===-1) raw+='Z';
+    var d=new Date(raw); if(isNaN(d)) return '';
+    var today=new Date().toISOString().slice(0,10);
+    var t=d.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});
+    return s.slice(0,10)===today?t:d.toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit'})+' '+t;
   }
 
-  function statusLabel(m){
-    if(m.is_live&&m.minute) return m.minute+"'";
-    if(m.is_live) return m.status||'LIVE';
-    if(m.is_finished) return m.status||'FT';
-    if(m.starting_at){
-      var raw=m.starting_at;
-      if(raw.indexOf('T')===-1) raw=raw.replace(' ','T');
-      if(raw.slice(-1)!=='Z') raw+='Z';
-      var d=new Date(raw);
-      var today=new Date().toISOString().slice(0,10);
-      var md=m.starting_at.slice(0,10);
-      var time=d.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});
-      return md===today?time:d.toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit'})+' '+time;
-    }
-    return m.status||'NS';
-  }
-
-  function logoHtml(url,alt){
-    if(!url) return '';
-    return '<img src="'+url+'" alt="'+alt+'" style="width:18px;height:18px;object-fit:contain;flex-shrink:0" loading="lazy">';
+  function renderRow(m){
+    var stat=m.is_live?(m.minute?(m.minute+"'"):(m.status||'LIVE')):m.is_finished?'FT':fmtTime(m.starting_at);
+    var statCls='ls-stat'+(m.is_live?' red':'');
+    var hasScore=m.home_score!==null&&m.home_score!==undefined;
+    var scCls='ls-sc'+(m.is_live?' red':'');
+    var hw=hasScore&&m.home_score>m.away_score?' bold':'';
+    var aw=hasScore&&m.away_score>m.home_score?' bold':'';
+    var crest=function(u,a){return u?'<img src="'+u+'" alt="'+a+'" loading="lazy">':'';};
+    var badge=m.is_live?'<span class="ls-bdg-live">LIVE</span>':m.is_finished?'<span class="ls-bdg-ft">FT</span>':'';
+    return '<div class="ls-row'+(m.is_live?' is-live':'')+'">'
+      +'<div class="'+statCls+'">'+stat+'</div>'
+      +'<div class="ls-teams">'
+        +'<div class="ls-team">'+crest(m.home_logo,m.home)+'<span class="'+hw+'">'+m.home+'</span></div>'
+        +'<div class="ls-team">'+crest(m.away_logo,m.away)+'<span class="'+aw+'">'+m.away+'</span></div>'
+      +'</div>'
+      +'<div class="ls-scores">'
+        +(hasScore?'<div class="'+scCls+'">'+m.home_score+'</div><div class="'+scCls+'">'+m.away_score+'</div>':'<div class="ls-sc muted">-</div><div class="ls-sc muted">-</div>')
+      +'</div>'
+      +'<div class="ls-bdg">'+badge+'</div>'
+      +'</div>';
   }
 
   function render(matches){
     if(!matches||!matches.length){
-      container.className="ls-empty";
-      container.innerHTML="Nessuna partita in programma nel breve periodo.";
+      container.className='ls-empty';
+      container.innerHTML='Nessuna partita disponibile.';
       return;
     }
-    var todayStr=new Date().toISOString().slice(0,10);
-    var hasLive=matches.some(function(m){return m.is_live;});
-    var hasToday=matches.some(function(m){return(m.starting_at||'').slice(0,10)===todayStr;});
-    var hasFuture=matches.some(function(m){return!m.is_live&&!m.is_finished;});
-    var title=hasLive||hasToday?'Risultati del giorno':hasFuture?'Prossime partite':'Ultimi risultati';
-    document.querySelector('#live h2').textContent=title;
-
-    var html='<table class="ls-table"><thead><tr>'
-      +'<th class="th-league">Campionato</th>'
-      +'<th style="text-align:right">Casa</th>'
-      +'<th class="center">Risultato</th>'
-      +'<th>Ospite</th>'
-      +'<th class="center">Stato</th>'
-      +'</tr></thead><tbody>';
-    matches.forEach(function(m){
-      html+='<tr class="'+statusClass(m)+'">'
-        +'<td><div class="td-league">'+(m.league_logo?'<img src="'+m.league_logo+'" style="width:13px;height:13px;object-fit:contain" loading="lazy">':'')+(m.league||'')+'</div></td>'
-        +'<td><div class="td-team" style="justify-content:flex-end">'+m.home+logoHtml(m.home_logo,m.home)+'</div></td>'
-        +'<td class="center">'+scoreHtml(m)+'</td>'
-        +'<td><div class="td-team">'+logoHtml(m.away_logo,m.away)+m.away+'</div></td>'
-        +'<td class="center"><span class="ls-badge '+badgeClass(m)+'">'+statusLabel(m)+'</span></td>'
-        +'</tr>';
+    var shown=matches.filter(function(m){
+      if(currentFilter==='live') return m.is_live;
+      if(currentFilter==='finished') return m.is_finished;
+      if(currentFilter==='scheduled') return !m.is_live&&!m.is_finished;
+      return true;
     });
-    html+='</tbody></table>';
-    container.className="";
+    if(!shown.length){
+      container.className='ls-empty';
+      container.innerHTML='Nessuna partita in questa categoria al momento.';
+      return;
+    }
+    var groups={},order=[];
+    shown.forEach(function(m){
+      var k=m.league||'Altro';
+      if(!groups[k]){groups[k]={name:k,logo:m.league_logo,rows:[],live:false};order.push(k);}
+      groups[k].rows.push(m);
+      if(m.is_live) groups[k].live=true;
+    });
+    order.sort(function(a,b){return (groups[b].live?1:0)-(groups[a].live?1:0);});
+    var html='';
+    order.forEach(function(k){
+      var g=groups[k];
+      html+='<div class="ls-group">'
+        +'<div class="ls-comp-hd">'
+          +(g.logo?'<img class="ls-comp-logo" src="'+g.logo+'" loading="lazy">':'')
+          +'<span class="ls-comp-name">'+g.name+'</span>'
+          +(g.live?'<span class="ls-comp-dot"></span>':'')
+        +'</div>';
+      g.rows.forEach(function(m){html+=renderRow(m);});
+      html+='</div>';
+    });
+    container.className='';
     container.innerHTML=html;
+    var hasLive=matches.some(function(m){return m.is_live;});
+    document.getElementById('ls-title').textContent=hasLive?'Risultati live':'Partite del giorno';
   }
 
   function load(){
     fetch(API).then(function(r){return r.json();}).then(function(d){
-      render(d.matches);
+      allMatches=d.matches||[];
+      render(allMatches);
       var now=new Date();
       refreshLabel.textContent="aggiornato "+now.getHours()+":"+(now.getMinutes()<10?"0":"")+now.getMinutes();
     }).catch(function(){
-      if(!container.querySelector('table')){
-        container.className="ls-empty";
-        container.innerHTML="Dati non disponibili.";
+      if(!container.querySelector('.ls-group')){
+        container.className='ls-empty';
+        container.innerHTML='Dati non disponibili.';
       }
     });
   }
 
   load();
-  setInterval(load,60000);
+  setInterval(load,30000);
 })();
+
+function lsFilter(f,btn){
+  document.querySelectorAll('.ls-fbtn').forEach(function(b){b.classList.remove('active');});
+  btn.classList.add('active');
+  if(window._lsRender) window._lsRender(f);
+}
 
 function bmTab(btn, type){
   var card = btn.closest('.bm-card');
