@@ -287,7 +287,7 @@ nav a:hover{color:#fff}
       </div>
       <div id="ls-container" class="ls-loading">Caricamento partite…</div>
 
-      {% if bookmakers %}
+      {% if False %}{# sezioni bookmaker rimosse: già presenti nei banner laterali #}
 
       {# ── sport + casino (toggle) ── #}
       <div class="center-section">
@@ -438,57 +438,6 @@ nav a:hover{color:#fff}
     <p class="credit">Notizie da Gazzetta dello Sport e Corriere dello Sport. Tutti i diritti dei contenuti appartengono alle rispettive testate.</p>
   </section>
   {% endif %}
-
-  {# ── lista completa bookmaker ── #}
-  <div class="section-title">🏆 Confronto completo bonus benvenuto</div>
-  <div class="list">
-    {% for bm in bookmakers %}
-      {% with bonus=bm.primary_bonus %}
-      <div class="card {% if bonus.is_featured %}feat{% endif %}">
-        <div class="rank">{{ forloop.counter }}</div>
-        <div class="brand">
-          <div class="logo-box">
-            {% if bm.logo %}<img src="{{ bm.logo.url }}" alt="Logo {{ bm.name }}">
-            {% elif bm.logo_url and 's2/favicons' not in bm.logo_url %}<img src="{{ bm.logo_url }}" alt="Logo {{ bm.name }}">
-            {% else %}<span class="brandmark">{% if bm.logo_url %}<img class="fav" src="{{ bm.logo_url }}" alt="" loading="lazy">{% endif %}<span class="bn">{{ bm.name }}</span></span>
-            {% endif %}
-          </div>
-          {% if bm.license_number %}<div class="lic">ADM {{ bm.license_number }}</div>{% endif %}
-        </div>
-        <div class="info">
-          <div class="top">
-            <span class="name">{{ bm.name }}</span>
-            {% if bm.license_type == 'adm' %}<span class="badge adm">ADM</span>{% endif %}
-            {% if bm.category == 'both' %}<span class="badge both">Sport + Casinò</span>
-            {% elif bm.category == 'sport' %}<span class="badge sport">Scommesse</span>
-            {% elif bm.category == 'casino' %}<span class="badge casino">Casinò</span>{% endif %}
-          </div>
-          {% if bonus %}
-          <div class="bonus"><b>{{ bonus.title }}</b>{% if bonus.amount_text %} — {{ bonus.amount_text }}{% endif %}</div>
-          {% if bonus.terms_summary %}<div class="terms">{{ bonus.terms_summary }}</div>{% endif %}
-          {% else %}
-          <div class="bonus">Bonus in aggiornamento</div>
-          {% endif %}
-          <div class="rating">
-            <span class="stars">{% for i in "12345" %}{% if forloop.counter <= bm.rating %}★{% else %}☆{% endif %}{% endfor %}</span>
-            <span>{{ bm.rating }}/5</span>
-            {% if bm.short_description %}<span>· {{ bm.short_description }}</span>{% endif %}
-          </div>
-        </div>
-        <div class="act">
-          <a class="cta {% if not bm.has_affiliate %}placeholder{% endif %}"
-             href="{% url 'bonus_comparatore:go' bm.slug %}"
-             target="_blank" rel="sponsored nofollow noopener">
-            {% if bm.has_affiliate %}Ottieni il bonus{% else %}Vai al sito{% endif %}
-          </a>
-          <a class="review-link" href="{% url 'bonus_comparatore:detail' bm.slug %}">Recensione</a>
-        </div>
-      </div>
-      {% endwith %}
-    {% empty %}
-      <p style="text-align:center;color:#5b6b86;padding:32px 0">Nessun bookmaker disponibile.</p>
-    {% endfor %}
-  </div>
 
   <div class="method" id="metodo">
     <h2>Come valutiamo i bookmaker</h2>
