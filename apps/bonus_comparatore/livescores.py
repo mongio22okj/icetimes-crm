@@ -23,7 +23,7 @@ def _score(scores, side):
 
 
 def fetch_livescores():
-    """Ritorna lista di partite live. Lista vuota se API giù o nessuna partita."""
+    """Partite attualmente in gioco (inplay). Lista vuota se API giù o pausa."""
     cached = cache.get(_CACHE_KEY)
     if cached is not None:
         return cached
@@ -32,40 +32,18 @@ def fetch_livescores():
     if not token:
         return []
 
-    url = (
-        "https://api.sportmonks.com/v3/football/livescores"
-        f"?api_token={token}&include=scores;participants;league"
-    )
-    req = urllib.request.Request(url, headers={"Accept": "application/json"})
     try:
-        with urllib.request.urlopen(req, timeout=8) as resp:
-            payload = json.loads(resp.read())
+        payload = _fetch_json(
+            f"https://api.sportmonks.com/v3/football/livescores/inplay"
+            f"?api_token={token}&include=scores;participants;league;state"
+        )
     except Exception:
         return []
 
-    matches = []
-    for m in payload.get("data", []):
-        parts = m.get("participants") or []
-        home_p = next((p for p in parts if (p.get("meta") or {}).get("location") == "home"), {})
-        away_p = next((p for p in parts if (p.get("meta") or {}).get("location") == "away"), {})
-
-        scores = m.get("scores") or []
-        state = m.get("state") or {}
-        status = state.get("short_name") or state.get("developer_name") or "LIVE"
-        minute = m.get("minute") or ""
-
-        league = m.get("league") or {}
-        league_name = league.get("name") or league.get("short_code") or ""
-
-        matches.append({
-            "home": home_p.get("name", "?"),
-            "away": away_p.get("name", "?"),
-            "home_score": _score(scores, "home"),
-            "away_score": _score(scores, "away"),
-            "status": status,
-            "minute": minute,
-            "league": league_name,
-        })
+    matches = _parse_fixtures(payload.get("data") or [])
+    # forza is_live=True perché arrivano dall'endpoint inplay
+    for m in matches:
+        m["is_live"] = True
 
     cache.set(_CACHE_KEY, matches, _CACHE_TTL)
     return matches
@@ -140,16 +118,32 @@ def fetch_todays_schedule():
     today = date.today()
     base = f"?api_token={token}&include=scores;participants;league;state"
 
-    # 1) Prova partite di oggi
+    # 1) Partite live in questo momento (inplay)
+    try:
+        payload = _fetch_json(
+            f"https://api.sportmonks.com/v3/football/livescores/inplay{base}"
+        )
+        live = _parse_fixtures(payload.get("data") or [])
+        for m in live:
+            m["is_live"] = True
+    except Exception:
+        live = []
+
+    # 2) Partite di oggi (programma completo)
     try:
         payload = _fetch_json(
             f"https://api.sportmonks.com/v3/football/fixtures/date/{today.isoformat()}{base}"
         )
-        matches = _parse_fixtures(payload.get("data") or [])
+        today_fix = _parse_fixtures(payload.get("data") or [])
     except Exception:
-        matches = []
+        today_fix = []
 
-    # 2) Se oggi è vuoto, cerca le prossime partite nel range +30 giorni
+    # Unisci: i live sovrascrivono i fixture con lo stesso nome
+    live_names = {(m["home"], m["away"]) for m in live}
+    merged = live + [m for m in today_fix if (m["home"], m["away"]) not in live_names]
+    matches = sorted(merged, key=lambda x: x["starting_at"])
+
+    # 3) Se oggi è vuoto, cerca le prossime partite nel range +30 giorni
     if not matches:
         end = today + timedelta(days=30)
         try:
