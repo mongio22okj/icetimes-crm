@@ -173,6 +173,9 @@ if SENTRY_DSN:
 # Otherwise fall back to the in-memory layer from base.py (single-process
 # only, but lets the app boot without Redis if you don't need realtime).
 REDIS_URL = os.environ.get("REDIS_URL")
+
+# SportMonks API — risultati live sul comparatore scommesse
+SPORTMONKS_API_TOKEN = os.environ.get("SPORTMONKS_API_TOKEN", "")
 if REDIS_URL:
     CHANNEL_LAYERS = {
         "default": {

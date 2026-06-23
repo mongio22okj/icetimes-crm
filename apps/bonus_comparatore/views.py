@@ -1,4 +1,6 @@
-from django.http import HttpResponseRedirect
+import json
+
+from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from django.views.generic import DetailView, ListView, View
 
@@ -67,3 +69,18 @@ class BookmakerGoView(View):
         except Exception:  # noqa: BLE001
             pass
         return HttpResponseRedirect(bm.target_url)
+
+
+class LiveScoresApiView(View):
+    """JSON endpoint per il widget risultati live (polling JS ogni 60s)."""
+
+    def get(self, request):
+        try:
+            from .livescores import fetch_todays_schedule
+            matches = fetch_todays_schedule()
+        except Exception:
+            matches = []
+        return HttpResponse(
+            json.dumps({"matches": matches}, default=str),
+            content_type="application/json",
+        )
