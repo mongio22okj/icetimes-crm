@@ -108,6 +108,7 @@ def _af_parse(response):
             "status": _af_label(short, elapsed), "minute": elapsed or "",
             "league": league.get("name", ""), "league_logo": league.get("logo", ""),
             "starting_at": fix.get("date", ""), "is_live": is_live, "is_finished": is_fin,
+            "fixture_id": fix.get("id"), "_src": "af",
         })
     return out
 
