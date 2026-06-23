@@ -143,18 +143,33 @@ def fetch_todays_schedule():
     merged = live + [m for m in today_fix if (m["home"], m["away"]) not in live_names]
     matches = sorted(merged, key=lambda x: x["starting_at"])
 
-    # 3) Se oggi è vuoto, cerca le prossime partite nel range +30 giorni
+    # 3) Se oggi è vuoto, cerca le prossime partite nei prossimi 90 giorni
     if not matches:
-        end = today + timedelta(days=30)
+        end = today + timedelta(days=90)
         try:
             payload = _fetch_json(
                 f"https://api.sportmonks.com/v3/football/fixtures/between"
                 f"/{today.isoformat()}/{end.isoformat()}{base}&per_page=20"
             )
             upcoming = _parse_fixtures(payload.get("data") or [])
-            # Ordina per data e prendi le prime 16
             upcoming.sort(key=lambda x: x["starting_at"])
             matches = upcoming[:16]
+        except Exception:
+            matches = []
+
+    # 4) Se ancora vuoto (off-season totale), mostra gli ultimi risultati
+    if not matches:
+        start = today - timedelta(days=14)
+        try:
+            payload = _fetch_json(
+                f"https://api.sportmonks.com/v3/football/fixtures/between"
+                f"/{start.isoformat()}/{today.isoformat()}{base}&per_page=20"
+            )
+            recent = _parse_fixtures(payload.get("data") or [])
+            recent.sort(key=lambda x: x["starting_at"], reverse=True)
+            for m in recent:
+                m["_recent"] = True  # flag per il template
+            matches = recent[:16]
         except Exception:
             matches = []
 

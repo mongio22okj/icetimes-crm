@@ -373,10 +373,13 @@ main{padding-bottom:40px}
       container.innerHTML="Nessuna partita in programma nel breve periodo.";
       return;
     }
-    var hasToday=matches.some(function(m){
-      return m.is_live||m.is_finished||(m.starting_at||'').slice(0,10)===new Date().toISOString().slice(0,10);
-    });
-    document.querySelector('.live-scores h2').textContent=hasToday?'Risultati del giorno':'Prossime partite';
+    var todayStr=new Date().toISOString().slice(0,10);
+    var hasLive=matches.some(function(m){return m.is_live;});
+    var hasToday=matches.some(function(m){return (m.starting_at||'').slice(0,10)===todayStr;});
+    var hasRecent=matches.length>0 && matches.every(function(m){return m.is_finished;});
+    var hasFuture=matches.some(function(m){return !m.is_live&&!m.is_finished;});
+    var title=hasLive?'Risultati del giorno':hasToday?'Risultati del giorno':hasFuture?'Prossime partite':'Ultimi risultati';
+    document.querySelector('.live-scores h2').textContent=title;
 
     var html='<table class="ls-table">'
       +'<thead><tr>'
