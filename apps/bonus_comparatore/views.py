@@ -71,6 +71,32 @@ class BookmakerGoView(View):
         return HttpResponseRedirect(bm.target_url)
 
 
+class NewsApiView(View):
+    """JSON endpoint per le notizie sportive (polling JS ogni 5 min)."""
+
+    def get(self, request):
+        try:
+            from .news import fetch_news
+            # forza refresh se richiesto esplicitamente
+            if request.GET.get("refresh") == "1":
+                from django.core.cache import cache
+                cache.delete("ablecoin_news_v1")
+            items = fetch_news(limit=12)
+        except Exception:
+            items = []
+        # serializza datetime in stringa
+        out = []
+        for n in items:
+            out.append({
+                "title": n.get("title", ""),
+                "link": n.get("link", ""),
+                "source": n.get("source", ""),
+                "image": n.get("image", ""),
+                "published": n["published"].strftime("%d/%m · %H:%M") if n.get("published") else "",
+            })
+        return HttpResponse(json.dumps({"news": out}), content_type="application/json")
+
+
 class LiveScoresApiView(View):
     """JSON endpoint per il widget risultati live (polling JS ogni 60s)."""
 

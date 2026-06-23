@@ -276,7 +276,7 @@ body{background:#e8f0fa!important}
 
     {# ── SIDEBAR SINISTRA: notizie ── #}
     <aside class="sidebar">
-      {# prime 2 notizie nella sidebar sinistra #}
+      <div id="news-left">
       {% for n in news|slice:":2" %}
       <a class="sb-news" href="{{ n.link }}" target="_blank" rel="nofollow noopener">
         {% if n.image %}<span class="sn-thumb" style="background-image:url('{{ n.image }}')"></span>{% endif %}
@@ -287,6 +287,7 @@ body{background:#e8f0fa!important}
         </span>
       </a>
       {% endfor %}
+      </div>
     </aside>
 
     {# ── CENTRO: tabella live ── #}
@@ -411,7 +412,7 @@ body{background:#e8f0fa!important}
 
     {# ── SIDEBAR DESTRA: notizie 3-4 ── #}
     <aside class="sidebar">
-      {# notizie 3-4 nella sidebar destra #}
+      <div id="news-right">
       {% for n in news|slice:"2:4" %}
       <a class="sb-news" href="{{ n.link }}" target="_blank" rel="nofollow noopener">
         {% if n.image %}<span class="sn-thumb" style="background-image:url('{{ n.image }}')"></span>{% endif %}
@@ -422,6 +423,7 @@ body{background:#e8f0fa!important}
         </span>
       </a>
       {% endfor %}
+      </div>
     </aside>
 
   </div>{# fine page-layout #}
@@ -433,7 +435,7 @@ body{background:#e8f0fa!important}
       <span style="font-size:16px">⚽</span>
       <h2>Ultime notizie sportive</h2>
     </div>
-    <div class="news-grid">
+    <div class="news-grid" id="news-grid-main">
       {% for n in news|slice:"4:" %}
       <a class="ncard" href="{{ n.link }}" target="_blank" rel="nofollow noopener">
         {% if n.image %}<span class="thumb" style="background-image:url('{{ n.image }}')"></span>{% endif %}
@@ -578,6 +580,47 @@ body{background:#e8f0fa!important}
 
   load();
   setInterval(load,30000);
+})();
+
+// ── news polling ──────────────────────────────────────────────────────────
+(function(){
+  var NEWS_API="{% url 'bonus_comparatore:news_api' %}";
+  var leftEl=document.getElementById('news-left');
+  var rightEl=document.getElementById('news-right');
+  var gridEl=document.getElementById('news-grid-main');
+
+  function sbCard(n){
+    return '<a class="sb-news" href="'+n.link+'" target="_blank" rel="nofollow noopener">'
+      +(n.image?'<span class="sn-thumb" style="background-image:url(\''+n.image+'\')"></span>':'')
+      +'<span class="sn-body">'
+        +'<span class="sn-src">'+n.source+'</span>'
+        +'<span class="sn-t">'+n.title+'</span>'
+        +(n.published?'<span class="sn-d">'+n.published+'</span>':'')
+      +'</span></a>';
+  }
+
+  function gridCard(n){
+    return '<a class="ncard" href="'+n.link+'" target="_blank" rel="nofollow noopener">'
+      +(n.image?'<span class="thumb" style="background-image:url(\''+n.image+'\')"></span>':'')
+      +'<span class="nbody">'
+        +'<span class="nsrc"><span class="dot"></span>'+n.source+'</span>'
+        +'<span class="nt">'+n.title+'</span>'
+        +(n.published?'<span class="nwhen">'+n.published+'</span>':'')
+      +'</span></a>';
+  }
+
+  function refreshNews(){
+    fetch(NEWS_API).then(function(r){return r.json();}).then(function(d){
+      var news=d.news||[];
+      if(!news.length) return;
+      if(leftEl)  leftEl.innerHTML=news.slice(0,2).map(sbCard).join('');
+      if(rightEl) rightEl.innerHTML=news.slice(2,4).map(sbCard).join('');
+      if(gridEl)  gridEl.innerHTML=news.slice(4).map(gridCard).join('');
+    }).catch(function(){});
+  }
+
+  refreshNews();
+  setInterval(refreshNews, 5*60*1000);
 })();
 
 function lsFilter(f,btn){
