@@ -335,24 +335,40 @@ main{padding-bottom:40px}
     return '<span class="ls-score">'+m.home_score+' – '+m.away_score+min+'</span>';
   }
 
+  function logoHtml(url, alt){
+    if(!url) return '<span style="width:22px;height:22px;display:inline-block;background:#e8edf4;border-radius:4px"></span>';
+    return '<img src="'+url+'" alt="'+alt+'" style="width:22px;height:22px;object-fit:contain;border-radius:3px" loading="lazy">';
+  }
+
   function render(matches){
     if(!matches || !matches.length){
       container.className="ls-empty";
-      container.innerHTML="Nessuna partita oggi nei campionati disponibili.";
+      container.innerHTML="Nessuna partita in programma nel breve periodo.";
       return;
     }
+    // Titolo dinamico: se ci sono partite live o di oggi → "Risultati del giorno", altrimenti "Prossime partite"
+    var hasToday=matches.some(function(m){return m.is_live||m.is_finished||m.starting_at.startsWith(new Date().toISOString().slice(0,10));});
+    document.querySelector('.live-scores h2').textContent=hasToday?'Risultati del giorno':'Prossime partite';
+
     var html='<div class="ls-grid">';
     matches.forEach(function(m){
       var badge=badgeClass(m);
       var label=m.status||"";
       if(m.is_live && m.minute) label=m.minute+"'";
+      else if(!m.is_live && !m.is_finished && m.starting_at){
+        var d=new Date(m.starting_at+"Z"); // ISO UTC
+        label=d.toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit'})
+          +' '+d.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});
+      }
       html+='<div class="ls-card '+statusClass(m)+'">'
-        +'<div class="ls-league"><span>'+(m.league||"")+'</span>'
+        +'<div class="ls-league">'
+        +(m.league_logo?'<img src="'+m.league_logo+'" style="width:14px;height:14px;object-fit:contain;margin-right:4px" loading="lazy">':'')
+        +'<span>'+(m.league||"")+'</span>'
         +'<span class="ls-badge '+badge+'">'+label+'</span></div>'
         +'<div class="ls-row">'
-        +'<span class="ls-team">'+m.home+'</span>'
+        +'<span class="ls-team" style="display:flex;align-items:center;gap:5px">'+logoHtml(m.home_logo,m.home)+m.home+'</span>'
         +scoreHtml(m)
-        +'<span class="ls-team ls-away">'+m.away+'</span>'
+        +'<span class="ls-team ls-away" style="display:flex;align-items:center;justify-content:flex-end;gap:5px">'+m.away+logoHtml(m.away_logo,m.away)+'</span>'
         +'</div>'
         +'</div>';
     });
