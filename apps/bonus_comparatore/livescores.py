@@ -34,16 +34,13 @@ def fetch_livescores():
 
     try:
         payload = _fetch_json(
-            f"https://api.sportmonks.com/v3/football/livescores/inplay"
+            f"https://api.sportmonks.com/v3/football/livescores"
             f"?api_token={token}&include=scores;participants;league;state"
         )
     except Exception:
         return []
 
     matches = _parse_fixtures(payload.get("data") or [])
-    # forza is_live=True perché arrivano dall'endpoint inplay
-    for m in matches:
-        m["is_live"] = True
 
     cache.set(_CACHE_KEY, matches, _CACHE_TTL)
     return matches
@@ -118,14 +115,12 @@ def fetch_todays_schedule():
     today = date.today()
     base = f"?api_token={token}&include=scores;participants;league;state"
 
-    # 1) Partite live in questo momento (inplay)
+    # 1) Livescores: partite in corso + appena finite (endpoint principale)
     try:
         payload = _fetch_json(
-            f"https://api.sportmonks.com/v3/football/livescores/inplay{base}"
+            f"https://api.sportmonks.com/v3/football/livescores{base}"
         )
         live = _parse_fixtures(payload.get("data") or [])
-        for m in live:
-            m["is_live"] = True
     except Exception:
         live = []
 
