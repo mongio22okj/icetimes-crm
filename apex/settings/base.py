@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     "apps.products",
     "apps.realtime",
     "apps.dashboard",
+    "apps.bonus_comparatore",
 ]
 
 MIDDLEWARE = [
@@ -226,11 +227,21 @@ LEADS_POSTBACK_TOKEN = os.environ.get("LEADS_POSTBACK_TOKEN", "")
 SITE_GATE_USER = os.environ.get("SITE_GATE_USER", "")
 SITE_GATE_PASSWORD = os.environ.get("SITE_GATE_PASSWORD", "")
 SITE_GATE_REALM = os.environ.get("SITE_GATE_REALM", "IceTimes")
+# Host pubblici dedicati (mai dietro il gate; la radice → comparatore).
+# Es. ablecoin.it = sito pubblico del comparatore scommesse.
+SITE_GATE_PUBLIC_HOSTS = tuple(
+    h.strip().lower()
+    for h in os.environ.get(
+        "SITE_GATE_PUBLIC_HOSTS", "ablecoin.it,www.ablecoin.it"
+    ).split(",")
+    if h.strip()
+)
 SITE_GATE_EXEMPT_PREFIXES = (
     "/viewer/",            # area visualizzatori (login proprio, sola lettura)
     "/b/",                 # landing pubbliche dei broker
     "/t/",                 # link corti di tracciamento
     "/comparatore/",       # comparatore pubblico broker
+    "/bonus/",             # comparatore pubblico bonus scommesse/casino
     "/api/track/",         # endpoint track visit/click/lead
     "/api/create-lead",    # alias create-lead
     "/leads/postback/",    # postback broker (TrackBox & co.)

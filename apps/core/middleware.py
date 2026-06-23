@@ -11,11 +11,16 @@ import base64
 import hmac
 
 from django.conf import settings
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseRedirect
 
 
 class SiteGateMiddleware:
-    """Richiede Basic Auth per ogni path non esente."""
+    """Richiede Basic Auth per ogni path non esente.
+
+    Eccezione: gli host elencati in SITE_GATE_PUBLIC_HOSTS sono domini
+    pubblici dedicati (es. il comparatore scommesse su ablecoin.it) e
+    NON passano mai dal gate; la loro radice "/" reindirizza al comparatore.
+    """
 
     def __init__(self, get_response):
         self.get_response = get_response
@@ -23,12 +28,25 @@ class SiteGateMiddleware:
         self.password = getattr(settings, "SITE_GATE_PASSWORD", "") or ""
         self.exempt = tuple(getattr(settings, "SITE_GATE_EXEMPT_PREFIXES", ()))
         self.realm = getattr(settings, "SITE_GATE_REALM", "IceTimes")
+        self.public_hosts = tuple(getattr(settings, "SITE_GATE_PUBLIC_HOSTS", ()))
 
     @property
     def enabled(self) -> bool:
         return bool(self.user and self.password)
 
+    def _host(self, request) -> str:
+        try:
+            return request.get_host().split(":")[0].lower()
+        except Exception:  # noqa: BLE001 — host non valido → stringa vuota
+            return ""
+
     def __call__(self, request):
+        if self.public_hosts and self._host(request) in self.public_hosts:
+            # Dominio pubblico dedicato: nessun gate. La radice porta al
+            # comparatore scommesse.
+            if request.path == "/":
+                return HttpResponseRedirect("/bonus/")
+            return self.get_response(request)
         if not self.enabled or self._is_exempt(request.path) or self._ok(request):
             return self.get_response(request)
         return self._challenge()

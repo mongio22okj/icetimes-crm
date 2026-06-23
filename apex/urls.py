@@ -40,6 +40,7 @@ urlpatterns = [
     path("robots.txt", robots_txt, name="robots"),
     path("comparatore/", TemplateView.as_view(template_name="comparatore.html"),
          name="comparatore"),
+    path("bonus/", include("apps.bonus_comparatore.urls")),
     path("i18n/", include("django.conf.urls.i18n")),
     path("search/", global_search, name="search"),
     path("api/v1/", ninja_api.urls),

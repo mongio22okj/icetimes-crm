@@ -1,0 +1,243 @@
+{% load static %}<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Confronta bonus benvenuto scommesse e casinò — Comparatore 2026</title>
+<meta name="description" content="Confronto trasparente dei migliori bonus benvenuto scommesse sportive e casinò online ADM. Solo operatori autorizzati in Italia. Gioco riservato ai maggiorenni. Il gioco può causare dipendenza.">
+<meta name="robots" content="index,follow">
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1a2335;background:#f3f5f9;line-height:1.55;font-size:15px}
+a{text-decoration:none;color:inherit}
+img{max-width:100%;display:block}
+.wrap{max-width:1080px;margin:0 auto;padding:0 18px}
+
+/* header */
+header{background:#0e1d36;color:#fff;border-bottom:1px solid #0a1628}
+.hd{display:flex;align-items:center;justify-content:space-between;padding:14px 0}
+.logo{display:flex;align-items:center;gap:10px;font-weight:800;font-size:18px;letter-spacing:.3px}
+.logo .mk{width:30px;height:30px;background:#ffd54a;color:#0e1d36;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:17px}
+nav{display:flex;gap:22px;font-size:14px;color:#c8d3e3}
+nav a:hover{color:#fff}
+
+/* disclosure + 18+ */
+.disclosure{background:#fff7d6;color:#5a4400;font-size:12.5px;border-bottom:1px solid #f0e3a8}
+.disclosure .wrap{padding:8px 18px;display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap}
+.eighteen{background:#1a2335;color:#fff;font-weight:800;border-radius:50%;width:22px;height:22px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;margin-right:6px}
+
+/* hero */
+.hero{padding:30px 18px 18px;text-align:center}
+.hero h1{font-size:30px;margin:0 0 8px;font-weight:800;color:#0e1d36}
+.hero p{font-size:15px;color:#5b6b86;max-width:680px;margin:0 auto}
+
+/* filtri categoria */
+.tabs{display:flex;gap:6px;justify-content:center;margin:18px 0 24px;flex-wrap:wrap}
+.tabs a{background:#fff;color:#1a2335;border:1px solid #d6dde8;padding:8px 16px;border-radius:999px;font-size:14px;font-weight:600}
+.tabs a.active{background:#0e1d36;color:#fff;border-color:#0e1d36}
+.tabs a:hover{border-color:#0e1d36}
+
+/* grid */
+main{padding-bottom:40px}
+.list{display:flex;flex-direction:column;gap:12px}
+
+.card{background:#fff;border:1px solid #e2e7ef;border-radius:14px;padding:18px;display:grid;grid-template-columns:50px 120px 1fr 200px;gap:18px;align-items:center;transition:box-shadow .15s}
+.card:hover{box-shadow:0 6px 22px rgba(20,40,80,.08)}
+.card.feat{border-left:5px solid #1f9d63}
+
+.rank{font-size:24px;font-weight:900;color:#0e1d36;text-align:center}
+
+.brand{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:6px}
+.brand .logo-box{width:100px;height:54px;border:1px solid #ecf0f6;border-radius:8px;display:flex;align-items:center;justify-content:center;background:#fafbfd;font-weight:800;color:#0e1d36;font-size:14px;padding:6px;overflow:hidden}
+.brand .logo-box img{max-height:42px;width:auto;object-fit:contain}
+.brand .logo-box .brandmark{display:flex;flex-direction:column;align-items:center;gap:3px}
+.brand .logo-box .brandmark .fav{width:22px;height:22px;border-radius:5px}
+.brand .logo-box .brandmark .bn{font-size:11px;font-weight:800;color:#0e1d36;line-height:1.05;text-align:center}
+.brand .lic{font-size:10.5px;color:#7a879c}
+
+.info{min-width:0}
+.info .top{display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap}
+.info .name{font-size:17px;font-weight:800;color:#0e1d36}
+.badge{font-size:10.5px;font-weight:700;padding:2px 9px;border-radius:999px;text-transform:uppercase;letter-spacing:.3px}
+.badge.adm{background:#e0f0e3;color:#1f7345}
+.badge.both{background:#ffe7c2;color:#915413}
+.badge.sport{background:#dff0fd;color:#1c5a8a}
+.badge.casino{background:#f1e1fa;color:#6a258f}
+.bonus{margin:2px 0 6px;font-size:15px;color:#1a2335}
+.bonus b{color:#1f9d63}
+.terms{font-size:12px;color:#7a879c}
+.rating{display:flex;align-items:center;gap:8px;margin-top:6px;font-size:12.5px;color:#5b6b86}
+.stars{color:#f5b62c;font-size:14px;letter-spacing:1px}
+
+.act{text-align:center}
+.cta{display:block;background:#1f9d63;color:#fff;font-weight:800;padding:14px 12px;border-radius:10px;font-size:15px;letter-spacing:.2px}
+.cta:hover{filter:brightness(1.06)}
+.cta.placeholder{background:#8a96ab}
+.review-link{display:block;margin-top:8px;font-size:12px;color:#5b6b86;text-decoration:underline}
+.no-aff{display:block;margin-top:8px;font-size:11px;color:#9aa3b5;font-style:italic}
+
+/* method box */
+.method{background:#fff;border:1px solid #e2e7ef;border-radius:14px;padding:20px 22px;margin:28px 0}
+.method h2{margin:0 0 8px;font-size:18px;color:#0e1d36}
+.method p{margin:0 0 8px;font-size:13.5px;color:#5b6b86}
+.method ul{margin:6px 0 0 16px;padding:0;font-size:13.5px;color:#5b6b86}
+
+/* responsible gaming */
+.responsible{background:#0e1d36;color:#c8d3e3;font-size:12.5px;line-height:1.7;margin-top:30px}
+.responsible .wrap{padding:22px 18px}
+.responsible strong{color:#fff}
+.responsible a{color:#ffd54a;text-decoration:underline}
+
+.foot{background:#070f1f;color:#7a879c;font-size:12px}
+.foot .wrap{padding:16px 18px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
+
+@media(max-width:880px){
+  .card{grid-template-columns:36px 80px 1fr;grid-template-areas:"rank brand info" "act act act";padding:14px}
+  .rank{grid-area:rank;font-size:18px}
+  .brand{grid-area:brand}
+  .brand .logo-box{width:70px;height:42px}
+  .info{grid-area:info}
+  .act{grid-area:act;text-align:stretch}
+  .cta{padding:12px}
+  nav{display:none}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap hd">
+    <div class="logo"><span class="mk">B</span> BonusOnesti</div>
+    <nav>
+      <a href="?">Tutti</a>
+      <a href="?c=sport">Scommesse</a>
+      <a href="?c=casino">Casinò</a>
+      <a href="#metodo">Come valutiamo</a>
+    </nav>
+  </div>
+</header>
+
+<div class="disclosure">
+  <div class="wrap">
+    <span><span class="eighteen">18</span>Gioco riservato ai maggiorenni. Il gioco può causare dipendenza patologica. Probabilità di vincita su www.adm.gov.it.</span>
+    <span>Contenuto promozionale · contiene link affiliati</span>
+  </div>
+</div>
+
+<section class="hero">
+  <h1>Confronta i bonus benvenuto<br>scommesse e casinò online</h1>
+  <p>Selezione trasparente dei migliori operatori autorizzati ADM. Bonus, licenza e valutazione editoriale a confronto in un'unica pagina. Aggiornati periodicamente.</p>
+
+  <div class="tabs">
+    <a href="?" class="{% if not active_category %}active{% endif %}">Tutti</a>
+    <a href="?c=sport" class="{% if active_category == 'sport' %}active{% endif %}">Scommesse sportive</a>
+    <a href="?c=casino" class="{% if active_category == 'casino' %}active{% endif %}">Casinò</a>
+  </div>
+</section>
+
+<main class="wrap">
+
+  <div class="list">
+    {% for bm in bookmakers %}
+      {% with bonus=bm.primary_bonus %}
+      <div class="card {% if bonus.is_featured %}feat{% endif %}">
+
+        <div class="rank">{{ forloop.counter }}</div>
+
+        <div class="brand">
+          <div class="logo-box">
+            {% if bm.logo %}
+              <img src="{{ bm.logo.url }}" alt="Logo {{ bm.name }}">
+            {% elif bm.logo_url and 's2/favicons' not in bm.logo_url %}
+              <img src="{{ bm.logo_url }}" alt="Logo {{ bm.name }}">
+            {% else %}
+              <span class="brandmark">
+                {% if bm.logo_url %}<img class="fav" src="{{ bm.logo_url }}" alt="" loading="lazy">{% endif %}
+                <span class="bn">{{ bm.name }}</span>
+              </span>
+            {% endif %}
+          </div>
+          {% if bm.license_number %}
+          <div class="lic">ADM n. {{ bm.license_number }}</div>
+          {% endif %}
+        </div>
+
+        <div class="info">
+          <div class="top">
+            <span class="name">{{ bm.name }}</span>
+            {% if bm.license_type == 'adm' %}<span class="badge adm">ADM Italia</span>{% endif %}
+            {% if bm.category == 'both' %}<span class="badge both">Sport + Casinò</span>
+            {% elif bm.category == 'sport' %}<span class="badge sport">Scommesse</span>
+            {% elif bm.category == 'casino' %}<span class="badge casino">Casinò</span>{% endif %}
+          </div>
+
+          {% if bonus %}
+          <div class="bonus">
+            <b>{{ bonus.title }}</b>
+            {% if bonus.amount_text %} — {{ bonus.amount_text }}{% endif %}
+          </div>
+          {% if bonus.terms_summary %}
+          <div class="terms">{{ bonus.terms_summary }}</div>
+          {% endif %}
+          {% else %}
+          <div class="bonus">Bonus in aggiornamento</div>
+          {% endif %}
+
+          <div class="rating">
+            <span class="stars">{% for i in "12345" %}{% if forloop.counter <= bm.rating %}★{% else %}☆{% endif %}{% endfor %}</span>
+            <span>{{ bm.rating }} / 5</span>
+            {% if bm.short_description %}<span>· {{ bm.short_description }}</span>{% endif %}
+          </div>
+        </div>
+
+        <div class="act">
+          <a class="cta {% if not bm.has_affiliate %}placeholder{% endif %}"
+             href="{% url 'bonus_comparatore:go' bm.slug %}"
+             target="_blank" rel="sponsored nofollow noopener">
+            {% if bm.has_affiliate %}Ottieni il bonus{% else %}Vai al sito{% endif %}
+          </a>
+          <a class="review-link" href="{% url 'bonus_comparatore:detail' bm.slug %}">Leggi la recensione</a>
+          {% if not bm.has_affiliate %}
+          <span class="no-aff">Link non affiliato</span>
+          {% endif %}
+        </div>
+      </div>
+      {% endwith %}
+    {% empty %}
+      <p style="text-align:center;color:#5b6b86;padding:40px 0">Nessun bookmaker disponibile in questa categoria.</p>
+    {% endfor %}
+  </div>
+
+  <div class="method" id="metodo">
+    <h2>Come valutiamo i bookmaker</h2>
+    <p>Il punteggio editoriale tiene conto di:</p>
+    <ul>
+      <li><b>Licenza ADM</b>: solo operatori autorizzati in Italia.</li>
+      <li><b>Valore del bonus benvenuto</b>: importo, requisiti di puntata, scadenza, deposito minimo.</li>
+      <li><b>Qualità della piattaforma</b>: app, velocità, quote, palinsesto, live betting, sezione casinò.</li>
+      <li><b>Affidabilità</b>: storia dell'operatore, customer care, gestione pagamenti.</li>
+    </ul>
+    <p style="margin-top:12px;font-size:12.5px"><b>Trasparenza affiliazione</b>: alcuni link presenti in questa pagina sono affiliati. Se ti registri tramite essi possiamo ricevere una commissione, senza alcun costo aggiuntivo per te. L'ordine di presentazione non è influenzato dalle commissioni: i bookmaker sono ordinati per valutazione editoriale.</p>
+  </div>
+
+</main>
+
+<section class="responsible">
+  <div class="wrap">
+    <strong>Gioco responsabile.</strong>
+    Il gioco è vietato ai minori di 18 anni e può causare dipendenza patologica. Gioca con moderazione e solo con somme che puoi permetterti di perdere.
+    Per informazioni e supporto: <a href="https://www.adm.gov.it/" target="_blank" rel="noopener">www.adm.gov.it</a> ·
+    Telefono Verde Nazionale Dipendenze: <strong>800 558822</strong>.
+    Probabilità di vincita pubblicate sui siti degli operatori e sul sito ADM.
+  </div>
+</section>
+
+<footer class="foot">
+  <div class="wrap">
+    <span>© 2026 · Comparatore bonus operatori ADM. Contenuto editoriale indipendente.</span>
+    <span>Solo operatori con licenza italiana ADM.</span>
+  </div>
+</footer>
+
+</body>
+</html>
