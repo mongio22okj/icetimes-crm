@@ -100,6 +100,9 @@ def _push(lead, source):
     """Call the kind-specific push_lead and return (ok, response)."""
     if source.kind == LeadSource.KIND_TRACKBOX:
         p = lead.payload or {}
+        click_id = (p.get("aff_sub5") or p.get("click_id") or p.get("cid")
+                    or p.get("gclid") or p.get("fbclid")
+                    or f"ice{secrets.token_hex(6)}")
         payload = {
             "firstname": lead.firstname,
             "lastname": lead.lastname,
@@ -112,8 +115,22 @@ def _push(lead, source):
             "userip": p.get("ip") or "8.8.8.8",
             "country": (lead.country or "IT").upper(),
             "lg": (lead.country or "IT").upper(),
-            "affclickid": f"ice{secrets.token_hex(6)}",
+            "affclickid": click_id,
         }
+        # Custom per-broker params richiesti da alcuni brand TrackBox
+        # (es. Algo/softtrack). Inviati solo se il LeadSource li ha
+        # valorizzati, così altri brand TrackBox (es. Adverterra) restano
+        # invariati.
+        if source.source_tag:
+            payload["so"] = source.source_tag
+        if source.username:
+            payload["MPC_7"] = "LIVE"
+            payload["MPC_8"] = source.username
+        signup_url = p.get("signup_url") or p.get("landing_url")
+        if not signup_url and source.landing_slug:
+            signup_url = f"https://icetimes.it/b/{source.landing_slug}/"
+        if signup_url:
+            payload["MPC_6"] = signup_url
         return True, client.push_lead(source, payload) or {}
 
     if source.kind == LeadSource.KIND_IREV:
