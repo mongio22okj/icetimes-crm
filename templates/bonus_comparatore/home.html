@@ -141,6 +141,22 @@ nav a:hover{color:#fff}
 .ncard .nwhen{font-size:11px;color:#9aa3b5;margin-top:auto}
 .news .credit{font-size:11px;color:#9aa3b5;margin-top:10px}
 
+/* ── griglia centrale bookmaker ── */
+.center-section{margin-top:18px}
+.center-section-title{font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:#7a879c;margin:0 0 10px;display:flex;align-items:center;gap:6px}
+.center-section-title span{flex:1;height:1px;background:#e2e7ef}
+.bm-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.bm-card{background:#fff;border:1px solid #e2e7ef;border-radius:10px;padding:11px 12px;display:flex;gap:10px;align-items:flex-start;transition:box-shadow .12s}
+.bm-card:hover{box-shadow:0 3px 12px rgba(20,40,80,.07)}
+.bm-card .bm-logo{width:36px;height:36px;border:1px solid #ecf0f6;border-radius:7px;display:flex;align-items:center;justify-content:center;background:#fafbfd;flex-shrink:0;overflow:hidden}
+.bm-card .bm-logo img{max-width:30px;max-height:30px;object-fit:contain}
+.bm-card .bm-body{flex:1;min-width:0}
+.bm-card .bm-name{font-size:13px;font-weight:800;color:#0e1d36;margin-bottom:2px}
+.bm-card .bm-offer{font-size:12px;color:#1f9d63;font-weight:600;line-height:1.3;margin-bottom:5px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.bm-card .bm-cta{display:block;background:#1f9d63;color:#fff;text-align:center;padding:6px 8px;border-radius:7px;font-size:12px;font-weight:800}
+.bm-card .bm-cta.ph{background:#8a96ab}
+.bm-card .bm-cta:hover{filter:brightness(1.07)}
+
 /* ── method ── */
 .method{background:#fff;border:1px solid #e2e7ef;border-radius:12px;padding:18px 20px;margin:0 0 28px}
 .method h2{margin:0 0 7px;font-size:16px;color:#0e1d36}
@@ -264,6 +280,53 @@ nav a:hover{color:#fff}
         <span class="ls-refresh" id="ls-refresh-time">aggiornamento in corso…</span>
       </div>
       <div id="ls-container" class="ls-loading">Caricamento partite…</div>
+
+      {# ── scommesse sportive ── #}
+      {% if bookmakers %}
+      <div class="center-section">
+        <div class="center-section-title">🏅 Scommesse sportive <span></span></div>
+        <div class="bm-grid">
+          {% for bm in bookmakers %}{% if bm.category == 'sport' or bm.category == 'both' %}
+          {% with bonus=bm.primary_bonus %}
+          <div class="bm-card">
+            <div class="bm-logo">
+              {% if bm.logo %}<img src="{{ bm.logo.url }}" alt="{{ bm.name }}">
+              {% elif bm.logo_url %}<img src="{{ bm.logo_url }}" alt="{{ bm.name }}">
+              {% else %}<span style="font-size:10px;font-weight:800;color:#0e1d36;text-align:center">{{ bm.name|slice:":3" }}</span>{% endif %}
+            </div>
+            <div class="bm-body">
+              <div class="bm-name">{{ bm.name }}</div>
+              <div class="bm-offer">{% if bonus %}{{ bonus.title }}{% if bonus.amount_text %} · {{ bonus.amount_text }}{% endif %}{% else %}Bonus in aggiornamento{% endif %}</div>
+              <a class="bm-cta {% if not bm.has_affiliate %}ph{% endif %}" href="{% url 'bonus_comparatore:go' bm.slug %}" target="_blank" rel="sponsored nofollow noopener">{% if bm.has_affiliate %}Ottieni bonus{% else %}Visita{% endif %}</a>
+            </div>
+          </div>
+          {% endwith %}{% endif %}{% endfor %}
+        </div>
+      </div>
+
+      {# ── casino ── #}
+      <div class="center-section" style="margin-top:16px">
+        <div class="center-section-title">🎰 Casinò online <span></span></div>
+        <div class="bm-grid">
+          {% for bm in bookmakers %}{% if bm.category == 'casino' or bm.category == 'both' %}
+          {% with bonus=bm.primary_bonus %}
+          <div class="bm-card">
+            <div class="bm-logo">
+              {% if bm.logo %}<img src="{{ bm.logo.url }}" alt="{{ bm.name }}">
+              {% elif bm.logo_url %}<img src="{{ bm.logo_url }}" alt="{{ bm.name }}">
+              {% else %}<span style="font-size:10px;font-weight:800;color:#0e1d36;text-align:center">{{ bm.name|slice:":3" }}</span>{% endif %}
+            </div>
+            <div class="bm-body">
+              <div class="bm-name">{{ bm.name }}</div>
+              <div class="bm-offer">{% if bonus %}{{ bonus.title }}{% if bonus.amount_text %} · {{ bonus.amount_text }}{% endif %}{% else %}Bonus in aggiornamento{% endif %}</div>
+              <a class="bm-cta {% if not bm.has_affiliate %}ph{% endif %}" href="{% url 'bonus_comparatore:go' bm.slug %}" target="_blank" rel="sponsored nofollow noopener">{% if bm.has_affiliate %}Ottieni bonus{% else %}Visita{% endif %}</a>
+            </div>
+          </div>
+          {% endwith %}{% endif %}{% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
     </div>
 
     {# ── SIDEBAR DESTRA: bookmaker pari + notizie 3-4 ── #}
