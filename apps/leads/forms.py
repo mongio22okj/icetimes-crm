@@ -83,11 +83,12 @@ class LeadSourceForm(forms.ModelForm):
             "landing_hero_subtitle", "landing_features",
             "landing_trust_badges", "landing_theme", "landing_accent_color",
             "landing_cta_label", "landing_redirect_url",
-            "landing_success_message",
+            "landing_success_message", "landing_custom_html",
         )
         widgets = {
             "password": forms.PasswordInput(render_value=True),
             "notes": forms.Textarea(attrs={"rows": 3}),
+            "landing_custom_html": forms.Textarea(attrs={"rows": 20}),
         }
 
     def __init__(self, *args, **kwargs):

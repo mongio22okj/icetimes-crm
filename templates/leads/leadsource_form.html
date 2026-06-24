@@ -22,7 +22,7 @@
   <section class="rounded-lg border border-border bg-card p-6">
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
       {% for field in form %}
-      <div class="{% if field.field.widget.input_type == 'checkbox' %}flex items-center gap-2 md:col-span-2{% elif field.name == 'notes' or field.name == 'landing_features' or field.name == 'landing_trust_badges' or field.name == 'landing_hero_subtitle' %}md:col-span-2{% endif %}">
+      <div class="{% if field.field.widget.input_type == 'checkbox' %}flex items-center gap-2 md:col-span-2{% elif field.name == 'notes' or field.name == 'landing_features' or field.name == 'landing_trust_badges' or field.name == 'landing_hero_subtitle' or field.name == 'landing_custom_html' %}md:col-span-2{% endif %}">
         {% if field.field.widget.input_type == 'checkbox' %}
           {{ field }}
           <label class="text-sm font-medium">{{ field.label }}</label>
