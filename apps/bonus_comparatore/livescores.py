@@ -181,10 +181,29 @@ def _fetch_as():
     return live + [m for m in all_today if (_normalize(m["home"]), _normalize(m["away"])) not in seen]
 
 
+# ── filtro leghe top ─────────────────────────────────────────────────────────
+
+_TOP_LEAGUES = [
+    "world cup", "mundial", "fifa world", "copa del mundo",
+    "champions league", "europa league", "conference league", "nations league",
+    "euro", "european championship", "copa america", "copa américa",
+    "gold cup", "africa cup", "afcon",
+    "serie a", "premier league", "la liga", "bundesliga", "ligue 1",
+    "eredivisie", "primeira liga", "jupiler", "super lig",
+    "coppa italia", "fa cup", "dfb pokal", "coupe de france",
+    "supercoppa", "community shield",
+    "qualif", "qualifier", "eliminatorie", "wc qualif",
+]
+
+def _is_top_league(league_name: str) -> bool:
+    n = league_name.lower()
+    return any(kw in n for kw in _TOP_LEAGUES)
+
+
 # ── aggregatore principale ────────────────────────────────────────────────────
 
 def fetch_todays_schedule():
-    cache_key = "agg_schedule_v2"
+    cache_key = "agg_schedule_v3"
     cached = cache.get(cache_key)
     if cached is not None:
         return cached
@@ -197,6 +216,9 @@ def fetch_todays_schedule():
                 all_matches.extend(fut.result())
             except Exception:
                 pass
+
+    # Filtra solo leghe top
+    all_matches = [m for m in all_matches if _is_top_league(m.get("league", ""))]
 
     # Deduplicazione: per stessa coppia di squadre tieni il più informativo
     seen = {}
@@ -223,11 +245,13 @@ def fetch_todays_schedule():
                 _curl(f"https://api.football-data.org/v4/matches?dateFrom={today}&dateTo={end}",
                       [f"X-Auth-Token: {token}"]).get("matches") or []
             )
+            upcoming = [m for m in upcoming if _is_top_league(m.get("league", ""))]
             upcoming.sort(key=lambda x: x["starting_at"])
             matches = upcoming[:30]
         except Exception:
             matches = []
 
-    ttl = 30 if any(m["is_live"] for m in matches) else 120
+    # TTL più lungo per preservare quota API: 5 min se live, 15 min altrimenti
+    ttl = 300 if any(m["is_live"] for m in matches) else 900
     cache.set(cache_key, matches, ttl)
     return matches
