@@ -15,7 +15,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import CreateView, ListView, TemplateView, UpdateView
 
 from apps.accounts.mixins import EmailVerifiedRequiredMixin
-from apps.accounts.views import StaffRequiredMixin
+from apps.accounts.views import StaffRequiredMixin, ViewerAllowedMixin
 from apps.core.breadcrumbs import BreadcrumbsMixin
 from apps.core.messages import LEVEL_ERROR, LEVEL_SUCCESS, toast
 from apps.core.tables import BulkAction, Column, Filter, TableConfig, TableView
@@ -171,7 +171,7 @@ LEADS_TABLE = TableConfig(
 
 
 class LeadListView(BreadcrumbsMixin, LoginRequiredMixin,
-                   EmailVerifiedRequiredMixin, StaffRequiredMixin, TableView):
+                   EmailVerifiedRequiredMixin, ViewerAllowedMixin, TableView):
     model = Lead
     template_name = "leads/lead_list.html"
     context_object_name = "leads"
@@ -1000,7 +1000,7 @@ class BrokerLandingListView(BreadcrumbsMixin, LoginRequiredMixin,
 # ── Reports (ROI per broker + CPA per campaign) ─────────────────────────
 
 class ReportsView(BreadcrumbsMixin, LoginRequiredMixin,
-                  EmailVerifiedRequiredMixin, StaffRequiredMixin,
+                  EmailVerifiedRequiredMixin, ViewerAllowedMixin,
                   TemplateView):
     """ROI line chart per broker + CPA bar chart per campaign."""
     template_name = "leads/reports.html"

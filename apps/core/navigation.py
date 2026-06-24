@@ -13,6 +13,7 @@ class NavItem:
     badge: str | None = None
     group: str = "Overview"
     requires_staff: bool = False
+    viewer_allowed: bool = False
 
     def resolved_url(self) -> str:
         return reverse(self.url_name)
@@ -25,13 +26,13 @@ G_ACCOUNT = "ACCOUNT"
 NAV_ITEMS: tuple[NavItem, ...] = (
     NavItem("Dashboard", "dashboard", "layout-dashboard",
             keywords=("dashboard", "home", "overview", "kpi", "stats", "charts"),
-            group=G_COMMERCE, requires_staff=True),
+            group=G_COMMERCE, requires_staff=True, viewer_allowed=True),
     NavItem("Leads", "leads:list", "target",
             keywords=("leads", "crm", "deposit"),
-            group=G_COMMERCE, requires_staff=True),
+            group=G_COMMERCE, requires_staff=True, viewer_allowed=True),
     NavItem("Report", "leads:reports", "bar-chart-3",
             keywords=("report", "analytics", "roi", "cpa", "chart", "performance"),
-            group=G_COMMERCE, requires_staff=True),
+            group=G_COMMERCE, requires_staff=True, viewer_allowed=True),
     NavItem("Broker", "leads:source_list", "building-2",
             keywords=("broker", "api", "lead source", "ping tree", "payout", "fonti"),
             group=G_COMMERCE, requires_staff=True),
@@ -75,7 +76,11 @@ NAV_ITEMS: tuple[NavItem, ...] = (
 def get_visible_items(user) -> list[NavItem]:
     if user is None or not getattr(user, "is_authenticated", False):
         return [i for i in NAV_ITEMS if not i.requires_staff]
-    return [i for i in NAV_ITEMS if not i.requires_staff or user.is_staff]
+    is_viewer = user.groups.filter(name="Viewers").exists() if not user.is_staff else False
+    return [
+        i for i in NAV_ITEMS
+        if not i.requires_staff or user.is_staff or (is_viewer and i.viewer_allowed)
+    ]
 
 
 def get_nav_groups(user) -> list[dict]:
