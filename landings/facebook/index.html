@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>IceTimes — Piattaforma di Trading e Crypto</title>
+<meta name="description" content="Registrati su IceTimes e accedi a una piattaforma di trading online su crypto e mercati globali.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --ice-bg:#eaf2fb;
+  --ice-bg2:#dbe9fa;
+  --ice-deep:#0b2545;
+  --ice-blue:#1d4ed8;
+  --ice-blue2:#2563eb;
+  --ice-cyan:#38bdf8;
+  --gold:#f5b301;
+  --gold2:#ffd24c;
+  --ink:#0f2540;
+  --muted:#5b6b82;
+  --line:#cfe0f3;
+}
+body{font-family:'Inter',sans-serif;background:linear-gradient(180deg,var(--ice-bg) 0%,var(--ice-bg2) 100%);color:var(--ink);min-height:100vh}
+
+/* NAV */
+nav{background:rgba(255,255,255,.85);backdrop-filter:blur(10px);border-bottom:1px solid var(--line);padding:0 24px;height:66px;display:flex;align-items:center;position:sticky;top:0;z-index:100;box-shadow:0 2px 14px rgba(11,37,69,.06)}
+.nav-inner{max-width:1140px;margin:0 auto;width:100%;display:flex;align-items:center;gap:12px}
+.nav-logo{width:40px;height:40px;border-radius:11px;background:linear-gradient(135deg,var(--ice-blue),var(--ice-cyan));display:flex;align-items:center;justify-content:center;font-size:1.3rem;box-shadow:0 4px 12px rgba(29,78,216,.35)}
+.nav-brand{font-size:1.2rem;font-weight:900;color:var(--ice-deep);letter-spacing:-.5px}
+.nav-brand span{color:var(--ice-blue)}
+.nav-pill{margin-left:auto;font-size:.74rem;font-weight:700;color:var(--ice-blue);background:rgba(29,78,216,.1);padding:7px 14px;border-radius:999px}
+
+/* HERO */
+.hero{padding:60px 24px 72px;position:relative;overflow:hidden}
+.hero::before{content:"";position:absolute;top:-120px;right:-120px;width:380px;height:380px;background:radial-gradient(circle,rgba(56,189,248,.35),transparent 70%);border-radius:50%}
+.hero-inner{max-width:1140px;margin:0 auto;display:grid;grid-template-columns:1fr 440px;gap:52px;align-items:center;position:relative;z-index:1}
+.badge{display:inline-flex;align-items:center;gap:7px;font-size:.78rem;font-weight:700;color:var(--ice-blue);background:#fff;border:1px solid var(--line);padding:7px 14px;border-radius:999px;margin-bottom:20px;box-shadow:0 4px 14px rgba(11,37,69,.06)}
+.badge .dot{width:8px;height:8px;border-radius:50%;background:#22c55e;box-shadow:0 0 0 4px rgba(34,197,94,.18)}
+.hero h1{font-size:2.9rem;font-weight:900;line-height:1.12;letter-spacing:-1px;color:var(--ice-deep);margin-bottom:18px}
+.hero h1 span{background:linear-gradient(135deg,var(--ice-blue),var(--ice-cyan));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.hero p{font-size:1.12rem;color:var(--muted);line-height:1.65;margin-bottom:30px;max-width:520px}
+.hero-stats{display:flex;gap:34px;flex-wrap:wrap}
+.stat-num{font-size:1.75rem;font-weight:900;color:var(--ice-deep)}
+.stat-num em{font-style:normal;color:var(--gold)}
+.stat-label{font-size:.8rem;color:var(--muted);margin-top:2px;font-weight:500}
+
+/* FORM CARD */
+.form-card{background:#fff;border-radius:20px;padding:34px;box-shadow:0 30px 70px rgba(11,37,69,.18);border:1px solid #fff;position:relative}
+.form-card::before{content:"";position:absolute;inset:0;border-radius:20px;padding:1.5px;background:linear-gradient(135deg,var(--ice-cyan),var(--ice-blue),transparent);-webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none}
+.form-card h2{font-size:1.4rem;font-weight:800;color:var(--ice-deep);margin-bottom:6px}
+.form-card .sub{font-size:.9rem;color:var(--muted);margin-bottom:22px}
+.form-group{margin-bottom:14px}
+.form-group label{display:block;font-size:.8rem;font-weight:700;color:#33445c;margin-bottom:6px}
+.form-group input{width:100%;padding:13px 15px;border:1.5px solid var(--line);border-radius:11px;font-size:.96rem;font-family:'Inter',sans-serif;background:#f7fafe;transition:border-color .2s,box-shadow .2s,background .2s;outline:none}
+.form-group input:focus{border-color:var(--ice-blue);background:#fff;box-shadow:0 0 0 4px rgba(29,78,216,.12)}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.btn-submit{width:100%;padding:16px;background:linear-gradient(135deg,var(--gold),var(--gold2));color:#3a2c00;border:none;border-radius:12px;font-size:1.05rem;font-weight:800;cursor:pointer;transition:transform .15s,box-shadow .15s;margin-top:6px;box-shadow:0 10px 26px rgba(245,179,1,.4)}
+.btn-submit:hover{transform:translateY(-2px);box-shadow:0 14px 32px rgba(245,179,1,.55)}
+.btn-submit:disabled{opacity:.65;cursor:not-allowed;transform:none}
+.form-note{font-size:.74rem;color:#90a1b8;text-align:center;margin-top:12px;line-height:1.55}
+.form-note a{color:var(--ice-blue);text-decoration:none}
+.trust{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:16px;font-size:.78rem;color:var(--muted);font-weight:600}
+
+/* FEATURES */
+.features{padding:74px 24px;background:#fff;border-top:1px solid var(--line)}
+.features-inner{max-width:1140px;margin:0 auto}
+.section-title{text-align:center;font-size:2rem;font-weight:900;color:var(--ice-deep);margin-bottom:10px;letter-spacing:-.5px}
+.section-sub{text-align:center;color:var(--muted);margin-bottom:50px;font-size:1.05rem}
+.features-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+.feature-card{background:linear-gradient(180deg,#f4f9ff,#eaf2fb);border-radius:16px;padding:32px 26px;border:1px solid var(--line);transition:transform .2s,box-shadow .2s}
+.feature-card:hover{transform:translateY(-4px);box-shadow:0 18px 40px rgba(11,37,69,.1)}
+.feature-icon{width:52px;height:52px;border-radius:13px;background:linear-gradient(135deg,var(--ice-blue),var(--ice-cyan));display:flex;align-items:center;justify-content:center;font-size:1.5rem;margin-bottom:18px;box-shadow:0 8px 18px rgba(29,78,216,.3)}
+.feature-card h3{font-size:1.12rem;font-weight:800;color:var(--ice-deep);margin-bottom:9px}
+.feature-card p{font-size:.9rem;color:var(--muted);line-height:1.65}
+
+/* STEPS */
+.steps{padding:70px 24px;background:linear-gradient(180deg,var(--ice-bg),var(--ice-bg2))}
+.steps-inner{max-width:1140px;margin:0 auto}
+.steps-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;margin-top:46px}
+.step{background:#fff;border-radius:16px;padding:30px 26px;border:1px solid var(--line);position:relative}
+.step-num{position:absolute;top:-16px;left:26px;width:38px;height:38px;border-radius:11px;background:linear-gradient(135deg,var(--gold),var(--gold2));color:#3a2c00;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:1.05rem;box-shadow:0 6px 16px rgba(245,179,1,.4)}
+.step h3{font-size:1.08rem;font-weight:800;color:var(--ice-deep);margin:14px 0 8px}
+.step p{font-size:.9rem;color:var(--muted);line-height:1.6}
+
+/* FOOTER */
+footer{background:var(--ice-deep);color:#9db4d0;text-align:center;padding:36px 24px;font-size:.82rem;line-height:1.8}
+footer .fbrand{font-weight:900;color:#fff;font-size:1.05rem;margin-bottom:8px}
+footer .risk{max-width:760px;margin:14px auto 0;font-size:.74rem;color:#6e87a6;line-height:1.7}
+
+/* LOADER */
+#loader{display:none;position:fixed;inset:0;background:rgba(11,37,69,.7);z-index:9999;align-items:center;justify-content:center}
+#loader.active{display:flex}
+.spinner{width:46px;height:46px;border:4px solid rgba(255,255,255,.3);border-top-color:var(--ice-cyan);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* RESPONSIVE */
+@media(max-width:900px){
+  .hero-inner{grid-template-columns:1fr;gap:36px}
+  .hero h1{font-size:2.2rem}
+  .features-grid,.steps-grid{grid-template-columns:1fr}
+  .form-row{grid-template-columns:1fr}
+  .nav-pill{display:none}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <div class="nav-logo">❄</div>
+    <span class="nav-brand">Ice<span>Times</span></span>
+    <span class="nav-pill">● Mercati aperti</span>
+  </div>
+</nav>
+
+<section class="hero">
+  <div class="hero-inner">
+    <div>
+      <div class="badge"><span class="dot"></span> Registrazione gratuita e veloce</div>
+      <h1>Il tuo accesso al <span>trading online</span> su crypto e mercati globali</h1>
+      <p>IceTimes ti dà accesso a una piattaforma di trading professionale. Crea il tuo account gratuito e inizia a esplorare crypto, indici e materie prime con strumenti in tempo reale.</p>
+      <div class="hero-stats">
+        <div><div class="stat-num">50K<em>+</em></div><div class="stat-label">Utenti registrati</div></div>
+        <div><div class="stat-num">120<em>+</em></div><div class="stat-label">Mercati disponibili</div></div>
+        <div><div class="stat-num">24/7</div><div class="stat-label">Supporto dedicato</div></div>
+      </div>
+    </div>
+    <div class="form-card">
+      <h2>Crea il tuo account</h2>
+      <p class="sub">Compila il modulo — meno di 2 minuti</p>
+      <form id="lead-form" method="POST" action="/b/facebook/submit/" novalidate>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="firstname">Nome</label>
+            <input type="text" id="firstname" name="firstname" placeholder="Mario" required autocomplete="given-name">
+          </div>
+          <div class="form-group">
+            <label for="lastname">Cognome</label>
+            <input type="text" id="lastname" name="lastname" placeholder="Rossi" required autocomplete="family-name">
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="email">Email</label>
+          <input type="email" id="email" name="email" placeholder="mario@email.com" required autocomplete="email">
+        </div>
+        <div class="form-group">
+          <label for="phone">Telefono</label>
+          <input type="tel" id="phone" name="phone" placeholder="+39 333 1234567" value="+39" required autocomplete="tel">
+        </div>
+        <input type="hidden" name="country" value="IT">
+        <button type="submit" class="btn-submit" id="btn-submit">Registrati Gratuitamente →</button>
+        <p class="form-note">Registrandoti accetti i <a href="#">Termini di servizio</a> e la <a href="#">Privacy Policy</a>.</p>
+      </form>
+      <div class="trust">🔒 Connessione sicura · Dati protetti</div>
+    </div>
+  </div>
+</section>
+
+<section class="features">
+  <div class="features-inner">
+    <h2 class="section-title">Perché scegliere IceTimes</h2>
+    <p class="section-sub">Una piattaforma completa per chi vuole iniziare a fare trading</p>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">📊</div>
+        <h3>Dati in tempo reale</h3>
+        <p>Quotazioni e grafici aggiornati al secondo su crypto, indici e materie prime per decisioni informate.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🔒</div>
+        <h3>Piattaforma sicura</h3>
+        <p>Account e dati protetti con crittografia e sistemi di sicurezza moderni a ogni accesso.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🎓</div>
+        <h3>Formazione inclusa</h3>
+        <p>Guide, materiali educativi e supporto dedicato per imparare come funziona il trading.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="steps">
+  <div class="steps-inner">
+    <h2 class="section-title">Inizia in 3 passi</h2>
+    <p class="section-sub">Dalla registrazione alla piattaforma in pochi minuti</p>
+    <div class="steps-grid">
+      <div class="step">
+        <div class="step-num">1</div>
+        <h3>Registrati</h3>
+        <p>Compila il modulo con i tuoi dati. La registrazione è gratuita e richiede meno di due minuti.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <h3>Verifica l'account</h3>
+        <p>Un consulente ti contatta per completare l'attivazione e guidarti nei primi passi.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <h3>Accedi alla piattaforma</h3>
+        <p>Esplora i mercati con gli strumenti di analisi e inizia a fare trading al tuo ritmo.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="fbrand">❄ IceTimes</div>
+  <p>© 2026 IceTimes. Tutti i diritti riservati.</p>
+  <p class="risk">Il trading di strumenti finanziari e criptovalute comporta un rischio elevato e può non essere adatto a tutti gli investitori. Esiste la possibilità di perdere in parte o totalmente il capitale investito: non investire denaro che non puoi permetterti di perdere. Le performance passate non costituiscono garanzia di risultati futuri.</p>
+</footer>
+
+<div id="loader"><div class="spinner"></div></div>
+
+<script>
+document.getElementById('lead-form').addEventListener('submit', function(e) {
+  var btn = document.getElementById('btn-submit');
+  btn.disabled = true;
+  btn.textContent = 'Registrazione in corso...';
+  document.getElementById('loader').classList.add('active');
+});
+</script>
+</body>
+</html>

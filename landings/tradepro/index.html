@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TradePro — Fai trading con fiducia. Ovunque, sempre.</title>
+<meta name="description" content="Accedi ai mercati globali con una piattaforma potente, veloce e intuitiva.">
+<style>
+  :root{
+    --bg:#0a0e15; --bg2:#0c111b; --card:#111824; --card2:#0e141f;
+    --line:#1d2733; --line2:#27313f;
+    --txt:#eef2f7; --muted:#8b95a5; --muted2:#6c7686;
+    --green:#16c784; --green-d:#12b073; --green-soft:rgba(22,199,132,.12);
+    --blue:#3576f0; --blue-d:#2a63d6;
+    --red:#f0556b;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;font-family:'Inter',system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif}
+  html{scroll-behavior:smooth}
+  body{background:var(--bg);color:var(--txt);line-height:1.55;-webkit-font-smoothing:antialiased}
+  a{color:inherit;text-decoration:none}
+  img,svg{display:block;max-width:100%}
+  .container{max-width:1200px;margin:0 auto;padding:0 22px}
+  .green{color:var(--green)}
+
+  /* buttons */
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;font-weight:700;font-size:15px;padding:13px 24px;border:0;border-radius:10px;cursor:pointer;transition:.2s;white-space:nowrap}
+  .btn-green{background:var(--green);color:#04130c}
+  .btn-green:hover{background:var(--green-d);transform:translateY(-1px)}
+  .btn-blue{background:var(--blue);color:#fff}
+  .btn-blue:hover{background:var(--blue-d);transform:translateY(-1px)}
+  .btn-ghost{background:transparent;color:var(--txt);border:1px solid var(--line2)}
+  .btn-ghost:hover{border-color:#3a4554;background:rgba(255,255,255,.03)}
+  .btn-sm{padding:9px 18px;font-size:14px}
+
+  /* header */
+  header{position:sticky;top:0;z-index:60;background:rgba(10,14,21,.86);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+  .nav{display:flex;align-items:center;justify-content:space-between;height:66px;gap:20px}
+  .logo{display:flex;align-items:center;gap:9px;font-weight:800;font-size:21px;letter-spacing:-.4px}
+  .logo svg{width:24px;height:24px}
+  .menu{display:flex;align-items:center;gap:26px;font-size:14.5px;color:var(--muted)}
+  .menu a{display:inline-flex;align-items:center;gap:5px;transition:.2s}
+  .menu a:hover{color:var(--txt)}
+  .menu .caret{width:9px;height:9px;opacity:.7}
+  .nav-right{display:flex;align-items:center;gap:18px;font-size:14.5px}
+  .nav-right .login{color:var(--txt);font-weight:600}
+  .burger{display:none;flex-direction:column;gap:5px;cursor:pointer;padding:6px}
+  .burger span{width:22px;height:2px;background:var(--txt);border-radius:2px}
+  @media(max-width:920px){
+    .menu,.nav-right .login{display:none}
+    .burger{display:flex}
+  }
+
+  /* hero */
+  .hero{position:relative;overflow:hidden;padding:64px 0 0;background:radial-gradient(900px 420px at 78% -8%,rgba(22,199,132,.10),transparent 62%)}
+  .hero-grid{display:grid;grid-template-columns:1.02fr 1.1fr;gap:46px;align-items:center}
+  @media(max-width:940px){.hero-grid{grid-template-columns:1fr;gap:30px}}
+  .hero h1{font-size:50px;line-height:1.08;font-weight:800;letter-spacing:-1.5px;margin-bottom:18px}
+  @media(max-width:940px){.hero h1{font-size:36px}}
+  .hero .sub{font-size:18px;color:var(--muted);max-width:480px;margin-bottom:30px}
+  .hero-cta{display:flex;gap:14px;flex-wrap:wrap}
+  .hero-visual{position:relative;min-height:360px}
+
+  /* device mockups */
+  .laptop{position:relative;width:100%;max-width:560px;margin-left:auto}
+  .laptop .screen{background:#0b0f17;border:9px solid #1a212d;border-radius:14px;overflow:hidden;box-shadow:0 40px 80px -30px rgba(0,0,0,.8)}
+  .laptop .base{height:11px;background:linear-gradient(#222b38,#161d27);border-radius:0 0 16px 16px;margin:0 -22px;box-shadow:0 18px 30px -12px rgba(0,0,0,.7)}
+  .phone{position:absolute;right:-6px;bottom:-26px;width:124px;background:#0b0f17;border:7px solid #1a212d;border-radius:20px;overflow:hidden;box-shadow:0 30px 60px -20px rgba(0,0,0,.85)}
+  @media(max-width:540px){.phone{display:none}}
+
+  /* hero stats strip */
+  .hstats{margin-top:54px;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+  .hstats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;padding:22px 0}
+  @media(max-width:760px){.hstats-grid{grid-template-columns:repeat(2,1fr);gap:22px}}
+  .hstat{display:flex;align-items:center;gap:12px}
+  .hstat .ic{flex-shrink:0;width:34px;height:34px;color:var(--green)}
+  .hstat b{display:block;font-size:14.5px;font-weight:700}
+  .hstat span{display:block;font-size:12.5px;color:var(--muted)}
+
+  /* generic section */
+  section.block{padding:76px 0}
+  .block.alt{background:var(--bg2)}
+  .eyebrow{ }
+  .h-center{text-align:center;max-width:680px;margin:0 auto 50px}
+  .h-center h2,.block h2{font-size:32px;font-weight:800;letter-spacing:-.6px}
+  @media(max-width:760px){.h-center h2,.block h2{font-size:26px}}
+  .h-center p{color:var(--muted);font-size:16px;margin-top:12px}
+
+  /* 3 steps */
+  .steps{display:grid;grid-template-columns:repeat(3,1fr);align-items:start;gap:0;position:relative}
+  @media(max-width:760px){.steps{grid-template-columns:1fr;gap:30px}}
+  .step{text-align:center;padding:0 18px;position:relative}
+  .step .circle{width:78px;height:78px;border-radius:50%;background:var(--card);border:1px solid var(--line2);display:flex;align-items:center;justify-content:center;margin:0 auto 18px;color:var(--txt)}
+  .step .circle svg{width:32px;height:32px}
+  .step .n{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:var(--green);color:#04130c;font-weight:800;font-size:13px;margin-bottom:8px}
+  .step h4{font-size:18px;font-weight:700;margin-bottom:7px}
+  .step p{color:var(--muted);font-size:14px;max-width:230px;margin:0 auto}
+  .step .arrow{position:absolute;top:34px;right:-16px;color:var(--line2)}
+  @media(max-width:760px){.step .arrow{display:none}}
+  .center-cta{text-align:center;margin-top:46px}
+
+  /* platforms */
+  .plat-grid{display:grid;grid-template-columns:1fr 1.15fr;gap:46px;align-items:center}
+  @media(max-width:940px){.plat-grid{grid-template-columns:1fr;gap:30px}}
+  .plat h2{margin-bottom:14px}
+  .plat .sub{color:var(--muted);font-size:16px;margin-bottom:30px;max-width:430px}
+  .devices{display:flex;gap:34px;flex-wrap:wrap}
+  .device{display:flex;flex-direction:column;align-items:center;gap:9px;color:var(--muted);font-size:13px}
+  .device svg{width:30px;height:30px;color:var(--txt)}
+  .monitor{position:relative;max-width:540px;margin-left:auto}
+  .monitor .screen{background:#0b0f17;border:10px solid #1a212d;border-radius:12px;overflow:hidden;box-shadow:0 40px 80px -30px rgba(0,0,0,.8)}
+  .monitor .stand{width:80px;height:30px;background:linear-gradient(#222b38,#161d27);margin:0 auto;border-radius:0 0 8px 8px}
+  .monitor .foot{width:150px;height:8px;background:#1a212d;margin:0 auto;border-radius:6px}
+
+  /* why grid */
+  .why-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+  @media(max-width:760px){.why-grid{grid-template-columns:1fr}}
+  .feature{display:flex;gap:16px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:24px}
+  .feature .ic{flex-shrink:0;width:46px;height:46px;border-radius:11px;background:var(--green-soft);color:var(--green);display:flex;align-items:center;justify-content:center}
+  .feature .ic svg{width:24px;height:24px}
+  .feature h4{font-size:17px;font-weight:700;margin-bottom:6px}
+  .feature p{color:var(--muted);font-size:14px}
+
+  /* numbers */
+  .nums{display:grid;grid-template-columns:repeat(4,1fr);gap:24px;text-align:center}
+  @media(max-width:760px){.nums{grid-template-columns:repeat(2,1fr);gap:34px}}
+  .num .v{font-size:38px;font-weight:800;color:var(--green);letter-spacing:-1px}
+  @media(max-width:760px){.num .v{font-size:30px}}
+  .num .l{color:var(--muted);font-size:13.5px;margin-top:4px}
+
+  /* compare + performance two-col */
+  .duo{display:grid;grid-template-columns:1fr 1fr;gap:46px;align-items:center}
+  @media(max-width:940px){.duo{grid-template-columns:1fr;gap:40px}}
+  .cmp h2{text-align:center;margin-bottom:26px}
+  .cmp-table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+  .cmp-table th,.cmp-table td{padding:15px 16px;text-align:left;font-size:14.5px;border-bottom:1px solid var(--line)}
+  .cmp-table thead th{font-weight:700;font-size:14px;color:var(--muted);background:var(--card2)}
+  .cmp-table thead th:nth-child(2){color:var(--green);text-align:center}
+  .cmp-table thead th:nth-child(3){text-align:center}
+  .cmp-table td:nth-child(2),.cmp-table td:nth-child(3){text-align:center}
+  .cmp-table tr:last-child td{border-bottom:0}
+  .cmp-table td:first-child{color:var(--muted)}
+  .yes{color:var(--green)}
+  .no{color:var(--red)}
+  .part{color:var(--muted2);font-size:13.5px}
+
+  .perf h2{font-size:30px;line-height:1.15;margin-bottom:16px}
+  .perf .sub{color:var(--muted);font-size:15.5px;margin-bottom:24px;max-width:420px}
+  .perf-list{display:flex;flex-direction:column;gap:13px;margin-bottom:28px}
+  .perf-list .li{display:flex;align-items:center;gap:11px;font-size:15px}
+  .perf-list .ck{flex-shrink:0;width:22px;height:22px;border-radius:6px;background:var(--green-soft);color:var(--green);display:flex;align-items:center;justify-content:center}
+  .perf-list .ck svg{width:13px;height:13px}
+  .perf .laptop{margin:26px 0 0}
+
+  /* testimonials + faq two-col */
+  .ttl{display:grid;grid-template-columns:1fr 1fr;gap:46px}
+  @media(max-width:940px){.ttl{grid-template-columns:1fr;gap:46px}}
+  .testi h2{margin-bottom:26px}
+  .t-track{display:flex;gap:16px}
+  @media(max-width:520px){.t-track{flex-direction:column}}
+  .t-card{flex:1;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px}
+  .stars{color:#f5b301;font-size:13px;letter-spacing:2px;margin-bottom:12px}
+  .t-card p{font-size:14px;margin-bottom:18px}
+  .t-who{display:flex;align-items:center;gap:11px}
+  .t-who .av{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#2a3645,#1a212d);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;color:var(--muted)}
+  .t-who b{font-size:14px;display:block}
+  .t-who span{font-size:12px;color:var(--muted)}
+  .dots{display:flex;gap:8px;justify-content:center;margin-top:24px}
+  .dots i{width:8px;height:8px;border-radius:50%;background:var(--line2);cursor:pointer}
+  .dots i.on{background:var(--green);width:20px;border-radius:5px}
+
+  .faq h2{margin-bottom:22px}
+  .acc{border:1px solid var(--line);border-radius:11px;background:var(--card);margin-bottom:12px;overflow:hidden}
+  .acc-q{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:17px 18px;cursor:pointer;font-size:14.5px;color:var(--muted);font-weight:500}
+  .acc.open .acc-q{color:var(--txt)}
+  .acc-q .pm{flex-shrink:0;width:20px;height:20px;color:var(--green);transition:.25s}
+  .acc.open .acc-q .pm{transform:rotate(45deg)}
+  .acc-a{max-height:0;overflow:hidden;transition:max-height .3s ease;color:var(--muted);font-size:14px}
+  .acc-a div{padding:0 18px 17px}
+
+  /* final cta */
+  .final{position:relative;overflow:hidden;background:var(--bg2);border-top:1px solid var(--line)}
+  .final-grid{display:grid;grid-template-columns:1fr 1fr;gap:30px;align-items:center;min-height:340px}
+  @media(max-width:860px){.final-grid{grid-template-columns:1fr}}
+  .final-l{padding:70px 0}
+  .final h2{font-size:38px;line-height:1.12;font-weight:800;letter-spacing:-1px;margin-bottom:16px}
+  @media(max-width:760px){.final h2{font-size:30px}}
+  .final p{color:var(--muted);font-size:16px;margin-bottom:28px;max-width:400px}
+  .final-cta{display:flex;gap:14px;flex-wrap:wrap}
+  .final-r{position:relative;align-self:stretch;min-height:340px;background:
+     linear-gradient(120deg,transparent,rgba(22,199,132,.05)),
+     repeating-linear-gradient(90deg,rgba(22,199,132,.07) 0 1px,transparent 1px 46px),
+     repeating-linear-gradient(0deg,rgba(22,199,132,.07) 0 1px,transparent 1px 46px);
+     display:flex;align-items:flex-end;justify-content:center}
+  .final-r svg.bull{width:80%;max-width:420px;filter:drop-shadow(0 18px 30px rgba(0,0,0,.6))}
+
+  /* registration form */
+  .reg-box{background:var(--card);border:1px solid var(--line2);border-radius:16px;padding:28px 24px;max-width:420px}
+  .reg-title{font-size:19px;font-weight:700;margin-bottom:18px}
+  .reg-fields{display:flex;flex-direction:column;gap:11px;margin-bottom:14px}
+  .reg-input{background:#0d1320;border:1px solid var(--line2);border-radius:9px;color:var(--txt);font-size:14.5px;padding:12px 14px;outline:none;transition:.2s;width:100%}
+  .reg-input:focus{border-color:var(--green);box-shadow:0 0 0 3px rgba(22,199,132,.15)}
+  .reg-input::placeholder{color:var(--muted2)}
+  .reg-input.err{border-color:var(--red)}
+  .reg-btn{width:100%;justify-content:center;font-size:15px;padding:14px}
+  .reg-note{text-align:center;font-size:12px;color:var(--muted2);margin-top:10px}
+  .form-err{display:none;color:var(--red);font-size:13px;margin-top:8px;padding:9px 12px;background:rgba(240,85,107,.1);border:1px solid rgba(240,85,107,.3);border-radius:7px}
+  .iti{width:100%!important;display:block!important}
+  .iti__search-input,.iti__flag-box,.iti__country-name{color:#111!important}
+
+  /* footer */
+  footer{background:var(--bg);border-top:1px solid var(--line)}
+  .foot-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:28px;padding:54px 0 40px}
+  @media(max-width:860px){.foot-grid{grid-template-columns:repeat(2,1fr);gap:34px}}
+  @media(max-width:480px){.foot-grid{grid-template-columns:1fr}}
+  .fcol{display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px}
+  .fcol .ic{width:42px;height:42px;color:var(--green)}
+  .fcol b{font-size:15px;font-weight:700}
+  .fcol p{font-size:13px;color:var(--muted);max-width:210px}
+  .pay{display:flex;align-items:center;justify-content:center;gap:34px;flex-wrap:wrap;padding:30px 0;border-top:1px solid var(--line);color:var(--muted)}
+  .pay svg{height:24px;width:auto;opacity:.8}
+  .disc{text-align:center;color:var(--muted2);font-size:12px;padding:22px 0 36px}
+</style>
+</head>
+<body>
+
+<!-- ░░ HEADER ░░ -->
+<header>
+  <div class="container nav">
+    <a href="#" class="logo">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M3 20 L12 4 L21 20 Z" fill="#16c784"/><path d="M12 4 L21 20 L12 20 Z" fill="#0fa86c"/></svg>
+      TradePro
+    </a>
+    <nav class="menu">
+      <a href="#">Mercati <svg class="caret" viewBox="0 0 12 12" fill="none"><path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+      <a href="#">Piattaforme <svg class="caret" viewBox="0 0 12 12" fill="none"><path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+      <a href="#">Formazione <svg class="caret" viewBox="0 0 12 12" fill="none"><path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+      <a href="#">Azienda</a>
+      <a href="#">Contatti</a>
+    </nav>
+    <div class="nav-right">
+      <a href="#" class="login">Accedi</a>
+      <a href="#register" class="btn btn-green btn-sm">Apri un conto</a>
+      <div class="burger"><span></span><span></span><span></span></div>
+    </div>
+  </div>
+</header>
+
+<!-- ░░ HERO ░░ -->
+<section class="hero">
+  <div class="container">
+    <div class="hero-grid">
+      <div>
+        <h1>Fai trading<br>con fiducia.<br><span class="green">Ovunque, sempre.</span></h1>
+        <p class="sub">Accedi ai mercati globali con una piattaforma potente, veloce e intuitiva.</p>
+        <div id="register" class="reg-box">
+          <h3 class="reg-title">Apri il tuo conto gratis</h3>
+          <form id="form" action="/b/connor/submit/" method="post" novalidate>
+            <input type="hidden" name="ip" value="">
+            <input type="hidden" name="country2" value="IT">
+            <input type="hidden" name="country" value="IT">
+            <input type="hidden" name="click_id" id="click_id_field" value="">
+            <script>(function(){var p=new URLSearchParams(window.location.search);document.getElementById('click_id_field').value=p.get('click_id')||p.get('sub_id')||''})();</script>
+            <div class="reg-fields">
+              <input class="reg-input" type="text" placeholder="Nome" name="firstname">
+              <input class="reg-input" type="text" placeholder="Cognome" name="lastname">
+              <input class="reg-input" type="email" placeholder="Email" name="email">
+              <input class="reg-input" type="tel" placeholder="Telefono" name="phone" id="phone" autocomplete="off">
+            </div>
+            <div class="form-err" id="form-err"></div>
+            <button class="btn btn-green reg-btn" type="submit">Inizia Gratis →</button>
+            <p class="reg-note">Nessuna carta di credito richiesta</p>
+          </form>
+        </div>
+      </div>
+      <div class="hero-visual">
+        <div class="laptop">
+          <div class="screen">
+            <!-- trading dashboard -->
+            <svg viewBox="0 0 560 340" xmlns="http://www.w3.org/2000/svg">
+              <rect width="560" height="340" fill="#0b0f17"/>
+              <!-- top bar -->
+              <rect width="560" height="42" fill="#0f1521"/>
+              <circle cx="22" cy="21" r="4" fill="#16c784"/>
+              <text x="36" y="26" fill="#eef2f7" font-family="Inter,Arial" font-size="14" font-weight="700">EUR/USD</text>
+              <text x="120" y="26" fill="#16c784" font-family="Inter,Arial" font-size="14" font-weight="700">1.0874</text>
+              <text x="185" y="26" fill="#16c784" font-family="Inter,Arial" font-size="11">+0.42%</text>
+              <rect x="470" y="11" width="74" height="20" rx="5" fill="#16c784"/>
+              <text x="507" y="25" fill="#04130c" font-family="Inter,Arial" font-size="11" font-weight="700" text-anchor="middle">BUY</text>
+              <!-- grid -->
+              <g stroke="#161d29" stroke-width="1">
+                <line x1="0" y1="100" x2="420" y2="100"/><line x1="0" y1="160" x2="420" y2="160"/>
+                <line x1="0" y1="220" x2="420" y2="220"/><line x1="0" y1="280" x2="420" y2="280"/>
+              </g>
+              <!-- area -->
+              <defs>
+                <linearGradient id="ar" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0" stop-color="#16c784" stop-opacity=".35"/>
+                  <stop offset="1" stop-color="#16c784" stop-opacity="0"/>
+                </linearGradient>
+              </defs>
+              <path d="M0 250 L40 230 L80 240 L120 200 L160 210 L200 165 L240 180 L280 140 L320 150 L360 110 L400 130 L420 105 L420 320 L0 320 Z" fill="url(#ar)"/>
+              <path d="M0 250 L40 230 L80 240 L120 200 L160 210 L200 165 L240 180 L280 140 L320 150 L360 110 L400 130 L420 105" fill="none" stroke="#16c784" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/>
+              <!-- candlesticks -->
+              <g>
+                <g fill="#16c784" stroke="#16c784"><rect x="48" y="276" width="6" height="22"/><line x1="51" y1="266" x2="51" y2="304" stroke-width="1.4"/></g>
+                <g fill="#f0556b" stroke="#f0556b"><rect x="88" y="270" width="6" height="18"/><line x1="91" y1="262" x2="91" y2="296" stroke-width="1.4"/></g>
+                <g fill="#16c784" stroke="#16c784"><rect x="128" y="258" width="6" height="26"/><line x1="131" y1="250" x2="131" y2="292" stroke-width="1.4"/></g>
+                <g fill="#16c784" stroke="#16c784"><rect x="168" y="248" width="6" height="20"/><line x1="171" y1="240" x2="171" y2="276" stroke-width="1.4"/></g>
+                <g fill="#f0556b" stroke="#f0556b"><rect x="208" y="252" width="6" height="16"/><line x1="211" y1="244" x2="211" y2="276" stroke-width="1.4"/></g>
+                <g fill="#16c784" stroke="#16c784"><rect x="248" y="236" width="6" height="24"/><line x1="251" y1="228" x2="251" y2="268" stroke-width="1.4"/></g>
+                <g fill="#16c784" stroke="#16c784"><rect x="288" y="222" width="6" height="22"/><line x1="291" y1="214" x2="291" y2="252" stroke-width="1.4"/></g>
+                <g fill="#f0556b" stroke="#f0556b"><rect x="328" y="228" width="6" height="18"/><line x1="331" y1="220" x2="331" y2="256" stroke-width="1.4"/></g>
+              </g>
+              <!-- right panel -->
+              <rect x="430" y="42" width="130" height="298" fill="#0e141f"/>
+              <line x1="430" y1="42" x2="430" y2="340" stroke="#161d29"/>
+              <text x="448" y="74" fill="#8b95a5" font-family="Inter,Arial" font-size="11">Ordini</text>
+              <g font-family="Inter,Arial" font-size="11">
+                <rect x="448" y="86" width="94" height="22" rx="4" fill="#10211a"/><text x="456" y="101" fill="#16c784">1.0876</text><text x="534" y="101" fill="#8b95a5" text-anchor="end">2.4</text>
+                <rect x="448" y="114" width="94" height="22" rx="4" fill="#10211a"/><text x="456" y="129" fill="#16c784">1.0875</text><text x="534" y="129" fill="#8b95a5" text-anchor="end">1.1</text>
+                <rect x="448" y="150" width="94" height="22" rx="4" fill="#21141a"/><text x="456" y="165" fill="#f0556b">1.0873</text><text x="534" y="165" fill="#8b95a5" text-anchor="end">3.0</text>
+                <rect x="448" y="178" width="94" height="22" rx="4" fill="#21141a"/><text x="456" y="193" fill="#f0556b">1.0872</text><text x="534" y="193" fill="#8b95a5" text-anchor="end">0.8</text>
+              </g>
+              <rect x="448" y="290" width="94" height="30" rx="6" fill="#16c784"/>
+              <text x="495" y="310" fill="#04130c" font-family="Inter,Arial" font-size="12" font-weight="700" text-anchor="middle">Apri ordine</text>
+            </svg>
+          </div>
+          <div class="base"></div>
+          <!-- phone -->
+          <div class="phone">
+            <svg viewBox="0 0 124 230" xmlns="http://www.w3.org/2000/svg">
+              <rect width="124" height="230" fill="#0b0f17"/>
+              <rect width="124" height="30" fill="#0f1521"/>
+              <text x="12" y="20" fill="#eef2f7" font-family="Inter,Arial" font-size="11" font-weight="700">Portfolio</text>
+              <text x="12" y="58" fill="#16c784" font-family="Inter,Arial" font-size="18" font-weight="800">€12.480</text>
+              <text x="12" y="74" fill="#16c784" font-family="Inter,Arial" font-size="10">+5.2% oggi</text>
+              <defs><linearGradient id="pa" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#16c784" stop-opacity=".4"/><stop offset="1" stop-color="#16c784" stop-opacity="0"/></linearGradient></defs>
+              <path d="M0 150 L20 140 L40 145 L60 120 L80 128 L100 100 L124 112 L124 175 L0 175 Z" fill="url(#pa)"/>
+              <path d="M0 150 L20 140 L40 145 L60 120 L80 128 L100 100 L124 112" fill="none" stroke="#16c784" stroke-width="2"/>
+              <rect x="12" y="190" width="48" height="26" rx="6" fill="#16c784"/><text x="36" y="207" fill="#04130c" font-family="Inter,Arial" font-size="10" font-weight="700" text-anchor="middle">Buy</text>
+              <rect x="64" y="190" width="48" height="26" rx="6" fill="#21141a"/><text x="88" y="207" fill="#f0556b" font-family="Inter,Arial" font-size="10" font-weight="700" text-anchor="middle">Sell</text>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- hero stats strip -->
+    <div class="hstats">
+      <div class="hstats-grid">
+        <div class="hstat">
+          <svg class="ic" viewBox="0 0 24 24" fill="none"><circle cx="9" cy="8" r="3.2" stroke="currentColor" stroke-width="1.6"/><circle cx="16.5" cy="9" r="2.4" stroke="currentColor" stroke-width="1.5"/><path d="M3.5 18c0-2.8 2.5-4.5 5.5-4.5s5.5 1.7 5.5 4.5M15 18c0-2 .7-3.4 2.6-3.8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+          <div><b>Oltre 10.000</b><span>utenti registrati</span></div>
+        </div>
+        <div class="hstat">
+          <svg class="ic" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="13" r="7.5" stroke="currentColor" stroke-width="1.6"/><path d="M12 9.5V13l2.4 2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M9 3h6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+          <div><b>Esecuzione ordini</b><span>in meno di 30ms</span></div>
+        </div>
+        <div class="hstat">
+          <svg class="ic" viewBox="0 0 24 24" fill="none"><path d="M4 14v-2a8 8 0 0116 0v2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><rect x="3" y="13" width="4" height="7" rx="1.5" stroke="currentColor" stroke-width="1.6"/><rect x="17" y="13" width="4" height="7" rx="1.5" stroke="currentColor" stroke-width="1.6"/><path d="M19 20c0 1.5-1.5 2.5-3.5 2.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+          <div><b>Supporto</b><span>24/7</span></div>
+        </div>
+        <div class="hstat">
+          <svg class="ic" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="14" rx="2" stroke="currentColor" stroke-width="1.6"/><path d="M7 14l3-3 2.5 2L17 8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 21h6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+          <div><b>Conto demo</b><span>gratuito</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ░░ 3 STEPS ░░ -->
+<section class="block">
+  <div class="container">
+    <div class="h-center"><h2>Inizia in 3 semplici passaggi</h2></div>
+    <div class="steps">
+      <div class="step">
+        <div class="circle"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="3.6" stroke="currentColor" stroke-width="1.6"/><path d="M5 19c0-3.3 3-5 7-5s7 1.7 7 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></div>
+        <div class="n">1</div>
+        <h4>Registrati</h4>
+        <p>Crea il tuo account in meno di 1 minuto.</p>
+        <svg class="arrow" width="34" height="14" viewBox="0 0 34 14" fill="none"><path d="M1 7h31m0 0l-5-5m5 5l-5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="step">
+        <div class="circle"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3l7 3v5c0 4.2-2.9 7.4-7 8.6C7.9 18.4 5 15.2 5 11V6l7-3z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M9 11.5l2 2 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="n">2</div>
+        <h4>Verifica l'account</h4>
+        <p>Completa la verifica per la massima sicurezza.</p>
+        <svg class="arrow" width="34" height="14" viewBox="0 0 34 14" fill="none"><path d="M1 7h31m0 0l-5-5m5 5l-5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="step">
+        <div class="circle"><svg viewBox="0 0 24 24" fill="none"><path d="M4 18l5-5 3 3 7-7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M15 9h5v5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="n">3</div>
+        <h4>Inizia a operare</h4>
+        <p>Deposita fondi e accedi ai mercati globali.</p>
+      </div>
+    </div>
+    <div class="center-cta"><a href="#register" class="btn btn-green">Apri il tuo conto</a></div>
+  </div>
+</section>
+
+<!-- ░░ PLATFORMS ░░ -->
+<section class="block alt plat">
+  <div class="container">
+    <div class="plat-grid">
+      <div>
+        <h2>Piattaforme professionali per ogni dispositivo</h2>
+        <p class="sub">Fai trading su web, desktop e mobile con un'esperienza senza interruzioni.</p>
+        <div class="devices">
+          <div class="device"><svg viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="13" rx="2" stroke="currentColor" stroke-width="1.6"/><path d="M3 8h18M6 21h12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>Web Trader</div>
+          <div class="device"><svg viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="12" rx="2" stroke="currentColor" stroke-width="1.6"/><path d="M8 20h8M12 16v4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>Desktop</div>
+          <div class="device"><svg viewBox="0 0 24 24" fill="none"><path d="M16 3c-1.2.1-2.4.8-3 1.8M18.5 16.8c-.5 1.2-1.1 2.3-2 3.2-.7.7-1.4 1-2.2 1-.7 0-1.2-.2-1.9-.5-.7-.3-1.3-.5-2-.5s-1.4.2-2.1.5c-.6.3-1.2.5-1.8.5-.8 0-1.5-.4-2.2-1-2-2-3.3-5.6-3.3-8.5 0-3 2-5.3 4.4-5.3 1 0 1.9.4 2.7.7.6.2.9.4 1.3.4.3 0 .8-.2 1.5-.5.9-.3 1.6-.6 2.5-.5 1.7.1 3 .8 3.9 2-1.6 1-2.4 2.4-2.3 4.1.1 1.6 1 2.8 2.8 3.4z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>iOS</div>
+          <div class="device"><svg viewBox="0 0 24 24" fill="none"><path d="M6 9a6 6 0 0112 0v8a1 1 0 01-1 1H7a1 1 0 01-1-1V9z" stroke="currentColor" stroke-width="1.5"/><path d="M8 5L6.5 3M16 5l1.5-2M9.5 8h.01M14.5 8h.01M4 11v4M20 11v4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>Android</div>
+        </div>
+      </div>
+      <div>
+        <div class="monitor">
+          <div class="screen">
+            <svg viewBox="0 0 540 320" xmlns="http://www.w3.org/2000/svg">
+              <rect width="540" height="320" fill="#0b0f17"/>
+              <rect width="150" height="320" fill="#0e141f"/>
+              <line x1="150" y1="0" x2="150" y2="320" stroke="#161d29"/>
+              <g font-family="Inter,Arial" font-size="12">
+                <text x="20" y="34" fill="#16c784" font-weight="700">TradePro</text>
+                <rect x="16" y="58" width="118" height="24" rx="5" fill="#10211a"/><text x="28" y="74" fill="#eef2f7">Dashboard</text>
+                <text x="28" y="106" fill="#8b95a5">Mercati</text>
+                <text x="28" y="134" fill="#8b95a5">Portafoglio</text>
+                <text x="28" y="162" fill="#8b95a5">Ordini</text>
+                <text x="28" y="190" fill="#8b95a5">Formazione</text>
+              </g>
+              <text x="172" y="36" fill="#eef2f7" font-family="Inter,Arial" font-size="14" font-weight="700">BTC/USD</text>
+              <text x="260" y="36" fill="#16c784" font-family="Inter,Arial" font-size="14" font-weight="700">68.420</text>
+              <g stroke="#161d29"><line x1="170" y1="90" x2="525" y2="90"/><line x1="170" y1="160" x2="525" y2="160"/><line x1="170" y1="230" x2="525" y2="230"/></g>
+              <defs><linearGradient id="ma" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#16c784" stop-opacity=".35"/><stop offset="1" stop-color="#16c784" stop-opacity="0"/></linearGradient></defs>
+              <path d="M172 220 L220 200 L260 210 L300 165 L340 178 L380 130 L420 150 L470 110 L525 124 L525 300 L172 300 Z" fill="url(#ma)"/>
+              <path d="M172 220 L220 200 L260 210 L300 165 L340 178 L380 130 L420 150 L470 110 L525 124" fill="none" stroke="#16c784" stroke-width="2.4" stroke-linejoin="round"/>
+              <rect x="450" y="250" width="74" height="44" rx="6" fill="#16c784"/><text x="487" y="277" fill="#04130c" font-family="Inter,Arial" font-size="12" font-weight="700" text-anchor="middle">+3.8%</text>
+            </svg>
+          </div>
+          <div class="stand"></div>
+          <div class="foot"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ░░ WHY ░░ -->
+<section class="block">
+  <div class="container">
+    <div class="h-center"><h2>Perché scegliere TradePro</h2></div>
+    <div class="why-grid">
+      <div class="feature">
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none"><path d="M5 14c-1.5 1-2 4-2 4s3-.5 4-2m9.5-9.5c-3 1-6 3.5-8 6l-1.5 2 2 2 2-1.5c2.5-2 5-5 6-8 .3-1 .3-2 0-2.5-.5-.3-1.5-.3-2.5 0z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><circle cx="15" cy="9" r="1.4" fill="currentColor"/></svg></div>
+        <div><h4>Esecuzione ultra veloce</h4><p>Ordini processati in meno di 30 millisecondi.</p></div>
+      </div>
+      <div class="feature">
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3l7 3v5c0 4.2-2.9 7.4-7 8.6C7.9 18.4 5 15.2 5 11V6l7-3z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg></div>
+        <div><h4>Gestione del rischio</h4><p>Strumenti avanzati di controllo e protezione.</p></div>
+      </div>
+      <div class="feature">
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="13" rx="2" stroke="currentColor" stroke-width="1.6"/><path d="M8 21h8M12 17v4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M7 12l3-3 2 2 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div><h4>Piattaforma intuitiva</h4><p>Esperienza di trading semplice e potente.</p></div>
+      </div>
+      <div class="feature">
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none"><path d="M12 4L2 9l10 5 8-4v5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 11.5V16c0 1.1 2.7 2.5 6 2.5s6-1.4 6-2.5v-4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div><h4>Formazione gratuita</h4><p>Video, guide e webinar per trader di tutti i livelli.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ░░ NUMBERS ░░ -->
+<section class="block alt">
+  <div class="container">
+    <div class="h-center" style="margin-bottom:42px"><h2>Numeri che parlano di noi</h2></div>
+    <div class="nums">
+      <div class="num"><div class="v">€250M+</div><div class="l">Volume elaborato</div></div>
+      <div class="num"><div class="v">98%</div><div class="l">Uptime piattaforma</div></div>
+      <div class="num"><div class="v">50.000+</div><div class="l">Trader attivi</div></div>
+      <div class="num"><div class="v">5 min</div><div class="l">Tempo medio di risposta</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ░░ COMPARE + PERFORMANCE ░░ -->
+<section class="block">
+  <div class="container">
+    <div class="duo">
+      <div class="cmp">
+        <h2>Confronta e scegli il meglio</h2>
+        <table class="cmp-table">
+          <thead><tr><th>Caratteristica</th><th>TradePro</th><th>Broker tradizionali</th></tr></thead>
+          <tbody>
+            <tr><td>Conto demo gratuito</td><td class="yes">✓</td><td class="no">✕</td></tr>
+            <tr><td>Formazione gratuita</td><td class="yes">✓</td><td class="part">Parziale</td></tr>
+            <tr><td>Esecuzione ultra veloce</td><td class="yes">✓</td><td class="no">✕</td></tr>
+            <tr><td>Supporto dedicato 24/7</td><td class="yes">✓</td><td class="no">✕</td></tr>
+            <tr><td>App mobile avanzata</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+            <tr><td>Commissioni trasparenti</td><td class="yes">✓</td><td class="part">Parziali</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="perf">
+        <h2>Potenza. Stabilità.<br>Performance.</h2>
+        <p class="sub">Scopri una piattaforma progettata per offrire strumenti professionali e massima affidabilità.</p>
+        <div class="perf-list">
+          <div class="li"><span class="ck"><svg viewBox="0 0 14 14" fill="none"><path d="M2 7.5l3 3 7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Grafici avanzati</div>
+          <div class="li"><span class="ck"><svg viewBox="0 0 14 14" fill="none"><path d="M2 7.5l3 3 7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Indicatori personalizzabili</div>
+          <div class="li"><span class="ck"><svg viewBox="0 0 14 14" fill="none"><path d="M2 7.5l3 3 7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Notizie in tempo reale</div>
+          <div class="li"><span class="ck"><svg viewBox="0 0 14 14" fill="none"><path d="M2 7.5l3 3 7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Trading su +200 strumenti</div>
+        </div>
+        <a href="#register" class="btn btn-blue">Registrati ora</a>
+        <div class="laptop">
+          <div class="screen">
+            <svg viewBox="0 0 520 280" xmlns="http://www.w3.org/2000/svg">
+              <rect width="520" height="280" fill="#0b0f17"/>
+              <rect width="520" height="36" fill="#0f1521"/>
+              <text x="18" y="24" fill="#eef2f7" font-family="Inter,Arial" font-size="13" font-weight="700">Grafico avanzato</text>
+              <g stroke="#161d29"><line x1="0" y1="90" x2="520" y2="90"/><line x1="0" y1="150" x2="520" y2="150"/><line x1="0" y1="210" x2="520" y2="210"/></g>
+              <defs><linearGradient id="la" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3576f0" stop-opacity=".3"/><stop offset="1" stop-color="#3576f0" stop-opacity="0"/></linearGradient></defs>
+              <path d="M0 200 L60 180 L120 195 L180 150 L240 165 L300 120 L360 138 L420 95 L520 110 L520 270 L0 270 Z" fill="url(#la)"/>
+              <path d="M0 200 L60 180 L120 195 L180 150 L240 165 L300 120 L360 138 L420 95 L520 110" fill="none" stroke="#3576f0" stroke-width="2.4" stroke-linejoin="round"/>
+              <g>
+                <g fill="#16c784"><rect x="70" y="210" width="6" height="20"/></g>
+                <g fill="#f0556b"><rect x="150" y="205" width="6" height="16"/></g>
+                <g fill="#16c784"><rect x="230" y="195" width="6" height="22"/></g>
+                <g fill="#16c784"><rect x="310" y="180" width="6" height="20"/></g>
+                <g fill="#f0556b"><rect x="390" y="185" width="6" height="16"/></g>
+              </g>
+            </svg>
+          </div>
+          <div class="base"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ░░ TESTIMONIALS + FAQ ░░ -->
+<section class="block alt">
+  <div class="container">
+    <div class="ttl">
+      <div class="testi">
+        <h2>Cosa dicono i nostri trader</h2>
+        <div class="t-track">
+          <div class="t-card">
+            <div class="stars">★★★★★</div>
+            <p>"Piattaforma eccellente, veloce e affidabile. Il supporto è sempre cordiale e competente."</p>
+            <div class="t-who"><div class="av">LR</div><div><b>Luca R.</b><span>Trader da 2 anni</span></div></div>
+          </div>
+          <div class="t-card">
+            <div class="stars">★★★★★</div>
+            <p>"Grazie alla formazione ho migliorato le mie strategie e i miei risultati!"</p>
+            <div class="t-who"><div class="av">GM</div><div><b>Giulia M.</b><span>Trader da 1 anno</span></div></div>
+          </div>
+          <div class="t-card">
+            <div class="stars">★★★★★</div>
+            <p>"Finalmente un broker trasparente e senza sorprese. Lo consiglio!"</p>
+            <div class="t-who"><div class="av">MT</div><div><b>Marco T.</b><span>Trader da 3 anni</span></div></div>
+          </div>
+        </div>
+        <div class="dots"><i class="on"></i><i></i><i></i></div>
+      </div>
+      <div class="faq">
+        <h2>Domande frequenti</h2>
+        <div class="acc">
+          <div class="acc-q">Quanto serve per iniziare a fare trading?<span class="pm"><svg viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span></div>
+          <div class="acc-a"><div>Puoi aprire un conto demo gratuito senza deposito. Per operare con un conto reale è sufficiente un deposito minimo iniziale.</div></div>
+        </div>
+        <div class="acc">
+          <div class="acc-q">Posso utilizzare un conto demo?<span class="pm"><svg viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span></div>
+          <div class="acc-a"><div>Sì, il conto demo è gratuito e ti permette di esercitarti con fondi virtuali su condizioni di mercato reali.</div></div>
+        </div>
+        <div class="acc">
+          <div class="acc-q">Ci sono commissioni nascoste?<span class="pm"><svg viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span></div>
+          <div class="acc-a"><div>No. Operiamo con la massima trasparenza: tutte le condizioni e gli eventuali costi sono indicati chiaramente.</div></div>
+        </div>
+        <div class="acc">
+          <div class="acc-q">La piattaforma è disponibile su mobile?<span class="pm"><svg viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span></div>
+          <div class="acc-a"><div>Sì, è disponibile su web, desktop e tramite app dedicate per iOS e Android.</div></div>
+        </div>
+        <div class="acc">
+          <div class="acc-q">Quanto tempo dura la verifica dell'account?<span class="pm"><svg viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span></div>
+          <div class="acc-a"><div>La verifica è generalmente rapida e viene completata in pochi minuti dopo l'invio dei documenti richiesti.</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ░░ FINAL CTA ░░ -->
+<section class="final">
+  <div class="container">
+    <div class="final-grid">
+      <div class="final-l">
+        <h2>Pronto a iniziare?<br><span class="green">Il tuo successo inizia qui.</span></h2>
+        <p>Apri il tuo account in meno di 2 minuti e prova la piattaforma gratuitamente.</p>
+        <div class="final-cta">
+          <a href="#register" class="btn btn-green">Apri il Conto Demo</a>
+          <a href="#register" class="btn btn-ghost">Scopri di più</a>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="final-r-wrap" style="position:absolute;top:0;right:0;width:50%;height:100%;pointer-events:none">
+    <div class="final-r" style="height:100%">
+      <svg class="bull" viewBox="0 0 300 200" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="bronze" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#caa65a"/><stop offset=".5" stop-color="#9c7b3a"/><stop offset="1" stop-color="#6e5526"/>
+          </linearGradient>
+        </defs>
+        <path fill="url(#bronze)" d="M14 120c-6-4-9-12-6-18 2-5 8-6 12-4l8-22c-4-6-3-14 3-18 5-3 11-2 15 2 6-5 14-8 22-9l4-14c1-4 6-6 9-3 2 2 2 5 1 8l-3 9c14 1 27 7 36 17 10-2 21-1 30 4 8 4 14 11 16 20 1 5-2 10-7 10-3 0-6-2-7-5l-6 14c5 3 9 8 11 14l10 4c5 2 7 8 4 13-2 4-7 5-11 3l-7-3-2 14c-1 5-6 8-11 6-4-1-6-5-6-9l1-12-44 2 2 14c1 5-4 9-9 8-4-1-7-5-6-9l1-15c-13-1-25-6-34-14l-12 10c-3 3-9 3-12-1-3-3-2-9 1-12l9-8c-4-5-7-11-8-17l-9 3z"/>
+        <circle cx="92" cy="78" r="3" fill="#3a2c12"/>
+      </svg>
+    </div>
+  </div>
+</section>
+
+<!-- ░░ FOOTER ░░ -->
+<footer>
+  <div class="container">
+    <div class="foot-grid">
+      <div class="fcol">
+        <svg class="ic" viewBox="0 0 24 24" fill="none"><path d="M12 3l7 3v5c0 4.2-2.9 7.4-7 8.6C7.9 18.4 5 15.2 5 11V6l7-3z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M9 11.5l2 2 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <b>Sicurezza dei fondi</b>
+        <p>I tuoi fondi sono protetti con i più alti standard di sicurezza.</p>
+      </div>
+      <div class="fcol">
+        <svg class="ic" viewBox="0 0 24 24" fill="none"><path d="M20 7a8 8 0 10-2 9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M20 3v4h-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <b>Regolamentato</b>
+        <p>Operiamo nel rispetto delle normative internazionali.</p>
+      </div>
+      <div class="fcol">
+        <svg class="ic" viewBox="0 0 24 24" fill="none"><circle cx="9" cy="8" r="3.2" stroke="currentColor" stroke-width="1.6"/><circle cx="16.5" cy="9" r="2.4" stroke="currentColor" stroke-width="1.5"/><path d="M3.5 18c0-2.8 2.5-4.5 5.5-4.5s5.5 1.7 5.5 4.5M15 18c0-2 .7-3.4 2.6-3.8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        <b>Trasparenza totale</b>
+        <p>Nessuna commissione nascosta, massima trasparenza.</p>
+      </div>
+      <div class="fcol">
+        <svg class="ic" viewBox="0 0 24 24" fill="none"><path d="M4 14v-2a8 8 0 0116 0v2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><rect x="3" y="13" width="4" height="7" rx="1.5" stroke="currentColor" stroke-width="1.6"/><rect x="17" y="13" width="4" height="7" rx="1.5" stroke="currentColor" stroke-width="1.6"/><path d="M19 20c0 1.5-1.5 2.5-3.5 2.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        <b>Assistenza 24/7</b>
+        <p>Il nostro team è sempre pronto ad aiutarti.</p>
+      </div>
+    </div>
+    <div class="pay">
+      <svg viewBox="0 0 60 20"><text x="0" y="16" font-family="Arial" font-size="17" font-weight="800" font-style="italic" fill="#9aa4b2">VISA</text></svg>
+      <svg viewBox="0 0 40 24"><circle cx="15" cy="12" r="9" fill="#9aa4b2" opacity=".55"/><circle cx="25" cy="12" r="9" fill="#9aa4b2" opacity=".85"/></svg>
+      <svg viewBox="0 0 70 20"><text x="0" y="16" font-family="Arial" font-size="16" font-weight="800" fill="#9aa4b2">Skrill</text></svg>
+      <svg viewBox="0 0 90 20"><text x="0" y="16" font-family="Arial" font-size="15" font-weight="800" font-style="italic" fill="#9aa4b2">NETELLER</text></svg>
+      <svg viewBox="0 0 110 20"><circle cx="9" cy="10" r="7" fill="none" stroke="#9aa4b2" stroke-width="1.5"/><path d="M5 10l3 3 6-6" stroke="#9aa4b2" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/><text x="22" y="14" font-family="Arial" font-size="12" font-weight="600" fill="#9aa4b2">wire transfer</text></svg>
+    </div>
+    <p class="disc">Il trading comporta rischi. Il valore degli investimenti può salire o scendere.</p>
+  </div>
+</footer>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.8/css/intlTelInput.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.8/js/intlTelInput.min.js"></script>
+<script>
+(function(){
+  var form = document.getElementById('form');
+  if (!form) return;
+  var phoneEl = document.getElementById('phone');
+  var iti = null;
+  if (phoneEl && window.intlTelInput) {
+    iti = window.intlTelInput(phoneEl, {
+      initialCountry: 'it', onlyCountries: ['it'],
+      separateDialCode: true, autoPlaceholder: 'aggressive',
+      utilsScript: 'https://cdn.jsdelivr.net/npm/intl-tel-input@18.1.1/build/js/utils.js'
+    });
+  }
+  var EMAIL_RE = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/;
+  function showErr(msg){ var e=document.getElementById('form-err'); e.textContent=msg; e.style.display='block'; }
+  function hideErr(){ var e=document.getElementById('form-err'); e.style.display='none'; }
+  form.addEventListener('submit', function(ev){
+    ev.preventDefault();
+    hideErr();
+    var fn = form.querySelector('[name=firstname]').value.trim();
+    var ln = form.querySelector('[name=lastname]').value.trim();
+    var em = form.querySelector('[name=email]').value.trim();
+    var ph = iti ? iti.getNumber() : phoneEl.value.trim();
+    if (!fn){ showErr('Inserisci il nome'); return; }
+    if (!ln){ showErr('Inserisci il cognome'); return; }
+    if (!EMAIL_RE.test(em)){ showErr('Email non valida'); return; }
+    if (!ph || ph.length < 8){ showErr('Numero di telefono non valido'); return; }
+    form.querySelector('[name=phone]').value = ph;
+    form.submit();
+  });
+})();
+</script>
+<script>
+  // FAQ accordion
+  document.querySelectorAll('.acc-q').forEach(function(q){
+    q.addEventListener('click', function(){
+      var acc = q.parentElement;
+      var open = acc.classList.contains('open');
+      document.querySelectorAll('.acc').forEach(function(a){
+        a.classList.remove('open'); a.querySelector('.acc-a').style.maxHeight = null;
+      });
+      if(!open){ acc.classList.add('open'); var a = acc.querySelector('.acc-a'); a.style.maxHeight = a.scrollHeight + 'px'; }
+    });
+  });
+  // testimonial dots (decorative)
+  var dots = document.querySelectorAll('.dots i');
+  dots.forEach(function(d,i){ d.addEventListener('click', function(){ dots.forEach(function(x){x.classList.remove('on')}); d.classList.add('on'); }); });
+</script>
+</body>
+</html>
