@@ -7,6 +7,7 @@ from .models import (
     LeadSource,
     NotificationWebhook,
     Partner,
+    PreLanding,
     TrackingLink,
 )
 from .sources import push_sources
@@ -181,6 +182,30 @@ class TrackingLinkForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["source"].empty_label = "— nessun broker —"
+        for name, field in self.fields.items():
+            widget = field.widget
+            if isinstance(widget, forms.CheckboxInput):
+                widget.attrs.setdefault("class", "h-4 w-4 rounded border-input")
+            else:
+                widget.attrs.setdefault("class", BASE_INPUT)
+
+
+class PreLandingForm(forms.ModelForm):
+    class Meta:
+        model = PreLanding
+        fields = ("name", "url", "tracking_link", "notes", "is_active")
+        widgets = {
+            "url": forms.URLInput(attrs={
+                "placeholder": "https://mio-sito.com/pre-landing/"}),
+            "name": forms.TextInput(attrs={"placeholder": "Es. Pre-lander FB crypto"}),
+            "notes": forms.TextInput(attrs={"placeholder": "Note (opzionale)"}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["tracking_link"].empty_label = "— nessun link —"
+        self.fields["tracking_link"].queryset = TrackingLink.objects.select_related(
+            "source").filter(is_active=True)
         for name, field in self.fields.items():
             widget = field.widget
             if isinstance(widget, forms.CheckboxInput):

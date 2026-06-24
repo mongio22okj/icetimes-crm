@@ -29,6 +29,7 @@ from .models import (
     LeadSource,
     NotificationWebhook,
     Partner,
+    PreLanding,
     TrackingLink,
 )
 
@@ -886,6 +887,71 @@ class TrackingLinkDeleteView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
         TrackingLink.objects.filter(pk=pk).delete()
         toast(request, LEVEL_SUCCESS, "Link eliminato.")
         return redirect(_safe_next(request, "leads:tracking_links"))
+
+
+# ── Pre-landing: registro pre-lander esterne collegate a un broker ──────────
+class PreLandingListView(BreadcrumbsMixin, LoginRequiredMixin,
+                         EmailVerifiedRequiredMixin, StaffRequiredMixin,
+                         CreateView):
+    """Lista + creazione delle pre-landing esterne.
+
+    La pre-landing è ospitata altrove; qui salviamo il riferimento e il link
+    di tracciamento da incollare nel bottone. Il CRM traccia dal click in poi.
+    """
+    model = PreLanding
+    template_name = "leads/prelandings.html"
+    breadcrumb_title = "Pre-landing"
+
+    def get_form_class(self):
+        from .forms import PreLandingForm
+        return PreLandingForm
+
+    def get_success_url(self):
+        return _safe_next(self.request, "leads:prelandings")
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        toast(self.request, LEVEL_SUCCESS,
+              f"Pre-landing salvata: {self.object.name}")
+        return response
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx["prelandings"] = list(
+            PreLanding.objects.select_related(
+                "tracking_link", "tracking_link__source").all())
+        ctx["links"] = list(
+            TrackingLink.objects.select_related("source").filter(is_active=True))
+        ctx["base_url"] = self.request.build_absolute_uri("/").rstrip("/")
+        return ctx
+
+
+class PreLandingUpdateView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
+                           StaffRequiredMixin, View):
+    """Salvataggio inline di una pre-landing dalla tabella editabile."""
+
+    def post(self, request, pk):
+        pl = get_object_or_404(PreLanding, pk=pk)
+        pl.name = (request.POST.get("name") or "").strip()[:120]
+        pl.url = (request.POST.get("url") or "").strip()
+        pl.notes = (request.POST.get("notes") or "").strip()[:255]
+        tid = request.POST.get("tracking_link") or ""
+        pl.tracking_link_id = int(tid) if tid.isdigit() else None
+        pl.is_active = request.POST.get("is_active") == "on"
+        if not pl.name or not pl.url:
+            toast(request, LEVEL_ERROR, "Nome e URL sono obbligatori.")
+        else:
+            pl.save()
+            toast(request, LEVEL_SUCCESS, f"Pre-landing «{pl.name}» aggiornata.")
+        return redirect(_safe_next(request, "leads:prelandings"))
+
+
+class PreLandingDeleteView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
+                           StaffRequiredMixin, View):
+    def post(self, request, pk):
+        PreLanding.objects.filter(pk=pk).delete()
+        toast(request, LEVEL_SUCCESS, "Pre-landing eliminata.")
+        return redirect(_safe_next(request, "leads:prelandings"))
 
 
 # ── Visualizzatori: pannello centrale di approvazione ────────────────────

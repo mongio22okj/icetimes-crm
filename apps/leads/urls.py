@@ -33,6 +33,9 @@ from .views import (
     NotificationListView,
     NotificationTestView,
     NotificationUpdateView,
+    PreLandingDeleteView,
+    PreLandingListView,
+    PreLandingUpdateView,
     ReportsView,
     postback,
 )
@@ -57,6 +60,10 @@ urlpatterns = [
     path("links/", TrackingLinkListView.as_view(), name="tracking_links"),
     path("links/<int:pk>/edit/", TrackingLinkUpdateView.as_view(), name="tracking_link_edit"),
     path("links/<int:pk>/delete/", TrackingLinkDeleteView.as_view(), name="tracking_link_delete"),
+    # Pre-landing esterne (registro + link da incollare nel bottone).
+    path("prelandings/", PreLandingListView.as_view(), name="prelandings"),
+    path("prelandings/<int:pk>/edit/", PreLandingUpdateView.as_view(), name="prelanding_edit"),
+    path("prelandings/<int:pk>/delete/", PreLandingDeleteView.as_view(), name="prelanding_delete"),
     # Pannello visualizzatori (approvazione accessi sola-lettura).
     path("viewers/", ViewerRequestListView.as_view(), name="viewer_requests"),
     path("viewers/<int:pk>/approve/", ViewerApproveView.as_view(), name="viewer_approve"),

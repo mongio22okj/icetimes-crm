@@ -2,7 +2,14 @@ from django.contrib import admin
 
 from apex.admin import ModelAdmin
 
-from .models import LandingClick, LandingVisit, Lead, LeadSource, TrackingLink
+from .models import (
+    LandingClick,
+    LandingVisit,
+    Lead,
+    LeadSource,
+    PreLanding,
+    TrackingLink,
+)
 
 
 @admin.register(Lead)
@@ -66,3 +73,12 @@ class TrackingLinkAdmin(ModelAdmin):
     list_filter = ("is_active", "source")
     search_fields = ("code", "name", "destination")
     readonly_fields = ("code", "clicks", "created_at")
+
+
+@admin.register(PreLanding)
+class PreLandingAdmin(ModelAdmin):
+    apex_icon = "file-text"
+    list_display = ("name", "url", "tracking_link", "is_active", "created_at")
+    list_filter = ("is_active",)
+    search_fields = ("name", "url", "notes")
+    readonly_fields = ("created_at",)

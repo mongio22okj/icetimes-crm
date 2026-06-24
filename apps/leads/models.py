@@ -625,6 +625,35 @@ class TrackingLink(models.Model):
         return f"/t/{self.code}"
 
 
+class PreLanding(models.Model):
+    """Pre-landing esterna gestita dall'operatore.
+
+    La pagina è ospitata altrove (sito esterno): qui salviamo solo il
+    riferimento e il link di tracciamento da incollare nel bottone. Il CRM
+    traccia dal click sul tracking link in poi (non le visite della
+    pre-landing, che è esterna e fuori dal nostro dominio).
+    """
+
+    name = models.CharField(
+        max_length=120,
+        help_text="Etichetta interna (es. 'Pre-lander FB crypto').")
+    url = models.URLField(
+        help_text="URL della pre-landing esterna (dove è ospitata).")
+    tracking_link = models.ForeignKey(
+        "TrackingLink", null=True, blank=True, on_delete=models.SET_NULL,
+        related_name="prelandings",
+        help_text="Link di tracciamento da mettere nel bottone della pre-landing.")
+    notes = models.CharField(max_length=255, blank=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(default=timezone.now, db_index=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return self.name or self.url
+
+
 class SyncAudit(models.Model):
     """Log di ogni sincronizzazione leads da sorgenti esterne."""
 
