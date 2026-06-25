@@ -484,6 +484,8 @@ class NotificationWebhook(models.Model):
             self.EVENT_FTD: self.on_ftd,
             self.EVENT_SALE_SOLD: self.on_sale_sold,
             self.EVENT_API_ERROR: self.on_api_error,
+            # Doppione bloccato: usa la stessa iscrizione dei nuovi lead.
+            "duplicate": self.on_new_lead,
         }.get(event, False)
 
 

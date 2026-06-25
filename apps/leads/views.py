@@ -1398,37 +1398,39 @@ class BrokerLandingSubmitView(View):
 
         # ── Blocco doppia registrazione (segregazione per broker) ─────────
         # Un lead appartiene SOLO al broker della sua landing. Se la STESSA
-        # persona si registra di nuovo a QUESTO broker — stesso telefono,
-        # stesso nome+cognome, stessa email E stesso IP — NON creiamo un
-        # duplicato (il broker lo rifiuterebbe e sporcherebbe i dati). La
-        # stessa persona può diventare lead di un altro broker solo
-        # registrandosi dalla landing di quell'altro broker.
-        dup_qs = Lead.objects.filter(
+        # persona si registra di nuovo a QUESTO broker — stesso nome, cognome,
+        # email e telefono, A PRESCINDERE dall'IP — NON creiamo un duplicato
+        # (il broker lo rifiuterebbe e sporcherebbe i dati) e mostriamo un
+        # errore di registrazione. La stessa persona può diventare lead di un
+        # altro broker solo registrandosi dalla landing di quell'altro broker.
+        dup = (Lead.objects.filter(
             source=broker.slug,
             email__iexact=email,
             phone=phone,
             firstname__iexact=firstname,
             lastname__iexact=lastname,
-        )
-        if real_ip:
-            dup_qs = dup_qs.filter(payload__ip=real_ip)
-        dup = dup_qs.order_by("-id").first()
+        ).order_by("-id").first())
         if dup is not None:
-            _prev = (DispatchLog.objects.filter(lead=dup, source=broker, success=True)
-                     .order_by("-id").first())
-            _target = _extract_auto_login(_prev.response) if _prev else ""
-            _target = _target or broker.landing_redirect_url or ""
+            # Avvisa sul bot (Telegram/Slack/…) che è un doppione bloccato.
+            try:
+                _notifications.fire("duplicate", {
+                    "name": f"{firstname} {lastname}".strip() or "—",
+                    "email": email,
+                    "phone": phone,
+                    "source": broker.name,
+                })
+            except Exception:  # noqa: BLE001
+                pass
             if "text/html" in request.headers.get("Accept", ""):
-                if _target:
-                    from django.http import HttpResponseRedirect
-                    return HttpResponseRedirect(_target)
                 from django.http import HttpResponse
                 return HttpResponse(
                     "<!doctype html><meta charset=utf-8>"
                     "<div style='font-family:system-ui;text-align:center;padding:64px'>"
-                    "<h2>✅ Sei già registrato</h2></div>")
-            return JsonResponse({"ok": True, "duplicate": True,
-                                 "lead_id": dup.pk, "redirect": _target})
+                    "<h2>ERRORE REGISTRAZIONE</h2>"
+                    "<p>Risulti già registrato con questi dati.</p></div>",
+                    status=409)
+            return JsonResponse({"ok": False, "duplicate": True,
+                                 "error": "ERRORE REGISTRAZIONE"}, status=409)
 
         lead = Lead.objects.create(
             uniqueid=uniqueid,

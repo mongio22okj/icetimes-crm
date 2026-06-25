@@ -40,6 +40,7 @@ def _format_text(event, payload):
         "ftd": "💰 FTD",
         "sale_sold": "✅ Vendita venduta",
         "api_error": "⚠️ Errore API broker",
+        "duplicate": "🚫 ERRORE REGISTRAZIONE",
     }
     title = title_map.get(event, event)
     lines = [title]
