@@ -93,6 +93,14 @@ SECURE_SSL_REDIRECT = True
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
 
+# Static manifest non-strict: il template referenzia icone favicon/PWA
+# (icons/*.png) che sono placeholder di branding non inclusi nel pacchetto.
+# Senza questo, il manifest strict farebbe 500 su ogni pagina con base.html.
+STORAGES = {
+    **STORAGES,
+    "staticfiles": {"BACKEND": "apex.storage.NonStrictManifestStaticFilesStorage"},
+}
+
 # Iframe embedding allowlist — for the dashboardpack.com product preview
 # iframe and similar partner placements. Defaults to no embedding (the
 # strict `frame-ancestors 'none'` from base.py is preserved).
