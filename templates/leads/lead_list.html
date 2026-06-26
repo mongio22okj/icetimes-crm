@@ -10,7 +10,30 @@
       <p class="text-sm text-muted-foreground mt-1">{{ config.caption }}</p>
     {% endif %}
   </div>
-  <div class="flex items-center gap-2">
+  <div class="flex items-center gap-3">
+    {% if sync_health %}
+    <div class="hidden sm:flex items-center gap-2 text-xs"
+         title="{% if sync_health.poller_enabled %}Poller attivo (ogni {{ sync_health.interval }}s).{% else %}Poller SPENTO: LEAD_POLLER non impostato. Gli stati avanzano solo via Sync manuale o postback dei broker.{% endif %}">
+      {% if not sync_health.poller_enabled %}
+        <span class="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 bg-amber-500/15 text-amber-700 dark:text-amber-300">
+          <span class="h-1.5 w-1.5 rounded-full bg-amber-500"></span>{% translate "Poller spento" %}
+        </span>
+      {% elif sync_health.stale or sync_health.consecutive_failures %}
+        <span class="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 bg-rose-500/15 text-rose-700 dark:text-rose-300">
+          <span class="h-1.5 w-1.5 rounded-full bg-rose-500"></span>{% translate "Sync ferma" %}
+        </span>
+      {% else %}
+        <span class="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 bg-emerald-500/15 text-emerald-700 dark:text-emerald-300">
+          <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>{% translate "Sync attiva" %}
+        </span>
+      {% endif %}
+      {% if sync_health.last_run %}
+        <span class="text-muted-foreground">{% translate "ultima" %} {{ sync_health.last_run|timesince }} {% translate "fa" %}</span>
+      {% else %}
+        <span class="text-muted-foreground">{% translate "mai eseguita" %}</span>
+      {% endif %}
+    </div>
+    {% endif %}
     <form method="post" action="{% url 'leads:sync' %}">
       {% csrf_token %}
       <button type="submit"
