@@ -69,18 +69,6 @@ class TableView(ListView):
 
     # ---- Column visibility ------------------------------------------------
 
-    def _chosen_columns(self, all_keys) -> set[str]:
-        """Colonne scelte dalla query string. Supporta sia parametri ripetuti
-        (`columns=a&columns=b`, come li manda il form dei checkbox) sia un
-        singolo valore con virgole (`columns=a,b,c`, da link/viste salvate)."""
-        chosen = set()
-        for item in self.request.GET.getlist("columns"):
-            for key in item.split(","):
-                key = key.strip()
-                if key in all_keys:
-                    chosen.add(key)
-        return chosen
-
     def _resolve_visible_columns(self) -> set[str]:
         """Return the set of column keys that should render.
 
@@ -96,8 +84,10 @@ class TableView(ListView):
         all_keys = set(config.column_keys())
         pinned = {c.key for c in config.columns if c.pinned}
 
-        if self.request.GET.getlist("columns"):
-            return self._chosen_columns(all_keys) | pinned
+        raw = self.request.GET.get("columns", "").strip()
+        if raw:
+            chosen = {c for c in raw.split(",") if c in all_keys}
+            return chosen | pinned
 
         saved = get_visible_columns(self.request.user, config.key)
         if saved is not None:
@@ -118,7 +108,7 @@ class TableView(ListView):
             return None
         config = self._config()
         all_keys = set(config.column_keys())
-        chosen = self._chosen_columns(all_keys)
+        chosen = {c for c in self.request.GET.get("columns", "").split(",") if c in all_keys}
         # Always include pinned columns in storage so they survive a partial save.
         chosen |= {c.key for c in config.columns if c.pinned}
         set_visible_columns(self.request.user, config.key, chosen)

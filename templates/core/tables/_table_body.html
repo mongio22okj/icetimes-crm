@@ -22,7 +22,7 @@ re-rendering the toolbar.
           {% for col in config.columns %}
             {% if col.key in visible_columns %}
               <th data-slot="table-head"
-                  class="px-4 py-3 text-left font-semibold whitespace-nowrap
+                  class="px-3 text-left font-semibold whitespace-nowrap
                          {% if col.align == 'right' %}text-right{% elif col.align == 'center' %}text-center{% endif %}
                          {% if col.priority >= 2 %}hidden md:table-cell{% endif %}
                          {% if col.priority >= 3 %}hidden lg:table-cell{% endif %}"

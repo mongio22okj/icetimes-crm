@@ -73,24 +73,6 @@ class StaffRequiredMixin(UserPassesTestMixin):
         return super().handle_no_permission()
 
 
-class ViewerAllowedMixin(UserPassesTestMixin):
-    """Allow staff OR members of the Viewers group (read-only pages)."""
-    raise_exception = True
-
-    def test_func(self):
-        u = self.request.user
-        if not u.is_authenticated:
-            return False
-        if u.is_staff:
-            return True
-        return u.groups.filter(name="Viewers").exists()
-
-    def handle_no_permission(self):
-        if not self.request.user.is_authenticated:
-            return redirect_to_login(self.request.get_full_path())
-        return super().handle_no_permission()
-
-
 from apps.core.messages import LEVEL_SUCCESS  # noqa: E402
 from apps.core.messages import toast as toast_message  # noqa: E402
 from apps.core.tables import (  # noqa: E402

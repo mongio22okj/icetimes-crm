@@ -71,10 +71,6 @@ class Project(models.Model):
     class Meta:
         ordering = ["-created_at"]
         base_manager_name = "all_objects"
-        indexes = [
-            models.Index(fields=["status"]),
-            models.Index(fields=["owner"]),
-        ]
 
     def __str__(self) -> str:
         return self.name
@@ -112,15 +108,10 @@ class Project(models.Model):
 
     @property
     def computed_progress(self) -> int:
-        from django.db.models import Count, Q
-        counts = self.tasks.aggregate(
-            total=Count("id"),
-            done=Count("id", filter=Q(status="done")),
-        )
-        total = counts["total"] or 0
+        total = self.task_count
         if not total:
             return self.progress
-        return round((counts["done"] or 0) * 100 / total)
+        return round(self.completed_task_count * 100 / total)
 
 
 class Milestone(models.Model):

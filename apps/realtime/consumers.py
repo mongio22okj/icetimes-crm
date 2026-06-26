@@ -29,9 +29,6 @@ def user_group(user_id: int) -> str:
 
 
 PRESENCE_GROUP = "presence.global"
-# Canale globale per lo staff: ogni nuovo lead viene spinto qui in
-# tempo reale (speed-to-lead) così la dashboard si aggiorna da sola.
-LEADS_FEED_GROUP = "leads.feed"
 
 
 class NotificationConsumer(AsyncJsonWebsocketConsumer):
@@ -49,17 +46,11 @@ class NotificationConsumer(AsyncJsonWebsocketConsumer):
             return
         self.group = user_group(user.id)
         await self.channel_layer.group_add(self.group, self.channel_name)
-        # Lo staff riceve anche il feed globale dei nuovi lead.
-        self.on_leads_feed = bool(getattr(user, "is_staff", False))
-        if self.on_leads_feed:
-            await self.channel_layer.group_add(LEADS_FEED_GROUP, self.channel_name)
         await self.accept()
 
     async def disconnect(self, code):
         if hasattr(self, "group"):
             await self.channel_layer.group_discard(self.group, self.channel_name)
-        if getattr(self, "on_leads_feed", False):
-            await self.channel_layer.group_discard(LEADS_FEED_GROUP, self.channel_name)
 
     # ── Group event handlers ──────────────────────────────────────────
     # `dispatch.push_notification()` sends `{"type": "notify.message",
@@ -70,10 +61,6 @@ class NotificationConsumer(AsyncJsonWebsocketConsumer):
 
     async def notify_count(self, event):
         await self.send_json({"event": "unread_count", "count": event["count"]})
-
-    # `dispatch.broadcast_new_lead()` sends `{"type": "lead.new", ...}`.
-    async def lead_new(self, event):
-        await self.send_json({"event": "new_lead", "data": event["payload"]})
 
 
 class PresenceConsumer(AsyncJsonWebsocketConsumer):

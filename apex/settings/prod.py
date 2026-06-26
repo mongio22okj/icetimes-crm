@@ -9,14 +9,14 @@ from django.core.exceptions import ImproperlyConfigured
 
 from .base import *  # noqa: F401, F403
 
-DEBUG = os.environ.get("DEBUG", "False") == "True"
+DEBUG = False
 
 SECRET_KEY = os.environ["SECRET_KEY"]
 
 # ALLOWED_HOSTS — comma-separated list. Always includes the public demo
 # host so a forgotten env var doesn't lock the demo out.
 _env_hosts = [h.strip() for h in os.environ.get("ALLOWED_HOSTS", "").split(",") if h.strip()]
-ALLOWED_HOSTS = list({*_env_hosts})
+ALLOWED_HOSTS = list({*_env_hosts, "apex-django.dashboardpack.com"})
 
 # CSRF: Django 4+ requires explicit trusted origins for cross-host POST.
 # Cloudflare terminates TLS so requests to origin still arrive over https.
@@ -173,11 +173,6 @@ if SENTRY_DSN:
 # Otherwise fall back to the in-memory layer from base.py (single-process
 # only, but lets the app boot without Redis if you don't need realtime).
 REDIS_URL = os.environ.get("REDIS_URL")
-
-# Live scores — aggregatore multi-fonte
-FOOTBALL_DATA_API_TOKEN = os.environ.get("FOOTBALL_DATA_API_TOKEN", "")
-API_FOOTBALL_TOKEN = os.environ.get("API_FOOTBALL_TOKEN", "")
-ALLSPORTS_API_TOKEN = os.environ.get("ALLSPORTS_API_TOKEN", "")
 if REDIS_URL:
     CHANNEL_LAYERS = {
         "default": {

@@ -33,10 +33,3 @@ DEFAULT_FROM_EMAIL = "Apex Dashboard <noreply@apex.local>"
 # Pre-fill the login form with demo credentials in dev. Production (prod.py)
 # inherits DEMO_MODE = False from base.py.
 DEMO_MODE = True
-
-# Auto-login locale: entra nel sito senza password. SOLO in dev — prod.py
-# non imposta questo flag e non carica il middleware sottostante.
-DEV_AUTOLOGIN = True
-MIDDLEWARE = MIDDLEWARE + [  # noqa: F405
-    "apps.core.dev_autologin.DevAutoLoginMiddleware",
-]

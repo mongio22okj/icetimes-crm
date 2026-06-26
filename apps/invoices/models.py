@@ -10,7 +10,6 @@ import uuid
 from decimal import Decimal
 
 from django.db import models, transaction
-from django.db.models import F, Sum
 from django.urls import reverse
 from django.utils import timezone
 
@@ -106,8 +105,7 @@ class Invoice(models.Model):
     # --- totals (computed from items) ---
     @property
     def subtotal(self) -> Decimal:
-        result = self.items.aggregate(t=Sum(F("unit_price") * F("quantity")))["t"]
-        return (result if result is not None else Decimal("0")).quantize(Decimal("0.01"))
+        return sum((item.amount for item in self.items.all()), Decimal("0"))
 
     @property
     def tax_amount(self) -> Decimal:

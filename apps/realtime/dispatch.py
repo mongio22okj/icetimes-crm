@@ -12,18 +12,7 @@ from typing import Any
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 
-from apps.realtime.consumers import LEADS_FEED_GROUP, user_group
-
-
-def broadcast_new_lead(payload: dict[str, Any]) -> None:
-    """Spinge un nuovo lead a tutto lo staff connesso (feed globale)."""
-    layer = get_channel_layer()
-    if layer is None:
-        return
-    async_to_sync(layer.group_send)(
-        LEADS_FEED_GROUP,
-        {"type": "lead.new", "payload": payload},
-    )
+from apps.realtime.consumers import user_group
 
 
 def push_notification(user_id: int, payload: dict[str, Any]) -> None:

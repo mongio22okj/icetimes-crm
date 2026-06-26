@@ -57,13 +57,15 @@ class ProjectListView(BreadcrumbsMixin, LoginRequiredMixin, EmailVerifiedRequire
         ctx["priority_filter"] = self.request.GET.get("priority", "")
         ctx["status_choices"] = Project.STATUS
         ctx["priority_choices"] = Project.PRIORITY
-        ctx["counts"] = Project.objects.aggregate(
-            total=Count("id"),
-            active=Count("id", filter=Q(status="active")),
-            planning=Count("id", filter=Q(status="planning")),
-            completed=Count("id", filter=Q(status="completed")),
-            on_hold=Count("id", filter=Q(status="on_hold")),
-        )
+        # Top-line counts for header chips
+        all_projects = Project.objects.all()
+        ctx["counts"] = {
+            "total": all_projects.count(),
+            "active": all_projects.filter(status="active").count(),
+            "planning": all_projects.filter(status="planning").count(),
+            "completed": all_projects.filter(status="completed").count(),
+            "on_hold": all_projects.filter(status="on_hold").count(),
+        }
         return ctx
 
 
@@ -79,24 +81,13 @@ class _ProjectTabBase(BreadcrumbsMixin, LoginRequiredMixin, EmailVerifiedRequire
     def get_breadcrumb_title(self):
         return self.object.name
 
-    def get_queryset(self):
-        return super().get_queryset().prefetch_related("milestones", "team")
-
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         project = self.object
         ctx["active_tab"] = self.active_tab
-        counts = project.tasks.aggregate(
-            total=Count("id"),
-            done=Count("id", filter=Q(status="done")),
-        )
-        task_count = counts["total"] or 0
-        done_count = counts["done"] or 0
-        ctx["task_count"] = task_count
-        ctx["completed_task_count"] = done_count
-        ctx["computed_progress"] = (
-            round(done_count * 100 / task_count) if task_count else project.progress
-        )
+        ctx["task_count"] = project.task_count
+        ctx["completed_task_count"] = project.completed_task_count
+        ctx["computed_progress"] = project.computed_progress
         ctx["milestones"] = project.milestones.all()
         ctx["team"] = project.team.all()
         return ctx

@@ -2,7 +2,6 @@
 Base Django settings for apex project.
 """
 
-import os
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -28,25 +27,49 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "django.contrib.sitemaps",
+    # Loaded so the project's TemplatesSetting form renderer can find
+    # Django's built-in widget templates (password.html, etc.). Required
+    # because FORM_RENDERER is customized below to share our project
+    # templates with Phase 12 form widgets.
     "django.forms",
+    # Channels app — exposes its routing primitives + management commands.
     "channels",
+    # apps.* will be added in later tasks as each app is scaffolded
     "apps.core",
     "apps.accounts",
+    "apps.activity",
     "apps.api",
-    "apps.leads",
+    "apps.billing",
+    "apps.blog",
+    "apps.chat",
+    "apps.components",
+    "apps.customers",
+    "apps.docs",
+    "apps.events",
+    "apps.files",
+    "apps.help",
+    "apps.invoices",
+    "apps.kanban",
+    "apps.mail",
+    "apps.marketing",
     "apps.notifications",
     "apps.organizations",
     "apps.products",
     "apps.realtime",
+    "apps.orders",
+    "apps.projects",
+    "apps.profiles",
+    "apps.wizard",
     "apps.dashboard",
-    "apps.bonus_comparatore",
 ]
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
-    "django.middleware.gzip.GZipMiddleware",
+    # Django 6 built-in CSP — sets Content-Security-Policy header on every
+    # response. Configure via SECURE_CSP / SECURE_CSP_REPORT_ONLY below.
+    "django.middleware.csp.ContentSecurityPolicyMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
-    "apps.core.middleware.SiteGateMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.locale.LocaleMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -73,7 +96,9 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
-
+                # Django 6 CSP nonce — exposes request.csp_nonce so inline
+                # <script nonce="{{ request.csp_nonce }}"> tags work.
+                "django.template.context_processors.csp",
                 "apps.core.context_processors.navigation",
                 "apps.core.context_processors.demo_mode",
                 "apps.notifications.context_processors.notification_unread_count",
@@ -135,7 +160,7 @@ STORAGES = {
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 LOGIN_URL = "/accounts/login/"
-LOGIN_REDIRECT_URL = "/leads/"
+LOGIN_REDIRECT_URL = "/"
 LOGOUT_REDIRECT_URL = "/accounts/login/"
 
 AUTH_USER_MODEL = "accounts.User"
@@ -203,81 +228,4 @@ SECURE_CSP = {
 DEMO_MODE = False
 DEMO_USERNAME = "demo"
 DEMO_PASSWORD = "ApexShowcase!2026"
-
-# ── TrackBox lead API ────────────────────────────────────────────────────
-# Integration with the external TrackBox CRM (track.fintechgurus.org).
-# When unset, the Leads pages render a configuration warning instead of
-# calling out. ai/ci/gi are the partner identifiers used on lead push.
-TRACKBOX_BASE_URL = os.environ.get("TRACKBOX_BASE_URL", "")
-TRACKBOX_USERNAME = os.environ.get("TRACKBOX_USERNAME", "")
-TRACKBOX_PASSWORD = os.environ.get("TRACKBOX_PASSWORD", "")
-TRACKBOX_API_KEY = os.environ.get("TRACKBOX_API_KEY", "")
-TRACKBOX_AI = os.environ.get("TRACKBOX_AI", "")
-TRACKBOX_CI = os.environ.get("TRACKBOX_CI", "1")
-TRACKBOX_GI = os.environ.get("TRACKBOX_GI", "")
-
-# Shared secret for the public TrackBox postback receiver (/leads/postback/).
-# When unset, the endpoint rejects everything.
-LEADS_POSTBACK_TOKEN = os.environ.get("LEADS_POSTBACK_TOKEN", "")
-
-# ── Site access gate (HTTP Basic Auth) ───────────────────────────────────
-# Quando SITE_GATE_USER e SITE_GATE_PASSWORD sono impostate, l'intero sito
-# è protetto da una password del browser TRANNE gli endpoint pubblici qui
-# sotto, necessari al flusso lead. Lasciare vuote = gate disattivato.
-SITE_GATE_USER = os.environ.get("SITE_GATE_USER", "")
-SITE_GATE_PASSWORD = os.environ.get("SITE_GATE_PASSWORD", "")
-SITE_GATE_REALM = os.environ.get("SITE_GATE_REALM", "IceTimes")
-# Host pubblici dedicati (mai dietro il gate; la radice → comparatore).
-# Es. ablecoin.it = sito pubblico del comparatore scommesse.
-SITE_GATE_PUBLIC_HOSTS = tuple(
-    h.strip().lower()
-    for h in os.environ.get(
-        "SITE_GATE_PUBLIC_HOSTS", "ablecoin.it,www.ablecoin.it"
-    ).split(",")
-    if h.strip()
-)
-SITE_GATE_EXEMPT_PREFIXES = (
-    "/viewer/",            # area visualizzatori (login proprio, sola lettura)
-    "/b/",                 # landing pubbliche dei broker
-    "/t/",                 # link corti di tracciamento
-    "/comparatore/",       # comparatore pubblico broker
-    "/bonus/",             # comparatore pubblico bonus scommesse/casino
-    "/api/track/",         # endpoint track visit/click/lead
-    "/api/create-lead",    # alias create-lead
-    "/leads/postback/",    # postback broker (TrackBox & co.)
-    "/__health",           # health check
-    "/robots.txt",
-    "/sw.js",              # service worker PWA
-    "/manifest.webmanifest",
-    "/offline/",
-    "/static/",            # asset
-)
-
-# ── IREV affiliate API ───────────────────────────────────────────────────
-# Second lead source (stylishwnt.com). Token is IP-whitelisted on the
-# IREV side. Goal UUIDs distinguish plain leads from FTD deposits.
-IREV_BASE_URL = os.environ.get("IREV_BASE_URL", "")
-IREV_TOKEN = os.environ.get("IREV_TOKEN", "")
-IREV_AFFILIATE_ID = os.environ.get("IREV_AFFILIATE_ID", "")
-IREV_OFFER_ID = os.environ.get("IREV_OFFER_ID", "")
-IREV_GOAL_LEAD = os.environ.get("IREV_GOAL_LEAD", "")
-IREV_GOAL_FTD = os.environ.get("IREV_GOAL_FTD", "")
-
-# ── Mediafront (Midas) affiliate API ─────────────────────────────────────────
-MEDIAFRONT_BASE_URL = os.environ.get("MEDIAFRONT_BASE_URL", "")
-MEDIAFRONT_API_KEY = os.environ.get("MEDIAFRONT_API_KEY", "")
-MEDIAFRONT_BOX = os.environ.get("MEDIAFRONT_BOX", "")
-MEDIAFRONT_SUB1 = os.environ.get("MEDIAFRONT_SUB1", "funnel")
-
-# ── SPM Monster affiliate API ─────────────────────────────────────────────────
-SPMMONSTER_BASE_URL = os.environ.get("SPMMONSTER_BASE_URL", "")
-SPMMONSTER_API_KEY = os.environ.get("SPMMONSTER_API_KEY", "")
-SPMMONSTER_AFFC = os.environ.get("SPMMONSTER_AFFC", "")
-SPMMONSTER_BXC = os.environ.get("SPMMONSTER_BXC", "")
-SPMMONSTER_VTC = os.environ.get("SPMMONSTER_VTC", "")
-
-# ── Affinitrax seller API ────────────────────────────────────────────────
-# Third lead source (affinitrax.com). X-API-Key header auth, no IP lock.
-AFFINITRAX_BASE_URL = os.environ.get("AFFINITRAX_BASE_URL", "")
-AFFINITRAX_API_KEY = os.environ.get("AFFINITRAX_API_KEY", "")
 

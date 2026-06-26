@@ -7,9 +7,6 @@ node_modules/
 static/*
 !static/vendor/
 !static/js/
-!static/icons/
-!static/css/
-static/css/app.css
 staticfiles/
 .pytest_cache/
 .playwright/
@@ -20,4 +17,3 @@ test-results/
 CLAUDE.md
 user_files/
 media/
-dashboardpack_apex_django_2/

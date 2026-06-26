@@ -91,6 +91,14 @@
         <p class="px-2 py-1.5 text-xs text-muted-foreground">Actions</p>
         <ul>
           <li>
+            <a href="{% url 'orders:create' %}"
+               @click="closePalette()"
+               class="w-full flex items-center gap-3 rounded-md px-2 py-2 text-sm hover:bg-accent hover:text-accent-foreground">
+              <span class="text-muted-foreground">{% icon "plus" 16 %}</span>
+              <span>New Order</span>
+            </a>
+          </li>
+          <li>
             <button type="button"
                     @click="toggleTheme()"
                     class="w-full flex items-center gap-3 rounded-md px-2 py-2 text-sm text-left hover:bg-accent hover:text-accent-foreground">
