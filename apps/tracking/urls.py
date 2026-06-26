@@ -15,6 +15,7 @@ from .views import (
     TrackboxBrokerDeleteView,
     TrackboxBrokerSyncView,
     TrackboxBrokerUpdateView,
+    TrackingCodeView,
 )
 
 app_name = "tracking"
@@ -38,4 +39,6 @@ urlpatterns = [
     path("brokers/spm/<int:pk>/edit/", SpmMonsterBrokerUpdateView.as_view(), name="spm_edit"),
     path("brokers/spm/<int:pk>/delete/", SpmMonsterBrokerDeleteView.as_view(), name="spm_delete"),
     path("brokers/spm/<int:pk>/sync/", SpmMonsterBrokerSyncView.as_view(), name="spm_sync"),
+    # Codice tracciamento per landing esterna (snippet form)
+    path("brokers/<str:kind>/<int:pk>/code/", TrackingCodeView.as_view(), name="broker_code"),
 ]

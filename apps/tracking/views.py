@@ -25,8 +25,24 @@ from .models import (
     PushLog,
     SpmMonsterBroker,
     TrackboxBroker,
+    broker_by_kind,
     find_broker_by_slug,
 )
+
+
+def build_form_snippet(action_url):
+    """Snippet <form> pronto da incollare nella landing ESTERNA del broker.
+    Postando a action_url i campi vengono catturati e attribuiti a quel broker."""
+    return (
+        '<form method="POST" action="%s">\n'
+        '  <input type="text"  name="firstname" placeholder="Nome" required>\n'
+        '  <input type="text"  name="lastname"  placeholder="Cognome">\n'
+        '  <input type="email" name="email"     placeholder="Email" required>\n'
+        '  <input type="tel"   name="phone"     placeholder="Telefono" required>\n'
+        '  <input type="text"  name="country"   value="IT" maxlength="2">\n'
+        '  <button type="submit">Inizia ora</button>\n'
+        '</form>' % action_url
+    )
 
 
 def _client_ip(request):
@@ -136,6 +152,7 @@ class BrokerListView(BreadcrumbsMixin, LoginRequiredMixin,
                 "edit_url": reverse("tracking:broker_edit", args=[b.pk]),
                 "delete_url": reverse("tracking:broker_delete", args=[b.pk]),
                 "sync_url": reverse("tracking:broker_sync", args=[b.pk]),
+                "code_url": reverse("tracking:broker_code", args=[b.kind, b.pk]),
                 "landing_slug": b.landing_slug,
             })
         for b in IrevBroker.objects.all():
@@ -145,6 +162,7 @@ class BrokerListView(BreadcrumbsMixin, LoginRequiredMixin,
                 "edit_url": reverse("tracking:irev_edit", args=[b.pk]),
                 "delete_url": reverse("tracking:irev_delete", args=[b.pk]),
                 "sync_url": None,  # IREV: stato via postback, niente pull manuale
+                "code_url": reverse("tracking:broker_code", args=[b.kind, b.pk]),
                 "landing_slug": b.landing_slug,
             })
         for b in SpmMonsterBroker.objects.all():
@@ -154,6 +172,7 @@ class BrokerListView(BreadcrumbsMixin, LoginRequiredMixin,
                 "edit_url": reverse("tracking:spm_edit", args=[b.pk]),
                 "delete_url": reverse("tracking:spm_delete", args=[b.pk]),
                 "sync_url": reverse("tracking:spm_sync", args=[b.pk]),
+                "code_url": reverse("tracking:broker_code", args=[b.kind, b.pk]),
                 "landing_slug": b.landing_slug,
             })
         rows.sort(key=lambda r: r["obj"].name.lower())
@@ -330,3 +349,27 @@ class SpmMonsterBrokerSyncView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
         except Exception as exc:  # noqa: BLE001
             messages.error(request, f"Sync {broker.name} errore: {exc}")
         return redirect("tracking:broker_list")
+
+
+# ── Codice tracciamento per landing ESTERNA ───────────────────────────────
+class TrackingCodeView(BreadcrumbsMixin, LoginRequiredMixin,
+                       EmailVerifiedRequiredMixin, StaffRequiredMixin,
+                       TemplateView):
+    """Mostra lo snippet <form> da incollare nella landing esterna del broker:
+    posta a /lp/<slug>/ e il lead viene attribuito a quel broker."""
+    template_name = "tracking/tracking_code.html"
+    breadcrumb_title = "Codice tracciamento"
+    breadcrumb_parent = "tracking:broker_list"
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        broker = broker_by_kind(self.kwargs["kind"], self.kwargs["pk"])
+        if broker is None:
+            raise Http404("Broker non trovato")
+        ctx["broker"] = broker
+        slug = broker.landing_slug
+        if slug:
+            url = self.request.build_absolute_uri(f"/lp/{slug}/")
+            ctx["landing_url"] = url
+            ctx["snippet"] = build_form_snippet(url)
+        return ctx

@@ -253,6 +253,16 @@ def all_brokers():
     return out
 
 
+_KIND_MODELS = {m.kind: m for m in BROKER_MODELS}
+
+
+def broker_by_kind(kind, pk):
+    model = _KIND_MODELS.get(kind)
+    if model is None:
+        return None
+    return model.objects.filter(pk=pk).first()
+
+
 class Lead(models.Model):
     """Un lead catturato dal CRM, agganciato a UN broker (di qualsiasi tipo).
 

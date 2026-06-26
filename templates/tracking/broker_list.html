@@ -69,6 +69,7 @@
               <button type="submit" class="h-8 px-3 rounded-md border border-border inline-flex items-center text-xs hover:bg-accent">Sync</button>
             </form>
             {% endif %}
+            <a href="{{ b.code_url }}" class="h-8 px-3 rounded-md border border-border inline-flex items-center text-xs hover:bg-accent">Codice</a>
             <a href="{{ b.edit_url }}" class="h-8 px-3 rounded-md border border-border inline-flex items-center text-xs hover:bg-accent">Modifica</a>
             <form method="post" action="{{ b.delete_url }}"
                   onsubmit="return confirm('Eliminare il broker {{ b.obj.name }}?');">

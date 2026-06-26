@@ -1,0 +1,54 @@
+{% extends "layouts/dashboard.html" %}
+{% load apex %}
+{% block title %}Codice tracciamento · {{ broker.name }}{% endblock %}
+{% block content %}
+<div class="mb-6">
+  <h1 class="text-2xl font-bold tracking-tight">Codice tracciamento — {{ broker.name }}</h1>
+  <p class="text-sm text-muted-foreground mt-1">
+    Codice da incollare nella tua <strong>landing esterna</strong> ({{ broker.kind_label }}).
+    Quando l'utente compila e clicca "Inizia ora", il lead arriva nel CRM e viene
+    inviato a questo broker.
+  </p>
+</div>
+
+{% if snippet %}
+<section class="max-w-3xl space-y-4">
+  <div class="rounded-lg border border-border bg-card p-5">
+    <h2 class="text-base font-semibold mb-1">URL del form (action)</h2>
+    <p class="text-sm text-muted-foreground mb-3">Il bottone/form della landing esterna deve postare qui:</p>
+    <code class="block rounded-md bg-muted/50 border border-border px-3 py-2 text-sm break-all">{{ landing_url }}</code>
+  </div>
+
+  <div class="rounded-lg border border-border bg-card p-5">
+    <div class="flex items-center justify-between mb-3">
+      <h2 class="text-base font-semibold">Snippet &lt;form&gt; pronto</h2>
+      <button type="button" onclick="copySnippet()"
+              class="h-8 px-3 rounded-md border border-border inline-flex items-center text-xs hover:bg-accent">Copia</button>
+    </div>
+    <pre id="snippet" class="rounded-md bg-muted/50 border border-border p-4 text-xs overflow-x-auto whitespace-pre">{{ snippet }}</pre>
+    <p class="text-xs text-muted-foreground mt-3">
+      Incolla questo nella landing esterna (puoi stilizzarlo come vuoi, basta che i
+      <code>name</code> dei campi e l'<code>action</code> restino invariati). Campi:
+      <code>firstname</code>, <code>lastname</code>, <code>email</code>, <code>phone</code>, <code>country</code>.
+    </p>
+  </div>
+</section>
+
+<script>
+function copySnippet() {
+  const t = document.getElementById('snippet').innerText;
+  navigator.clipboard.writeText(t).then(() => { /* ok */ });
+}
+</script>
+{% else %}
+<div class="max-w-3xl rounded-md border border-amber-500/30 bg-amber-500/5 p-4 text-sm text-amber-700 dark:text-amber-300">
+  Questo broker non ha ancora uno <strong>slug landing</strong>. Impostane uno dalla
+  <a href="{% url 'tracking:broker_list' %}" class="underline">pagina Broker API → Modifica</a>
+  (campo "Slug landing"), poi torna qui per ottenere il codice.
+</div>
+{% endif %}
+
+<div class="mt-6">
+  <a href="{% url 'tracking:broker_list' %}" class="text-sm text-primary hover:underline">← Torna a Broker API</a>
+</div>
+{% endblock %}
