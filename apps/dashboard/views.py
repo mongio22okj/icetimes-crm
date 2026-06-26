@@ -15,53 +15,34 @@ User = get_user_model()
 
 class DashboardView(LoginRequiredMixin, EmailVerifiedRequiredMixin, View):
     def get(self, request):
-        stats = [
-            {
-                "label": "Total Revenue", "value": "$45,231.89", "delta": "+20.1%", "trend": "up",
-                "icon": "dollar-sign", "accent": "#16a34a",
-                "spark": json.dumps([31, 40, 28, 51, 42, 62, 58, 69, 74, 68, 82, 91]),
-            },
-            {
-                "label": "Active Users", "value": str(User.objects.count()), "delta": "+180.1%", "trend": "up",
-                "icon": "users", "accent": "#0891b2",
-                "spark": json.dumps([12, 18, 14, 22, 30, 28, 35, 32, 41, 47, 52, 58]),
-            },
-            {
-                "label": "Sales", "value": "+12,234", "delta": "+19%", "trend": "up",
-                "icon": "shopping-cart", "accent": "#6366f1",
-                "spark": json.dumps([44, 38, 52, 48, 61, 55, 67, 72, 65, 78, 74, 85]),
-            },
-            {
-                "label": "Active Now", "value": "+573", "delta": "+201", "trend": "up",
-                "icon": "activity", "accent": "#d97706",
-                "spark": json.dumps([22, 28, 35, 31, 29, 36, 42, 45, 38, 44, 49, 55]),
-            },
+        from apps.tracking.models import Lead, TrackboxBroker
+        from django.utils import timezone
+
+        leads = Lead.objects.all()
+        total = leads.count()
+        ftd = leads.filter(is_deposit=True).count()
+        conv = round(ftd * 100 / total, 1) if total else 0
+        leads_today = leads.filter(created_at__date=timezone.localdate()).count()
+        brokers_active = TrackboxBroker.objects.filter(is_active=True).count()
+
+        kpis = [
+            {"label": "Lead totali", "value": total, "icon": "target", "accent": "#6366f1"},
+            {"label": "FTD", "value": ftd, "icon": "dollar-sign", "accent": "#16a34a"},
+            {"label": "Conversione", "value": f"{conv}%", "icon": "trending-up", "accent": "#0891b2"},
+            {"label": "Broker attivi", "value": brokers_active, "icon": "plug", "accent": "#d97706"},
         ]
-        traffic_sources = [
-            {"label": "Direct", "value": 45},
-            {"label": "Organic Search", "value": 30},
-            {"label": "Social", "value": 15},
-            {"label": "Referral", "value": 10},
+        by_broker = [
+            {"name": b.name,
+             "leads": leads.filter(broker=b).count(),
+             "ftd": leads.filter(broker=b, is_deposit=True).count()}
+            for b in TrackboxBroker.objects.all().order_by("name")
         ]
-        goals = [
-            {"label": "New Signups", "current": 847, "target": 1000},
-            {"label": "Revenue Target", "current": 34500, "target": 50000},
-            {"label": "Feature Adoption", "current": 62, "target": 80},
-        ]
-        recent_orders = Order.objects.select_related("customer").prefetch_related("items")[:5]
-        activities = [
-            {"user": "Alice Chen",   "action": "created order ORD-00042", "when": "2m ago",  "icon": "shopping-cart"},
-            {"user": "Bob Martinez", "action": "updated product pricing",  "when": "15m ago", "icon": "package"},
-            {"user": "Carol Patel",  "action": "signed up",                "when": "1h ago",  "icon": "users"},
-            {"user": "Dan Wright",   "action": "changed settings",         "when": "3h ago",  "icon": "settings"},
-            {"user": "Ellen Singh",  "action": "created order ORD-00041",  "when": "5h ago",  "icon": "shopping-cart"},
-        ]
+        recent_leads = leads.select_related("broker").order_by("-created_at")[:10]
         return render(request, "dashboard/index.html", {
-            "stats": stats,
-            "traffic_sources": traffic_sources,
-            "goals": goals,
-            "recent_orders": recent_orders,
-            "activities": activities,
+            "kpis": kpis,
+            "by_broker": by_broker,
+            "recent_leads": recent_leads,
+            "leads_today": leads_today,
             "breadcrumbs": [("Dashboard", None)],
         })
 

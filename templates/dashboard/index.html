@@ -1,23 +1,83 @@
 {% extends "layouts/dashboard.html" %}
-{% block title %}Dashboard · Apex{% endblock %}
+{% load apex %}
+{% block title %}Dashboard · IceTimes CRM{% endblock %}
 {% block content %}
 <div class="mb-6">
   <h1 class="text-2xl font-bold tracking-tight">Dashboard</h1>
   <p class="mt-1 text-sm text-muted-foreground">
-    Welcome back{% if request.user.first_name %}, {{ request.user.first_name }}{% endif %}. Here's what's happening.
+    Bentornato{% if request.user.first_name %}, {{ request.user.first_name }}{% endif %}.
+    {{ leads_today }} lead oggi.
   </p>
 </div>
-<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-  {% for stat in stats %}
-    {% include "components/stat_card.html" with label=stat.label value=stat.value delta=stat.delta trend=stat.trend icon=stat.icon accent=stat.accent spark=stat.spark %}
+
+{# ── KPI reali ─────────────────────────────────────────────────────── #}
+<div class="grid grid-cols-2 xl:grid-cols-4 gap-4">
+  {% for k in kpis %}
+  <div class="rounded-lg border border-border bg-card p-4 flex flex-col gap-3">
+    <div class="flex items-start justify-between">
+      <p class="text-sm font-medium text-muted-foreground">{{ k.label }}</p>
+      <span class="inline-flex h-9 w-9 items-center justify-center rounded-md"
+            style="background-color: {{ k.accent }}1a; color: {{ k.accent }};">
+        {% icon k.icon 18 %}
+      </span>
+    </div>
+    <p class="text-2xl font-bold tracking-tight">{{ k.value }}</p>
+  </div>
   {% endfor %}
 </div>
-<div class="mt-6 grid grid-cols-1 xl:grid-cols-12 gap-4">
-  {% include "dashboard/_revenue_chart.html" %}
-  {% include "dashboard/_side_panel.html" %}
-</div>
-<div class="mt-6 grid grid-cols-1 xl:grid-cols-12 gap-4">
-  {% include "dashboard/_recent_orders.html" %}
-  {% include "dashboard/_activity_feed.html" %}
+
+<div class="mt-6 grid grid-cols-1 xl:grid-cols-3 gap-4">
+  {# ── Lead per broker ────────────────────────────────────────────── #}
+  <div class="rounded-lg border border-border bg-card p-5">
+    <h2 class="text-base font-semibold mb-4">Lead per broker</h2>
+    {% if by_broker %}
+      <div class="space-y-3">
+        {% for b in by_broker %}
+        <div class="flex items-center justify-between text-sm">
+          <span class="font-medium">{{ b.name }}</span>
+          <span class="text-muted-foreground">{{ b.leads }} lead · <span class="text-emerald-600 dark:text-emerald-400">{{ b.ftd }} FTD</span></span>
+        </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="text-sm text-muted-foreground">Nessun broker configurato.</p>
+    {% endif %}
+  </div>
+
+  {# ── Lead recenti ──────────────────────────────────────────────── #}
+  <div class="rounded-lg border border-border bg-card p-5 xl:col-span-2">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-base font-semibold">Lead recenti</h2>
+      <a href="{% url 'tracking:lead_list' %}" class="text-sm text-primary hover:underline">Tutti i lead</a>
+    </div>
+    {% if recent_leads %}
+      <table class="w-full text-sm">
+        <thead class="text-muted-foreground">
+          <tr>
+            <th class="text-left font-medium pb-2">Data</th>
+            <th class="text-left font-medium pb-2">Nome</th>
+            <th class="text-left font-medium pb-2">Broker</th>
+            <th class="text-left font-medium pb-2">Stato</th>
+            <th class="text-center font-medium pb-2">FTD</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for l in recent_leads %}
+          <tr class="border-t border-border">
+            <td class="py-2 text-muted-foreground whitespace-nowrap">{{ l.created_at|date:"d/m H:i" }}</td>
+            <td class="py-2 font-medium">{{ l.full_name|default:l.email|default:"—" }}</td>
+            <td class="py-2 text-muted-foreground">{{ l.broker.name|default:"—" }}</td>
+            <td class="py-2">{{ l.status|default:"—" }}</td>
+            <td class="py-2 text-center">
+              {% if l.is_deposit %}<span class="text-emerald-600 dark:text-emerald-400">●</span>{% else %}<span class="text-muted-foreground">—</span>{% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p class="text-sm text-muted-foreground">Nessun lead ancora.</p>
+    {% endif %}
+  </div>
 </div>
 {% endblock %}
