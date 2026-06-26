@@ -94,6 +94,7 @@ urlpatterns = [
     path("settings/", include("apps.accounts.settings_urls")),
     path("products/", include("apps.products.urls")),
     path("customers/", include("apps.customers.urls")),
+    path("tracking/", include("apps.tracking.urls")),
     path("calendar/", include("apps.events.urls")),
     path("chat/", include("apps.chat.urls")),
     path("files/", include("apps.files.urls")),

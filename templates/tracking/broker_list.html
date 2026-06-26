@@ -1,0 +1,67 @@
+{% extends "layouts/dashboard.html" %}
+{% load apex %}
+{% block title %}Broker API · Apex{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+  <div>
+    <h1 class="text-2xl font-bold tracking-tight">Broker API</h1>
+    <p class="text-sm text-muted-foreground mt-1">Configurazione delle integrazioni broker (TrackBox).</p>
+  </div>
+  <a href="{% url 'tracking:broker_create' %}"
+     class="h-10 px-4 rounded-md bg-primary text-primary-foreground inline-flex items-center font-medium hover:opacity-90">
+    Nuovo broker
+  </a>
+</div>
+
+<div class="rounded-lg border border-border bg-card overflow-hidden">
+  <table class="w-full text-sm">
+    <thead class="bg-muted/40 text-muted-foreground">
+      <tr>
+        <th class="text-left font-medium px-4 py-3">Nome</th>
+        <th class="text-left font-medium px-4 py-3">Base URL</th>
+        <th class="text-left font-medium px-4 py-3">ai / ci / gi</th>
+        <th class="text-left font-medium px-4 py-3">Stato</th>
+        <th class="text-right font-medium px-4 py-3">Azioni</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for b in brokers %}
+      <tr class="border-t border-border hover:bg-accent/40">
+        <td class="px-4 py-3 font-medium">{{ b.name }}</td>
+        <td class="px-4 py-3 text-muted-foreground">{{ b.base_url }}</td>
+        <td class="px-4 py-3 text-muted-foreground">{{ b.ai }} / {{ b.ci }} / {{ b.gi }}</td>
+        <td class="px-4 py-3">
+          {% if b.is_active %}
+            <span class="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs bg-emerald-500/15 text-emerald-700 dark:text-emerald-300">
+              <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>Attivo
+            </span>
+          {% else %}
+            <span class="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs bg-muted text-muted-foreground">
+              <span class="h-1.5 w-1.5 rounded-full bg-muted-foreground"></span>Disattivo
+            </span>
+          {% endif %}
+        </td>
+        <td class="px-4 py-3">
+          <div class="flex items-center justify-end gap-2">
+            <a href="{% url 'tracking:broker_edit' b.pk %}"
+               class="h-8 px-3 rounded-md border border-border inline-flex items-center text-xs hover:bg-accent">Modifica</a>
+            <form method="post" action="{% url 'tracking:broker_delete' b.pk %}"
+                  onsubmit="return confirm('Eliminare il broker {{ b.name }}?');">
+              {% csrf_token %}
+              <button type="submit"
+                      class="h-8 px-3 rounded-md border border-destructive/30 text-destructive inline-flex items-center text-xs hover:bg-destructive/10">Elimina</button>
+            </form>
+          </div>
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="5" class="px-4 py-10 text-center text-muted-foreground">
+          Nessun broker configurato. <a href="{% url 'tracking:broker_create' %}" class="text-primary hover:underline">Aggiungine uno</a>.
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

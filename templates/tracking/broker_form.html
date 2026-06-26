@@ -1,0 +1,52 @@
+{% extends "layouts/dashboard.html" %}
+{% load apex %}
+{% block title %}{% if form.instance.pk %}Modifica {{ form.instance.name }}{% else %}Nuovo broker{% endif %} · Apex{% endblock %}
+{% block content %}
+<div class="mb-6">
+  <h1 class="text-2xl font-bold tracking-tight">{% if form.instance.pk %}Modifica broker TrackBox{% else %}Nuovo broker TrackBox{% endif %}</h1>
+  <p class="text-sm text-muted-foreground mt-1">Credenziali e parametri dell'integrazione API.</p>
+</div>
+
+<form method="post" class="max-w-3xl space-y-6">
+  {% csrf_token %}
+  {% if form.non_field_errors %}
+    <div class="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">{{ form.non_field_errors }}</div>
+  {% endif %}
+
+  <section class="rounded-lg border border-border bg-card p-6 space-y-4">
+    <h2 class="text-base font-semibold">Connessione</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div>{% apex_field form.name %}</div>
+      <div>{% apex_field form.base_url %}</div>
+      <div>{% apex_field form.username %}</div>
+      <div>{% apex_field form.password %}</div>
+    </div>
+  </section>
+
+  <section class="rounded-lg border border-border bg-card p-6 space-y-4">
+    <h2 class="text-base font-semibold">Chiavi API</h2>
+    <div class="grid grid-cols-1 gap-4">
+      <div>{% apex_field form.push_key %}</div>
+      <div>{% apex_field form.pull_key %}</div>
+    </div>
+  </section>
+
+  <section class="rounded-lg border border-border bg-card p-6 space-y-4">
+    <h2 class="text-base font-semibold">Parametri TrackBox</h2>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div>{% apex_field form.ai %}</div>
+      <div>{% apex_field form.ci %}</div>
+      <div>{% apex_field form.gi %}</div>
+    </div>
+    <div>{% apex_field form.is_active %}</div>
+  </section>
+
+  <div class="flex justify-end gap-2">
+    <a href="{% url 'tracking:broker_list' %}"
+       class="h-10 px-4 rounded-md border border-border inline-flex items-center text-sm hover:bg-accent">Annulla</a>
+    <button type="submit" class="h-10 px-4 rounded-md bg-primary text-primary-foreground inline-flex items-center font-medium hover:opacity-90">
+      {% if form.instance.pk %}Salva modifiche{% else %}Crea broker{% endif %}
+    </button>
+  </div>
+</form>
+{% endblock %}

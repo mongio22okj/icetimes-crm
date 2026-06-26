@@ -62,6 +62,7 @@ INSTALLED_APPS = [
     "apps.profiles",
     "apps.wizard",
     "apps.dashboard",
+    "apps.tracking",
 ]
 
 MIDDLEWARE = [
