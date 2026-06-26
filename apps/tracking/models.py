@@ -55,6 +55,10 @@ class TrackboxBroker(models.Model):
     landing_slug = models.SlugField(
         "Slug landing", max_length=60, blank=True, null=True, unique=True,
         help_text="Landing pubblica: /lp/<slug>/.")
+    landing_brand = models.CharField(
+        "Brand landing", max_length=120, blank=True,
+        help_text="Nome/logo mostrato sulla landing pubblica (visitor-facing). "
+                  "Il nome interno del broker resta invariato nel CRM.")
     note = models.CharField(
         "Note", max_length=255, blank=True,
         help_text="Nota interna / nome alternativo del broker.")
@@ -130,6 +134,10 @@ class IrevBroker(models.Model):
     landing_slug = models.SlugField(
         "Slug landing", max_length=60, blank=True, null=True, unique=True,
         help_text="Landing pubblica: /lp/<slug>/.")
+    landing_brand = models.CharField(
+        "Brand landing", max_length=120, blank=True,
+        help_text="Nome/logo mostrato sulla landing pubblica (visitor-facing). "
+                  "Il nome interno del broker resta invariato nel CRM.")
     note = models.CharField("Note", max_length=255, blank=True)
     landing_html = models.TextField(
         "HTML landing personalizzata", blank=True,
@@ -192,6 +200,10 @@ class SpmMonsterBroker(models.Model):
     landing_slug = models.SlugField(
         "Slug landing", max_length=60, blank=True, null=True, unique=True,
         help_text="Landing pubblica: /lp/<slug>/.")
+    landing_brand = models.CharField(
+        "Brand landing", max_length=120, blank=True,
+        help_text="Nome/logo mostrato sulla landing pubblica (visitor-facing). "
+                  "Il nome interno del broker resta invariato nel CRM.")
     note = models.CharField("Note", max_length=255, blank=True)
     landing_html = models.TextField(
         "HTML landing personalizzata", blank=True,

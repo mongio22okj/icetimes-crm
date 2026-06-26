@@ -29,7 +29,7 @@ class TrackboxBrokerForm(forms.ModelForm):
         fields = (
             "name", "base_url", "username", "password",
             "push_key", "pull_key", "ai", "ci", "gi",
-            "funnel", "landing_slug", "note", "landing_html", "is_active",
+            "funnel", "landing_slug", "landing_brand", "note", "landing_html", "is_active",
         )
         widgets = {
             "password": forms.PasswordInput(render_value=True),
@@ -48,7 +48,7 @@ class IrevBrokerForm(forms.ModelForm):
         model = IrevBroker
         fields = (
             "name", "base_url", "token", "affiliate_id", "offer_id",
-            "goal_lead_uuid", "goal_ftd_uuid", "funnel", "landing_slug", "note",
+            "goal_lead_uuid", "goal_ftd_uuid", "funnel", "landing_slug", "landing_brand", "note",
             "landing_html", "is_active",
         )
         widgets = {
@@ -66,7 +66,7 @@ class SpmMonsterBrokerForm(forms.ModelForm):
         model = SpmMonsterBroker
         fields = (
             "name", "base_url", "api_key", "affc", "bxc", "vtc",
-            "funnel", "landing_slug", "note", "landing_html", "is_active",
+            "funnel", "landing_slug", "landing_brand", "note", "landing_html", "is_active",
         )
         widgets = {
             "base_url": forms.URLInput(attrs={"placeholder": "https://spmteamone.it.com"}),

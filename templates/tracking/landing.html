@@ -4,15 +4,15 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% if broker.kind != 'irev' %}Immediate Quantaro{% else %}{{ broker.name }}{% endif %}</title>
+  <title>{% if broker.landing_brand %}{{ broker.landing_brand }}{% else %}Registrati{% endif %}</title>
   <link rel="icon" type="image/svg+xml" href="{% static 'icons/icon.svg' %}">
   <link rel="stylesheet" href="{% static 'css/app.css' %}">
 </head>
 <body class="min-h-screen bg-background text-foreground flex items-center justify-center p-4">
   <div class="w-full max-w-md rounded-xl border border-border bg-card p-8 shadow-lg">
-    {% if broker.kind != 'irev' %}
+    {% if broker.landing_brand %}
     <div class="text-center mb-6">
-      <div class="text-2xl font-extrabold tracking-tight">Immediate Quantaro</div>
+      <div class="text-2xl font-extrabold tracking-tight">{{ broker.landing_brand }}</div>
       <p class="text-sm text-muted-foreground mt-1">Registrati ora — compila per iniziare.</p>
     </div>
     {% else %}
