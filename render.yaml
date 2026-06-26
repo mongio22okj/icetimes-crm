@@ -61,6 +61,16 @@ services:
       - key: FLUSH_DATA
         value: "false"                     # "true" per svuotare il DB al prossimo deploy
 
+      # ── Aggiornamento stati lead (senza queste due gli stati restano
+      #    congelati su "inviato": il poller non parte e i postback dei
+      #    broker vengono respinti). ──────────────────────────────────────
+      - key: LEAD_POLLER
+        value: "true"                      # avvia il poller in-process (pull stati ogni LEAD_POLL_SECONDS)
+      - key: LEAD_POLL_SECONDS
+        value: "60"                        # intervallo pull broker (min 5s)
+      - key: LEADS_POSTBACK_TOKEN
+        sync: false                        # token segreto del postback /postback?token=… (impostalo anche nel pannello del broker)
+
       - key: ADMIN_USERNAME
         sync: false
 

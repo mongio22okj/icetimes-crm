@@ -3,14 +3,97 @@
 Each source kind has its own routine; `run_all_sources()` dispatches by
 kind and returns a list of human-readable result lines (one per source).
 """
+import logging
+
 from django.utils.dateparse import parse_datetime
 
-from . import affinitrax, client, hypernet, irev
+from . import affinitrax, client, hypernet, irev, mediafront, spmmonster
 from .client import CRMAPIError
 from .models import Lead, LeadSource
 from .sources import active_sources
 
+logger = logging.getLogger(__name__)
+
 MAX_PAGES = 30  # safety cap per source: 30 × 100 = 3000 rows
+
+# Chiavi candidate (provate in ordine) per leggere i campi dai pull "generici"
+# di broker il cui schema di risposta non è rigidamente documentato.
+_ID_KEYS = ("id", "leadId", "lead_id", "uuid", "customerId", "leadUuid",
+            "uniqueid")
+_STATUS_KEYS = ("status", "saleStatus", "call_status", "callStatus",
+                "leadStatus", "statusName", "registrationStatus")
+_DEPOSIT_KEYS = ("isDeposit", "isDeposited", "deposit", "ftd", "depositor",
+                 "hasFtd")
+
+
+def _first(row, *keys):
+    """Primo valore non vuoto tra `keys` in `row` (dict)."""
+    for key in keys:
+        val = row.get(key)
+        if val not in (None, "", "null"):
+            return val
+    return None
+
+
+def _rows_from(response):
+    """Normalizza un payload di pull in una lista di righe.
+
+    I broker rispondono in modi diversi: lista nuda, {"data": [...]},
+    {"leads": [...]} o {"result": [...]}. Ritorna sempre una lista.
+    """
+    if isinstance(response, list):
+        return response
+    if isinstance(response, dict):
+        for key in ("data", "leads", "result", "items", "rows"):
+            val = response.get(key)
+            if isinstance(val, list):
+                return val
+    return []
+
+
+def _match_lead(row):
+    """Aggancia una riga di pull a un NOSTRO lead per id broker.
+
+    Prova prima `uniqueid` (su tutte le chiavi id candidate), poi il
+    `broker_lead_id` salvato nel payload al push. Niente match per email
+    (ambiguo / cross-broker). Ritorna il Lead o None — nessun import di
+    lead esterni (segregazione per broker).
+    """
+    rid = _first(row, *_ID_KEYS)
+    if not rid:
+        return None
+    rid = str(rid)
+    lead = Lead.objects.filter(uniqueid=rid).order_by("-created_at").first()
+    if lead is None:
+        lead = (Lead.objects.filter(payload__broker_lead_id=rid)
+                .order_by("-created_at").first())
+    return lead
+
+
+def _apply_generic_update(lead, row):
+    """Applica status/FTD/event_at da una riga generica. Ritorna True se cambiato."""
+    changed = False
+    status = _first(row, *_STATUS_KEYS)
+    if status and lead.status != str(status)[:120]:
+        lead.status = str(status)[:120]
+        changed = True
+    dep_raw = _first(row, *_DEPOSIT_KEYS)
+    is_dep = str(dep_raw).strip().lower() in {"1", "true", "yes", "deposit",
+                                              "ftd", "depositor"} \
+        or str(status or "").strip().lower() in {"ftd", "deposit", "depositor"}
+    if is_dep and not lead.is_deposit:
+        lead.is_deposit = True
+        changed = True
+    ev = _first(row, "createdAt", "depositedAt", "date", "time", "eventDate")
+    if isinstance(ev, str) and not lead.event_at:
+        lead.event_at = parse_datetime(ev.replace(" ", "T"))
+        changed = True
+    if changed:
+        merged = dict(lead.payload or {})
+        merged.update(row)
+        lead.payload = merged
+        lead.save()
+    return changed
 
 
 def _paginate(fetch):
@@ -198,15 +281,61 @@ def refresh_affinitrax_statuses(src, limit=100):
     return f"{updated} stati aggiornati"
 
 
+# ── Mediafront (pull: GET /customer/integrations-lead) ───────────────────
+def sync_mediafront_leads(src):
+    """Aggiorna gli stati dei NOSTRI lead Mediafront via la pull. Update-only:
+    aggancia per id broker (= nostro `uniqueid`/`broker_lead_id`), status/FTD
+    dai campi della riga. Non importa lead esterni (segregazione)."""
+    from datetime import datetime, timedelta, timezone as dt_tz
+    now = datetime.now(dt_tz.utc)
+    dt_from = now - timedelta(days=90)
+    response = mediafront.list_leads(src, dt_from, now)
+    updated = 0
+    for row in _rows_from(response):
+        if not isinstance(row, dict):
+            continue
+        lead = _match_lead(row)
+        if lead is None:
+            continue  # solo i nostri lead, niente import esterni
+        if _apply_generic_update(lead, row):
+            updated += 1
+    return f"{updated} stati aggiornati (pull)"
+
+
+# ── SPM Monster (pull: GET /api/external/integration/lead) ───────────────
+def sync_spmmonster_leads(src):
+    """Aggiorna gli stati dei NOSTRI lead SPM Monster via la pull. Update-only:
+    aggancia per id broker, status/FTD dai campi della riga. Non importa lead
+    esterni (segregazione per broker)."""
+    from datetime import datetime, timedelta, timezone as dt_tz
+    now = datetime.now(dt_tz.utc)
+    dt_from = now - timedelta(days=90)
+    response = spmmonster.list_leads(src, dt_from, now)
+    updated = 0
+    for row in _rows_from(response):
+        if not isinstance(row, dict):
+            continue
+        lead = _match_lead(row)
+        if lead is None:
+            continue  # solo i nostri lead, niente import esterni
+        if _apply_generic_update(lead, row):
+            updated += 1
+    return f"{updated} stati aggiornati (pull)"
+
+
 # Gli STATUS si leggono via PULL API (non dal postback). IREV ora usa la **v2**
 # (`/affiliates/v2/leads`) che NON è ristretta per IP (la v1 lo era), quindi è
-# attiva. TrackBox resta escluso finché non gestiamo la sua chiave di PULL
-# (diversa da quella di push).
+# attiva. Ogni broker pull-capable (vedi LeadSource.PULL_KINDS) DEVE avere qui
+# una funzione: una sorgente in PULL_KINDS ma assente da _DISPATCH non
+# aggiornerebbe mai gli stati (lead congelati su "inviato"). run_all_sources
+# logga un warning se trova questo buco di configurazione.
 _DISPATCH = {
     LeadSource.KIND_AFFINITRAX: refresh_affinitrax_statuses,
     LeadSource.KIND_IREV: sync_irev_leads,
     LeadSource.KIND_TRACKBOX: sync_trackbox_leads,
     LeadSource.KIND_HYPERNET: sync_hypernet_leads,
+    LeadSource.KIND_MEDIAFRONT: sync_mediafront_leads,
+    LeadSource.KIND_SPMMONSTER: sync_spmmonster_leads,
 }
 
 
@@ -218,6 +347,12 @@ def run_all_sources():
             continue
         fn = _DISPATCH.get(src.kind)
         if not fn:
+            # Sorgente dichiarata pull-capable ma senza routine di sync: gli
+            # stati resterebbero congelati e prima il salto era silenzioso.
+            msg = (f"{src.name}: nessuna routine di pull per kind "
+                   f"'{src.kind}' — stati NON aggiornati (canale pull mancante)")
+            logger.warning(msg)
+            errors.append(msg)
             continue
         try:
             summary = fn(src)

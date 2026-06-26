@@ -30,6 +30,7 @@ from .models import (
     NotificationWebhook,
     Partner,
     PreLanding,
+    SyncAudit,
     TrackingLink,
 )
 
@@ -209,7 +210,38 @@ class LeadListView(BreadcrumbsMixin, LoginRequiredMixin,
             (s.slug, s.name) for s in LeadSource.objects.order_by("id")
         ]
         ctx["current_broker"] = source
+        ctx["sync_health"] = self._sync_health()
         return ctx
+
+    @staticmethod
+    def _sync_health():
+        """Stato del canale di aggiornamento stati (poller + ultima sync).
+
+        Serve a vedere a colpo d'occhio se gli stati possono avanzare oltre
+        "inviato": se il poller è spento (LEAD_POLLER non impostato, tipico sul
+        piano free di Render dove il servizio va in sleep) gli stati si
+        aggiornano solo via Sync manuale o postback dei broker.
+        """
+        from django.utils import timezone
+
+        from .poller import get_heartbeat
+        hb = get_heartbeat()
+        last_audit = SyncAudit.objects.first()
+        last_run = hb.get("last_run") or (last_audit.timestamp if last_audit else None)
+        stale = True
+        if last_run:
+            age = (timezone.now() - last_run).total_seconds()
+            # "fresco" se aggiornato entro 5 min (poller a 30s o sync recente).
+            stale = age > 300
+        return {
+            "poller_enabled": hb.get("enabled", False),
+            "interval": hb.get("interval"),
+            "last_run": last_run,
+            "last_ok": hb.get("last_ok", 0),
+            "last_errors": hb.get("last_errors", 0),
+            "consecutive_failures": hb.get("consecutive_failures", 0),
+            "stale": stale,
+        }
 
     @staticmethod
     def _period_stats(base_qs=None):
@@ -307,7 +339,20 @@ def _extract_auto_login(response):
 def postback(request):
     expected = settings.LEADS_POSTBACK_TOKEN
     supplied = request.GET.get("token") or request.headers.get("X-Postback-Token", "")
-    if not expected or not hmac.compare_digest(supplied, expected):
+    if not expected:
+        # Token non configurato lato server: NON è un postback malevolo, è un
+        # buco di configurazione. Senza questo, OGNI postback dei broker viene
+        # respinto e gli stati restano congelati su "inviato". Lo segnaliamo a
+        # voce alta nei log (prima era un 403 muto indistinguibile da un token
+        # sbagliato) e rispondiamo 503 per dirlo esplicitamente.
+        logger.error(
+            "Postback ricevuto ma LEADS_POSTBACK_TOKEN non è configurato: "
+            "aggiornamenti di stato dai broker DISABILITATI. Imposta la env "
+            "LEADS_POSTBACK_TOKEN (stesso valore nel pannello del broker).")
+        return JsonResponse(
+            {"ok": False, "error": "postback token not configured on server"},
+            status=503)
+    if not hmac.compare_digest(supplied, expected):
         return JsonResponse({"ok": False, "error": "invalid token"}, status=403)
 
     data = dict(request.GET.items())
