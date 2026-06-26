@@ -16,8 +16,6 @@ from apps.accounts.views import (
     TwoFactorChallengeView,
 )
 from apps.api.api import api as ninja_api
-from apps.leads.tracking import create_lead, tracking_redirect
-from apps.leads.views import BrokerLandingSubmitView, BrokerLandingView
 from apps.core.health import health as health_view
 from apps.core.pwa import manifest as pwa_manifest
 from apps.core.pwa import offline as pwa_offline
@@ -44,10 +42,6 @@ urlpatterns = [
     path("i18n/", include("django.conf.urls.i18n")),
     path("search/", global_search, name="search"),
     path("api/v1/", ninja_api.urls),
-    path("api/track/", include("apps.leads.tracking_urls")),
-    # Alias compatibile con landing che usano /api/create-lead (stesso handler).
-    path("api/create-lead", create_lead, name="create_lead_alias_noslash"),
-    path("api/create-lead/", create_lead, name="create_lead_alias"),
     path("accounts/login/",
          TwoFactorAwareLoginView.as_view(template_name="registration/login.html"),
          name="login"),
@@ -78,16 +72,9 @@ urlpatterns = [
     path("settings/", include("apps.accounts.settings_urls")),
     path("products/", include("apps.products.urls")),
     path("leads/", include("apps.leads.urls")),
-    # Area visualizzatori (sola lettura lead) — esente dal gate del sito.
-    path("viewer/", include("apps.leads.viewer_urls")),
     path("notifications/", include("apps.notifications.urls")),
     path("orgs/", include("apps.organizations.urls")),
     path("invitations/<str:token>/", InvitationAcceptView.as_view(), name="invitation_accept"),
-    # Link corti di tracciamento — /t/<code>/ → redirect tracciato.
-    path("t/<str:code>/", tracking_redirect, name="tracking_redirect"),
-    # Public broker landing pages.
-    path("b/<slug:slug>/", BrokerLandingView.as_view(), name="broker_landing"),
-    path("b/<slug:slug>/submit/", BrokerLandingSubmitView.as_view(), name="broker_landing_submit"),
     path("realtime/", include("apps.realtime.urls")),
     path("pages/", include("apps.core.urls")),
     path("", include("apps.dashboard.urls")),

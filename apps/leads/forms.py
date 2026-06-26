@@ -10,7 +10,8 @@ from .models import (
     PreLanding,
     TrackingLink,
 )
-from .sources import push_sources
+def push_sources():
+    return []
 
 BASE_INPUT = (
     "w-full h-10 rounded-md border border-input bg-background px-3 text-sm "

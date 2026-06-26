@@ -304,20 +304,7 @@ class ProductSubmitView(View):
         except Exception:
             pass
 
-        # Auto-dispatch lead to active push sources (ping-tree).
-        if lead:
-            try:
-                from apps.leads.dispatch import dispatch
-                from apps.leads.models import LeadSource
-                sources = list(
-                    LeadSource.objects.filter(is_active=True)
-                    .order_by("priority", "name")
-                )
-                sources = [s for s in sources if s.can_push]
-                if sources:
-                    dispatch(lead, sources=sources, stop_on_success=True)
-            except Exception:
-                pass
+        pass
 
         return JsonResponse({"ok": True, "sale_id": sale.pk,
                              "redirect": product.redirect_url or ""})

@@ -1,24 +1,20 @@
-import hmac
 import json
 import logging
-from concurrent.futures import ThreadPoolExecutor
+from datetime import timedelta
 
-from django.conf import settings
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import JsonResponse
-from django.shortcuts import get_object_or_404, redirect, render
-from django.urls import reverse, reverse_lazy
-from django.utils.dateparse import parse_datetime
-from django.utils.decorators import method_decorator
+from django.shortcuts import redirect
+from django.urls import reverse_lazy
+from django.utils import timezone
 from django.views import View
-from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import CreateView, ListView, TemplateView, UpdateView
 
 from apps.accounts.mixins import EmailVerifiedRequiredMixin
 from apps.accounts.views import StaffRequiredMixin, ViewerAllowedMixin
 from apps.core.breadcrumbs import BreadcrumbsMixin
 from apps.core.messages import LEVEL_ERROR, LEVEL_SUCCESS, toast
-from apps.core.tables import BulkAction, Column, Filter, TableConfig, TableView
+from apps.core.tables import BulkAction, Column, TableConfig, TableView
 
 from .forms import CampaignForm, LeadSourceForm
 from .models import (
@@ -28,147 +24,31 @@ from .models import (
     Lead,
     LeadSource,
     NotificationWebhook,
-    Partner,
-    PreLanding,
     SyncAudit,
-    TrackingLink,
 )
-
-from .sync import run_all_sources
+from .services import run_sync
 
 logger = logging.getLogger(__name__)
 
-# Pool per eseguire il ping-tree FUORI dalla request del postback: il broker
-# che ci chiama deve ricevere subito la risposta, non aspettare i push HTTP
-# verso gli altri broker (fino a ~30s ciascuno → rischio timeout lato loro).
-_DISPATCH_POOL = ThreadPoolExecutor(max_workers=4,
-                                    thread_name_prefix="postback-dispatch")
 
-
-def _dispatch_async(lead_pk):
-    """Esegue il dispatch ping-tree in un thread separato.
-
-    Riceve il pk (non l'oggetto) e ri-carica il lead con una connessione DB
-    propria del thread. Best-effort: qualsiasi errore viene loggato, mai
-    propagato (la risposta al broker è già partita).
-    """
-    from django.db import close_old_connections
-    close_old_connections()
-    try:
-        lead = Lead.objects.filter(pk=lead_pk).first()
-        if lead is not None:
-            from . import dispatch as _dispatch
-            _dispatch.dispatch(lead)
-    except Exception:  # noqa: BLE001
-        logger.exception("Dispatch asincrono fallito per lead %s", lead_pk)
-    finally:
-        close_old_connections()
-
-
-def _schedule_dispatch(lead_pk):
-    """Lancia il dispatch async solo dopo il commit della transazione corrente.
-
-    Con autocommit (nessun ATOMIC_REQUESTS) `on_commit` parte subito; se in
-    futuro si abilitano le request atomiche, evita che il thread non trovi
-    ancora il lead non committato."""
-    from django.db import transaction
-    transaction.on_commit(lambda: _DISPATCH_POOL.submit(_dispatch_async, lead_pk))
-
-
-def _safe_next(request, default_name):
-    """Ritorna il path `next` (relativo) se valido, altrimenti il default."""
-    nxt = request.POST.get("next") or request.GET.get("next")
-    if nxt and nxt.startswith("/") and not nxt.startswith("//"):
-        return nxt
-    return reverse(default_name)
-
-
-def _geoip_country(ip):
-    """Paese (ISO-2) di un IP via servizio gratuito ipwho.is. Ritorna '' se
-    non determinabile o in caso di errore (fail-open: non bloccare se il
-    servizio è giù). Usato per consentire le registrazioni solo da IP IT
-    quando Cloudflare non fornisce CF-IPCountry."""
-    if not ip:
-        return ""
-    import json as _json
-    import urllib.request
-    try:
-        req = urllib.request.Request(
-            "https://ipwho.is/%s?fields=country_code" % ip,
-            headers={"User-Agent": "icetimes-crm"})
-        with urllib.request.urlopen(req, timeout=3) as r:
-            data = _json.loads(r.read().decode("utf-8", "replace"))
-        return (data.get("country_code") or "").upper()
-    except Exception:  # noqa: BLE001
-        return ""
-
-
-# Cache leggera slug→nome broker per la colonna "Broker" della tabella lead.
-_BROKER_LABELS = {"at": 0.0, "map": {}}
-
-
-def _broker_label(slug):
-    """Mostra il NOME del broker invece dello slug nella colonna Broker
-    (es. 'trackbox-14' → 'CONNOR LINK SPECIAL 9'). Cache 30s per non
-    interrogare il DB a ogni cella. Slug non-broker (postback, landing…)
-    restano mostrati così come sono."""
-    if not slug:
-        return "—"
-    import time
-    now = time.time()
-    if now - _BROKER_LABELS["at"] > 30:
-        _BROKER_LABELS["map"] = {s.slug: s.name for s in LeadSource.objects.all()}
-        _BROKER_LABELS["at"] = now
-    return _BROKER_LABELS["map"].get(slug, slug)
-
-
-def _broker_filter_choices():
-    """Opzioni del filtro Broker (slug → nome) risolte a render-time dal DB,
-    così il menu di filtro elenca i broker reali e non valori statici."""
-    return tuple((s.slug, s.name) for s in LeadSource.objects.order_by("id"))
-
+# ── Lead table config ────────────────────────────────────────────────────
 
 LEADS_TABLE = TableConfig(
     key="leads",
     columns=(
-        Column("created_at", "Creato il", sortable=True, pinned=True,
-               filter=Filter("daterange"),
-               formatter=lambda v: v.strftime("%d/%m/%Y %H:%M") if v else ""),
-        Column("is_deposit", "Depositare", sortable=True,
-               formatter=lambda v: "✅ sì" if v else "—"),
-        Column("firstname", "Nome", searchable=True),
-        Column("lastname", "Cognome", searchable=True),
-        Column("email", "Email", searchable=True),
-        Column("phone", "Telefono", searchable=True),
-        Column("ip", "IP", sortable=False),
-        Column("country", "Paese",
-               filter=Filter("select", choices=(
-                   ("IT", "🇮🇹 Italia (IT)"),
-                   ("ES", "🇪🇸 Spagna (ES)"),
-                   ("DE", "🇩🇪 Germania (DE)"),
-                   ("SE", "🇸🇪 Svezia (SE)"),
-               ))),
-        Column("status", "Stato", sortable=True,
-               filter=Filter("text", placeholder="Filtra stato…"),
-               template="leads/_table_cells.html#status"),
-        Column("source", "Broker", sortable=True,
-               filter=Filter("select", choices=_broker_filter_choices),
-               formatter=_broker_label,
-               template="leads/_table_cells.html#broker"),
-        Column("event_at", "Aggiornato il", sortable=True,
-               formatter=lambda v: v.strftime("%d/%m/%Y %H:%M") if v else "—"),
-        Column("click_id", "ID cliccato", sortable=False,
-               formatter=lambda v: v or "—"),
+        Column("id", "ID"),
+        Column("firstname", "Nome"),
+        Column("lastname", "Cognome"),
+        Column("email", "Email"),
+        Column("phone", "Telefono"),
+        Column("country", "Paese"),
+        Column("status", "Stato"),
+        Column("source", "Broker"),
+        Column("is_deposit", "FTD"),
+        Column("created_at", "Data"),
     ),
-    bulk_actions=(
-        BulkAction(slug="delete", label="Delete", icon="trash", destructive=True,
-                   confirm_text="Delete {n} leads? This cannot be undone."),
-    ),
-    exports=["csv", "xlsx"],
-    page_size=25,
+    bulk_actions=(BulkAction("delete", "Elimina selezionati"),),
     default_sort="-created_at",
-    sticky_first=True,
-    caption="Lead ricevuti dalle sorgenti API collegate e invii manuali.",
 )
 
 
@@ -188,9 +68,6 @@ class LeadListView(BreadcrumbsMixin, LoginRequiredMixin,
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-        # Report (conteggi + FTD per periodo) coerente coi filtri attivi:
-        # se è selezionato un broker e/o un paese, le statistiche in alto
-        # mostrano SOLO le registrazioni di quel broker/paese.
         country = (self.request.GET.get("country") or "").strip().upper()
         source = (self.request.GET.get("source") or "").strip()
         base = Lead.objects.all()
@@ -199,61 +76,13 @@ class LeadListView(BreadcrumbsMixin, LoginRequiredMixin,
         if source:
             base = base.filter(source=source)
         ctx["lead_stats"] = self._period_stats(base)
-        ctx["country_options"] = [
-            ("IT", "🇮🇹", "Italia"),
-            ("ES", "🇪🇸", "Spagna"),
-            ("DE", "🇩🇪", "Germania"),
-            ("SE", "🇸🇪", "Svezia"),
-        ]
-        # Pillole filtro Broker (slug → nome) per la barra sopra la tabella.
-        ctx["broker_options"] = [
-            (s.slug, s.name) for s in LeadSource.objects.order_by("id")
-        ]
+        ctx["broker_options"] = [(s.slug, s.name) for s in LeadSource.objects.order_by("id")]
         ctx["current_broker"] = source
-        ctx["sync_health"] = self._sync_health()
+        ctx["sync_health"] = {"poller_enabled": False, "stale": True, "last_run": None}
         return ctx
 
     @staticmethod
-    def _sync_health():
-        """Stato del canale di aggiornamento stati (poller + ultima sync).
-
-        Serve a vedere a colpo d'occhio se gli stati possono avanzare oltre
-        "inviato": se il poller è spento (LEAD_POLLER non impostato, tipico sul
-        piano free di Render dove il servizio va in sleep) gli stati si
-        aggiornano solo via Sync manuale o postback dei broker.
-        """
-        from django.utils import timezone
-
-        from .poller import get_heartbeat
-        hb = get_heartbeat()
-        last_audit = SyncAudit.objects.first()
-        last_run = hb.get("last_run") or (last_audit.timestamp if last_audit else None)
-        stale = True
-        if last_run:
-            age = (timezone.now() - last_run).total_seconds()
-            # "fresco" se aggiornato entro 5 min (poller a 30s o sync recente).
-            stale = age > 300
-        return {
-            "poller_enabled": hb.get("enabled", False),
-            "interval": hb.get("interval"),
-            "last_run": last_run,
-            "last_ok": hb.get("last_ok", 0),
-            "last_errors": hb.get("last_errors", 0),
-            "consecutive_failures": hb.get("consecutive_failures", 0),
-            "stale": stale,
-        }
-
-    @staticmethod
     def _period_stats(base_qs=None):
-        """Counts + deposit conversion per period (doctorback-style panel).
-
-        `base_qs` permette di calcolare il report su un sottoinsieme già
-        filtrato (es. per broker/paese); se None usa tutti i lead.
-        """
-        from datetime import timedelta
-
-        from django.utils import timezone
-
         base_qs = base_qs if base_qs is not None else Lead.objects.all()
         today = timezone.localdate()
         week_start = today - timedelta(days=today.weekday())
@@ -274,270 +103,25 @@ class LeadListView(BreadcrumbsMixin, LoginRequiredMixin,
         for label, start, end in periods:
             qs = base_qs
             if start:
-                qs = qs.filter(created_at__date__gte=start,
-                               created_at__date__lte=end)
+                qs = qs.filter(created_at__date__gte=start, created_at__date__lte=end)
             count = qs.count()
             deposits = qs.filter(is_deposit=True).count()
             pct = round(deposits * 100 / count, 1) if count else 0
-            stats.append({"label": label, "count": count,
-                          "deposits": deposits, "pct": pct})
+            stats.append({"label": label, "count": count, "deposits": deposits, "pct": pct})
         return stats
 
 
 class LeadSyncView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
                    StaffRequiredMixin, View):
-    """Manual sync of every active, pull-capable source."""
-
     def post(self, request):
-        ok, errors = run_all_sources()
-        for line in ok:
+        result = run_sync()
+        for line in result.get("ok", []):
             toast(request, LEVEL_SUCCESS, line)
-        for line in errors:
+        for line in result.get("errors", []):
             toast(request, LEVEL_ERROR, line)
-        if not ok and not errors:
-            toast(request, LEVEL_ERROR,
-                  "Nessuna sorgente attiva con lettura disponibile.")
+        if not result.get("ok") and not result.get("errors"):
+            toast(request, LEVEL_ERROR, "Nessuna sorgente attiva con lettura disponibile.")
         return redirect("leads:list")
-
-
-# ── Postback receiver ────────────────────────────────────────────────────
-# Public endpoint external sources call on lead events. Protected by a
-# shared token (?token=… or X-Postback-Token header).
-
-def _first(data, *keys):
-    for key in keys:
-        value = data.get(key)
-        if value not in (None, "", "null", "{", "}"):
-            return value
-    return None
-
-
-def _truthy(value):
-    return str(value).strip().lower() in {"1", "true", "yes", "deposit", "ftd", "depositor"}
-
-
-def _extract_auto_login(response):
-    """URL di auto-login dalla risposta di un push broker.
-    IREV: auto_login_url/autoLoginUrl/redirect_url. TrackBox: `data` (stringa
-    URL) o `addonData.data.loginURL`."""
-    if not isinstance(response, dict):
-        return ""
-    addon = response.get("addonData") or {}
-    addon_data = addon.get("data") if isinstance(addon, dict) else {}
-    addon_data = addon_data if isinstance(addon_data, dict) else {}
-    top = response.get("data")
-    return (response.get("auto_login_url")
-            or response.get("autoLoginUrl")
-            or response.get("redirect_url")
-            or response.get("redirectUrl")   # Hypernet
-            or addon_data.get("loginURL")
-            or (top if isinstance(top, str) and top.startswith("http") else "")
-            or "")
-
-
-@csrf_exempt
-def postback(request):
-    expected = settings.LEADS_POSTBACK_TOKEN
-    supplied = request.GET.get("token") or request.headers.get("X-Postback-Token", "")
-    if not expected:
-        # Token non configurato lato server: NON è un postback malevolo, è un
-        # buco di configurazione. Senza questo, OGNI postback dei broker viene
-        # respinto e gli stati restano congelati su "inviato". Lo segnaliamo a
-        # voce alta nei log (prima era un 403 muto indistinguibile da un token
-        # sbagliato) e rispondiamo 503 per dirlo esplicitamente.
-        logger.error(
-            "Postback ricevuto ma LEADS_POSTBACK_TOKEN non è configurato: "
-            "aggiornamenti di stato dai broker DISABILITATI. Imposta la env "
-            "LEADS_POSTBACK_TOKEN (stesso valore nel pannello del broker).")
-        return JsonResponse(
-            {"ok": False, "error": "postback token not configured on server"},
-            status=503)
-    if not hmac.compare_digest(supplied, expected):
-        return JsonResponse({"ok": False, "error": "invalid token"}, status=403)
-
-    data = dict(request.GET.items())
-    if request.method == "POST":
-        if "json" in (request.content_type or ""):
-            try:
-                body = json.loads(request.body.decode("utf-8", errors="replace") or "{}")
-                if isinstance(body, dict):
-                    data.update(body)
-            except json.JSONDecodeError:
-                pass
-        else:
-            data.update(request.POST.items())
-    data.pop("token", None)
-
-    # Priorità all'id-lead UNICO del broker (lead_id/uuid/…). Il click_id
-    # è il codice del LINK (condiviso da tutti i lead di quel link), quindi
-    # ambiguo: lo usiamo solo come ultima spiaggia.
-    # NB: niente click_id qui. Il click_id è il codice del LINK, condiviso da
-    # tutti i lead di quel link → usarlo come uniqueid collassa lead diversi
-    # sulla stessa riga. Solo id-lead realmente univoci del broker.
-    uniqueid = str(_first(data, "uniqueid", "lead_id", "leadId", "uuid",
-                          "id", "customerId") or "")
-    email = str(_first(data, "email") or "")
-    status = str(_first(data, "callStatus", "saleStatus", "status", "statusName",
-                        "event", "event_type") or "")
-    deposit_raw = _first(data, "isDeposit", "deposit", "ftd", "hasFTD", "type",
-                         "event_type")
-    event_raw = _first(data, "createdAt", "date", "time", "eventDate")
-    event_at = None
-    if isinstance(event_raw, str):
-        event_at = parse_datetime(event_raw.replace(" ", "T"))
-
-    lead = None
-    if uniqueid:
-        lead = (Lead.objects.filter(uniqueid=uniqueid)
-                .order_by("-created_at").first())
-        if lead is None:
-            # Affinitrax stores ids prefixed afx-; match those too.
-            lead = (Lead.objects.filter(uniqueid=f"afx-{uniqueid}")
-                    .order_by("-created_at").first())
-        if lead is None:
-            # Match anche per l'ID-lead broker salvato nel payload al push.
-            lead = (Lead.objects.filter(payload__broker_lead_id=uniqueid)
-                    .order_by("-created_at").first())
-    if lead is None and email:
-        lead = Lead.objects.filter(email__iexact=email).order_by("-created_at").first()
-    if lead is None:
-        # Nessun lead da agganciare. Crea una riga nuova SOLO se il postback
-        # porta dati di contatto reali. Un postback di solo-stato (lead_id +
-        # status, senza email/telefono/nome — o con placeholder template non
-        # sostituiti) per un lead sconosciuto NON deve generare un orfano
-        # vuoto: lo accettiamo e basta. Chiude il leak dei lead vuoti.
-        has_contact = bool(email) or bool(_first(
-            data, "phone", "phoneNumber", "fullphone",
-            "firstname", "firstName", "first_name", "name",
-            "lastname", "lastName", "last_name"))
-        if not has_contact:
-            return JsonResponse({
-                "ok": True, "ignored": True,
-                "reason": "status update for unknown lead, no contact data",
-            })
-        lead = Lead(source="postback")
-
-    if uniqueid and not lead.uniqueid:
-        lead.uniqueid = uniqueid
-    if email:
-        lead.email = email
-    for field, keys in (
-        ("firstname", ("firstname", "firstName", "first_name", "name")),
-        ("lastname", ("lastname", "lastName", "last_name")),
-        ("phone", ("phone", "phoneNumber", "fullphone")),
-        ("country", ("country", "countryCode", "geo")),
-    ):
-        value = _first(data, *keys)
-        if value:
-            setattr(lead, field, str(value)[:120])
-    was_deposit_before = bool(lead.pk and lead.is_deposit)
-    if status:
-        lead.status = status[:120]
-    # Deposito/FTD: o da un campo dedicato (ftd/deposit/…), o dallo stato
-    # stesso quando vale "ftd"/"deposit" (IREV manda l'FTD come status=ftd).
-    deposit_now = (deposit_raw is not None and _truthy(deposit_raw)) or _truthy(status)
-    if deposit_now:
-        lead.is_deposit = True
-    if event_at:
-        lead.event_at = event_at
-    merged = dict(lead.payload or {})
-    merged.update(data)
-    lead.payload = merged
-
-    # ── Duplicate detection — only when CREATING a new Lead row. ──────
-    is_new_lead = lead.pk is None
-    if is_new_lead and email:
-        from datetime import timedelta
-
-        from django.utils import timezone
-
-        from .models import LeadSource as _LS
-        match_kind = (lead.source or "").split("-", 1)[0]
-        src = _LS.objects.filter(kind=match_kind).first() if match_kind else None
-        window = src.duplicate_window_hours if src else 24
-        if window:
-            cutoff = timezone.now() - timedelta(hours=window)
-            recent = Lead.objects.filter(
-                email__iexact=email, created_at__gte=cutoff,
-            ).exists()
-            if recent:
-                return JsonResponse({
-                    "ok": True, "duplicate": True,
-                    "reason": f"email seen within last {window}h",
-                })
-
-    # ── Lead scoring. ────────────────────────────────────────────────
-    from .scoring import compute_score
-    lead.score = compute_score(lead)
-
-    lead.save()
-
-    # ── Notifications (Slack/Discord/Telegram/generic). ──────────────
-    from . import notifications
-    base_payload = {
-        "name": lead.full_name or "—",
-        "email": lead.email,
-        "phone": lead.phone,
-        "country": lead.country,
-        "source": lead.source,
-        "score": lead.score,
-    }
-    try:
-        if is_new_lead:
-            notifications.fire("new_lead", base_payload)
-        if deposit_now and not was_deposit_before:
-            notifications.fire("ftd", {**base_payload, "broker": lead.source})
-    except Exception:  # noqa: BLE001
-        pass
-
-    # ── Auto-email (speed-to-lead) — only on first creation. ─────────
-    if is_new_lead:
-        try:
-            from . import auto_email
-            auto_email.fire("new_lead", lead)
-        except Exception:  # noqa: BLE001
-            pass
-    if deposit_now and not was_deposit_before:
-        try:
-            from . import auto_email
-            auto_email.fire("ftd", lead)
-        except Exception:  # noqa: BLE001
-            pass
-
-    # ── Auto-dispatch ping-tree if any active source has it on. ──────
-    if is_new_lead:
-        try:
-            from .models import LeadSource as _LS
-            if _LS.objects.filter(is_active=True, auto_dispatch=True).exists():
-                # Non bloccare la risposta al broker: il ping-tree gira async.
-                _schedule_dispatch(lead.pk)
-        except Exception:  # noqa: BLE001
-            pass
-
-    # ── Sync Sale status when Lead comes from a product landing. ─────
-    # uniqueid = "sale-<pk>" → update the corresponding Sale record.
-    if lead.uniqueid and lead.uniqueid.startswith("sale-"):
-        try:
-            from django.utils import timezone as _tz
-            from apps.products.models import Sale
-            sale_pk = int(lead.uniqueid.split("-", 1)[1])
-            sale = Sale.objects.filter(pk=sale_pk).first()
-            if sale:
-                if lead.is_deposit and sale.status != Sale.STATUS_SOLD:
-                    sale.status = Sale.STATUS_SOLD
-                    sale.sold_at = _tz.now()
-                    sale.save(update_fields=["status", "sold_at", "updated_at"])
-                elif lead.status.lower() in ("rejected", "invalid", "duplicate", "lost"):
-                    if sale.status == Sale.STATUS_PENDING:
-                        sale.status = Sale.STATUS_LOST
-                        sale.save(update_fields=["status", "updated_at"])
-                elif sale.status == Sale.STATUS_PENDING and lead.status:
-                    sale.notes = f"Broker status: {lead.status}"
-                    sale.save(update_fields=["notes", "updated_at"])
-        except Exception:  # noqa: BLE001
-            pass
-
-    return JsonResponse({"ok": True, "id": lead.pk, "score": lead.score})
 
 
 # ── Broker dashboard ────────────────────────────────────────────────────
@@ -545,25 +129,14 @@ def postback(request):
 class BrokersDashboardView(BreadcrumbsMixin, LoginRequiredMixin,
                            EmailVerifiedRequiredMixin, StaffRequiredMixin,
                            TemplateView):
-    """Card grid of every configured LeadSource with real-data metrics.
-
-    For each LeadSource we compute: total leads, FTD count, conversion
-    rate, last activity timestamp. Matching uses the Lead.source field
-    which carries the source slug (`kind-pk` for DB rows, `kind` for env
-    shims). Replaces the deleted "API Broker" page with a metrics-focused
-    overview rather than a send form.
-    """
     template_name = "leads/brokers_dashboard.html"
     breadcrumb_title = "Broker"
 
     def get_context_data(self, **kwargs):
-        from django.db.models import Count, Max, Q, Sum
+        from django.db.models import Count, Max, Q
 
         ctx = super().get_context_data(**kwargs)
         sources = list(LeadSource.objects.all())
-
-        # One pass: aggregate counts grouped by Lead.source so the page is
-        # cheap even with many brokers.
         per_source = {
             row["source"]: row for row in
             Lead.objects.values("source").annotate(
@@ -572,12 +145,9 @@ class BrokersDashboardView(BreadcrumbsMixin, LoginRequiredMixin,
                 last=Max("created_at"),
             )
         }
-
         cards = []
-        total_leads = total_ftd = 0
-        total_revenue = 0
+        total_leads = total_ftd = total_revenue = 0
         for s in sources:
-            # Match leads whose Lead.source equals slug or starts with kind.
             matched = [
                 v for k, v in per_source.items()
                 if k == s.slug or k.startswith(f"{s.kind}-") or k == s.kind
@@ -590,21 +160,12 @@ class BrokersDashboardView(BreadcrumbsMixin, LoginRequiredMixin,
             total_leads += leads
             total_ftd += ftd
             total_revenue += revenue
-            cards.append({
-                "source": s,
-                "leads": leads,
-                "ftd": ftd,
-                "conv": conv,
-                "last": last,
-                "revenue": revenue,
-            })
+            cards.append({"source": s, "leads": leads, "ftd": ftd,
+                          "conv": conv, "last": last, "revenue": revenue})
         cards.sort(key=lambda c: c["revenue"], reverse=True)
-
         ctx["cards"] = cards
         ctx["totals"] = {
-            "leads": total_leads,
-            "ftd": total_ftd,
-            "revenue": total_revenue,
+            "leads": total_leads, "ftd": total_ftd, "revenue": total_revenue,
             "conv": (total_ftd * 100 / total_leads) if total_leads else 0,
             "brokers_active": sum(1 for s in sources if s.is_active),
             "brokers_total": len(sources),
@@ -612,7 +173,7 @@ class BrokersDashboardView(BreadcrumbsMixin, LoginRequiredMixin,
         return ctx
 
 
-# ── Campaign CRUD ────────────────────────────────────────────────────────
+# ── Campagne ────────────────────────────────────────────────────────────
 
 class CampaignListView(BreadcrumbsMixin, LoginRequiredMixin,
                        EmailVerifiedRequiredMixin, StaffRequiredMixin,
@@ -650,8 +211,7 @@ class CampaignCreateView(BreadcrumbsMixin, LoginRequiredMixin,
 
     def form_valid(self, form):
         response = super().form_valid(form)
-        toast(self.request, LEVEL_SUCCESS,
-              f"Campagna '{self.object.name}' creata.")
+        toast(self.request, LEVEL_SUCCESS, f"Campagna '{self.object.name}' creata.")
         return response
 
 
@@ -667,8 +227,7 @@ class CampaignUpdateView(BreadcrumbsMixin, LoginRequiredMixin,
 
     def form_valid(self, form):
         response = super().form_valid(form)
-        toast(self.request, LEVEL_SUCCESS,
-              f"Campagna '{self.object.name}' aggiornata.")
+        toast(self.request, LEVEL_SUCCESS, f"Campagna '{self.object.name}' aggiornata.")
         return response
 
 
@@ -685,7 +244,7 @@ class CampaignDeleteView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
         return redirect("leads:campaign_list")
 
 
-# ── Lead Source (broker API) CRUD ────────────────────────────────────────
+# ── LeadSource CRUD ─────────────────────────────────────────────────────
 
 class LeadSourceListView(BreadcrumbsMixin, LoginRequiredMixin,
                          EmailVerifiedRequiredMixin, StaffRequiredMixin,
@@ -696,8 +255,6 @@ class LeadSourceListView(BreadcrumbsMixin, LoginRequiredMixin,
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         qs = LeadSource.objects.all()
-
-        # ── Filters (admin-style sidebar) ──────────────────────────────
         kind = self.request.GET.get("kind") or ""
         active = self.request.GET.get("active") or ""
         if kind:
@@ -706,340 +263,14 @@ class LeadSourceListView(BreadcrumbsMixin, LoginRequiredMixin,
             qs = qs.filter(is_active=True)
         elif active == "no":
             qs = qs.filter(is_active=False)
-
-        sources = list(qs)
-        ctx["sources"] = sources
+        ctx["sources"] = list(qs)
         ctx["kind_choices"] = LeadSource.KIND_CHOICES
         ctx["active_filter"] = active
         ctx["kind_filter"] = kind
-        # Totals computed over the unfiltered set so the cards stay stable.
-        all_sources = list(LeadSource.objects.all())
-        ctx["totals"] = {
-            "total": len(all_sources),
-            "active": sum(1 for s in all_sources if s.is_active),
-            "with_api": sum(1 for s in all_sources if s.kind),
-        }
-        # Postback endpoint principale da dare ai broker (token reale).
-        from django.urls import reverse
-        token = settings.LEADS_POSTBACK_TOKEN
-        base = self.request.build_absolute_uri(reverse("leads:postback"))
-        ctx["postback_url"] = f"{base}?token={token}" if token else ""
-        ctx["postback_configured"] = bool(token)
-        # Heartbeat del poller speed-to-lead (sync automatica).
-        from apps.leads.poller import get_heartbeat
-        ctx["poller"] = get_heartbeat()
+        all_s = list(LeadSource.objects.all())
+        ctx["total_sources"] = len(all_s)
+        ctx["active_sources"] = sum(1 for s in all_s if s.is_active)
         return ctx
-
-
-class LeadSourceBulkDeleteView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
-                               StaffRequiredMixin, View):
-    def post(self, request):
-        pks = request.POST.getlist("selected")
-        if not pks:
-            toast(request, LEVEL_ERROR, "Nessun broker selezionato.")
-            return redirect("leads:source_list")
-        qs = LeadSource.objects.filter(pk__in=pks)
-        count = qs.count()
-        qs.delete()
-        toast(request, LEVEL_SUCCESS,
-              f"{count} broker eliminat{'o' if count == 1 else 'i'}.")
-        return redirect("leads:source_list")
-
-
-class TrackBoxView(BreadcrumbsMixin, LoginRequiredMixin,
-                   EmailVerifiedRequiredMixin, StaffRequiredMixin,
-                   TemplateView):
-    """Tabella di riferimento dei tipi di integrazione broker."""
-    template_name = "leads/trackbox.html"
-    breadcrumb_title = "TrackBox"
-
-    def get_context_data(self, **kwargs):
-        from django.db.models import Count, Q
-        ctx = super().get_context_data(**kwargs)
-        # Conteggi per tipo (broker totali e attivi) in una sola query.
-        counts = {
-            row["kind"]: row
-            for row in LeadSource.objects.values("kind").annotate(
-                total=Count("id"),
-                active=Count("id", filter=Q(is_active=True)),
-            )
-        }
-        rows = []
-        for code, label in LeadSource.KIND_CHOICES:
-            c = counts.get(code, {})
-            rows.append({
-                "code": code,
-                "label": label,
-                "total": c.get("total", 0),
-                "active": c.get("active", 0),
-            })
-        ctx["rows"] = rows
-        return ctx
-
-
-class TrackingLinkListView(BreadcrumbsMixin, LoginRequiredMixin,
-                           EmailVerifiedRequiredMixin, StaffRequiredMixin,
-                           CreateView):
-    """Lista + creazione dei link corti di tracciamento."""
-    model = TrackingLink
-    template_name = "leads/tracking_links.html"
-    breadcrumb_title = "Link tracciamento"
-
-    def get_form_class(self):
-        from .forms import TrackingLinkForm
-        return TrackingLinkForm
-
-    def get_success_url(self):
-        return _safe_next(self.request, "leads:tracking_links")
-
-    def form_valid(self, form):
-        response = super().form_valid(form)
-        toast(self.request, LEVEL_SUCCESS,
-              f"Link creato: /t/{self.object.code}")
-        return response
-
-    def get_context_data(self, **kwargs):
-        ctx = super().get_context_data(**kwargs)
-        ctx["links"] = list(TrackingLink.objects.select_related("source").all())
-        ctx["brokers"] = list(LeadSource.objects.order_by("name"))
-        ctx["base_url"] = self.request.build_absolute_uri("/").rstrip("/")
-        return ctx
-
-
-# ── Setting API: provisioning broker (qualsiasi tipo) in un colpo ───────────
-# Tipi gestiti dal modulo Setting API (campi diversi per tipo).
-BROKER_KINDS = ("trackbox", "irev", "v3", "affinitrax", "hypernet")
-
-
-def provision_broker(kind, data):
-    """Crea sorgente broker (tipo `kind`) + landing dedicata + tracking link.
-    Comuni: name, slug, base_url, token. Extra per tipo. Ogni broker = la SUA
-    landing e il SUO codice di tracciamento. Gli status girano via API pull."""
-    from django.utils.text import slugify
-    name = (data.get("name") or "").strip()
-    slug = (slugify(data.get("slug") or name) or "broker")[:50]
-    base_url = (data.get("base_url") or "").strip()
-    if base_url and not base_url.startswith("http"):
-        base_url = "https://" + base_url
-
-    src = LeadSource(kind=kind)
-    src.name = name[:120]
-    src.base_url = base_url
-    src.token = (data.get("token") or "").strip()[:255]
-    if kind == LeadSource.KIND_TRACKBOX:
-        src.username = (data.get("username") or "").strip()[:120]
-        src.password = (data.get("password") or "").strip()[:255]
-        src.pull_token = (data.get("pull_token") or "").strip()[:255]
-        src.ai = (data.get("ai") or "").strip()[:64]
-        src.ci = ((data.get("ci") or "1").strip() or "1")[:64]
-        src.gi = (data.get("gi") or "").strip()[:64]
-    elif kind == LeadSource.KIND_IREV:
-        src.affiliate_id = (data.get("affiliate_id") or "").strip()[:64]
-        src.offer_id = (data.get("offer_id") or "").strip()[:64]
-        src.goal_lead = (data.get("goal_lead") or "").strip()[:64]
-        src.goal_ftd = (data.get("goal_ftd") or "").strip()[:64]
-    elif kind == LeadSource.KIND_V3:
-        src.link_id = (data.get("link_id") or "").strip()[:64]
-        src.funnel = (data.get("funnel") or "").strip()[:120]
-        src.source_tag = (data.get("source_tag") or "").strip()[:64]
-    elif kind == LeadSource.KIND_AFFINITRAX:
-        src.offer_id = (data.get("offer_id") or "").strip()[:64]
-    elif kind == LeadSource.KIND_HYPERNET:
-        src.affiliate_id = (data.get("affiliate_id") or "").strip()[:64]  # affc
-        src.hub_id = (data.get("hub_id") or "").strip()[:64]              # bxc
-        src.vertical_id = (data.get("vertical_id") or "").strip()[:64]    # vtc
-        src.funnel = (data.get("funnel") or "").strip()[:120]
-    src.is_active = True
-    src.auto_dispatch = False
-    src.landing_slug = slug
-    src.landing_active = True
-    src.landing_success_message = "Registrazione completata! Ti stiamo reindirizzando..."
-
-    # Landing dedicata: clona da una sorgente dello STESSO tipo con landing
-    # (template); fallback a una qualsiasi. Cambia solo l'URL di submit.
-    ref = (LeadSource.objects.filter(kind=kind)
-           .exclude(landing_custom_html="").exclude(landing_slug="").order_by("id").first()
-           or LeadSource.objects.exclude(landing_custom_html="")
-           .exclude(landing_slug="").order_by("id").first())
-    if ref and ref.landing_custom_html:
-        src.landing_custom_html = ref.landing_custom_html.replace(
-            "b/%s/submit/" % ref.landing_slug, "b/%s/submit/" % slug)
-    src.save()
-
-    tl, _ = TrackingLink.objects.get_or_create(
-        source=src, destination="https://icetimes.it/b/%s/" % slug,
-        defaults={"name": src.name, "is_active": True})
-    return src, tl
-
-
-class ApiSettingsView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
-                      StaffRequiredMixin, View):
-    """Pagina 'Setting API': modulo per aggiungere un broker scegliendo il
-    TIPO (TrackBox / IREV / v3 / Affinitrax). Alla conferma crea sorgente +
-    landing + tracking; gli status poi girano via API pull (poller)."""
-
-    template_name = "leads/api_settings.html"
-
-    def get(self, request):
-        return render(request, self.template_name, {
-            "brokers": list(LeadSource.objects.order_by("-id")),
-            "base_url": request.build_absolute_uri("/").rstrip("/"),
-        })
-
-    def post(self, request):
-        d = request.POST
-        kind = (d.get("kind") or "trackbox").strip()
-        if kind not in BROKER_KINDS:
-            toast(request, LEVEL_ERROR, "Tipo API non valido.")
-            return redirect("leads:api_settings")
-        if not (d.get("name") or "").strip() or not (d.get("base_url") or "").strip():
-            toast(request, LEVEL_ERROR, "Nome e base_url sono obbligatori.")
-            return redirect("leads:api_settings")
-        try:
-            src, tl = provision_broker(kind, d)
-        except Exception as exc:  # noqa: BLE001
-            toast(request, LEVEL_ERROR, "Errore nella creazione: %s" % exc)
-            return redirect("leads:api_settings")
-        toast(request, LEVEL_SUCCESS,
-              "Broker '%s' (%s) creato — landing /b/%s/ · link /t/%s/" % (
-                  src.name, kind, src.landing_slug, tl.code))
-        return redirect("leads:api_settings")
-
-
-class TrackingLinkUpdateView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
-                             StaffRequiredMixin, View):
-    """Salvataggio inline di un link dalla tabella editabile."""
-
-    def post(self, request, pk):
-        link = get_object_or_404(TrackingLink, pk=pk)
-        link.name = (request.POST.get("name") or "").strip()[:120]
-        link.destination = (request.POST.get("destination") or "").strip()
-        sid = request.POST.get("source") or ""
-        link.source_id = int(sid) if sid.isdigit() else None
-        link.is_active = request.POST.get("is_active") == "on"
-        if not link.destination:
-            toast(request, LEVEL_ERROR, "La destinazione non può essere vuota.")
-        else:
-            link.save()
-            toast(request, LEVEL_SUCCESS, f"Link /t/{link.code} aggiornato.")
-        return redirect(_safe_next(request, "leads:tracking_links"))
-
-
-class TrackingLinkDeleteView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
-                             StaffRequiredMixin, View):
-    def post(self, request, pk):
-        from .models import TrackingLink
-        TrackingLink.objects.filter(pk=pk).delete()
-        toast(request, LEVEL_SUCCESS, "Link eliminato.")
-        return redirect(_safe_next(request, "leads:tracking_links"))
-
-
-# ── Pre-landing: registro pre-lander esterne collegate a un broker ──────────
-class PreLandingListView(BreadcrumbsMixin, LoginRequiredMixin,
-                         EmailVerifiedRequiredMixin, StaffRequiredMixin,
-                         CreateView):
-    """Lista + creazione delle pre-landing esterne.
-
-    La pre-landing è ospitata altrove; qui salviamo il riferimento e il link
-    di tracciamento da incollare nel bottone. Il CRM traccia dal click in poi.
-    """
-    model = PreLanding
-    template_name = "leads/prelandings.html"
-    breadcrumb_title = "Pre-landing"
-
-    def get_form_class(self):
-        from .forms import PreLandingForm
-        return PreLandingForm
-
-    def get_success_url(self):
-        return _safe_next(self.request, "leads:prelandings")
-
-    def form_valid(self, form):
-        response = super().form_valid(form)
-        toast(self.request, LEVEL_SUCCESS,
-              f"Pre-landing salvata: {self.object.name}")
-        return response
-
-    def get_context_data(self, **kwargs):
-        ctx = super().get_context_data(**kwargs)
-        ctx["prelandings"] = list(
-            PreLanding.objects.select_related(
-                "tracking_link", "tracking_link__source").all())
-        ctx["links"] = list(
-            TrackingLink.objects.select_related("source").filter(is_active=True))
-        ctx["base_url"] = self.request.build_absolute_uri("/").rstrip("/")
-        return ctx
-
-
-class PreLandingUpdateView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
-                           StaffRequiredMixin, View):
-    """Salvataggio inline di una pre-landing dalla tabella editabile."""
-
-    def post(self, request, pk):
-        pl = get_object_or_404(PreLanding, pk=pk)
-        pl.name = (request.POST.get("name") or "").strip()[:120]
-        pl.url = (request.POST.get("url") or "").strip()
-        pl.notes = (request.POST.get("notes") or "").strip()[:255]
-        tid = request.POST.get("tracking_link") or ""
-        pl.tracking_link_id = int(tid) if tid.isdigit() else None
-        pl.is_active = request.POST.get("is_active") == "on"
-        if not pl.name or not pl.url:
-            toast(request, LEVEL_ERROR, "Nome e URL sono obbligatori.")
-        else:
-            pl.save()
-            toast(request, LEVEL_SUCCESS, f"Pre-landing «{pl.name}» aggiornata.")
-        return redirect(_safe_next(request, "leads:prelandings"))
-
-
-class PreLandingDeleteView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
-                           StaffRequiredMixin, View):
-    def post(self, request, pk):
-        PreLanding.objects.filter(pk=pk).delete()
-        toast(request, LEVEL_SUCCESS, "Pre-landing eliminata.")
-        return redirect(_safe_next(request, "leads:prelandings"))
-
-
-# ── Visualizzatori: pannello centrale di approvazione ────────────────────
-def _viewer_queryset():
-    """Solo account visualizzatore (gruppo Viewers, non staff)."""
-    from django.contrib.auth import get_user_model
-    from .viewer import viewer_group
-    User = get_user_model()
-    return User.objects.filter(groups=viewer_group(), is_staff=False)
-
-
-class ViewerRequestListView(BreadcrumbsMixin, LoginRequiredMixin,
-                            EmailVerifiedRequiredMixin, StaffRequiredMixin,
-                            TemplateView):
-    template_name = "leads/viewer_requests.html"
-    breadcrumb_title = "Visualizzatori"
-
-    def get_context_data(self, **kwargs):
-        ctx = super().get_context_data(**kwargs)
-        viewers = list(_viewer_queryset().order_by("-date_joined"))
-        ctx["pending"] = [u for u in viewers if not u.is_active]
-        ctx["active"] = [u for u in viewers if u.is_active]
-        return ctx
-
-
-class ViewerApproveView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
-                        StaffRequiredMixin, View):
-    def post(self, request, pk):
-        user = get_object_or_404(_viewer_queryset(), pk=pk)
-        user.is_active = True
-        user.save(update_fields=["is_active"])
-        toast(request, LEVEL_SUCCESS, f"Accesso approvato per '{user.username}'.")
-        return redirect("leads:viewer_requests")
-
-
-class ViewerRevokeView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
-                       StaffRequiredMixin, View):
-    def post(self, request, pk):
-        user = get_object_or_404(_viewer_queryset(), pk=pk)
-        username = user.username
-        user.delete()
-        toast(request, LEVEL_SUCCESS, f"Accesso rimosso per '{username}'.")
-        return redirect("leads:viewer_requests")
 
 
 class LeadSourceCreateView(BreadcrumbsMixin, LoginRequiredMixin,
@@ -1048,14 +279,13 @@ class LeadSourceCreateView(BreadcrumbsMixin, LoginRequiredMixin,
     model = LeadSource
     form_class = LeadSourceForm
     template_name = "leads/leadsource_form.html"
-    success_url = reverse_lazy("leads:source_list")
+    success_url = reverse_lazy("leads:broker_list")
     breadcrumb_title = "Nuovo broker"
-    breadcrumb_parent = ("Broker", "leads:source_list")
+    breadcrumb_parent = ("Broker", "leads:broker_list")
 
     def form_valid(self, form):
         response = super().form_valid(form)
-        toast(self.request, LEVEL_SUCCESS,
-              f"Broker '{self.object.name}' creato.")
+        toast(self.request, LEVEL_SUCCESS, f"Broker '{self.object.name}' creato.")
         return response
 
 
@@ -1065,67 +295,48 @@ class LeadSourceUpdateView(BreadcrumbsMixin, LoginRequiredMixin,
     model = LeadSource
     form_class = LeadSourceForm
     template_name = "leads/leadsource_form.html"
-    success_url = reverse_lazy("leads:source_list")
+    success_url = reverse_lazy("leads:broker_list")
     breadcrumb_title = "Modifica broker"
-    breadcrumb_parent = ("Broker", "leads:source_list")
+    breadcrumb_parent = ("Broker", "leads:broker_list")
 
     def form_valid(self, form):
         response = super().form_valid(form)
-        toast(self.request, LEVEL_SUCCESS,
-              f"Broker '{self.object.name}' aggiornato.")
+        toast(self.request, LEVEL_SUCCESS, f"Broker '{self.object.name}' aggiornato.")
         return response
 
 
 class LeadSourceDeleteView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
                            StaffRequiredMixin, View):
     def post(self, request, pk):
-        source = LeadSource.objects.filter(pk=pk).first()
-        if source is None:
-            toast(request, LEVEL_ERROR, "Broker non trovato.")
-            return redirect("leads:source_list")
-        name = source.name
-        source.delete()
-        toast(request, LEVEL_SUCCESS, f"Broker '{name}' eliminato.")
-        return redirect("leads:source_list")
+        src = LeadSource.objects.filter(pk=pk).first()
+        if src:
+            name = src.name
+            src.delete()
+            toast(request, LEVEL_SUCCESS, f"Broker '{name}' eliminato.")
+        return redirect("leads:broker_list")
 
 
-# ── Broker landing pages management ──────────────────────────────────────
-
-class BrokerLandingListView(BreadcrumbsMixin, LoginRequiredMixin,
-                            EmailVerifiedRequiredMixin, StaffRequiredMixin,
-                            TemplateView):
-    template_name = "leads/landing_list.html"
-    breadcrumb_title = "Landing"
-
-    def get_context_data(self, **kwargs):
-        ctx = super().get_context_data(**kwargs)
-        sources = list(LeadSource.objects.all())
-        ctx["sources"] = sources
-        ctx["totals"] = {
-            "total": len(sources),
-            "published": sum(1 for s in sources if s.landing_active and s.landing_slug),
-        }
-        return ctx
+class LeadSourceBulkDeleteView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
+                               StaffRequiredMixin, View):
+    def post(self, request):
+        ids = request.POST.getlist("ids")
+        n, _ = LeadSource.objects.filter(pk__in=ids).delete()
+        toast(request, LEVEL_SUCCESS, f"{n} broker eliminati.")
+        return redirect("leads:broker_list")
 
 
-# ── Reports (ROI per broker + CPA per campaign) ─────────────────────────
+# ── Report ──────────────────────────────────────────────────────────────
 
 class ReportsView(BreadcrumbsMixin, LoginRequiredMixin,
                   EmailVerifiedRequiredMixin, ViewerAllowedMixin,
                   TemplateView):
-    """ROI line chart per broker + CPA bar chart per campaign."""
     template_name = "leads/reports.html"
     breadcrumb_title = "Report"
 
     def get_context_data(self, **kwargs):
-        from datetime import timedelta
-
         from django.db.models import Count, Q
-        from django.utils import timezone
 
         ctx = super().get_context_data(**kwargs)
-
-        # ── ROI per broker: FTD count per day per broker, last 30 days ──
         today = timezone.localdate()
         days = [today - timedelta(days=i) for i in range(29, -1, -1)]
         labels = [d.strftime("%d/%m") for d in days]
@@ -1139,8 +350,7 @@ class ReportsView(BreadcrumbsMixin, LoginRequiredMixin,
                 .filter(source__startswith=s.kind, is_deposit=True,
                         created_at__date__gte=days[0])
                 .extra(select={"d": "DATE(created_at)"})
-                .values("d")
-                .annotate(n=Count("id"))
+                .values("d").annotate(n=Count("id"))
             )
             counts_by_day = {row["d"]: row["n"] for row in per_day}
             datasets.append({
@@ -1150,24 +360,19 @@ class ReportsView(BreadcrumbsMixin, LoginRequiredMixin,
                 "backgroundColor": "transparent",
                 "tension": 0.35,
             })
-        roi_chart = {"labels": labels, "datasets": datasets}
-
-        # ── CPA per campaign: bar chart ─────────────────────────────────
         campaigns = Campaign.objects.all()
-        cpa_chart = {
+        ctx["roi_chart_json"] = json.dumps({"labels": labels, "datasets": datasets})
+        ctx["cpa_chart_json"] = json.dumps({
             "labels": [c.name for c in campaigns],
             "data": [float(c.cpa) if c.cpa is not None else 0 for c in campaigns],
             "platforms": [c.get_platform_display() for c in campaigns],
-        }
-
-        ctx["roi_chart_json"] = json.dumps(roi_chart)
-        ctx["cpa_chart_json"] = json.dumps(cpa_chart)
+        })
         ctx["has_brokers"] = bool(sources)
         ctx["has_campaigns"] = campaigns.exists()
         return ctx
 
 
-# ── NotificationWebhook CRUD ────────────────────────────────────────────
+# ── Notifiche ────────────────────────────────────────────────────────────
 
 class NotificationListView(BreadcrumbsMixin, LoginRequiredMixin,
                            EmailVerifiedRequiredMixin, StaffRequiredMixin,
@@ -1193,8 +398,7 @@ class NotificationCreateView(BreadcrumbsMixin, LoginRequiredMixin,
 
     def form_valid(self, form):
         response = super().form_valid(form)
-        toast(self.request, LEVEL_SUCCESS,
-              f"Webhook '{self.object.name}' creato.")
+        toast(self.request, LEVEL_SUCCESS, f"Webhook '{self.object.name}' creato.")
         return response
 
 
@@ -1222,8 +426,6 @@ class NotificationDeleteView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
 
 class NotificationTestView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
                            StaffRequiredMixin, View):
-    """Fire a fake "test" event to verify the hook is configured right."""
-
     def post(self, request, pk):
         from . import notifications as _n
         hook = NotificationWebhook.objects.filter(pk=pk).first()
@@ -1231,12 +433,8 @@ class NotificationTestView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
             toast(request, LEVEL_ERROR, "Webhook non trovato.")
             return redirect("leads:notification_list")
         ok, info = _n.send_to_webhook(hook, "new_lead", {
-            "name": "Test User",
-            "email": "test@example.com",
-            "phone": "+393331234567",
-            "country": "IT",
-            "source": "test",
-            "score": 75,
+            "name": "Test User", "email": "test@example.com",
+            "phone": "+393331234567", "country": "IT", "source": "test", "score": 75,
         })
         if ok:
             toast(request, LEVEL_SUCCESS, f"Test inviato a '{hook.name}' — {info}")
@@ -1245,7 +443,7 @@ class NotificationTestView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
         return redirect("leads:notification_list")
 
 
-# ── AutoMessage CRUD ────────────────────────────────────────────────────
+# ── Auto-email ───────────────────────────────────────────────────────────
 
 class AutoMessageListView(BreadcrumbsMixin, LoginRequiredMixin,
                           EmailVerifiedRequiredMixin, StaffRequiredMixin,
@@ -1292,7 +490,7 @@ class AutoMessageDeleteView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
         return redirect("leads:auto_message_list")
 
 
-# ── Ping-tree dispatch ──────────────────────────────────────────────────
+# ── Dispatch log ─────────────────────────────────────────────────────────
 
 class DispatchLogView(BreadcrumbsMixin, LoginRequiredMixin,
                       EmailVerifiedRequiredMixin, StaffRequiredMixin,
@@ -1310,368 +508,13 @@ class DispatchLogView(BreadcrumbsMixin, LoginRequiredMixin,
         from django.db.models import Avg, Count, Q
         ctx = super().get_context_data(**kwargs)
         per_broker = (
-            DispatchLog.objects
-            .values("source_name")
-            .annotate(
-                total=Count("id"),
-                success=Count("id", filter=Q(success=True)),
-                avg_latency=Avg("latency_ms"),
-            )
+            DispatchLog.objects.values("source_name")
+            .annotate(total=Count("id"),
+                      success=Count("id", filter=Q(success=True)),
+                      avg_latency=Avg("latency_ms"))
             .order_by("-total")
         )
         for row in per_broker:
             row["rate"] = (row["success"] * 100 / row["total"]) if row["total"] else 0
         ctx["per_broker"] = per_broker
         return ctx
-
-
-class LeadDispatchTriggerView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
-                              StaffRequiredMixin, View):
-    """Manually fire ping-tree dispatch for a single Lead."""
-
-    def post(self, request, pk):
-        lead = Lead.objects.filter(pk=pk).first()
-        if lead is None:
-            toast(request, LEVEL_ERROR, "Lead non trovato.")
-            return redirect("leads:list")
-        from . import dispatch as _d
-        attempts = _d.dispatch(lead)
-        ok_count = sum(1 for a in attempts if a["success"])
-        if ok_count:
-            toast(request, LEVEL_SUCCESS,
-                  f"Dispatch lead #{lead.pk}: {ok_count}/{len(attempts)} broker hanno accettato.")
-        elif attempts:
-            toast(request, LEVEL_ERROR,
-                  f"Dispatch lead #{lead.pk}: nessun broker ha accettato ({len(attempts)} tentativi).")
-        else:
-            toast(request, LEVEL_ERROR,
-                  "Nessun broker push-capable attivo da provare.")
-        return redirect("leads:dispatch_log")
-
-
-# ── Public broker landing /b/<slug>/ ────────────────────────────────────
-
-class BrokerLandingView(TemplateView):
-    """Public landing for a single broker. Form posts to BrokerLandingSubmit.
-
-    Se il broker ha `landing_custom_html` (landing clonata), serve quell'HTML
-    grezzo invece del template standard.
-    """
-    template_name = "leads/broker_landing.html"
-
-    def get(self, request, *args, **kwargs):
-        from django.http import Http404, HttpResponse
-        slug = kwargs.get("slug")
-        broker = LeadSource.objects.filter(
-            landing_slug=slug, landing_active=True, is_active=True,
-        ).first()
-        if broker is None:
-            raise Http404()
-        if broker.landing_custom_html:
-            return HttpResponse(broker.landing_custom_html)
-        return super().get(request, *args, **kwargs)
-
-    def get_context_data(self, **kwargs):
-        from django.http import Http404
-        ctx = super().get_context_data(**kwargs)
-        slug = kwargs.get("slug")
-        broker = LeadSource.objects.filter(
-            landing_slug=slug, landing_active=True, is_active=True,
-        ).first()
-        if broker is None:
-            raise Http404()
-        ctx["broker"] = broker
-        return ctx
-
-
-@method_decorator(csrf_exempt, name="dispatch")
-class BrokerLandingSubmitView(View):
-    """Form submit endpoint for a broker landing.
-
-    Creates a Lead tagged to the broker source, then force-dispatches
-    the lead to that broker only (not ping-tree). Fires notifications
-    and auto-email per the global config.
-    """
-
-    def post(self, request, slug):
-        from django.http import Http404, JsonResponse
-        from . import dispatch as _dispatch
-        from . import notifications as _notifications
-        from .scoring import compute_score
-
-        broker = LeadSource.objects.filter(
-            landing_slug=slug, landing_active=True, is_active=True,
-        ).first()
-        if broker is None:
-            raise Http404()
-
-        # Solo IP italiani possono registrarsi. Prima l'header CF-IPCountry
-        # di Cloudflare (istantaneo); se assente, geolocalizzazione lato
-        # server dell'IP del visitatore. Blocca se il paese è noto e != IT.
-        visitor_ip = (request.META.get("HTTP_CF_CONNECTING_IP")
-                      or request.META.get("HTTP_X_FORWARDED_FOR", "").split(",")[0].strip()
-                      or request.META.get("REMOTE_ADDR", ""))
-        country = (request.META.get("HTTP_CF_IPCOUNTRY") or "").upper()
-        if not country:
-            country = _geoip_country(visitor_ip)
-        if country and country != "IT":
-            return JsonResponse({
-                "ok": False,
-                "error": "Le registrazioni sono disponibili solo dall'Italia.",
-            }, status=403)
-
-        data = request.POST
-        email = (data.get("email") or "").strip()
-        if not email:
-            return JsonResponse({"ok": False, "error": "email required"}, status=400)
-
-        import secrets
-        import time
-        uniqueid = f"land-{broker.slug}-{int(time.time())}-{secrets.token_hex(3)}"
-        payload = {k: v for k, v in data.items() if k != "csrfmiddlewaretoken"}
-        # IP reale del visitatore (dietro Cloudflare → nginx). IREV lo richiede.
-        real_ip = (request.META.get("HTTP_CF_CONNECTING_IP")
-                   or request.META.get("HTTP_X_FORWARDED_FOR", "").split(",")[0].strip()
-                   or request.META.get("REMOTE_ADDR", ""))
-        if real_ip:
-            payload.setdefault("ip", real_ip)
-
-        firstname = (data.get("firstname") or data.get("nome") or "").strip()[:120]
-        lastname = (data.get("lastname") or data.get("cognome") or "").strip()[:120]
-        phone = (data.get("phone") or data.get("telefono")
-                 or data.get("tel") or data.get("full_phone") or "").strip()[:32]
-
-        # ── Blocco doppia registrazione (segregazione per broker) ─────────
-        # Un lead appartiene SOLO al broker della sua landing. Se la STESSA
-        # persona si registra di nuovo a QUESTO broker — stesso nome, cognome,
-        # email e telefono, A PRESCINDERE dall'IP — NON creiamo un duplicato
-        # (il broker lo rifiuterebbe e sporcherebbe i dati) e mostriamo un
-        # errore di registrazione. La stessa persona può diventare lead di un
-        # altro broker solo registrandosi dalla landing di quell'altro broker.
-        dup = (Lead.objects.filter(
-            source=broker.slug,
-            email__iexact=email,
-            phone=phone,
-            firstname__iexact=firstname,
-            lastname__iexact=lastname,
-        ).order_by("-id").first())
-        if dup is not None:
-            # Avvisa sul bot (Telegram/Slack/…) che è un doppione bloccato.
-            try:
-                _notifications.fire("duplicate", {
-                    "name": f"{firstname} {lastname}".strip() or "—",
-                    "email": email,
-                    "phone": phone,
-                    "source": broker.name,
-                })
-            except Exception:  # noqa: BLE001
-                pass
-            if "text/html" in request.headers.get("Accept", ""):
-                from django.http import HttpResponse
-                return HttpResponse(
-                    "<!doctype html><meta charset=utf-8>"
-                    "<div style='font-family:system-ui;text-align:center;padding:64px'>"
-                    "<h2>ERRORE REGISTRAZIONE</h2>"
-                    "<p>Risulti già registrato con questi dati.</p></div>",
-                    status=409)
-            return JsonResponse({"ok": False, "duplicate": True,
-                                 "error": "ERRORE REGISTRAZIONE"}, status=409)
-
-        lead = Lead.objects.create(
-            uniqueid=uniqueid,
-            firstname=firstname,
-            lastname=lastname,
-            email=email[:254],
-            phone=phone,
-            country=(data.get("country") or data.get("iso") or "IT").strip().upper()[:8],
-            status="lead",
-            source=broker.slug,
-            gclid=(data.get("gclid") or "").strip()[:255],
-            fbclid=(data.get("fbclid") or "").strip()[:255],
-            ttclid=(data.get("ttclid") or "").strip()[:255],
-            payload=payload,
-        )
-        lead.score = compute_score(lead)
-        lead.save(update_fields=["score"])
-
-        # Force-dispatch to THIS broker only.
-        try:
-            _dispatch.dispatch(lead, sources=[broker])
-        except Exception:  # noqa: BLE001
-            pass
-
-        # Auto-login: se il broker ha risposto con un auto_login_url, mandiamo
-        # la persona dritta sulla sua piattaforma (massima conversione).
-        auto_login = ""
-        _dl = (DispatchLog.objects.filter(lead=lead, source=broker, success=True)
-               .order_by("-id").first())
-        if _dl and isinstance(_dl.response, dict):
-            auto_login = _extract_auto_login(_dl.response)
-            # Memorizza l'ID-lead lato broker: il loro postback lo rimanda,
-            # così agganciamo l'aggiornamento di stato al lead esatto.
-            broker_lead_id = _dispatch._extract_broker_lead_id(_dl.response)
-            if broker_lead_id:
-                lead.uniqueid = str(broker_lead_id)[:128]
-                lead.payload = {**(lead.payload or {}),
-                                "broker_lead_id": str(broker_lead_id)}
-                lead.save(update_fields=["uniqueid", "payload"])
-
-        # Notifications (silent fail).
-        try:
-            _notifications.fire("new_lead", {
-                "name": lead.full_name or "—",
-                "email": lead.email,
-                "phone": lead.phone,
-                "country": lead.country,
-                "source": broker.name,
-                "score": lead.score,
-            })
-        except Exception:  # noqa: BLE001
-            pass
-
-        # Auto-email.
-        try:
-            from . import auto_email
-            auto_email.fire("new_lead", lead)
-        except Exception:  # noqa: BLE001
-            pass
-
-        # POST nativo del form (es. funnel statica self-hostata): il browser
-        # si aspetta una navigazione, non JSON → reindirizziamo direttamente.
-        # Le nostre landing in fetch (Accept */*) ricevono invece il JSON.
-        target = auto_login or broker.landing_redirect_url or ""
-        if "text/html" in request.headers.get("Accept", ""):
-            if target:
-                from django.http import HttpResponseRedirect
-                return HttpResponseRedirect(target)
-            # Nessun auto-login: mostra una pagina di conferma (non rimandare
-            # il visitatore su "/" che è dietro il gate).
-            from django.http import HttpResponse
-            msg = broker.landing_success_message or "Registrazione completata!"
-            return HttpResponse(
-                "<!doctype html><meta charset=utf-8>"
-                "<div style='font-family:system-ui;text-align:center;padding:64px'>"
-                f"<h2>✅ {msg}</h2></div>")
-
-        return JsonResponse({
-            "ok": True,
-            "lead_id": lead.pk,
-            "redirect": target,
-        })
-
-
-# ── Per-partner inbound postback /in/<slug>/ ────────────────────────────
-
-@csrf_exempt
-def partner_postback(request, slug):
-    """Inbound postback endpoint for a single Partner.
-
-    Authentication: ?token=<partner.webhook_token> OR X-Postback-Token
-    header. Lead is created with source=partner-<slug> so attribution is
-    automatic. Fires the full pipeline (scoring, notifications, auto-
-    email, auto-dispatch) just like the main /leads/postback/.
-    """
-    partner = Partner.objects.filter(slug=slug, is_active=True).first()
-    if partner is None:
-        return JsonResponse({"ok": False, "error": "partner not found"}, status=404)
-
-    supplied = request.GET.get("token") or request.headers.get("X-Postback-Token", "")
-    if not partner.webhook_token or not hmac.compare_digest(supplied, partner.webhook_token):
-        return JsonResponse({"ok": False, "error": "invalid token"}, status=403)
-
-    data = dict(request.GET.items())
-    if request.method == "POST":
-        if "json" in (request.content_type or ""):
-            try:
-                body = json.loads(request.body.decode("utf-8", errors="replace") or "{}")
-                if isinstance(body, dict):
-                    data.update(body)
-            except json.JSONDecodeError:
-                pass
-        else:
-            data.update(request.POST.items())
-    data.pop("token", None)
-
-    # Priorità all'id-lead UNICO del broker (lead_id/uuid/…). Il click_id
-    # è il codice del LINK (condiviso da tutti i lead di quel link), quindi
-    # ambiguo: lo usiamo solo come ultima spiaggia.
-    # NB: niente click_id qui. Il click_id è il codice del LINK, condiviso da
-    # tutti i lead di quel link → usarlo come uniqueid collassa lead diversi
-    # sulla stessa riga. Solo id-lead realmente univoci del broker.
-    uniqueid = str(_first(data, "uniqueid", "lead_id", "leadId", "uuid",
-                          "id", "customerId") or "")
-    email = str(_first(data, "email") or "")
-    if not email and not uniqueid:
-        return JsonResponse({"ok": False, "error": "email or uniqueid required"}, status=400)
-
-    import secrets
-    import time
-    if not uniqueid:
-        uniqueid = f"partner-{slug}-{int(time.time())}-{secrets.token_hex(3)}"
-
-    # Dedup: same email from same partner within 24h is a no-op.
-    if email:
-        from datetime import timedelta
-
-        from django.utils import timezone
-        cutoff = timezone.now() - timedelta(hours=24)
-        recent = Lead.objects.filter(
-            email__iexact=email,
-            source=f"partner-{slug}",
-            created_at__gte=cutoff,
-        ).first()
-        if recent is not None:
-            return JsonResponse({
-                "ok": True, "duplicate": True, "id": recent.pk,
-                "reason": "same email from this partner within 24h",
-            })
-
-    lead = Lead(source=f"partner-{slug}", uniqueid=uniqueid)
-    if email:
-        lead.email = email
-    for field, keys in (
-        ("firstname", ("firstname", "firstName", "first_name", "name")),
-        ("lastname", ("lastname", "lastName", "last_name")),
-        ("phone", ("phone", "phoneNumber", "fullphone")),
-        ("country", ("country", "countryCode", "geo")),
-        ("status", ("status", "callStatus", "saleStatus")),
-    ):
-        value = _first(data, *keys)
-        if value:
-            setattr(lead, field, str(value)[:120])
-
-    deposit_raw = _first(data, "isDeposit", "deposit", "ftd", "hasFTD")
-    if deposit_raw is not None and _truthy(deposit_raw):
-        lead.is_deposit = True
-
-    lead.payload = data
-
-    # Scoring + save.
-    from .scoring import compute_score
-    lead.score = compute_score(lead)
-    lead.save()
-
-    # Pipeline: notifications + auto-email + auto-dispatch (silent fail).
-    try:
-        from . import notifications
-        notifications.fire("new_lead", {
-            "name": lead.full_name or "—",
-            "email": lead.email, "phone": lead.phone,
-            "country": lead.country, "source": partner.name,
-            "score": lead.score,
-        })
-    except Exception:  # noqa: BLE001
-        pass
-    try:
-        from . import auto_email
-        auto_email.fire("new_lead", lead)
-    except Exception:  # noqa: BLE001
-        pass
-    try:
-        if LeadSource.objects.filter(is_active=True, auto_dispatch=True).exists():
-            # Postback partner: dispatch async, risposta immediata al caller.
-            _schedule_dispatch(lead.pk)
-    except Exception:  # noqa: BLE001
-        pass
-
-    return JsonResponse({"ok": True, "id": lead.pk, "score": lead.score})
