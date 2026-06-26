@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Grazie · {{ broker.name }}</title>
+  <title>{% if broker.kind != 'irev' %}Immediate Quantaro{% else %}{{ broker.name }}{% endif %}</title>
   <link rel="icon" type="image/svg+xml" href="{% static 'icons/icon.svg' %}">
   <link rel="stylesheet" href="{% static 'css/app.css' %}">
 </head>
