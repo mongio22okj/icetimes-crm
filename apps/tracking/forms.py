@@ -15,7 +15,7 @@ class TrackboxBrokerForm(forms.ModelForm):
         fields = (
             "name", "base_url", "username", "password",
             "push_key", "pull_key", "ai", "ci", "gi",
-            "funnel", "landing_slug", "is_active",
+            "funnel", "landing_slug", "note", "is_active",
         )
         widgets = {
             "password": forms.PasswordInput(render_value=True),

@@ -48,6 +48,10 @@ class TrackboxBroker(models.Model):
         help_text="Slug della landing pubblica: /lp/<slug>/. Lascia vuoto "
                   "se il broker non usa una landing dedicata.")
 
+    note = models.CharField(
+        "Note", max_length=255, blank=True,
+        help_text="Nota interna / nome alternativo del broker.")
+
     is_active = models.BooleanField("Attivo", default=True)
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)

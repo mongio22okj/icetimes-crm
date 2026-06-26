@@ -27,7 +27,10 @@
     <tbody>
       {% for b in brokers %}
       <tr class="border-t border-border hover:bg-accent/40">
-        <td class="px-4 py-3 font-medium">{{ b.name }}</td>
+        <td class="px-4 py-3">
+          <div class="font-medium">{{ b.name }}</div>
+          {% if b.note %}<div class="text-xs text-muted-foreground">{{ b.note }}</div>{% endif %}
+        </td>
         <td class="px-4 py-3 text-muted-foreground">{{ b.base_url }}</td>
         <td class="px-4 py-3 text-muted-foreground">{{ b.ai }} / {{ b.ci }} / {{ b.gi }}</td>
         <td class="px-4 py-3">
