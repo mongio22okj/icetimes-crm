@@ -19,6 +19,8 @@ from apps.accounts.views import (
 )
 from apps.api.api import api as ninja_api
 from apps.core.health import health as health_view
+from apps.tracking.postback import postback as broker_postback
+from apps.tracking.views import landing as broker_landing
 from apps.core.pwa import manifest as pwa_manifest
 from apps.core.pwa import offline as pwa_offline
 from apps.core.pwa import service_worker as pwa_sw
@@ -95,6 +97,11 @@ urlpatterns = [
     path("products/", include("apps.products.urls")),
     path("customers/", include("apps.customers.urls")),
     path("tracking/", include("apps.tracking.urls")),
+    # Ricevitore postback broker (broker→CRM). Path fisso /leads/postback/
+    # per combaciare con la config già impostata nel pannello broker.
+    path("leads/postback/", broker_postback, name="leads_postback"),
+    # Landing pubblica per broker: /lp/<slug>/ (il link che si compila).
+    path("lp/<slug:slug>/", broker_landing, name="broker_landing"),
     path("calendar/", include("apps.events.urls")),
     path("chat/", include("apps.chat.urls")),
     path("files/", include("apps.files.urls")),

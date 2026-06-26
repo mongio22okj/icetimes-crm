@@ -1,0 +1,74 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Registrati · {{ broker.name }}</title>
+  <link rel="icon" type="image/svg+xml" href="{% static 'icons/icon.svg' %}">
+  <link rel="stylesheet" href="{% static 'css/app.css' %}">
+</head>
+<body class="min-h-screen bg-background text-foreground flex items-center justify-center p-4">
+  <div class="w-full max-w-md rounded-xl border border-border bg-card p-8 shadow-lg">
+    <div class="flex items-center gap-3 mb-6">
+      <img src="{% static 'icons/icon.svg' %}" class="h-10 w-10" alt="">
+      <div>
+        <h1 class="text-xl font-bold tracking-tight">Registrati ora</h1>
+        <p class="text-sm text-muted-foreground">Compila i tuoi dati per iniziare.</p>
+      </div>
+    </div>
+
+    {% if push_error %}
+      <div class="mb-4 rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
+        Si è verificato un problema con l'invio. Riprova tra poco.
+      </div>
+    {% endif %}
+
+    <form method="post" class="space-y-4">
+      {% csrf_token %}
+      {% if form.non_field_errors %}
+        <div class="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">{{ form.non_field_errors }}</div>
+      {% endif %}
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium mb-1">Nome</label>
+          {{ form.firstname }}
+          {% if form.firstname.errors %}<p class="text-xs text-destructive mt-1">{{ form.firstname.errors|striptags }}</p>{% endif %}
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">Cognome</label>
+          {{ form.lastname }}
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium mb-1">Email</label>
+        {{ form.email }}
+        {% if form.email.errors %}<p class="text-xs text-destructive mt-1">{{ form.email.errors|striptags }}</p>{% endif %}
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium mb-1">Telefono</label>
+          {{ form.phone }}
+          {% if form.phone.errors %}<p class="text-xs text-destructive mt-1">{{ form.phone.errors|striptags }}</p>{% endif %}
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">Paese</label>
+          {{ form.country }}
+        </div>
+      </div>
+
+      <button type="submit"
+              class="w-full h-11 rounded-md bg-primary text-primary-foreground font-medium hover:opacity-90 transition">
+        Invia
+      </button>
+    </form>
+
+    <p class="text-xs text-muted-foreground text-center mt-4">
+      Inviando accetti di essere ricontattato.
+    </p>
+  </div>
+</body>
+</html>

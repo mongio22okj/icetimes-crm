@@ -1,3 +1,5 @@
+import secrets
+
 from django.db import models
 from django.utils import timezone
 
@@ -36,6 +38,16 @@ class TrackboxBroker(models.Model):
     ci = models.CharField("ci", max_length=64, default="1")
     gi = models.CharField("gi (group id)", max_length=64)
 
+    funnel = models.CharField(
+        "Funnel", max_length=120, blank=True,
+        help_text="Nome funnel inviato al broker nel campo 'so' (visibile nei "
+                  "report TrackBox). Se vuoto usa il nome del broker.")
+
+    landing_slug = models.SlugField(
+        "Slug landing", max_length=60, blank=True, null=True, unique=True,
+        help_text="Slug della landing pubblica: /lp/<slug>/. Lascia vuoto "
+                  "se il broker non usa una landing dedicata.")
+
     is_active = models.BooleanField("Attivo", default=True)
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
@@ -55,3 +67,85 @@ class TrackboxBroker(models.Model):
     @property
     def pull_url(self) -> str:
         return self.base_url.rstrip("/") + "/api/pull/customers"
+
+
+class Lead(models.Model):
+    """Un lead catturato dal CRM, agganciato a un broker.
+
+    `click_id` è il NOSTRO identificativo univoco (= affclickid) che inviamo
+    al broker al push e che il broker ci rimanda nel postback: è la chiave
+    con cui ricolleghiamo gli aggiornamenti di stato/FTD al lead esatto.
+    `broker_lead_id` è invece l'id che ci ritorna il broker (customerId/uniqueid).
+    """
+
+    broker = models.ForeignKey(
+        TrackboxBroker, null=True, blank=True, on_delete=models.SET_NULL,
+        related_name="leads",
+        help_text="Broker di destinazione del lead.")
+
+    click_id = models.CharField(
+        "Click id (affclickid)", max_length=64, unique=True, db_index=True,
+        help_text="Id univoco nostro, chiave di aggancio del postback.")
+    broker_lead_id = models.CharField(
+        "Id lead broker", max_length=128, blank=True, db_index=True,
+        help_text="Id ritornato dal broker al push (customerId/uniqueid).")
+
+    firstname = models.CharField("Nome", max_length=120, blank=True)
+    lastname = models.CharField("Cognome", max_length=120, blank=True)
+    email = models.EmailField("Email", blank=True)
+    phone = models.CharField("Telefono", max_length=40, blank=True)
+    country = models.CharField("Paese", max_length=8, blank=True)
+    ip = models.GenericIPAddressField("IP", null=True, blank=True)
+
+    status = models.CharField("Stato", max_length=120, blank=True)
+    is_deposit = models.BooleanField("FTD", default=False)
+
+    payload = models.JSONField(default=dict, blank=True)
+    created_at = models.DateTimeField(default=timezone.now, db_index=True)
+    event_at = models.DateTimeField("Data evento", null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "Lead"
+        verbose_name_plural = "Lead"
+
+    def __str__(self) -> str:
+        return self.full_name or self.email or self.click_id
+
+    @property
+    def full_name(self) -> str:
+        return f"{self.firstname} {self.lastname}".strip()
+
+    @staticmethod
+    def gen_click_id() -> str:
+        return "ice" + secrets.token_hex(8)
+
+    def save(self, *args, **kwargs):
+        if not self.click_id:
+            cid = self.gen_click_id()
+            while Lead.objects.filter(click_id=cid).exists():
+                cid = self.gen_click_id()
+            self.click_id = cid
+        super().save(*args, **kwargs)
+
+
+class PushLog(models.Model):
+    """Esito di un tentativo di PUSH di un lead verso il broker."""
+
+    lead = models.ForeignKey(Lead, on_delete=models.CASCADE,
+                             related_name="push_logs")
+    broker = models.ForeignKey(TrackboxBroker, null=True, blank=True,
+                               on_delete=models.SET_NULL, related_name="push_logs")
+    success = models.BooleanField(default=False)
+    response = models.JSONField(default=dict, blank=True)
+    error = models.CharField(max_length=255, blank=True)
+    created_at = models.DateTimeField(default=timezone.now, db_index=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "Push log"
+        verbose_name_plural = "Push log"
+
+    def __str__(self) -> str:
+        return f"Push lead {self.lead_id} → {'ok' if self.success else 'fail'}"

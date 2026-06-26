@@ -1,0 +1,86 @@
+{% extends "layouts/dashboard.html" %}
+{% load apex %}
+{% block title %}Lead · Apex{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+  <div>
+    <h1 class="text-2xl font-bold tracking-tight">Lead</h1>
+    <p class="text-sm text-muted-foreground mt-1">Lead catturati e relativo stato dai broker.</p>
+  </div>
+</div>
+
+<div class="rounded-lg border border-border bg-card overflow-hidden">
+  <table class="w-full text-sm">
+    <thead class="bg-muted/40 text-muted-foreground">
+      <tr>
+        <th class="text-left font-medium px-4 py-3">Data</th>
+        <th class="text-left font-medium px-4 py-3">Nome</th>
+        <th class="text-left font-medium px-4 py-3">Email</th>
+        <th class="text-left font-medium px-4 py-3">Telefono</th>
+        <th class="text-left font-medium px-4 py-3">Paese</th>
+        <th class="text-left font-medium px-4 py-3">Broker</th>
+        <th class="text-left font-medium px-4 py-3">Stato</th>
+        <th class="text-center font-medium px-4 py-3">FTD</th>
+        <th class="text-right font-medium px-4 py-3">Azioni</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for l in leads %}
+      <tr class="border-t border-border hover:bg-accent/40">
+        <td class="px-4 py-3 text-muted-foreground whitespace-nowrap">{{ l.created_at|date:"d/m/y H:i" }}</td>
+        <td class="px-4 py-3 font-medium">{{ l.full_name|default:"—" }}</td>
+        <td class="px-4 py-3 text-muted-foreground">{{ l.email|default:"—" }}</td>
+        <td class="px-4 py-3 text-muted-foreground">{{ l.phone|default:"—" }}</td>
+        <td class="px-4 py-3 text-muted-foreground">{{ l.country|default:"—" }}</td>
+        <td class="px-4 py-3 text-muted-foreground">{{ l.broker.name|default:"—" }}</td>
+        <td class="px-4 py-3">{{ l.status|default:"—" }}</td>
+        <td class="px-4 py-3 text-center">
+          {% if l.is_deposit %}
+            <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs bg-emerald-500/15 text-emerald-700 dark:text-emerald-300">FTD</span>
+          {% else %}
+            <span class="text-muted-foreground">—</span>
+          {% endif %}
+        </td>
+        <td class="px-4 py-3">
+          <div class="flex items-center justify-end gap-2">
+            {% if l.broker_lead_id %}
+              <span class="text-xs text-muted-foreground" title="Id lead broker">#{{ l.broker_lead_id }}</span>
+            {% endif %}
+            {% if l.broker %}
+              <form method="post" action="{% url 'tracking:lead_push' l.pk %}"
+                    onsubmit="return confirm('Inviare questo lead a {{ l.broker.name }}? (registra il lead sul broker)');">
+                {% csrf_token %}
+                <button type="submit"
+                        class="h-8 px-3 rounded-md border border-border inline-flex items-center text-xs hover:bg-accent">Invia al broker</button>
+              </form>
+            {% else %}
+              <span class="text-xs text-muted-foreground">no broker</span>
+            {% endif %}
+          </div>
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="9" class="px-4 py-10 text-center text-muted-foreground">
+          Nessun lead ancora. Arriveranno quando attiveremo la cattura (Passo 3+).
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% if is_paginated %}
+<div class="flex items-center justify-between mt-4 text-sm">
+  <span class="text-muted-foreground">Pagina {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+  <div class="flex gap-2">
+    {% if page_obj.has_previous %}
+      <a href="?page={{ page_obj.previous_page_number }}" class="h-8 px-3 rounded-md border border-border inline-flex items-center hover:bg-accent">Precedente</a>
+    {% endif %}
+    {% if page_obj.has_next %}
+      <a href="?page={{ page_obj.next_page_number }}" class="h-8 px-3 rounded-md border border-border inline-flex items-center hover:bg-accent">Successiva</a>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+{% endblock %}

@@ -2,6 +2,7 @@
 Base Django settings for apex project.
 """
 
+import os
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -229,4 +230,8 @@ SECURE_CSP = {
 DEMO_MODE = False
 DEMO_USERNAME = "demo"
 DEMO_PASSWORD = "ApexShowcase!2026"
+
+# Token condiviso per il ricevitore postback dei broker (broker→CRM).
+# Letto da env; vuoto = postback disabilitato (risponde 503).
+LEADS_POSTBACK_TOKEN = os.environ.get("LEADS_POSTBACK_TOKEN", "")
 
