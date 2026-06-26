@@ -30,12 +30,12 @@ G_ACCOUNT = _("Account")
 
 
 NAV_ITEMS: tuple[NavItem, ...] = (
-    NavItem(_("Dashboard"), "dashboard", "layout-dashboard",
-            keywords=("home", "overview", "dashboard", "kpi", "lead", "ftd"),
-            group=G_CRM, requires_staff=True),
     NavItem(_("CRM"), "dashboard_crm", "trending-up",
             keywords=("crm", "guadagno", "spesa", "profitto", "ftd", "broker",
                       "pipeline", "performance"),
+            group=G_CRM, requires_staff=True),
+    NavItem(_("Dashboard"), "dashboard", "layout-dashboard",
+            keywords=("home", "overview", "dashboard", "kpi", "lead", "ftd"),
             group=G_CRM, requires_staff=True),
     NavItem(_("Lead"), "tracking:lead_list", "target",
             keywords=("lead", "leads", "contatti", "ftd", "tracciamento"),
