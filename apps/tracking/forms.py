@@ -1,6 +1,6 @@
 from django import forms
 
-from .models import Lead, TrackboxBroker
+from .models import IrevBroker, Lead, TrackboxBroker
 
 BASE_INPUT = (
     "w-full h-10 rounded-md border border-input bg-background px-3 text-sm "
@@ -21,6 +21,28 @@ class TrackboxBrokerForm(forms.ModelForm):
             "password": forms.PasswordInput(render_value=True),
             "base_url": forms.URLInput(attrs={
                 "placeholder": "https://track.fintechgurus.org"}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.fields.values():
+            widget = field.widget
+            if isinstance(widget, forms.CheckboxInput):
+                widget.attrs.setdefault("class", "h-4 w-4 rounded border-input")
+            else:
+                widget.attrs.setdefault("class", BASE_INPUT)
+
+
+class IrevBrokerForm(forms.ModelForm):
+    class Meta:
+        model = IrevBroker
+        fields = (
+            "name", "base_url", "token", "affiliate_id", "offer_id",
+            "goal_lead_uuid", "goal_ftd_uuid", "landing_slug", "note",
+            "is_active",
+        )
+        widgets = {
+            "base_url": forms.URLInput(attrs={"placeholder": "https://stylishwnt.com"}),
         }
 
     def __init__(self, *args, **kwargs):

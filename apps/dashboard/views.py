@@ -15,7 +15,7 @@ User = get_user_model()
 
 class DashboardView(LoginRequiredMixin, EmailVerifiedRequiredMixin, View):
     def get(self, request):
-        from apps.tracking.models import Lead, TrackboxBroker
+        from apps.tracking.models import Lead, all_brokers
         from django.utils import timezone
 
         leads = Lead.objects.all()
@@ -23,7 +23,8 @@ class DashboardView(LoginRequiredMixin, EmailVerifiedRequiredMixin, View):
         ftd = leads.filter(is_deposit=True).count()
         conv = round(ftd * 100 / total, 1) if total else 0
         leads_today = leads.filter(created_at__date=timezone.localdate()).count()
-        brokers_active = TrackboxBroker.objects.filter(is_active=True).count()
+        brokers = all_brokers()
+        brokers_active = sum(1 for b in brokers if b.is_active)
 
         kpis = [
             {"label": "Lead totali", "value": total, "icon": "target", "accent": "#6366f1"},
@@ -31,13 +32,12 @@ class DashboardView(LoginRequiredMixin, EmailVerifiedRequiredMixin, View):
             {"label": "Conversione", "value": f"{conv}%", "icon": "trending-up", "accent": "#0891b2"},
             {"label": "Broker attivi", "value": brokers_active, "icon": "plug", "accent": "#d97706"},
         ]
-        by_broker = [
-            {"name": b.name,
-             "leads": leads.filter(broker=b).count(),
-             "ftd": leads.filter(broker=b, is_deposit=True).count()}
-            for b in TrackboxBroker.objects.all().order_by("name")
-        ]
-        recent_leads = leads.select_related("broker").order_by("-created_at")[:10]
+        by_broker = []
+        for b in sorted(brokers, key=lambda x: x.name.lower()):
+            bl = Lead.for_broker(b)
+            by_broker.append({"name": b.name, "leads": bl.count(),
+                              "ftd": bl.filter(is_deposit=True).count()})
+        recent_leads = leads.order_by("-created_at")[:10]
         return render(request, "dashboard/index.html", {
             "kpis": kpis,
             "by_broker": by_broker,

@@ -50,7 +50,7 @@ def _match_lead(broker, row):
     ids = _candidate_ids(row)
     if not ids:
         return None
-    qs = Lead.objects.filter(broker=broker)
+    qs = Lead.for_broker(broker)
     return (qs.filter(click_id__in=ids).first()
             or qs.filter(broker_lead_id__in=ids).first())
 
