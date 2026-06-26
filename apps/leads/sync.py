@@ -286,8 +286,8 @@ def sync_mediafront_leads(src):
     """Aggiorna gli stati dei NOSTRI lead Mediafront via la pull. Update-only:
     aggancia per id broker (= nostro `uniqueid`/`broker_lead_id`), status/FTD
     dai campi della riga. Non importa lead esterni (segregazione)."""
-    from datetime import datetime, timedelta, timezone as dt_tz
-    now = datetime.now(dt_tz.utc)
+    from datetime import UTC, datetime, timedelta
+    now = datetime.now(UTC)
     dt_from = now - timedelta(days=90)
     response = mediafront.list_leads(src, dt_from, now)
     updated = 0
@@ -307,8 +307,8 @@ def sync_spmmonster_leads(src):
     """Aggiorna gli stati dei NOSTRI lead SPM Monster via la pull. Update-only:
     aggancia per id broker, status/FTD dai campi della riga. Non importa lead
     esterni (segregazione per broker)."""
-    from datetime import datetime, timedelta, timezone as dt_tz
-    now = datetime.now(dt_tz.utc)
+    from datetime import UTC, datetime, timedelta
+    now = datetime.now(UTC)
     dt_from = now - timedelta(days=90)
     response = spmmonster.list_leads(src, dt_from, now)
     updated = 0
