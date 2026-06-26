@@ -9,28 +9,38 @@ BASE_INPUT = (
 )
 
 
+def _style_broker_fields(form):
+    """Applica le classi Tailwind ai campi dei form broker (input/checkbox/textarea)."""
+    for field in form.fields.values():
+        widget = field.widget
+        if isinstance(widget, forms.CheckboxInput):
+            widget.attrs.setdefault("class", "h-4 w-4 rounded border-input")
+        elif isinstance(widget, forms.Textarea):
+            widget.attrs.setdefault(
+                "class",
+                BASE_INPUT.replace("h-10", "min-h-[260px] py-2 font-mono text-xs"))
+        else:
+            widget.attrs.setdefault("class", BASE_INPUT)
+
+
 class TrackboxBrokerForm(forms.ModelForm):
     class Meta:
         model = TrackboxBroker
         fields = (
             "name", "base_url", "username", "password",
             "push_key", "pull_key", "ai", "ci", "gi",
-            "funnel", "landing_slug", "note", "is_active",
+            "funnel", "landing_slug", "note", "landing_html", "is_active",
         )
         widgets = {
             "password": forms.PasswordInput(render_value=True),
             "base_url": forms.URLInput(attrs={
                 "placeholder": "https://track.fintechgurus.org"}),
+            "landing_html": forms.Textarea(attrs={"rows": 12}),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        for field in self.fields.values():
-            widget = field.widget
-            if isinstance(widget, forms.CheckboxInput):
-                widget.attrs.setdefault("class", "h-4 w-4 rounded border-input")
-            else:
-                widget.attrs.setdefault("class", BASE_INPUT)
+        _style_broker_fields(self)
 
 
 class IrevBrokerForm(forms.ModelForm):
@@ -39,20 +49,16 @@ class IrevBrokerForm(forms.ModelForm):
         fields = (
             "name", "base_url", "token", "affiliate_id", "offer_id",
             "goal_lead_uuid", "goal_ftd_uuid", "funnel", "landing_slug", "note",
-            "is_active",
+            "landing_html", "is_active",
         )
         widgets = {
             "base_url": forms.URLInput(attrs={"placeholder": "https://stylishwnt.com"}),
+            "landing_html": forms.Textarea(attrs={"rows": 12}),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        for field in self.fields.values():
-            widget = field.widget
-            if isinstance(widget, forms.CheckboxInput):
-                widget.attrs.setdefault("class", "h-4 w-4 rounded border-input")
-            else:
-                widget.attrs.setdefault("class", BASE_INPUT)
+        _style_broker_fields(self)
 
 
 class SpmMonsterBrokerForm(forms.ModelForm):
@@ -60,20 +66,16 @@ class SpmMonsterBrokerForm(forms.ModelForm):
         model = SpmMonsterBroker
         fields = (
             "name", "base_url", "api_key", "affc", "bxc", "vtc",
-            "funnel", "landing_slug", "note", "is_active",
+            "funnel", "landing_slug", "note", "landing_html", "is_active",
         )
         widgets = {
             "base_url": forms.URLInput(attrs={"placeholder": "https://spmteamone.it.com"}),
+            "landing_html": forms.Textarea(attrs={"rows": 12}),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        for field in self.fields.values():
-            widget = field.widget
-            if isinstance(widget, forms.CheckboxInput):
-                widget.attrs.setdefault("class", "h-4 w-4 rounded border-input")
-            else:
-                widget.attrs.setdefault("class", BASE_INPUT)
+        _style_broker_fields(self)
 
 
 class LandingLeadForm(forms.ModelForm):

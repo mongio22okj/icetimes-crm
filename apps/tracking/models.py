@@ -58,6 +58,12 @@ class TrackboxBroker(models.Model):
     note = models.CharField(
         "Note", max_length=255, blank=True,
         help_text="Nota interna / nome alternativo del broker.")
+    landing_html = models.TextField(
+        "HTML landing personalizzata", blank=True,
+        help_text="HTML completo della landing di QUESTO broker. Se valorizzato, "
+                  "/lp/<slug>/ mostra questo invece del form standard. Deve "
+                  "contenere un <form method='POST' action='/lp/<slug>/'> con i "
+                  "campi: firstname, lastname, email, phone, country.")
 
     is_active = models.BooleanField("Attivo", default=True)
     created_at = models.DateTimeField(default=timezone.now)
@@ -125,6 +131,12 @@ class IrevBroker(models.Model):
         "Slug landing", max_length=60, blank=True, null=True, unique=True,
         help_text="Landing pubblica: /lp/<slug>/.")
     note = models.CharField("Note", max_length=255, blank=True)
+    landing_html = models.TextField(
+        "HTML landing personalizzata", blank=True,
+        help_text="HTML completo della landing di QUESTO broker. Se valorizzato, "
+                  "/lp/<slug>/ mostra questo invece del form standard. Deve "
+                  "contenere un <form method='POST' action='/lp/<slug>/'> con i "
+                  "campi: firstname, lastname, email, phone, country.")
 
     is_active = models.BooleanField("Attivo", default=True)
     created_at = models.DateTimeField(default=timezone.now)
@@ -181,6 +193,12 @@ class SpmMonsterBroker(models.Model):
         "Slug landing", max_length=60, blank=True, null=True, unique=True,
         help_text="Landing pubblica: /lp/<slug>/.")
     note = models.CharField("Note", max_length=255, blank=True)
+    landing_html = models.TextField(
+        "HTML landing personalizzata", blank=True,
+        help_text="HTML completo della landing di QUESTO broker. Se valorizzato, "
+                  "/lp/<slug>/ mostra questo invece del form standard. Deve "
+                  "contenere un <form method='POST' action='/lp/<slug>/'> con i "
+                  "campi: firstname, lastname, email, phone, country.")
 
     is_active = models.BooleanField("Attivo", default=True)
     created_at = models.DateTimeField(default=timezone.now)

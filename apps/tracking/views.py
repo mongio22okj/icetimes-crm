@@ -1,8 +1,10 @@
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse, reverse_lazy
 from django.views import View
+from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import CreateView, ListView, TemplateView, UpdateView
 
 from apps.accounts.mixins import EmailVerifiedRequiredMixin
@@ -54,34 +56,38 @@ def _do_push(lead, broker):
 
 
 # ── Landing pubblica ──────────────────────────────────────────────────────
+@csrf_exempt
 def landing(request, slug):
-    """Landing pubblica del broker: il visitatore compila → creiamo il Lead
-    (con click_id), lo inviamo al broker e lo reindirizziamo all'auto-login.
-    Pubblica (no auth). Funziona per qualsiasi tipo di broker."""
+    """Landing pubblica del broker. Ogni broker ha la SUA landing:
+    se `landing_html` è valorizzato serve quell'HTML dedicato, altrimenti il
+    form standard. Il visitatore compila → creiamo il Lead (click_id), push al
+    broker, redirect all'auto-login. Pubblica (no auth, csrf-exempt per i form
+    delle landing custom)."""
     broker = find_broker_by_slug(slug)
     if broker is None:
-        from django.http import Http404
         raise Http404("Landing non trovata")
 
-    if request.method == "POST":
-        form = LandingLeadForm(request.POST)
-        if form.is_valid():
-            lead = form.save(commit=False)
-            lead.broker = broker
-            lead.ip = _client_ip(request)
-            lead.status = "new"
-            lead.save()
+    form = LandingLeadForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        lead = form.save(commit=False)
+        lead.broker = broker
+        lead.ip = _client_ip(request)
+        lead.status = "new"
+        lead.save()
+        res = _do_push(lead, broker)
+        if res["success"]:
+            if res["login_url"]:
+                return redirect(res["login_url"])
+            return render(request, "tracking/landing_thanks.html", {"broker": broker})
+        # push fallito
+        if broker.landing_html:
+            return HttpResponse(broker.landing_html, status=502)
+        return render(request, "tracking/landing.html",
+                      {"broker": broker, "form": form, "push_error": res["error"]}, status=502)
 
-            res = _do_push(lead, broker)
-            if res["success"]:
-                if res["login_url"]:
-                    return redirect(res["login_url"])
-                return render(request, "tracking/landing_thanks.html", {"broker": broker})
-            return render(request, "tracking/landing.html",
-                          {"broker": broker, "form": form,
-                           "push_error": res["error"]}, status=502)
-    else:
-        form = LandingLeadForm()
+    # GET (o POST non valido): landing dedicata del broker se presente.
+    if broker.landing_html:
+        return HttpResponse(broker.landing_html)
     return render(request, "tracking/landing.html", {"broker": broker, "form": form})
 
 
