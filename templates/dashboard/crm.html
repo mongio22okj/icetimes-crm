@@ -126,4 +126,37 @@
     {% include "dashboard/_targets.html" with title="Obiettivi" subtitle="Guadagno, spesa e FTD." targets=targets %}
   </div>
 </div>
+
+<div class="mt-6 rounded-lg border border-border bg-card">
+  <div class="px-4 pt-4 pb-3 border-b border-border">
+    <h2 class="font-semibold">Report settimanale</h2>
+    <p class="text-sm text-muted-foreground">Ogni settimana conclusa (lunedì → domenica).</p>
+  </div>
+  <table class="w-full text-sm">
+    <thead class="text-xs text-muted-foreground uppercase tracking-wide bg-muted/30">
+      <tr>
+        <th class="text-left px-4 py-2 font-medium">Settimana</th>
+        <th class="text-right px-4 py-2 font-medium">Lead (non-FTD)</th>
+        <th class="text-right px-4 py-2 font-medium">Depositi (FTD)</th>
+        <th class="text-right px-4 py-2 font-medium">Spesa</th>
+        <th class="text-right px-4 py-2 font-medium">Guadagno</th>
+        <th class="text-right px-4 py-2 font-medium pr-6">Profitto</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-border">
+      {% for w in weeks %}
+        <tr class="hover:bg-muted/30">
+          <td class="px-4 py-3 font-medium">
+            {{ w.label }}{% if w.in_corso %} <span class="text-xs text-muted-foreground">(in corso)</span>{% endif %}
+          </td>
+          <td class="px-4 py-3 text-right tabular-nums">{{ w.leads }}</td>
+          <td class="px-4 py-3 text-right tabular-nums">{{ w.ftd }}</td>
+          <td class="px-4 py-3 text-right tabular-nums text-muted-foreground">{{ w.spesa }}</td>
+          <td class="px-4 py-3 text-right tabular-nums">{{ w.guadagno }}</td>
+          <td class="px-4 py-3 text-right tabular-nums pr-6 font-medium">{{ w.profitto }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
 {% endblock %}

@@ -219,6 +219,26 @@ class CrmDashboardView(LoginRequiredMixin, EmailVerifiedRequiredMixin, View):
             {"label": "FTD", "current": ftd, "target": max(ftd * 2, 10),
              "accent": "#0891b2", "is_money": False},
         ]
+        # Report settimanale (settimane lun→dom, ultime 8).
+        from datetime import timedelta
+        monday = today - timedelta(days=today.weekday())
+        weeks = []
+        for i in range(0, 8):
+            ws = monday - timedelta(weeks=i)
+            we = ws + timedelta(days=6)
+            wqs = leads.filter(created_at__date__gte=ws, created_at__date__lte=we)
+            wl = wqs.count()
+            wf = wqs.filter(is_deposit=True).count()
+            wnf = wl - wf
+            wg = wf * FTD_PRIZE
+            wsp = wnf * LEAD_COST + wf * FTD_COST
+            weeks.append({
+                "label": f"{ws.strftime('%d/%m')}–{we.strftime('%d/%m')}",
+                "in_corso": (i == 0),
+                "leads": wnf, "ftd": wf,
+                "spesa": eur(wsp), "guadagno": eur(wg), "profitto": eur(wg - wsp),
+            })
+
         return render(request, "dashboard/crm.html", {
             "stats": stats,
             "pipeline_data": pipeline,
@@ -227,6 +247,7 @@ class CrmDashboardView(LoginRequiredMixin, EmailVerifiedRequiredMixin, View):
             "sales_reps": sales_reps,
             "recent_deals": recent_deals,
             "targets": targets,
+            "weeks": weeks,
             "econ": {"lead": total, "ftd": ftd, "non_ftd": non_ftd,
                      "guadagno": eur(guadagno), "spesa": eur(spesa), "profitto": eur(profitto)},
             "breadcrumbs": [("Dashboards", "/"), ("CRM", None)],
