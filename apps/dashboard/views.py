@@ -121,70 +121,103 @@ class AnalyticsDashboardView(LoginRequiredMixin, EmailVerifiedRequiredMixin, Vie
 
 class CrmDashboardView(LoginRequiredMixin, EmailVerifiedRequiredMixin, View):
     def get(self, request):
+        import json as _json
+        from datetime import date
+        from django.db.models import Count
+        from django.utils import timezone
+        from apps.tracking.models import Lead, all_brokers
+
+        # Modello economico: lead non-FTD = costo €7; lead FTD = costo €300
+        # (deposito) e premio €850. Profitto = guadagno − spesa.
+        LEAD_COST, FTD_COST, FTD_PRIZE = 7, 300, 850
+
+        def eur(v):
+            return "€" + f"{int(v):,}".replace(",", ".")
+
+        leads = Lead.objects.all()
+        total = leads.count()
+        ftd = leads.filter(is_deposit=True).count()
+        non_ftd = total - ftd
+        guadagno = ftd * FTD_PRIZE
+        spesa = non_ftd * LEAD_COST + ftd * FTD_COST
+        profitto = guadagno - spesa
+        win_rate = round(ftd * 100 / total, 1) if total else 0
+        brokers = all_brokers()
+        n_brokers = sum(1 for b in brokers if b.is_active)
+
+        # Serie per-mese (ultimi 12 mesi).
+        today = timezone.localdate()
+        seq = []
+        for i in range(11, -1, -1):
+            m2, y2 = today.month - i, today.year
+            while m2 <= 0:
+                m2 += 12
+                y2 -= 1
+            seq.append((y2, m2))
+        labels, lead_m, ftd_m, guad_m, prof_m = [], [], [], [], []
+        for (y2, m2) in seq:
+            qs = leads.filter(created_at__year=y2, created_at__month=m2)
+            lc = qs.count()
+            fc = qs.filter(is_deposit=True).count()
+            labels.append(date(y2, m2, 1).strftime("%b"))
+            lead_m.append(lc)
+            ftd_m.append(fc)
+            g = fc * FTD_PRIZE
+            s = (lc - fc) * LEAD_COST + fc * FTD_COST
+            guad_m.append(g)
+            prof_m.append(g - s)
+
         stats = [
-            _stat("Active Deals", "147", "+12.4%", "up", "trending-up", "#16a34a",
-                  [38, 42, 40, 48, 55, 52, 60, 65, 63, 70, 75, 82]),
-            _stat("Won This Month", "$284K", "+22.1%", "up", "trophy", "#0891b2",
-                  [22, 28, 25, 30, 32, 35, 33, 38, 40, 42, 44, 48]),
-            _stat("Win Rate", "34.2%", "+3.8%", "up", "target", "#6366f1",
-                  [28, 30, 29, 31, 30, 33, 32, 34, 33, 35, 34, 34]),
-            _stat("Avg Deal Size", "$18.4K", "-2.1%", "down", "dollar-sign", "#d97706",
-                  [20, 22, 19, 21, 18, 19, 18, 17, 19, 18, 18, 18]),
+            {"label": "Broker", "value": str(n_brokers), "delta": "", "trend": "up",
+             "icon": "building-2", "accent": "#16a34a", "spark": _json.dumps(lead_m)},
+            {"label": "Guadagno", "value": eur(guadagno), "delta": "", "trend": "up",
+             "icon": "trophy", "accent": "#0891b2", "spark": _json.dumps(guad_m)},
+            {"label": "Tasso FTD", "value": f"{win_rate}%", "delta": "", "trend": "up",
+             "icon": "target", "accent": "#6366f1", "spark": _json.dumps(ftd_m)},
+            {"label": "Profitto", "value": eur(profitto), "delta": "", "trend": "up" if profitto >= 0 else "down",
+             "icon": "dollar-sign", "accent": "#d97706", "spark": _json.dumps(prof_m)},
         ]
-        pipeline = {
-            "categories": ["Mar", "Apr", "May", "Jun", "Jul", "Aug",
-                           "Sep", "Oct", "Nov", "Dec", "Jan", "Feb"],
-            "value":  [420000, 385000, 510000, 475000, 540000, 498000,
-                       620000, 585000, 710000, 668000, 780000, 842000],
-            "count":  [28, 24, 33, 31, 36, 32, 41, 38, 47, 44, 52, 56],
-        }
-        deal_stages = [
-            {"name": "Qualified", "value": 124},
-            {"name": "Proposal", "value": 89},
-            {"name": "Negotiation", "value": 52},
-            {"name": "Closed Won", "value": 67},
-            {"name": "Closed Lost", "value": 43},
-        ]
-        sales_reps = [
-            {"name": "Jordan Mills",    "initials": "JM", "role": "Enterprise",
-             "won": 18, "revenue": 82400, "rate": 58},
-            {"name": "Priya Nakamura",  "initials": "PN", "role": "Mid-Market",
-             "won": 24, "revenue": 74800, "rate": 52},
-            {"name": "Carlos Reyes",    "initials": "CR", "role": "SMB",
-             "won": 31, "revenue": 48200, "rate": 45},
-            {"name": "Aisha Thompson",  "initials": "AT", "role": "Enterprise",
-             "won": 11, "revenue": 41600, "rate": 39},
-            {"name": "Leo Bergstrom",   "initials": "LB", "role": "Mid-Market",
-             "won": 19, "revenue": 37400, "rate": 34},
-        ]
-        lead_sources = [
-            {"source": "Website", "leads": 312},
-            {"source": "Referral", "leads": 248},
-            {"source": "LinkedIn", "leads": 184},
-            {"source": "Cold Outreach", "leads": 127},
-            {"source": "Events", "leads": 93},
-        ]
-        recent_deals = [
-            {"deal": "Apex Platform License", "company": "Nexora Corp",
-             "value": 48000, "stage": "won",        "close": "Feb 22"},
-            {"deal": "Enterprise Bundle",     "company": "Stratus Health",
-             "value": 32500, "stage": "negotiation","close": "Feb 28"},
-            {"deal": "Starter Plan Upgrade",  "company": "Bloom Studios",
-             "value": 9800,  "stage": "proposal",   "close": "Mar 4"},
-            {"deal": "Data Module",           "company": "Orion Analytics",
-             "value": 14200, "stage": "qualified",  "close": "Mar 10"},
-            {"deal": "Pro Seats x40",         "company": "Veridian Group",
-             "value": 21600, "stage": "negotiation","close": "Mar 15"},
-            {"deal": "Annual Renewal",        "company": "Cascade Systems",
-             "value": 8400,  "stage": "lost",       "close": "Feb 19"},
-        ]
+        pipeline = {"categories": labels, "value": guad_m, "count": ftd_m}
+
+        # Ciambella: lead per stato.
+        by_status = list(leads.values("status").annotate(n=Count("id")).order_by("-n"))
+        deal_stages = [{"name": (r["status"] or "nuovo"), "value": r["n"]} for r in by_status] \
+            or [{"name": "nessun lead", "value": 0}]
+
+        # Tabella: performance per broker.
+        sales_reps = []
+        for b in sorted(brokers, key=lambda x: x.name.lower()):
+            bl = Lead.for_broker(b)
+            bt = bl.count()
+            bf = bl.filter(is_deposit=True).count()
+            sales_reps.append({
+                "name": b.name, "initials": (b.name[:2]).upper(), "role": b.kind_label,
+                "won": bf, "revenue": bf * FTD_PRIZE,
+                "rate": round(bf * 100 / bt) if bt else 0,
+            })
+
+        # Bar chart: lead per broker.
+        lead_sources = [{"source": b.name, "leads": Lead.for_broker(b).count()}
+                        for b in sorted(brokers, key=lambda x: x.name.lower())]
+
+        # Tabella: lead recenti.
+        recent_deals = []
+        for l in leads.order_by("-created_at")[:6]:
+            recent_deals.append({
+                "deal": l.full_name or l.email or l.click_id,
+                "company": l.broker_name or "—",
+                "value": FTD_PRIZE if l.is_deposit else LEAD_COST,
+                "stage": "won" if l.is_deposit else "qualified",
+                "close": l.created_at.strftime("%d/%m"),
+            })
+
         targets = [
-            {"label": "Pipeline Value", "current": 842000,  "target": 1200000,
-             "accent": "#16a34a", "is_money": True},
-            {"label": "Deals Closed",   "current": 67,      "target": 100,
+            {"label": "Guadagno", "current": guadagno, "target": max(guadagno * 2, 1000),
+             "accent": "#16a34a", "is_money": False, "suffix": " €"},
+            {"label": "Spesa", "current": spesa, "target": max(spesa * 2, 1000),
+             "accent": "#d97706", "is_money": False, "suffix": " €"},
+            {"label": "FTD", "current": ftd, "target": max(ftd * 2, 10),
              "accent": "#0891b2", "is_money": False},
-            {"label": "New Contacts",   "current": 284,     "target": 400,
-             "accent": "#6366f1", "is_money": False},
         ]
         return render(request, "dashboard/crm.html", {
             "stats": stats,
@@ -194,6 +227,8 @@ class CrmDashboardView(LoginRequiredMixin, EmailVerifiedRequiredMixin, View):
             "sales_reps": sales_reps,
             "recent_deals": recent_deals,
             "targets": targets,
+            "econ": {"lead": total, "ftd": ftd, "non_ftd": non_ftd,
+                     "guadagno": eur(guadagno), "spesa": eur(spesa), "profitto": eur(profitto)},
             "breadcrumbs": [("Dashboards", "/"), ("CRM", None)],
         })
 

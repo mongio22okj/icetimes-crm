@@ -1,10 +1,12 @@
 {% extends "layouts/dashboard.html" %}
 {% load apex %}
-{% block title %}CRM · Apex{% endblock %}
+{% block title %}CRM · IceTimes{% endblock %}
 {% block content %}
 <div class="mb-6">
   <h1 class="text-2xl font-bold tracking-tight">CRM</h1>
-  <p class="mt-1 text-sm text-muted-foreground">Pipeline health, deal flow, and team performance.</p>
+  <p class="mt-1 text-sm text-muted-foreground">
+    {{ econ.lead }} lead · {{ econ.ftd }} FTD · Guadagno {{ econ.guadagno }} · Spesa {{ econ.spesa }} · Profitto {{ econ.profitto }}
+  </p>
 </div>
 
 <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
@@ -16,8 +18,8 @@
 <div class="mt-6 grid grid-cols-1 xl:grid-cols-12 gap-4">
   <div class="xl:col-span-8 rounded-lg border border-border bg-card p-4">
     <div class="mb-4">
-      <h2 class="font-semibold">Pipeline Overview</h2>
-      <p class="text-sm text-muted-foreground">Open pipeline value and deal count by month.</p>
+      <h2 class="font-semibold">Andamento</h2>
+      <p class="text-sm text-muted-foreground">Guadagno (€) e FTD per mese.</p>
     </div>
     {{ pipeline_data|json_script:"pipeline-data" }}
     <div id="pipeline-chart" class="h-[320px]" x-data="pipelineChart()"></div>
@@ -25,8 +27,8 @@
 
   <div class="xl:col-span-4 rounded-lg border border-border bg-card p-4">
     <div class="mb-4">
-      <h2 class="font-semibold">Deal Stages</h2>
-      <p class="text-sm text-muted-foreground">Deals currently in flight, by stage.</p>
+      <h2 class="font-semibold">Lead per stato</h2>
+      <p class="text-sm text-muted-foreground">Distribuzione dei lead per stato.</p>
     </div>
     {{ deal_stages_data|json_script:"deal-stages-data" }}
     <div id="deal-stages-chart" class="h-[260px]" x-data="dealStagesChart()"></div>
@@ -36,17 +38,17 @@
 <div class="mt-6 grid grid-cols-1 xl:grid-cols-12 gap-4">
   <div class="xl:col-span-8 rounded-lg border border-border bg-card">
     <div class="px-4 pt-4 pb-3 border-b border-border">
-      <h2 class="font-semibold">Top Sales Reps</h2>
-      <p class="text-sm text-muted-foreground">By revenue closed this period.</p>
+      <h2 class="font-semibold">Performance per broker</h2>
+      <p class="text-sm text-muted-foreground">Lead, FTD e guadagno per broker.</p>
     </div>
     <table class="w-full text-sm">
       <thead class="text-xs text-muted-foreground uppercase tracking-wide bg-muted/30">
         <tr>
-          <th class="text-left px-4 py-2 font-medium">Rep</th>
-          <th class="text-left px-4 py-2 font-medium">Segment</th>
-          <th class="text-right px-4 py-2 font-medium">Won</th>
-          <th class="text-right px-4 py-2 font-medium">Revenue</th>
-          <th class="text-right px-4 py-2 font-medium pr-6">Win Rate</th>
+          <th class="text-left px-4 py-2 font-medium">Broker</th>
+          <th class="text-left px-4 py-2 font-medium">Tipo</th>
+          <th class="text-right px-4 py-2 font-medium">FTD</th>
+          <th class="text-right px-4 py-2 font-medium">Guadagno</th>
+          <th class="text-right px-4 py-2 font-medium pr-6">Conversione</th>
         </tr>
       </thead>
       <tbody class="divide-y divide-border">
@@ -60,7 +62,7 @@
             </td>
             <td class="px-4 py-3 text-muted-foreground">{{ r.role }}</td>
             <td class="px-4 py-3 text-right tabular-nums">{{ r.won }}</td>
-            <td class="px-4 py-3 text-right tabular-nums">${{ r.revenue|floatformat:0 }}</td>
+            <td class="px-4 py-3 text-right tabular-nums">€{{ r.revenue|floatformat:0 }}</td>
             <td class="px-4 py-3 pr-6 text-right">
               <div class="flex items-center justify-end gap-2">
                 <div class="h-1.5 w-20 rounded-full bg-muted overflow-hidden">
@@ -70,14 +72,16 @@
               </div>
             </td>
           </tr>
+        {% empty %}
+          <tr><td colspan="5" class="px-4 py-8 text-center text-muted-foreground">Nessun broker.</td></tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
 
   <div class="xl:col-span-4 rounded-lg border border-border bg-card p-4">
-    <h2 class="font-semibold mb-1">Lead Sources</h2>
-    <p class="text-sm text-muted-foreground mb-4">Where new leads came from.</p>
+    <h2 class="font-semibold mb-1">Lead per broker</h2>
+    <p class="text-sm text-muted-foreground mb-4">Distribuzione dei lead per broker.</p>
     {{ lead_sources_data|json_script:"lead-sources-data" }}
     <div id="lead-sources-chart" class="h-[260px]" x-data="leadSourcesChart()"></div>
   </div>
@@ -86,17 +90,17 @@
 <div class="mt-6 grid grid-cols-1 xl:grid-cols-12 gap-4">
   <div class="xl:col-span-8 rounded-lg border border-border bg-card">
     <div class="px-4 pt-4 pb-3 border-b border-border">
-      <h2 class="font-semibold">Recent Deals</h2>
-      <p class="text-sm text-muted-foreground">Latest activity across the pipeline.</p>
+      <h2 class="font-semibold">Lead recenti</h2>
+      <p class="text-sm text-muted-foreground">Ultimi lead arrivati.</p>
     </div>
     <table class="w-full text-sm">
       <thead class="text-xs text-muted-foreground uppercase tracking-wide bg-muted/30">
         <tr>
-          <th class="text-left px-4 py-2 font-medium">Deal</th>
-          <th class="text-left px-4 py-2 font-medium">Company</th>
-          <th class="text-right px-4 py-2 font-medium">Value</th>
-          <th class="text-left px-4 py-2 font-medium pl-6">Stage</th>
-          <th class="text-right px-4 py-2 font-medium pr-6">Close</th>
+          <th class="text-left px-4 py-2 font-medium">Lead</th>
+          <th class="text-left px-4 py-2 font-medium">Broker</th>
+          <th class="text-right px-4 py-2 font-medium">Valore</th>
+          <th class="text-left px-4 py-2 font-medium pl-6">Stato</th>
+          <th class="text-right px-4 py-2 font-medium pr-6">Data</th>
         </tr>
       </thead>
       <tbody class="divide-y divide-border">
@@ -104,23 +108,22 @@
           <tr class="hover:bg-muted/30">
             <td class="px-4 py-3 font-medium">{{ d.deal }}</td>
             <td class="px-4 py-3 text-muted-foreground">{{ d.company }}</td>
-            <td class="px-4 py-3 text-right tabular-nums">${{ d.value|floatformat:0 }}</td>
+            <td class="px-4 py-3 text-right tabular-nums">€{{ d.value|floatformat:0 }}</td>
             <td class="px-4 py-3 pl-6">
-              {% if d.stage == "won" %}<span class="inline-flex items-center px-2 h-6 rounded-md text-xs font-medium bg-success/10 text-success">Closed Won</span>
-              {% elif d.stage == "negotiation" %}<span class="inline-flex items-center px-2 h-6 rounded-md text-xs font-medium bg-primary/10 text-primary">Negotiation</span>
-              {% elif d.stage == "proposal" %}<span class="inline-flex items-center px-2 h-6 rounded-md text-xs font-medium bg-amber-500/10 text-amber-600">Proposal</span>
-              {% elif d.stage == "qualified" %}<span class="inline-flex items-center px-2 h-6 rounded-md text-xs font-medium bg-muted text-muted-foreground">Qualified</span>
-              {% elif d.stage == "lost" %}<span class="inline-flex items-center px-2 h-6 rounded-md text-xs font-medium bg-destructive/10 text-destructive">Closed Lost</span>{% endif %}
+              {% if d.stage == "won" %}<span class="inline-flex items-center px-2 h-6 rounded-md text-xs font-medium bg-success/10 text-success">FTD</span>
+              {% else %}<span class="inline-flex items-center px-2 h-6 rounded-md text-xs font-medium bg-muted text-muted-foreground">Lead</span>{% endif %}
             </td>
             <td class="px-4 py-3 pr-6 text-right text-muted-foreground">{{ d.close }}</td>
           </tr>
+        {% empty %}
+          <tr><td colspan="5" class="px-4 py-8 text-center text-muted-foreground">Nessun lead.</td></tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
 
   <div class="xl:col-span-4">
-    {% include "dashboard/_targets.html" with title="Quarterly Targets" subtitle="Progress against Q1 commitments." targets=targets %}
+    {% include "dashboard/_targets.html" with title="Obiettivi" subtitle="Guadagno, spesa e FTD." targets=targets %}
   </div>
 </div>
 {% endblock %}

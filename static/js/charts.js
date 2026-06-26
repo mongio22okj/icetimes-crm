@@ -267,7 +267,7 @@ function pipelineChart() {
         xaxis: { categories: data.categories, ..._baseAxis(c) },
         yaxis: [
           { labels: { style: { colors: c.muted },
-                      formatter: v => '$' + (v / 1000).toFixed(0) + 'K' } },
+                      formatter: v => '€' + Number(v).toLocaleString() } },
           { opposite: true, labels: { style: { colors: c.muted } } },
         ],
         colors: [VARIANT_PALETTE[0], VARIANT_PALETTE[1]],

@@ -11,10 +11,12 @@
   </div>
   <div>
     <p class="text-2xl font-bold tracking-tight">{{ value }}</p>
+    {% if delta %}
     <p class="mt-1 text-xs flex items-center gap-1 {% if trend == 'up' %}text-success{% else %}text-destructive{% endif %}">
       {% if trend == 'up' %}{% icon "arrow-up-right" 12 %}{% else %}{% icon "arrow-down-right" 12 %}{% endif %}
       <span>{{ delta }} from last month</span>
     </p>
+    {% endif %}
   </div>
   {% if spark %}
     <div class="stat-spark -mx-1 -mb-1 h-10"
