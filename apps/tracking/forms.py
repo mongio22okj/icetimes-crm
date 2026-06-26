@@ -1,6 +1,6 @@
 from django import forms
 
-from .models import IrevBroker, Lead, TrackboxBroker
+from .models import IrevBroker, Lead, SpmMonsterBroker, TrackboxBroker
 
 BASE_INPUT = (
     "w-full h-10 rounded-md border border-input bg-background px-3 text-sm "
@@ -43,6 +43,27 @@ class IrevBrokerForm(forms.ModelForm):
         )
         widgets = {
             "base_url": forms.URLInput(attrs={"placeholder": "https://stylishwnt.com"}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.fields.values():
+            widget = field.widget
+            if isinstance(widget, forms.CheckboxInput):
+                widget.attrs.setdefault("class", "h-4 w-4 rounded border-input")
+            else:
+                widget.attrs.setdefault("class", BASE_INPUT)
+
+
+class SpmMonsterBrokerForm(forms.ModelForm):
+    class Meta:
+        model = SpmMonsterBroker
+        fields = (
+            "name", "base_url", "api_key", "affc", "bxc", "vtc",
+            "funnel", "landing_slug", "note", "is_active",
+        )
+        widgets = {
+            "base_url": forms.URLInput(attrs={"placeholder": "https://spmteamone.it.com"}),
         }
 
     def __init__(self, *args, **kwargs):

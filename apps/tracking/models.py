@@ -156,9 +156,68 @@ class IrevBroker(models.Model):
             return _push_result(False, error=f"{type(exc).__name__}: {exc}"[:255])
 
 
+class SpmMonsterBroker(models.Model):
+    """Configurazione API di un broker SPM Monster (Hypernet HTN-AFF-SDK).
+
+    Endpoint unico {base_url}/api/external/integration/lead (auth x-api-key):
+      push → POST (affc/bxc/vtc + profilo + subId=click_id)
+      pull → GET ?from=&to= (stati). Lo stato si legge via PULL (sync).
+    """
+
+    kind = "spmmonster"
+    kind_label = "SPM Monster"
+
+    name = models.CharField("Nome", max_length=120)
+    base_url = models.URLField("Base URL", help_text="Es. https://spmteamone.it.com")
+    api_key = models.CharField("x-api-key", max_length=255)
+    affc = models.CharField("affc (affiliate code)", max_length=64)
+    bxc = models.CharField("bxc (box code)", max_length=64)
+    vtc = models.CharField("vtc (vertical code)", max_length=64)
+
+    funnel = models.CharField(
+        "Funnel", max_length=120, blank=True,
+        help_text="Nome funnel inviato nel push. Se vuoto usa il nome.")
+    landing_slug = models.SlugField(
+        "Slug landing", max_length=60, blank=True, null=True, unique=True,
+        help_text="Landing pubblica: /lp/<slug>/.")
+    note = models.CharField("Note", max_length=255, blank=True)
+
+    is_active = models.BooleanField("Attivo", default=True)
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Broker SPM Monster"
+        verbose_name_plural = "Broker SPM Monster"
+        ordering = ["name"]
+
+    def __str__(self) -> str:
+        return self.name
+
+    @property
+    def signup_url(self) -> str:
+        return self.base_url.rstrip("/") + "/api/external/integration/lead"
+
+    def push(self, lead):
+        from . import spmmonster
+        try:
+            resp = spmmonster.push_lead(self, lead) or {}
+            if not resp.get("success"):
+                detail = resp.get("error") or resp.get("message") or "push non riuscito"
+                return _push_result(False, resp, error=str(detail)[:255])
+            return _push_result(
+                True, resp,
+                broker_lead_id=spmmonster.extract_broker_lead_id(resp),
+                login_url=spmmonster.extract_login_url(resp))
+        except spmmonster.SpmError as exc:
+            return _push_result(False, error=str(exc)[:255])
+        except Exception as exc:  # noqa: BLE001
+            return _push_result(False, error=f"{type(exc).__name__}: {exc}"[:255])
+
+
 # Tipi di broker registrati: kind → modello. Per risolvere slug/landing e
 # costruire elenchi unificati senza accoppiare il resto del codice.
-BROKER_MODELS = (TrackboxBroker, IrevBroker)
+BROKER_MODELS = (TrackboxBroker, IrevBroker, SpmMonsterBroker)
 
 
 def find_broker_by_slug(slug):

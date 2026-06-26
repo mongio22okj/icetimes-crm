@@ -2,7 +2,7 @@ from django.contrib import admin
 
 from apex.admin import ModelAdmin
 
-from .models import IrevBroker, Lead, PushLog, TrackboxBroker
+from .models import IrevBroker, Lead, PushLog, SpmMonsterBroker, TrackboxBroker
 
 
 @admin.register(TrackboxBroker)
@@ -22,6 +22,16 @@ class IrevBrokerAdmin(ModelAdmin):
     list_display = ("name", "base_url", "affiliate_id", "offer_id", "is_active", "updated_at")
     list_filter = ("is_active",)
     search_fields = ("name", "base_url", "affiliate_id", "offer_id", "note")
+    readonly_fields = ("created_at", "updated_at")
+
+
+@admin.register(SpmMonsterBroker)
+class SpmMonsterBrokerAdmin(ModelAdmin):
+    show_in_dashboard = True
+    apex_icon = "plug"
+    list_display = ("name", "base_url", "affc", "bxc", "vtc", "is_active", "updated_at")
+    list_filter = ("is_active",)
+    search_fields = ("name", "base_url", "affc", "bxc", "vtc", "note")
     readonly_fields = ("created_at", "updated_at")
 
 

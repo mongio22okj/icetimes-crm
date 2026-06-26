@@ -7,6 +7,10 @@ from .views import (
     IrevBrokerUpdateView,
     LeadListView,
     LeadPushView,
+    SpmMonsterBrokerCreateView,
+    SpmMonsterBrokerDeleteView,
+    SpmMonsterBrokerSyncView,
+    SpmMonsterBrokerUpdateView,
     TrackboxBrokerCreateView,
     TrackboxBrokerDeleteView,
     TrackboxBrokerSyncView,
@@ -29,4 +33,9 @@ urlpatterns = [
     path("brokers/irev/new/", IrevBrokerCreateView.as_view(), name="irev_create"),
     path("brokers/irev/<int:pk>/edit/", IrevBrokerUpdateView.as_view(), name="irev_edit"),
     path("brokers/irev/<int:pk>/delete/", IrevBrokerDeleteView.as_view(), name="irev_delete"),
+    # SPM Monster
+    path("brokers/spm/new/", SpmMonsterBrokerCreateView.as_view(), name="spm_create"),
+    path("brokers/spm/<int:pk>/edit/", SpmMonsterBrokerUpdateView.as_view(), name="spm_edit"),
+    path("brokers/spm/<int:pk>/delete/", SpmMonsterBrokerDeleteView.as_view(), name="spm_delete"),
+    path("brokers/spm/<int:pk>/sync/", SpmMonsterBrokerSyncView.as_view(), name="spm_sync"),
 ]

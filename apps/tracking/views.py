@@ -11,8 +11,20 @@ from apps.core.breadcrumbs import BreadcrumbsMixin
 
 from . import sync as sync_mod
 from . import trackbox
-from .forms import IrevBrokerForm, LandingLeadForm, TrackboxBrokerForm
-from .models import IrevBroker, Lead, PushLog, TrackboxBroker, find_broker_by_slug
+from .forms import (
+    IrevBrokerForm,
+    LandingLeadForm,
+    SpmMonsterBrokerForm,
+    TrackboxBrokerForm,
+)
+from .models import (
+    IrevBroker,
+    Lead,
+    PushLog,
+    SpmMonsterBroker,
+    TrackboxBroker,
+    find_broker_by_slug,
+)
 
 
 def _client_ip(request):
@@ -129,6 +141,15 @@ class BrokerListView(BreadcrumbsMixin, LoginRequiredMixin,
                 "sync_url": None,  # IREV: stato via postback, niente pull manuale
                 "landing_slug": b.landing_slug,
             })
+        for b in SpmMonsterBroker.objects.all():
+            rows.append({
+                "obj": b, "kind": b.kind_label, "base_url": b.base_url,
+                "is_active": b.is_active, "note": b.note,
+                "edit_url": reverse("tracking:spm_edit", args=[b.pk]),
+                "delete_url": reverse("tracking:spm_delete", args=[b.pk]),
+                "sync_url": reverse("tracking:spm_sync", args=[b.pk]),
+                "landing_slug": b.landing_slug,
+            })
         rows.sort(key=lambda r: r["obj"].name.lower())
         ctx["brokers"] = rows
         return ctx
@@ -240,4 +261,66 @@ class IrevBrokerDeleteView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
         name = b.name
         b.delete()
         messages.success(request, f"Broker '{name}' eliminato.")
+        return redirect("tracking:broker_list")
+
+
+# ── SPM Monster CRUD + sync ───────────────────────────────────────────────
+class SpmMonsterBrokerCreateView(BreadcrumbsMixin, LoginRequiredMixin,
+                                 EmailVerifiedRequiredMixin, StaffRequiredMixin,
+                                 CreateView):
+    model = SpmMonsterBroker
+    form_class = SpmMonsterBrokerForm
+    template_name = "tracking/spm_form.html"
+    success_url = reverse_lazy("tracking:broker_list")
+    breadcrumb_title = "Nuovo broker SPM Monster"
+    breadcrumb_parent = "tracking:broker_list"
+
+    def form_valid(self, form):
+        r = super().form_valid(form)
+        messages.success(self.request, f"Broker '{self.object.name}' creato.")
+        return r
+
+
+class SpmMonsterBrokerUpdateView(BreadcrumbsMixin, LoginRequiredMixin,
+                                 EmailVerifiedRequiredMixin, StaffRequiredMixin,
+                                 UpdateView):
+    model = SpmMonsterBroker
+    form_class = SpmMonsterBrokerForm
+    template_name = "tracking/spm_form.html"
+    success_url = reverse_lazy("tracking:broker_list")
+    breadcrumb_parent = "tracking:broker_list"
+
+    def get_breadcrumb_title(self) -> str:
+        return f"Modifica {self.object.name}"
+
+    def form_valid(self, form):
+        r = super().form_valid(form)
+        messages.success(self.request, f"Broker '{self.object.name}' aggiornato.")
+        return r
+
+
+class SpmMonsterBrokerDeleteView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
+                                 StaffRequiredMixin, View):
+    def post(self, request, pk):
+        b = get_object_or_404(SpmMonsterBroker, pk=pk)
+        name = b.name
+        b.delete()
+        messages.success(request, f"Broker '{name}' eliminato.")
+        return redirect("tracking:broker_list")
+
+
+class SpmMonsterBrokerSyncView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
+                               StaffRequiredMixin, View):
+    """Pull stati per un broker SPM Monster (la lancia lo staff)."""
+
+    def post(self, request, pk):
+        broker = get_object_or_404(SpmMonsterBroker, pk=pk)
+        try:
+            res = sync_mod.sync_spmmonster(broker)
+            messages.success(
+                request,
+                f"Sync {broker.name}: {res['updated']} aggiornati "
+                f"({res['matched']} agganciati su {res['seen']} righe).")
+        except Exception as exc:  # noqa: BLE001
+            messages.error(request, f"Sync {broker.name} errore: {exc}")
         return redirect("tracking:broker_list")

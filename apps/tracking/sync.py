@@ -8,7 +8,7 @@ from datetime import datetime, timedelta, timezone as dt_tz
 
 from django.utils.dateparse import parse_datetime
 
-from . import trackbox
+from . import spmmonster, trackbox
 from .models import Lead
 
 MAX_PAGES = 30
@@ -100,3 +100,52 @@ def sync_broker(broker, days=90):
                 updated += 1
         page += 1
     return {"seen": seen, "matched": matched, "updated": updated, "pages": page}
+
+
+# ── SPM Monster (Hypernet) ───────────────────────────────────────────────
+def sync_spmmonster(broker, days=90):
+    """Pull stati SPM Monster (GET /api/external/integration/lead). Aggancio
+    per subId (=click_id) o id (=broker_lead_id). Stato da registration.status,
+    FTD da isDeposited. Solo lead del broker."""
+    now = datetime.now(dt_tz.utc)
+    rows = spmmonster.pull_leads(broker, now - timedelta(days=days), now)
+    seen = matched = updated = 0
+    qs = Lead.for_broker(broker)
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        seen += 1
+        rid = str(row.get("id") or "")
+        sub = str(row.get("subId") or "")
+        lead = None
+        if sub:
+            lead = qs.filter(click_id=sub).first()
+        if lead is None and rid:
+            lead = qs.filter(broker_lead_id=rid).first() or qs.filter(click_id=rid).first()
+        if lead is None:
+            continue
+        matched += 1
+        reg = row.get("registration") if isinstance(row.get("registration"), dict) else {}
+        status = reg.get("status") or reg.get("rawStatus")
+        changed = False
+        if status and lead.status != str(status)[:120]:
+            lead.status = str(status)[:120]
+            changed = True
+        is_dep = bool(row.get("isDeposited")) or str(status or "").strip().lower() == "deposited"
+        if is_dep and not lead.is_deposit:
+            lead.is_deposit = True
+            changed = True
+        dep = row.get("depositedAt")
+        if isinstance(dep, str) and dep and not lead.event_at:
+            lead.event_at = parse_datetime(dep.replace(" ", "T"))
+            changed = True
+        if rid and not lead.broker_lead_id:
+            lead.broker_lead_id = rid
+            changed = True
+        if changed:
+            merged = dict(lead.payload or {})
+            merged["last_pull"] = row
+            lead.payload = merged
+            lead.save()
+            updated += 1
+    return {"seen": seen, "matched": matched, "updated": updated, "pages": 1}
