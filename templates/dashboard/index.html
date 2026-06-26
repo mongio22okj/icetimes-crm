@@ -2,12 +2,22 @@
 {% load apex %}
 {% block title %}Dashboard · IceTimes CRM{% endblock %}
 {% block content %}
-<div class="mb-6">
-  <h1 class="text-2xl font-bold tracking-tight">Dashboard</h1>
-  <p class="mt-1 text-sm text-muted-foreground">
-    Bentornato{% if request.user.first_name %}, {{ request.user.first_name }}{% endif %}.
-    {{ leads_today }} lead oggi.
-  </p>
+<div class="mb-6 flex items-start justify-between gap-4">
+  <div>
+    <h1 class="text-2xl font-bold tracking-tight">Dashboard</h1>
+    <p class="mt-1 text-sm text-muted-foreground">
+      Bentornato{% if request.user.first_name %}, {{ request.user.first_name }}{% endif %}.
+      {{ leads_today }} lead oggi.
+    </p>
+  </div>
+  <form method="post" action="{% url 'tracking:sync_all' %}">
+    {% csrf_token %}
+    <input type="hidden" name="next" value="/">
+    <button type="submit"
+            class="h-10 px-4 rounded-md bg-primary text-primary-foreground inline-flex items-center gap-2 font-medium hover:opacity-90 whitespace-nowrap">
+      {% icon "rotate-ccw" 16 %} Aggiorna lead
+    </button>
+  </form>
 </div>
 
 {# ── KPI reali ─────────────────────────────────────────────────────── #}

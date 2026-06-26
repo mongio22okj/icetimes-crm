@@ -10,6 +10,12 @@
 </head>
 <body class="min-h-screen bg-background text-foreground flex items-center justify-center p-4">
   <div class="w-full max-w-md rounded-xl border border-border bg-card p-8 shadow-lg">
+    {% if broker.kind != 'irev' %}
+    <div class="text-center mb-6">
+      <div class="text-2xl font-extrabold tracking-tight">Immediate Quantaro</div>
+      <p class="text-sm text-muted-foreground mt-1">Registrati ora — compila per iniziare.</p>
+    </div>
+    {% else %}
     <div class="flex items-center gap-3 mb-6">
       <img src="{% static 'icons/icon.svg' %}" class="h-10 w-10" alt="">
       <div>
@@ -17,6 +23,7 @@
         <p class="text-sm text-muted-foreground">Compila i tuoi dati per iniziare.</p>
       </div>
     </div>
+    {% endif %}
 
     {% if push_error %}
       <div class="mb-4 rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">

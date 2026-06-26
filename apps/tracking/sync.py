@@ -149,3 +149,23 @@ def sync_spmmonster(broker, days=90):
             lead.save()
             updated += 1
     return {"seen": seen, "matched": matched, "updated": updated, "pages": 1}
+
+
+# ── Sync di TUTTI i broker pull-capable (TrackBox + SPM) ─────────────────
+def sync_all_pullable():
+    """Lancia la pull/sync per ogni broker attivo TrackBox + SPM Monster.
+    IREV è escluso (stato via postback). Ritorna un riepilogo aggregato."""
+    from .models import TrackboxBroker, SpmMonsterBroker
+    total = {"updated": 0, "matched": 0, "seen": 0, "brokers": 0, "errors": []}
+    jobs = ([(b, sync_broker) for b in TrackboxBroker.objects.filter(is_active=True)]
+            + [(b, sync_spmmonster) for b in SpmMonsterBroker.objects.filter(is_active=True)])
+    for broker, fn in jobs:
+        try:
+            r = fn(broker)
+            total["updated"] += r["updated"]
+            total["matched"] += r["matched"]
+            total["seen"] += r["seen"]
+            total["brokers"] += 1
+        except Exception as exc:  # noqa: BLE001
+            total["errors"].append(f"{broker.name}: {exc}")
+    return total

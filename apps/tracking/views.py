@@ -351,6 +351,22 @@ class SpmMonsterBrokerSyncView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
         return redirect("tracking:broker_list")
 
 
+class SyncAllView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
+                  StaffRequiredMixin, View):
+    """Pulsante 'aggiorna lead': pull/sync di TUTTI i broker pull-capable
+    (TrackBox + SPM). La lancia lo staff dalla dashboard."""
+
+    def post(self, request):
+        r = sync_mod.sync_all_pullable()
+        messages.success(
+            request,
+            f"Lead aggiornati: {r['updated']} ({r['matched']} agganciati su "
+            f"{r['seen']} righe, {r['brokers']} broker).")
+        if r["errors"]:
+            messages.error(request, "Errori: " + "; ".join(r["errors"]))
+        return redirect(request.POST.get("next") or "dashboard")
+
+
 # ── Codice tracciamento per landing ESTERNA ───────────────────────────────
 class TrackingCodeView(BreadcrumbsMixin, LoginRequiredMixin,
                        EmailVerifiedRequiredMixin, StaffRequiredMixin,
