@@ -38,7 +38,7 @@ class IrevBrokerForm(forms.ModelForm):
         model = IrevBroker
         fields = (
             "name", "base_url", "token", "affiliate_id", "offer_id",
-            "goal_lead_uuid", "goal_ftd_uuid", "landing_slug", "note",
+            "goal_lead_uuid", "goal_ftd_uuid", "funnel", "landing_slug", "note",
             "is_active",
         )
         widgets = {

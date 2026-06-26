@@ -116,6 +116,11 @@ class IrevBroker(models.Model):
         "Goal UUID FTD", max_length=64, blank=True,
         help_text="UUID del goal FTD: serve a riconoscere i depositi.")
 
+    funnel = models.CharField(
+        "Funnel", max_length=120, blank=True,
+        help_text="Solo etichetta nostra: IREV NON riceve il funnel nel push "
+                  "(lo decide dall'offer_id). Serve per riferimento/report.")
+
     landing_slug = models.SlugField(
         "Slug landing", max_length=60, blank=True, null=True, unique=True,
         help_text="Landing pubblica: /lp/<slug>/.")
