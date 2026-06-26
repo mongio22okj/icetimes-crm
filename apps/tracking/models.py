@@ -140,7 +140,7 @@ class IrevBroker(models.Model):
 
     @property
     def signup_url(self) -> str:
-        return self.base_url.rstrip("/") + "/api/affiliates/v2/leads"
+        return self.base_url.rstrip("/") + "/affiliates/v2/leads"
 
     def push(self, lead):
         from . import irev

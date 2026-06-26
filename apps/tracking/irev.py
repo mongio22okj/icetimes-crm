@@ -7,8 +7,13 @@ Lo stato torna via POSTBACK (broker→noi), come TrackBox; la pull esiste
 ma non è necessaria per gli stati base.
 """
 import json
+import secrets
 import urllib.error
 import urllib.request
+
+# Path VERIFICATO su questa deployment (stylishwnt.com): SENZA prefisso /api/.
+PUSH_PATH = "/affiliates/v2/leads"
+PULL_PATH = "/affiliates/v2/leads"
 
 _BROWSER_UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
                "AppleWebKit/537.36 (KHTML, like Gecko) "
@@ -64,6 +69,7 @@ def build_push_payload(broker, lead):
         "last_name": lead.lastname,
         "email": lead.email,
         "phone": lead.phone,
+        "password": secrets.token_urlsafe(9) + "A1",
         "affiliate_id": broker.affiliate_id,
         "offer_id": broker.offer_id,
     }
@@ -71,8 +77,7 @@ def build_push_payload(broker, lead):
 
 def push_lead(broker, lead):
     """Invia il lead a IREV. Ritorna la risposta JSON o solleva IrevError."""
-    return _request(broker, "POST", "/api/affiliates/v2/leads",
-                    build_push_payload(broker, lead))
+    return _request(broker, "POST", PUSH_PATH, build_push_payload(broker, lead))
 
 
 def extract_broker_lead_id(response):
