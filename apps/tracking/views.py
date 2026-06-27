@@ -240,6 +240,28 @@ class LeadStageUpdateView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
         return redirect(request.POST.get("next") or "tracking:lead_list")
 
 
+class LeadSyncSelectedView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
+                           MarketerOrAdminMixin, View):
+    """Pull/sync dello stato dal broker SOLO per i lead selezionati."""
+
+    def post(self, request):
+        ids = request.POST.getlist("lead_ids")
+        if not ids:
+            messages.warning(request, "Nessun lead selezionato.")
+            return redirect(request.POST.get("next") or "tracking:lead_list")
+        r = sync_mod.sync_selected(ids)
+        messages.success(
+            request,
+            f"Aggiornati {r['updated']} lead ({r['matched']} agganciati su "
+            f"{len(ids)} selezionati, {r['brokers']} broker).")
+        if r.get("irev"):
+            messages.info(request,
+                          f"{r['irev']} broker IREV saltati (stato via postback).")
+        if r["errors"]:
+            messages.error(request, "Errori: " + "; ".join(r["errors"]))
+        return redirect(request.POST.get("next") or "tracking:lead_list")
+
+
 class LeadPushView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
                    AdminOnlyMixin, View):
     """Invia (push) un lead al suo broker. Solo Super Admin."""

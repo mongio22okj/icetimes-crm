@@ -55,9 +55,10 @@ def _match_lead(broker, row):
             or qs.filter(broker_lead_id__in=ids).first())
 
 
-def sync_broker(broker, days=90):
+def sync_broker(broker, days=90, only_ids=None):
     """Pull degli stati per un broker e aggiornamento dei nostri lead.
 
+    only_ids: se valorizzato (set di pk), aggiorna SOLO quei lead.
     Ritorna un dict: {seen, matched, updated, pages}.
     """
     now = datetime.now(dt_tz.utc)
@@ -76,6 +77,8 @@ def sync_broker(broker, days=90):
             row = raw.get("customerData") if isinstance(raw.get("customerData"), dict) else raw
             lead = _match_lead(broker, row)
             if lead is None:
+                continue
+            if only_ids is not None and lead.pk not in only_ids:
                 continue
             matched += 1
             changed = False
@@ -106,10 +109,10 @@ def sync_broker(broker, days=90):
 
 
 # ── SPM Monster (Hypernet) ───────────────────────────────────────────────
-def sync_spmmonster(broker, days=90):
+def sync_spmmonster(broker, days=90, only_ids=None):
     """Pull stati SPM Monster (GET /api/external/integration/lead). Aggancio
     per subId (=click_id) o id (=broker_lead_id). Stato da registration.status,
-    FTD da isDeposited. Solo lead del broker."""
+    FTD da isDeposited. Solo lead del broker. only_ids: solo quei lead."""
     now = datetime.now(dt_tz.utc)
     rows = spmmonster.pull_leads(broker, now - timedelta(days=days), now)
     seen = matched = updated = 0
@@ -126,6 +129,8 @@ def sync_spmmonster(broker, days=90):
         if lead is None and rid:
             lead = qs.filter(broker_lead_id=rid).first() or qs.filter(click_id=rid).first()
         if lead is None:
+            continue
+        if only_ids is not None and lead.pk not in only_ids:
             continue
         matched += 1
         reg = row.get("registration") if isinstance(row.get("registration"), dict) else {}
@@ -174,4 +179,35 @@ def sync_all_pullable():
             total["brokers"] += 1
         except Exception as exc:  # noqa: BLE001
             total["errors"].append(f"{broker.name}: {exc}")
+    return total
+
+
+def sync_selected(lead_ids):
+    """Pull/sync degli stati SOLO per i lead selezionati. Raggruppa per broker,
+    fa una pull per broker e aggiorna unicamente i lead spuntati. IREV escluso
+    (stato via postback). Ritorna riepilogo aggregato."""
+    from .models import SpmMonsterBroker, TrackboxBroker
+    ids = {int(x) for x in lead_ids}
+    total = {"updated": 0, "matched": 0, "seen": 0, "brokers": 0,
+             "errors": [], "irev": 0}
+    brokers = {}
+    for lead in Lead.objects.filter(pk__in=ids):
+        b = lead.broker
+        if b is not None:
+            brokers[(type(b).__name__, b.pk)] = b
+    for b in brokers.values():
+        try:
+            if isinstance(b, TrackboxBroker):
+                r = sync_broker(b, only_ids=ids)
+            elif isinstance(b, SpmMonsterBroker):
+                r = sync_spmmonster(b, only_ids=ids)
+            else:
+                total["irev"] += 1  # IREV: stato via postback, no pull
+                continue
+            total["updated"] += r["updated"]
+            total["matched"] += r["matched"]
+            total["seen"] += r["seen"]
+            total["brokers"] += 1
+        except Exception as exc:  # noqa: BLE001
+            total["errors"].append(f"{b.name}: {exc}")
     return total
