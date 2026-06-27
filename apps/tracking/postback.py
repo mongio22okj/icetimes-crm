@@ -91,6 +91,9 @@ def postback(request):
     if is_dep and not lead.is_deposit:
         lead.is_deposit = True
         changed = True
+    if is_dep and lead.stage not in ("ftd", "retained"):
+        lead.stage = "ftd"
+        changed = True
 
     if broker_key and not lead.broker_lead_id:
         lead.broker_lead_id = broker_key

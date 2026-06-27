@@ -88,6 +88,9 @@ def sync_broker(broker, days=90):
             if is_dep and not lead.is_deposit:
                 lead.is_deposit = True
                 changed = True
+            if is_dep and lead.stage not in ("ftd", "retained"):
+                lead.stage = "ftd"
+                changed = True
             ev = _first(row, "depositDate", "depositedAt", "createdAt", "date")
             if isinstance(ev, str) and not lead.event_at:
                 lead.event_at = parse_datetime(ev.replace(" ", "T"))
@@ -134,6 +137,9 @@ def sync_spmmonster(broker, days=90):
         is_dep = bool(row.get("isDeposited")) or str(status or "").strip().lower() == "deposited"
         if is_dep and not lead.is_deposit:
             lead.is_deposit = True
+            changed = True
+        if is_dep and lead.stage not in ("ftd", "retained"):
+            lead.stage = "ftd"
             changed = True
         dep = row.get("depositedAt")
         if isinstance(dep, str) and dep and not lead.event_at:

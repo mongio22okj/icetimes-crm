@@ -41,6 +41,15 @@ class AdminOnlyMixin(UserPassesTestMixin):
         return bool(u.is_authenticated and u.is_crm_admin)
 
 
+class MarketerOrAdminMixin(UserPassesTestMixin):
+    """Accesso a Super Admin + Marketer (call center). Visualizzatore → 403."""
+    raise_exception = True
+
+    def test_func(self):
+        u = self.request.user
+        return bool(u.is_authenticated and (u.is_crm_admin or u.is_crm_marketer))
+
+
 def build_form_snippet(action_url):
     """Snippet <form> pronto da incollare nella landing ESTERNA del broker.
     Postando a action_url i campi vengono catturati e attribuiti a quel broker."""
@@ -78,7 +87,9 @@ def _do_push(lead, broker):
         if res["login_url"]:
             payload["login_url"] = res["login_url"]
         lead.payload = payload
-        lead.save(update_fields=["broker_lead_id", "payload", "updated_at"])
+        if lead.stage == "nuovo":
+            lead.stage = "inviato"
+        lead.save(update_fields=["broker_lead_id", "payload", "stage", "updated_at"])
     return res
 
 
@@ -188,6 +199,9 @@ class LeadListView(BreadcrumbsMixin, LoginRequiredMixin,
             qs = qs.filter(is_deposit=True)
         elif dep == "0":
             qs = qs.filter(is_deposit=False)
+        st = g.get("stage") or ""
+        if st:
+            qs = qs.filter(stage=st)
         bv = g.get("broker") or ""
         if ":" in bv:
             from django.contrib.contenttypes.models import ContentType
@@ -203,7 +217,27 @@ class LeadListView(BreadcrumbsMixin, LoginRequiredMixin,
         ctx = super().get_context_data(**kwargs)
         ctx["broker_options"] = [{"value": f"{b.kind}:{b.pk}", "name": b.name}
                                  for b in all_brokers()]
+        ctx["stage_choices"] = Lead.STAGE_CHOICES
+        u = self.request.user
+        ctx["can_edit_stage"] = bool(u.is_crm_admin or u.is_crm_marketer)
         return ctx
+
+
+class LeadStageUpdateView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
+                          MarketerOrAdminMixin, View):
+    """Transizione manuale della fase del lead (call center). Admin + Marketer."""
+
+    def post(self, request, pk):
+        lead = get_object_or_404(Lead, pk=pk)
+        valid = dict(Lead.STAGE_CHOICES)
+        stage = request.POST.get("stage") or lead.stage
+        if stage in valid:
+            lead.stage = stage
+            lead.reject_reason = ((request.POST.get("reject_reason") or "").strip()
+                                  if stage == "rifiutato" else "")
+            lead.save(update_fields=["stage", "reject_reason", "updated_at"])
+            messages.success(request, f"Fase aggiornata: {valid[stage]}.")
+        return redirect(request.POST.get("next") or "tracking:lead_list")
 
 
 class LeadPushView(LoginRequiredMixin, EmailVerifiedRequiredMixin,

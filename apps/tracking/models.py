@@ -304,6 +304,19 @@ class Lead(models.Model):
 
     status = models.CharField("Stato", max_length=120, blank=True)
     is_deposit = models.BooleanField("FTD", default=False)
+    # Fase interna (pipeline call-center), separata dallo `status` grezzo broker.
+    STAGE_CHOICES = [
+        ("nuovo", "Nuovo"),
+        ("inviato", "Inviato"),
+        ("registrato", "Registrato"),
+        ("kyc", "Verificato (KYC)"),
+        ("ftd", "FTD"),
+        ("retained", "Retained"),
+        ("rifiutato", "Rifiutato"),
+    ]
+    stage = models.CharField("Fase", max_length=20, choices=STAGE_CHOICES,
+                             default="nuovo", db_index=True)
+    reject_reason = models.CharField("Motivo rifiuto", max_length=255, blank=True)
     note = models.CharField("Nota", max_length=255, blank=True)
 
     payload = models.JSONField(default=dict, blank=True)

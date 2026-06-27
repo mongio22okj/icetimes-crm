@@ -8,6 +8,7 @@ from .views import (
     IrevBrokerUpdateView,
     LeadListView,
     LeadPushView,
+    LeadStageUpdateView,
     SpmMonsterBrokerCreateView,
     SpmMonsterBrokerDeleteView,
     SpmMonsterBrokerSyncView,
@@ -25,6 +26,7 @@ app_name = "tracking"
 urlpatterns = [
     path("", LeadListView.as_view(), name="lead_list"),
     path("leads/<int:pk>/push/", LeadPushView.as_view(), name="lead_push"),
+    path("leads/<int:pk>/stage/", LeadStageUpdateView.as_view(), name="lead_stage"),
     path("sync-all/", SyncAllView.as_view(), name="sync_all"),
     path("guida/", GuideView.as_view(), name="guide"),
     # Broker API — lista unificata
