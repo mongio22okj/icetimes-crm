@@ -198,6 +198,54 @@ def avatar_color(obj):
     return AVATAR_PALETTE[zlib.crc32(str(seed).encode()) % len(AVATAR_PALETTE)]
 
 
+# Stato lead → classi badge colorate. Lo `status` è testo libero dal broker,
+# quindi mappiamo per parole chiave; default neutro.
+_STATUS_BADGE_RULES = (
+    (("ftd", "deposit", "depositor", "deposited"),
+     "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300"),
+    (("reject", "rejected", "invalid", "fail", "wrong", "fake", "trash", "duplicate", "fraud"),
+     "bg-red-500/15 text-red-700 dark:text-red-300"),
+    (("noanswer", "no answer", "callback", "busy", "voicemail", "not interested", "hangup"),
+     "bg-amber-500/15 text-amber-700 dark:text-amber-300"),
+    (("new", "nuovo"),
+     "bg-sky-500/15 text-sky-700 dark:text-sky-300"),
+    (("lead", "reg", "sent", "inviato", "pending", "in progress", "call"),
+     "bg-indigo-500/15 text-indigo-700 dark:text-indigo-300"),
+    (("test",),
+     "bg-slate-500/15 text-slate-600 dark:text-slate-300"),
+)
+_STATUS_BADGE_DEFAULT = "bg-muted text-foreground/70"
+
+
+@register.filter
+def status_badge_class(value):
+    """Classi Tailwind per il badge dello stato lead, in base al testo."""
+    s = str(value or "").strip().lower()
+    if not s:
+        return _STATUS_BADGE_DEFAULT
+    for keys, cls in _STATUS_BADGE_RULES:
+        if any(k in s for k in keys):
+            return cls
+    return _STATUS_BADGE_DEFAULT
+
+
+# Fase pipeline (valori controllati) → classi badge.
+_STAGE_BADGE = {
+    "nuovo": "bg-sky-500/15 text-sky-700 dark:text-sky-300",
+    "inviato": "bg-indigo-500/15 text-indigo-700 dark:text-indigo-300",
+    "registrato": "bg-violet-500/15 text-violet-700 dark:text-violet-300",
+    "kyc": "bg-cyan-500/15 text-cyan-700 dark:text-cyan-300",
+    "ftd": "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
+    "retained": "bg-teal-500/15 text-teal-700 dark:text-teal-300",
+    "rifiutato": "bg-red-500/15 text-red-700 dark:text-red-300",
+}
+
+
+@register.filter
+def stage_badge_class(value):
+    return _STAGE_BADGE.get(str(value or "").strip().lower(), _STATUS_BADGE_DEFAULT)
+
+
 @register.simple_tag
 def active(current_path, href, exact=False, cls="bg-sidebar-accent text-sidebar-accent-foreground"):
     if exact:

@@ -20,50 +20,50 @@
   </div>
 </div>
 
-<form method="get" id="leadfilter" class="rounded-lg border border-border bg-card overflow-x-auto">
-  <table class="w-full text-sm whitespace-nowrap">
+<form method="get" id="leadfilter" class="rounded-xl border border-border bg-card shadow-sm overflow-x-auto">
+  <table class="w-full text-sm whitespace-nowrap border-separate border-spacing-0">
     <thead>
-      <tr class="bg-muted/40 text-muted-foreground">
-        <th class="px-2 py-2 w-8">
+      <tr class="sticky top-0 z-10 [&>th]:bg-muted [&>th]:border-b [&>th]:border-border [&>th]:text-[11px] [&>th]:font-semibold [&>th]:uppercase [&>th]:tracking-wide [&>th]:text-muted-foreground">
+        <th class="px-3 py-2.5 w-8">
           {% if can_edit_stage %}<input type="checkbox" title="Seleziona tutti"
             onclick="var s=this.checked;document.querySelectorAll('input[name=lead_ids]').forEach(function(c){c.checked=s})"
             class="h-4 w-4 rounded border-input align-middle">{% endif %}
         </th>
-        <th class="text-left font-medium px-3 py-2">#</th>
-        <th class="text-left font-medium px-3 py-2">Creato il</th>
-        <th class="text-left font-medium px-3 py-2">Depositare</th>
-        <th class="text-left font-medium px-3 py-2">Nome</th>
-        <th class="text-left font-medium px-3 py-2">Cognome</th>
-        <th class="text-left font-medium px-3 py-2">Email</th>
-        <th class="text-left font-medium px-3 py-2">Telefono</th>
-        <th class="text-left font-medium px-3 py-2">IP</th>
-        <th class="text-left font-medium px-3 py-2">Paese</th>
-        <th class="text-left font-medium px-3 py-2">Stato</th>
-        <th class="text-left font-medium px-3 py-2">Agg. API</th>
-        <th class="text-left font-medium px-3 py-2">Fase</th>
-        <th class="text-left font-medium px-3 py-2">Broker</th>
-        <th class="text-left font-medium px-3 py-2">Nota</th>
-        <th class="text-left font-medium px-3 py-2">Aggiornato il</th>
-        <th class="text-left font-medium px-3 py-2">ID cliccato</th>
+        <th class="text-left px-3 py-2.5">#</th>
+        <th class="text-left px-3 py-2.5">Broker</th>
+        <th class="text-left px-3 py-2.5">Creato il</th>
+        <th class="text-left px-3 py-2.5">Nome</th>
+        <th class="text-left px-3 py-2.5">Cognome</th>
+        <th class="text-left px-3 py-2.5">Email</th>
+        <th class="text-left px-3 py-2.5">Telefono</th>
+        <th class="text-left px-3 py-2.5">Paese</th>
+        <th class="text-left px-3 py-2.5">Stato</th>
+        <th class="text-left px-3 py-2.5">Agg. API</th>
+        <th class="text-left px-3 py-2.5">Fase</th>
+        <th class="text-left px-3 py-2.5">FTD</th>
+        <th class="text-left px-3 py-2.5">IP</th>
+        <th class="text-left px-3 py-2.5">Nota</th>
+        <th class="text-left px-3 py-2.5">Aggiornato il</th>
+        <th class="text-left px-3 py-2.5">ID cliccato</th>
       </tr>
       {# riga filtri #}
-      <tr class="bg-muted/20 border-t border-border">
-        <th class="px-2 py-1.5"></th>
-        <th class="px-2 py-1.5"></th>
-        <th class="px-2 py-1.5"></th>
-        <th class="px-2 py-1.5">
-          <select name="deposit" class="h-8 w-full rounded-md border border-input bg-background px-2 text-xs">
+      <tr class="[&>th]:bg-muted/30 [&>th]:border-b [&>th]:border-border [&>th]:px-2 [&>th]:py-1.5">
+        <th></th>
+        <th></th>
+        <th>
+          <select name="broker" class="h-8 w-full rounded-md border border-input bg-background px-2 text-xs">
             <option value="">Tutti</option>
-            <option value="1" {% if request.GET.deposit == '1' %}selected{% endif %}>Sì</option>
-            <option value="0" {% if request.GET.deposit == '0' %}selected{% endif %}>No</option>
+            {% for o in broker_options %}
+              <option value="{{ o.value }}" {% if o.value == request.GET.broker %}selected{% endif %}>{{ o.name }}</option>
+            {% endfor %}
           </select>
         </th>
-        <th class="px-2 py-1.5"><input name="firstname" value="{{ request.GET.firstname }}" class="h-8 w-full rounded-md border border-input bg-background px-2 text-xs"></th>
-        <th class="px-2 py-1.5"><input name="lastname" value="{{ request.GET.lastname }}" class="h-8 w-full rounded-md border border-input bg-background px-2 text-xs"></th>
-        <th class="px-2 py-1.5"><input name="email" value="{{ request.GET.email }}" class="h-8 w-full rounded-md border border-input bg-background px-2 text-xs"></th>
-        <th class="px-2 py-1.5"><input name="phone" value="{{ request.GET.phone }}" class="h-8 w-full rounded-md border border-input bg-background px-2 text-xs"></th>
-        <th class="px-2 py-1.5"><input name="ip" value="{{ request.GET.ip }}" class="h-8 w-full rounded-md border border-input bg-background px-2 text-xs"></th>
-        <th class="px-2 py-1.5">
+        <th></th>
+        <th><input name="firstname" value="{{ request.GET.firstname }}" class="h-8 w-full rounded-md border border-input bg-background px-2 text-xs"></th>
+        <th><input name="lastname" value="{{ request.GET.lastname }}" class="h-8 w-full rounded-md border border-input bg-background px-2 text-xs"></th>
+        <th><input name="email" value="{{ request.GET.email }}" class="h-8 w-full rounded-md border border-input bg-background px-2 text-xs"></th>
+        <th><input name="phone" value="{{ request.GET.phone }}" class="h-8 w-full rounded-md border border-input bg-background px-2 text-xs"></th>
+        <th>
           <select name="country" class="h-8 w-full rounded-md border border-input bg-background px-2 text-xs">
             <option value="">Tutti</option>
             <option value="IT" {% if request.GET.country == 'IT' %}selected{% endif %}>IT</option>
@@ -72,9 +72,9 @@
             <option value="SE" {% if request.GET.country == 'SE' %}selected{% endif %}>SE</option>
           </select>
         </th>
-        <th class="px-2 py-1.5"><input name="status" value="{{ request.GET.status }}" class="h-8 w-full rounded-md border border-input bg-background px-2 text-xs"></th>
-        <th class="px-2 py-1.5"></th>
-        <th class="px-2 py-1.5">
+        <th><input name="status" value="{{ request.GET.status }}" class="h-8 w-full rounded-md border border-input bg-background px-2 text-xs"></th>
+        <th></th>
+        <th>
           <select name="stage" class="h-8 w-full rounded-md border border-input bg-background px-2 text-xs">
             <option value="">Tutte</option>
             {% for val,label in stage_choices %}
@@ -82,61 +82,67 @@
             {% endfor %}
           </select>
         </th>
-        <th class="px-2 py-1.5">
-          <select name="broker" class="h-8 w-full rounded-md border border-input bg-background px-2 text-xs">
+        <th>
+          <select name="deposit" class="h-8 w-full rounded-md border border-input bg-background px-2 text-xs">
             <option value="">Tutti</option>
-            {% for o in broker_options %}
-              <option value="{{ o.value }}" {% if o.value == request.GET.broker %}selected{% endif %}>{{ o.name }}</option>
-            {% endfor %}
+            <option value="1" {% if request.GET.deposit == '1' %}selected{% endif %}>Sì</option>
+            <option value="0" {% if request.GET.deposit == '0' %}selected{% endif %}>No</option>
           </select>
         </th>
-        <th class="px-2 py-1.5"><input name="note" value="{{ request.GET.note }}" class="h-8 w-full rounded-md border border-input bg-background px-2 text-xs"></th>
-        <th class="px-2 py-1.5"></th>
-        <th class="px-2 py-1.5"><input name="click_id" value="{{ request.GET.click_id }}" class="h-8 w-full rounded-md border border-input bg-background px-2 text-xs"></th>
+        <th><input name="ip" value="{{ request.GET.ip }}" class="h-8 w-full rounded-md border border-input bg-background px-2 text-xs"></th>
+        <th><input name="note" value="{{ request.GET.note }}" class="h-8 w-full rounded-md border border-input bg-background px-2 text-xs"></th>
+        <th></th>
+        <th><input name="click_id" value="{{ request.GET.click_id }}" class="h-8 w-full rounded-md border border-input bg-background px-2 text-xs"></th>
       </tr>
     </thead>
-    <tbody>
+    <tbody class="[&>tr>td]:border-b [&>tr>td]:border-border/60">
       {% for l in leads %}
-      <tr class="border-t border-border {% if l.is_deposit %}bg-emerald-500/15 hover:bg-emerald-500/25{% else %}hover:bg-accent/40{% endif %}">
-        <td class="px-2 py-2 text-center">
+      <tr class="transition-colors {% if l.is_deposit %}bg-emerald-500/10 hover:bg-emerald-500/20{% else %}hover:bg-accent/50{% endif %}">
+        <td class="px-3 py-2.5 text-center">
           {% if can_edit_stage %}<input type="checkbox" name="lead_ids" value="{{ l.pk }}" form="syncform" class="h-4 w-4 rounded border-input align-middle">{% endif %}
         </td>
-        <td class="px-3 py-2 text-muted-foreground">{{ l.id }}</td>
-        <td class="px-3 py-2 text-muted-foreground">{{ l.created_at|date:"d/m/y H:i" }}</td>
-        <td class="px-3 py-2 text-center">
-          {% if l.is_deposit %}<span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs bg-emerald-500/15 text-emerald-700 dark:text-emerald-300">FTD</span>{% else %}<span class="text-muted-foreground">—</span>{% endif %}
+        <td class="px-3 py-2.5 text-muted-foreground tabular-nums">{{ l.id }}</td>
+        <td class="px-3 py-2.5">
+          {% if l.broker_name %}<span class="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium bg-primary/10 text-primary ring-1 ring-inset ring-primary/20">{{ l.broker_name }}</span>{% else %}<span class="text-muted-foreground">—</span>{% endif %}
         </td>
-        <td class="px-3 py-2 font-medium">{{ l.firstname|default:"—" }}</td>
-        <td class="px-3 py-2">{{ l.lastname|default:"—" }}</td>
-        <td class="px-3 py-2 text-muted-foreground">{{ l.email|default:"—" }}</td>
-        <td class="px-3 py-2 text-muted-foreground">{{ l.phone|default:"—" }}</td>
-        <td class="px-3 py-2 text-muted-foreground">{{ l.ip|default:"—" }}</td>
-        <td class="px-3 py-2 text-muted-foreground">{{ l.country|default:"—" }}</td>
-        <td class="px-3 py-2">{{ l.status|default:"—" }}</td>
-        <td class="px-3 py-2 text-muted-foreground text-xs whitespace-nowrap">{{ l.last_pull_at|date:"d/m/y H:i"|default:"—" }}</td>
-        <td class="px-3 py-2">
+        <td class="px-3 py-2.5 text-muted-foreground tabular-nums">{{ l.created_at|date:"d/m/y H:i" }}</td>
+        <td class="px-3 py-2.5 font-medium text-foreground">{{ l.firstname|default:"—" }}</td>
+        <td class="px-3 py-2.5">{{ l.lastname|default:"—" }}</td>
+        <td class="px-3 py-2.5 text-muted-foreground">{{ l.email|default:"—" }}</td>
+        <td class="px-3 py-2.5 text-muted-foreground tabular-nums">{{ l.phone|default:"—" }}</td>
+        <td class="px-3 py-2.5">
+          {% if l.country %}<span class="inline-flex items-center rounded px-1.5 py-0.5 text-xs font-medium bg-muted text-foreground/70">{{ l.country }}</span>{% else %}<span class="text-muted-foreground">—</span>{% endif %}
+        </td>
+        <td class="px-3 py-2.5">
+          {% if l.status %}<span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium {{ l.status|status_badge_class }}">{{ l.status }}</span>{% else %}<span class="text-muted-foreground">—</span>{% endif %}
+        </td>
+        <td class="px-3 py-2.5 text-muted-foreground text-xs tabular-nums whitespace-nowrap">{{ l.last_pull_at|date:"d/m/y H:i"|default:"—" }}</td>
+        <td class="px-3 py-2.5">
           {% if can_edit_stage %}
           <div class="flex items-center gap-1">
-            <select name="stage" form="sf{{ l.pk }}" class="h-7 rounded border border-input bg-background px-1 text-xs">
+            <select name="stage" form="sf{{ l.pk }}" class="h-7 rounded-md border border-input bg-background px-1 text-xs">
               {% for val,label in stage_choices %}
                 <option value="{{ val }}" {% if l.stage == val %}selected{% endif %}>{{ label }}</option>
               {% endfor %}
             </select>
-            <input name="reject_reason" form="sf{{ l.pk }}" value="{{ l.reject_reason }}" placeholder="motivo" class="h-7 w-20 rounded border border-input bg-background px-1 text-xs">
-            <button type="submit" form="sf{{ l.pk }}" class="h-7 px-2 rounded border border-border text-xs hover:bg-accent">OK</button>
+            <input name="reject_reason" form="sf{{ l.pk }}" value="{{ l.reject_reason }}" placeholder="motivo" class="h-7 w-20 rounded-md border border-input bg-background px-1 text-xs">
+            <button type="submit" form="sf{{ l.pk }}" class="h-7 px-2 rounded-md border border-border text-xs font-medium hover:bg-accent">OK</button>
           </div>
           {% else %}
-            <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs bg-muted">{{ l.get_stage_display }}</span>
-            {% if l.reject_reason %}<div class="text-xs text-muted-foreground">{{ l.reject_reason }}</div>{% endif %}
+            <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium {{ l.stage|stage_badge_class }}">{{ l.get_stage_display }}</span>
+            {% if l.reject_reason %}<div class="text-xs text-muted-foreground mt-0.5">{{ l.reject_reason }}</div>{% endif %}
           {% endif %}
         </td>
-        <td class="px-3 py-2 text-muted-foreground">{{ l.broker_name|default:"—" }}</td>
-        <td class="px-3 py-2 text-muted-foreground">{{ l.note|default:"—" }}</td>
-        <td class="px-3 py-2 text-muted-foreground">{{ l.updated_at|date:"d/m/y H:i" }}</td>
-        <td class="px-3 py-2 text-muted-foreground font-mono text-xs">{{ l.click_id }}</td>
+        <td class="px-3 py-2.5 text-center">
+          {% if l.is_deposit %}<span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold bg-emerald-500/15 text-emerald-700 dark:text-emerald-300">FTD</span>{% else %}<span class="text-muted-foreground">—</span>{% endif %}
+        </td>
+        <td class="px-3 py-2.5 text-muted-foreground font-mono text-xs">{{ l.ip|default:"—" }}</td>
+        <td class="px-3 py-2.5 text-muted-foreground">{{ l.note|default:"—" }}</td>
+        <td class="px-3 py-2.5 text-muted-foreground text-xs tabular-nums whitespace-nowrap">{{ l.updated_at|date:"d/m/y H:i" }}</td>
+        <td class="px-3 py-2.5 text-muted-foreground font-mono text-xs">{{ l.click_id }}</td>
       </tr>
       {% empty %}
-      <tr><td colspan="17" class="px-3 py-10 text-center text-muted-foreground">Nessun lead trovato.</td></tr>
+      <tr><td colspan="17" class="px-3 py-12 text-center text-muted-foreground">Nessun lead trovato.</td></tr>
       {% endfor %}
     </tbody>
   </table>
