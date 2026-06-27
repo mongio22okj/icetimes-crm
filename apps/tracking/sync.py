@@ -81,6 +81,7 @@ def sync_broker(broker, days=90, only_ids=None):
             if only_ids is not None and lead.pk not in only_ids:
                 continue
             matched += 1
+            lead.last_pull_at = now
             changed = False
             status = _first(row, *_STATUS_KEYS)
             if status and lead.status != str(status)[:120]:
@@ -104,6 +105,8 @@ def sync_broker(broker, days=90, only_ids=None):
                 lead.payload = merged
                 lead.save()
                 updated += 1
+            else:
+                lead.save(update_fields=["last_pull_at"])
         page += 1
     return {"seen": seen, "matched": matched, "updated": updated, "pages": page}
 
@@ -133,6 +136,7 @@ def sync_spmmonster(broker, days=90, only_ids=None):
         if only_ids is not None and lead.pk not in only_ids:
             continue
         matched += 1
+        lead.last_pull_at = now
         reg = row.get("registration") if isinstance(row.get("registration"), dict) else {}
         status = reg.get("status") or reg.get("rawStatus")
         changed = False
@@ -159,6 +163,8 @@ def sync_spmmonster(broker, days=90, only_ids=None):
             lead.payload = merged
             lead.save()
             updated += 1
+        else:
+            lead.save(update_fields=["last_pull_at"])
     return {"seen": seen, "matched": matched, "updated": updated, "pages": 1}
 
 

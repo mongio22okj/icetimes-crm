@@ -326,6 +326,8 @@ class Lead(models.Model):
     payload = models.JSONField(default=dict, blank=True)
     created_at = models.DateTimeField(default=timezone.now, db_index=True)
     event_at = models.DateTimeField("Data evento", null=True, blank=True)
+    # Ultima volta che la pull API ha agganciato (visto) questo lead.
+    last_pull_at = models.DateTimeField("Ultimo agg. API", null=True, blank=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:

@@ -39,6 +39,7 @@
         <th class="text-left font-medium px-3 py-2">IP</th>
         <th class="text-left font-medium px-3 py-2">Paese</th>
         <th class="text-left font-medium px-3 py-2">Stato</th>
+        <th class="text-left font-medium px-3 py-2">Agg. API</th>
         <th class="text-left font-medium px-3 py-2">Fase</th>
         <th class="text-left font-medium px-3 py-2">Broker</th>
         <th class="text-left font-medium px-3 py-2">Nota</th>
@@ -72,6 +73,7 @@
           </select>
         </th>
         <th class="px-2 py-1.5"><input name="status" value="{{ request.GET.status }}" class="h-8 w-full rounded-md border border-input bg-background px-2 text-xs"></th>
+        <th class="px-2 py-1.5"></th>
         <th class="px-2 py-1.5">
           <select name="stage" class="h-8 w-full rounded-md border border-input bg-background px-2 text-xs">
             <option value="">Tutte</option>
@@ -111,6 +113,7 @@
         <td class="px-3 py-2 text-muted-foreground">{{ l.ip|default:"—" }}</td>
         <td class="px-3 py-2 text-muted-foreground">{{ l.country|default:"—" }}</td>
         <td class="px-3 py-2">{{ l.status|default:"—" }}</td>
+        <td class="px-3 py-2 text-muted-foreground text-xs whitespace-nowrap">{{ l.last_pull_at|date:"d/m/y H:i"|default:"—" }}</td>
         <td class="px-3 py-2">
           {% if can_edit_stage %}
           <div class="flex items-center gap-1">
@@ -133,7 +136,7 @@
         <td class="px-3 py-2 text-muted-foreground font-mono text-xs">{{ l.click_id }}</td>
       </tr>
       {% empty %}
-      <tr><td colspan="16" class="px-3 py-10 text-center text-muted-foreground">Nessun lead trovato.</td></tr>
+      <tr><td colspan="17" class="px-3 py-10 text-center text-muted-foreground">Nessun lead trovato.</td></tr>
       {% endfor %}
     </tbody>
   </table>
