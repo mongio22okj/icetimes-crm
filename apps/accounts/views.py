@@ -13,7 +13,7 @@ from django.contrib.auth.views import LoginView as DjangoLoginView
 from django.contrib.auth.views import PasswordChangeView as DjangoPasswordChangeView
 from django.contrib.auth.views import redirect_to_login
 from django.http import HttpResponseRedirect
-from django.shortcuts import redirect, render
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse, reverse_lazy
 from django.utils import timezone
 from django.utils.decorators import method_decorator
@@ -103,9 +103,9 @@ from apps.core.tables import (  # noqa: E402
 USERS_TABLE = TableConfig(
     key="users",
     bulk_actions=(
-        BulkAction(slug="activate", label="Activate", icon="check"),
-        BulkAction(slug="deactivate", label="Deactivate", icon="x", destructive=True,
-                   confirm_text="Deactivate {n} users? They won't be able to log in."),
+        BulkAction(slug="activate", label="Consenti accesso", icon="check"),
+        BulkAction(slug="deactivate", label="Blocca accesso", icon="x", destructive=True,
+                   confirm_text="Bloccare l'accesso a {n} utenti? Non potranno più entrare."),
     ),
     columns=(
         Column("username", "User", searchable=True, pinned=True,
@@ -115,9 +115,9 @@ USERS_TABLE = TableConfig(
         Column("role", "Role",
                filter=Filter("select", choices=User.ROLE_CHOICES),
                template="accounts/_table_cells.html#role"),
-        Column("is_active", "Active",
+        Column("is_active", "Accesso",
                filter=Filter("boolean"), align="center",
-               formatter=lambda v: "Yes" if v else "No"),
+               formatter=lambda v: "Consentito" if v else "In attesa"),
         Column("date_joined", "Joined",
                sortable=True, filter=Filter("daterange"), priority=2,
                formatter=lambda v: v.strftime("%b %d, %Y") if v else ""),
@@ -142,11 +142,11 @@ class UserListView(BreadcrumbsMixin, LoginRequiredMixin,
         n = targets.count()
         if action.slug == "activate":
             targets.update(is_active=True)
-            toast_message(request, LEVEL_SUCCESS, f"Activated {n} users.")
+            toast_message(request, LEVEL_SUCCESS, f"Accesso consentito a {n} utenti.")
         elif action.slug == "deactivate":
             # Don't lock yourself out.
             targets.exclude(pk=request.user.pk).update(is_active=False)
-            toast_message(request, LEVEL_SUCCESS, f"Deactivated {n} users.")
+            toast_message(request, LEVEL_SUCCESS, f"Accesso bloccato per {n} utenti.")
         return redirect("users:list")
 
 
@@ -158,6 +158,24 @@ class UserDetailView(BreadcrumbsMixin, LoginRequiredMixin, EmailVerifiedRequired
 
     def get_breadcrumb_title(self):
         return self.object.username
+
+
+class UserAccessToggleView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
+                           StaffRequiredMixin, View):
+    """Dà o toglie l'OK all'accesso di un utente (is_active). Solo staff."""
+
+    def post(self, request, pk):
+        target = get_object_or_404(User, pk=pk)
+        if target.pk == request.user.pk:
+            messages.error(request, "Non puoi bloccare il tuo stesso account.")
+            return redirect("users:detail", pk=pk)
+        target.is_active = not target.is_active
+        target.save(update_fields=["is_active"])
+        if target.is_active:
+            messages.success(request, f"Accesso CONSENTITO a {target.username}.")
+        else:
+            messages.success(request, f"Accesso BLOCCATO per {target.username}.")
+        return redirect("users:detail", pk=pk)
 
 
 class UserCreateView(BreadcrumbsMixin, LoginRequiredMixin, EmailVerifiedRequiredMixin, StaffRequiredMixin, CreateView):

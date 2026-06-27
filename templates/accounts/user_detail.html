@@ -33,8 +33,24 @@
   </div>
   <div class="rounded-lg border border-border bg-card p-6 space-y-4">
     <div>
-      <p class="text-xs text-muted-foreground">Status</p>
-      <p>{% if target_user.is_active %}<span class="text-success">Active</span>{% else %}<span class="text-muted-foreground">Inactive</span>{% endif %}</p>
+      <p class="text-xs text-muted-foreground mb-1">Accesso al sito</p>
+      {% if target_user.is_active %}
+        <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-emerald-500/15 text-emerald-700 dark:text-emerald-300">✓ Consentito</span>
+      {% else %}
+        <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-amber-500/15 text-amber-700 dark:text-amber-300">In attesa del tuo OK</span>
+      {% endif %}
+      {% if target_user.pk != request.user.pk %}
+      <form method="post" action="{% url 'users:access_toggle' target_user.pk %}" class="mt-3">
+        {% csrf_token %}
+        {% if target_user.is_active %}
+        <button type="submit" class="w-full h-9 rounded-md border border-red-500/40 text-red-600 dark:text-red-400 text-sm font-medium hover:bg-red-500/10">Blocca accesso</button>
+        {% else %}
+        <button type="submit" class="w-full h-9 rounded-md bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-700">Dai l'OK · consenti accesso</button>
+        {% endif %}
+      </form>
+      {% else %}
+      <p class="mt-2 text-xs text-muted-foreground">(È il tuo account)</p>
+      {% endif %}
     </div>
     <div>
       <p class="text-xs text-muted-foreground">Staff</p>
