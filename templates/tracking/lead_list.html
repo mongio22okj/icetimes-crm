@@ -114,7 +114,15 @@
           {% if l.country %}<span class="inline-flex items-center rounded px-1.5 py-0.5 text-xs font-medium bg-muted text-foreground/70">{{ l.country }}</span>{% else %}<span class="text-muted-foreground">—</span>{% endif %}
         </td>
         <td class="px-3 py-2.5">
-          {% if l.status %}<span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium {{ l.status|status_badge_class }}">{{ l.status }}</span>{% else %}<span class="text-muted-foreground">—</span>{% endif %}
+          <div class="flex items-center gap-1.5">
+            {% if l.broker_lead_id and not l.is_deposit and l.stage != 'rifiutato' %}
+            <span class="relative flex h-2 w-2 shrink-0" title="Collegato al broker · in attesa di aggiornamenti">
+              <span class="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75 animate-ping"></span>
+              <span class="relative inline-flex h-2 w-2 rounded-full bg-emerald-500"></span>
+            </span>
+            {% endif %}
+            {% if l.status %}<span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium {{ l.status|status_badge_class }}">{{ l.status }}</span>{% else %}<span class="text-muted-foreground">—</span>{% endif %}
+          </div>
         </td>
         <td class="px-3 py-2.5 text-muted-foreground text-xs tabular-nums whitespace-nowrap">{{ l.last_pull_at|date:"d/m/y H:i"|default:"—" }}</td>
         <td class="px-3 py-2.5">
