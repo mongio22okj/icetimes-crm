@@ -79,7 +79,16 @@ class SpmMonsterBrokerForm(forms.ModelForm):
 
 
 class LandingLeadForm(forms.ModelForm):
-    """Form pubblico della landing: i dati che il visitatore inserisce."""
+    """Form pubblico della landing: i dati che il visitatore inserisce.
+
+    Antifrode: campo honeypot `hp_url` (nascosto). Se valorizzato → è un bot,
+    il form viene scartato.
+    """
+
+    # Honeypot: nascosto agli umani, riempito spesso dai bot.
+    hp_url = forms.CharField(required=False, label="",
+                             widget=forms.HiddenInput(attrs={
+                                 "autocomplete": "off", "tabindex": "-1"}))
 
     class Meta:
         model = Lead
@@ -106,3 +115,18 @@ class LandingLeadForm(forms.ModelForm):
 
     def clean_country(self):
         return (self.cleaned_data.get("country") or "IT").strip().upper()[:2]
+
+    def clean_phone(self):
+        import re
+        phone = (self.cleaned_data.get("phone") or "").strip()
+        digits = re.sub(r"\D", "", phone)
+        if len(digits) < 7 or len(digits) > 15:
+            raise forms.ValidationError("Numero di telefono non valido.")
+        return phone
+
+    def clean(self):
+        cleaned = super().clean()
+        if (cleaned.get("hp_url") or "").strip():
+            # Honeypot riempito → bot. Scartiamo senza dettagli.
+            raise forms.ValidationError("Invio non valido.")
+        return cleaned

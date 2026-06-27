@@ -33,6 +33,8 @@
 
     <form method="post" class="space-y-4">
       {% csrf_token %}
+      {# honeypot antifrode — invisibile agli umani #}
+      <div style="position:absolute;left:-9999px" aria-hidden="true">{{ form.hp_url }}</div>
       {% if form.non_field_errors %}
         <div class="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">{{ form.non_field_errors }}</div>
       {% endif %}

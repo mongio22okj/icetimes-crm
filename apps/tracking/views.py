@@ -82,40 +82,79 @@ def _do_push(lead, broker):
     return res
 
 
-# ── Landing pubblica ──────────────────────────────────────────────────────
+# ── Landing pubblica + antifrode ──────────────────────────────────────────
+def _rate_limited(ip, limit=5, window=60):
+    """True se questo IP ha superato `limit` invii in `window` secondi."""
+    from django.core.cache import cache
+    if not ip:
+        return False
+    key = f"lp_rl:{ip}"
+    n = cache.get(key, 0)
+    if n >= limit:
+        return True
+    cache.set(key, n + 1, window)
+    return False
+
+
+def _is_duplicate(broker, email, phone):
+    """True se per QUESTO broker esiste già un lead con stessa email o telefono."""
+    from django.db.models import Q
+    cond = Q()
+    if email:
+        cond |= Q(email__iexact=email)
+    if phone:
+        cond |= Q(phone=phone)
+    if not cond.children:
+        return False
+    return Lead.for_broker(broker).filter(cond).exists()
+
+
+def _landing_render(request, broker, form, error=None, status=200):
+    """Serve l'HTML custom del broker se presente, altrimenti il form standard."""
+    if broker.landing_html:
+        return HttpResponse(broker.landing_html, status=status)
+    ctx = {"broker": broker, "form": form}
+    if error:
+        ctx["push_error"] = error
+    return render(request, "tracking/landing.html", ctx, status=status)
+
+
 @csrf_exempt
 def landing(request, slug):
-    """Landing pubblica del broker. Ogni broker ha la SUA landing:
-    se `landing_html` è valorizzato serve quell'HTML dedicato, altrimenti il
-    form standard. Il visitatore compila → creiamo il Lead (click_id), push al
-    broker, redirect all'auto-login. Pubblica (no auth, csrf-exempt per i form
-    delle landing custom)."""
+    """Landing pubblica del broker (la SUA: landing_html dedicato o form standard).
+    Antifrode: honeypot (nel form), rate-limit per IP, deduplica per broker.
+    Visitatore compila → Lead (click_id) → push → redirect auto-login."""
     broker = find_broker_by_slug(slug)
     if broker is None:
         raise Http404("Landing non trovata")
 
     form = LandingLeadForm(request.POST or None)
-    if request.method == "POST" and form.is_valid():
-        lead = form.save(commit=False)
-        lead.broker = broker
-        lead.ip = _client_ip(request)
-        lead.status = "new"
-        lead.save()
-        res = _do_push(lead, broker)
-        if res["success"]:
-            if res["login_url"]:
-                return redirect(res["login_url"])
-            return render(request, "tracking/landing_thanks.html", {"broker": broker})
-        # push fallito
-        if broker.landing_html:
-            return HttpResponse(broker.landing_html, status=502)
-        return render(request, "tracking/landing.html",
-                      {"broker": broker, "form": form, "push_error": res["error"]}, status=502)
+    if request.method == "POST":
+        ip = _client_ip(request)
+        if _rate_limited(ip):
+            return _landing_render(request, broker, form,
+                                   "Troppi invii, riprova tra poco.", 429)
+        if form.is_valid():
+            email = form.cleaned_data.get("email")
+            phone = form.cleaned_data.get("phone")
+            if _is_duplicate(broker, email, phone):
+                return _landing_render(request, broker, form,
+                                       "Lead già registrato.", 409)
+            lead = form.save(commit=False)
+            lead.broker = broker
+            lead.ip = ip
+            lead.status = "new"
+            lead.save()
+            res = _do_push(lead, broker)
+            if res["success"]:
+                if res["login_url"]:
+                    return redirect(res["login_url"])
+                return render(request, "tracking/landing_thanks.html", {"broker": broker})
+            return _landing_render(request, broker, form, res["error"], 502)
+        # form non valido (honeypot / validazione)
+        return _landing_render(request, broker, form, status=400)
 
-    # GET (o POST non valido): landing dedicata del broker se presente.
-    if broker.landing_html:
-        return HttpResponse(broker.landing_html)
-    return render(request, "tracking/landing.html", {"broker": broker, "form": form})
+    return _landing_render(request, broker, form)
 
 
 # ── Lead (lettura: tutti gli staff) ───────────────────────────────────────
