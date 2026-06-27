@@ -64,11 +64,11 @@ def test_crm_renders(client, staff_user):
     r = client.get("/dashboards/crm/")
     assert r.status_code == 200
     assert b"CRM" in r.content
-    assert b"Pipeline Overview" in r.content
-    assert b"Deal Stages" in r.content
-    assert b"Top Sales Reps" in r.content
-    assert b"Recent Deals" in r.content
-    assert b"Quarterly Targets" in r.content
+    assert b"Andamento" in r.content
+    assert b"Lead per stato" in r.content
+    assert b"Performance per broker" in r.content
+    assert b"Lead recenti" in r.content
+    assert b"Report settimanale" in r.content
 
 
 def test_crm_embeds_chart_payloads(client, staff_user):
