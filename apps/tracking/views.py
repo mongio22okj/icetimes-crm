@@ -116,6 +116,46 @@ class LeadListView(BreadcrumbsMixin, LoginRequiredMixin,
     breadcrumb_title = "Lead"
     paginate_by = 50
 
+    def get_queryset(self):
+        qs = Lead.objects.all()
+        g = self.request.GET
+        for param, field in (
+            ("firstname", "firstname__icontains"),
+            ("lastname", "lastname__icontains"),
+            ("email", "email__icontains"),
+            ("phone", "phone__icontains"),
+            ("ip", "ip__icontains"),
+            ("country", "country__icontains"),
+            ("status", "status__icontains"),
+            ("note", "note__icontains"),
+            ("click_id", "click_id__icontains"),
+        ):
+            v = (g.get(param) or "").strip()
+            if v:
+                qs = qs.filter(**{field: v})
+        dep = g.get("deposit") or ""
+        if dep == "1":
+            qs = qs.filter(is_deposit=True)
+        elif dep == "0":
+            qs = qs.filter(is_deposit=False)
+        bv = g.get("broker") or ""
+        if ":" in bv:
+            from django.contrib.contenttypes.models import ContentType
+            from .models import broker_by_kind
+            k, _, pid = bv.partition(":")
+            b = broker_by_kind(k, pid)
+            if b:
+                ct = ContentType.objects.get_for_model(type(b))
+                qs = qs.filter(broker_content_type=ct, broker_object_id=b.pk)
+        return qs
+
+    def get_context_data(self, **kwargs):
+        from .models import all_brokers
+        ctx = super().get_context_data(**kwargs)
+        ctx["broker_options"] = [{"value": f"{b.kind}:{b.pk}", "name": b.name}
+                                 for b in all_brokers()]
+        return ctx
+
 
 class LeadPushView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
                    StaffRequiredMixin, View):

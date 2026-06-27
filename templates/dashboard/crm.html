@@ -2,11 +2,23 @@
 {% load apex %}
 {% block title %}CRM · IceTimes{% endblock %}
 {% block content %}
-<div class="mb-6">
-  <h1 class="text-2xl font-bold tracking-tight">CRM</h1>
-  <p class="mt-1 text-sm text-muted-foreground">
-    {{ econ.lead }} lead · {{ econ.ftd }} FTD · Guadagno {{ econ.guadagno }} · Spesa {{ econ.spesa }} · Profitto {{ econ.profitto }}
-  </p>
+<div class="mb-6 flex flex-wrap items-end justify-between gap-4">
+  <div>
+    <h1 class="text-2xl font-bold tracking-tight">CRM{% if selected_broker_name %} — {{ selected_broker_name }}{% endif %}</h1>
+    <p class="mt-1 text-sm text-muted-foreground">
+      {{ econ.lead }} lead · {{ econ.ftd }} FTD · Guadagno {{ econ.guadagno }} · Spesa {{ econ.spesa }} · Profitto {{ econ.profitto }}
+    </p>
+  </div>
+  <form method="get" class="flex items-center gap-2">
+    <label class="text-sm text-muted-foreground">Broker:</label>
+    <select name="broker" onchange="this.form.submit()"
+            class="h-9 rounded-md border border-input bg-background px-3 text-sm">
+      <option value="">Tutti i broker</option>
+      {% for o in broker_options %}
+        <option value="{{ o.value }}" {% if o.value == selected_broker %}selected{% endif %}>{{ o.name }}</option>
+      {% endfor %}
+    </select>
+  </form>
 </div>
 
 <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">

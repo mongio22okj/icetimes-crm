@@ -304,6 +304,7 @@ class Lead(models.Model):
 
     status = models.CharField("Stato", max_length=120, blank=True)
     is_deposit = models.BooleanField("FTD", default=False)
+    note = models.CharField("Nota", max_length=255, blank=True)
 
     payload = models.JSONField(default=dict, blank=True)
     created_at = models.DateTimeField(default=timezone.now, db_index=True)

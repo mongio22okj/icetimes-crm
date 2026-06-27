@@ -125,7 +125,7 @@ class CrmDashboardView(LoginRequiredMixin, EmailVerifiedRequiredMixin, View):
         from datetime import date
         from django.db.models import Count
         from django.utils import timezone
-        from apps.tracking.models import Lead, all_brokers
+        from apps.tracking.models import Lead, all_brokers, broker_by_kind
 
         # Modello economico: lead non-FTD = costo €7; lead FTD = costo €300
         # (deposito) e premio €850. Profitto = guadagno − spesa.
@@ -134,7 +134,17 @@ class CrmDashboardView(LoginRequiredMixin, EmailVerifiedRequiredMixin, View):
         def eur(v):
             return "€" + f"{int(v):,}".replace(",", ".")
 
-        leads = Lead.objects.all()
+        # Filtro broker: ?broker=<kind>:<pk>. Vuoto = tutti.
+        brokers_all = all_brokers()
+        sel_val = request.GET.get("broker") or ""
+        selected = None
+        if ":" in sel_val:
+            k, _, pid = sel_val.partition(":")
+            selected = broker_by_kind(k, pid)
+        leads = Lead.for_broker(selected) if selected else Lead.objects.all()
+        brokers = [selected] if selected else brokers_all
+        broker_options = [{"value": f"{b.kind}:{b.pk}", "name": b.name} for b in brokers_all]
+
         total = leads.count()
         ftd = leads.filter(is_deposit=True).count()
         non_ftd = total - ftd
@@ -142,7 +152,6 @@ class CrmDashboardView(LoginRequiredMixin, EmailVerifiedRequiredMixin, View):
         spesa = non_ftd * LEAD_COST + ftd * FTD_COST
         profitto = guadagno - spesa
         win_rate = round(ftd * 100 / total, 1) if total else 0
-        brokers = all_brokers()
         n_brokers = sum(1 for b in brokers if b.is_active)
 
         # Serie per-mese (ultimi 12 mesi).
@@ -248,6 +257,9 @@ class CrmDashboardView(LoginRequiredMixin, EmailVerifiedRequiredMixin, View):
             "recent_deals": recent_deals,
             "targets": targets,
             "weeks": weeks,
+            "broker_options": broker_options,
+            "selected_broker": sel_val,
+            "selected_broker_name": selected.name if selected else "",
             "econ": {"lead": total, "ftd": ftd, "non_ftd": non_ftd,
                      "guadagno": eur(guadagno), "spesa": eur(spesa), "profitto": eur(profitto)},
             "breadcrumbs": [("Dashboards", "/"), ("CRM", None)],

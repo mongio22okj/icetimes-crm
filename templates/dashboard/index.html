@@ -61,13 +61,17 @@
       <a href="{% url 'tracking:lead_list' %}" class="text-sm text-primary hover:underline">Tutti i lead</a>
     </div>
     {% if recent_leads %}
+      <div class="overflow-x-auto">
       <table class="w-full text-sm">
         <thead class="text-muted-foreground">
           <tr>
             <th class="text-left font-medium pb-2">Data</th>
             <th class="text-left font-medium pb-2">Nome</th>
+            <th class="text-left font-medium pb-2">Email</th>
+            <th class="text-left font-medium pb-2">Telefono</th>
             <th class="text-left font-medium pb-2">Broker</th>
             <th class="text-left font-medium pb-2">Stato</th>
+            <th class="text-left font-medium pb-2">ID cliccato</th>
             <th class="text-center font-medium pb-2">FTD</th>
           </tr>
         </thead>
@@ -75,9 +79,12 @@
           {% for l in recent_leads %}
           <tr class="border-t border-border">
             <td class="py-2 text-muted-foreground whitespace-nowrap">{{ l.created_at|date:"d/m H:i" }}</td>
-            <td class="py-2 font-medium">{{ l.full_name|default:l.email|default:"—" }}</td>
-            <td class="py-2 text-muted-foreground">{{ l.broker.name|default:"—" }}</td>
+            <td class="py-2 font-medium whitespace-nowrap">{{ l.full_name|default:"—" }}</td>
+            <td class="py-2 text-muted-foreground">{{ l.email|default:"—" }}</td>
+            <td class="py-2 text-muted-foreground whitespace-nowrap">{{ l.phone|default:"—" }}</td>
+            <td class="py-2 text-muted-foreground">{{ l.broker_name|default:"—" }}</td>
             <td class="py-2">{{ l.status|default:"—" }}</td>
+            <td class="py-2 text-muted-foreground font-mono text-xs">{{ l.click_id|default:"—" }}</td>
             <td class="py-2 text-center">
               {% if l.is_deposit %}<span class="text-emerald-600 dark:text-emerald-400">●</span>{% else %}<span class="text-muted-foreground">—</span>{% endif %}
             </td>
@@ -85,6 +92,7 @@
           {% endfor %}
         </tbody>
       </table>
+      </div>
     {% else %}
       <p class="text-sm text-muted-foreground">Nessun lead ancora.</p>
     {% endif %}
