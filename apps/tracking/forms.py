@@ -28,7 +28,7 @@ class TrackboxBrokerForm(forms.ModelForm):
         model = TrackboxBroker
         fields = (
             "name", "base_url", "username", "password",
-            "push_key", "pull_key", "ai", "ci", "gi",
+            "push_key", "pull_key", "ai", "ci", "gi", "extra_params",
             "funnel", "landing_slug", "landing_brand", "note", "landing_html", "is_active",
         )
         widgets = {
@@ -36,6 +36,10 @@ class TrackboxBrokerForm(forms.ModelForm):
             "base_url": forms.URLInput(attrs={
                 "placeholder": "https://track.fintechgurus.org"}),
             "landing_html": forms.Textarea(attrs={"rows": 12}),
+            "extra_params": forms.Textarea(attrs={
+                "rows": 3,
+                "class": BASE_INPUT.replace("h-10", "min-h-[70px] py-2 font-mono text-xs"),
+                "placeholder": '{"MPC_7": "LIVE", "MPC_8": "59704"}'}),
         }
 
     def __init__(self, *args, **kwargs):

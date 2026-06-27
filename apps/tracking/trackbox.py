@@ -64,7 +64,7 @@ def _request(broker, path, payload, api_key, timeout=25):
 
 def build_push_payload(broker, lead):
     """Costruisce il body del push dal broker + lead (senza inviare nulla)."""
-    return {
+    payload = {
         "ai": broker.ai,
         "ci": broker.ci or "1",
         "gi": broker.gi,
@@ -81,6 +81,11 @@ def build_push_payload(broker, lead):
         "so": broker.funnel or broker.name,
         "lg": (lead.country or "IT").upper(),
     }
+    # Parametri extra specifici del broker (es. SoftTrack: MPC_7/MPC_8).
+    extra = getattr(broker, "extra_params", None)
+    if isinstance(extra, dict):
+        payload.update({str(k): v for k, v in extra.items()})
+    return payload
 
 
 def push_lead(broker, lead):

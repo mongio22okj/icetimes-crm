@@ -48,6 +48,10 @@ class TrackboxBroker(models.Model):
     ai = models.CharField("ai (affiliate id)", max_length=64)
     ci = models.CharField("ci", max_length=64, default="1")
     gi = models.CharField("gi (group id)", max_length=64)
+    extra_params = models.JSONField(
+        "Parametri extra (JSON)", default=dict, blank=True,
+        help_text='Parametri aggiuntivi inviati nel push, specifici del broker. '
+                  'Es. {"MPC_7": "LIVE", "MPC_8": "59704"}. Vuoto = nessuno.')
 
     funnel = models.CharField(
         "Funnel", max_length=120, blank=True,
