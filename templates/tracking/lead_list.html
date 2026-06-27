@@ -50,7 +50,15 @@
         <th class="px-2 py-1.5"><input name="email" value="{{ request.GET.email }}" class="h-8 w-full rounded-md border border-input bg-background px-2 text-xs"></th>
         <th class="px-2 py-1.5"><input name="phone" value="{{ request.GET.phone }}" class="h-8 w-full rounded-md border border-input bg-background px-2 text-xs"></th>
         <th class="px-2 py-1.5"><input name="ip" value="{{ request.GET.ip }}" class="h-8 w-full rounded-md border border-input bg-background px-2 text-xs"></th>
-        <th class="px-2 py-1.5"><input name="country" value="{{ request.GET.country }}" class="h-8 w-20 rounded-md border border-input bg-background px-2 text-xs"></th>
+        <th class="px-2 py-1.5">
+          <select name="country" class="h-8 w-full rounded-md border border-input bg-background px-2 text-xs">
+            <option value="">Tutti</option>
+            <option value="IT" {% if request.GET.country == 'IT' %}selected{% endif %}>IT</option>
+            <option value="ES" {% if request.GET.country == 'ES' %}selected{% endif %}>ES</option>
+            <option value="DE" {% if request.GET.country == 'DE' %}selected{% endif %}>DE</option>
+            <option value="SE" {% if request.GET.country == 'SE' %}selected{% endif %}>SE</option>
+          </select>
+        </th>
         <th class="px-2 py-1.5"><input name="status" value="{{ request.GET.status }}" class="h-8 w-full rounded-md border border-input bg-background px-2 text-xs"></th>
         <th class="px-2 py-1.5">
           <select name="broker" class="h-8 w-full rounded-md border border-input bg-background px-2 text-xs">
