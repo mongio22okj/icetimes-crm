@@ -165,6 +165,10 @@ LOGIN_URL = "/accounts/login/"
 LOGIN_REDIRECT_URL = "/"
 LOGOUT_REDIRECT_URL = "/accounts/login/"
 
+# Registrazione pubblica CHIUSA: gli account li crea solo l'amministratore
+# (pagina Users / admin). Mettere True per riaprire l'auto-registrazione.
+ALLOW_PUBLIC_REGISTRATION = False
+
 AUTH_USER_MODEL = "accounts.User"
 
 # Custom CSRF reject page — friendlier than Django's default. Triggered

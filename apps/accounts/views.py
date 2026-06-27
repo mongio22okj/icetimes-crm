@@ -43,10 +43,27 @@ from .verify_email import send_verify_email
 
 
 class RegisterView(View):
+    """Registrazione pubblica. Chiusa di default: gli account li crea solo
+    l'amministratore (pagina Users / admin). Riapribile con
+    settings.ALLOW_PUBLIC_REGISTRATION = True."""
+
+    def _check_open(self, request):
+        if not getattr(settings, "ALLOW_PUBLIC_REGISTRATION", False):
+            messages.info(
+                request,
+                "La registrazione è chiusa. Gli account vengono creati "
+                "dall'amministratore: contattalo per ottenere l'accesso.")
+            return redirect("login")
+        return None
+
     def get(self, request):
-        return render(request, "accounts/register.html", {"form": RegisterForm()})
+        return self._check_open(request) or render(
+            request, "accounts/register.html", {"form": RegisterForm()})
 
     def post(self, request):
+        closed = self._check_open(request)
+        if closed:
+            return closed
         form = RegisterForm(request.POST)
         if form.is_valid():
             user = form.save()
@@ -285,6 +302,12 @@ class TwoFactorRegenerateView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
 
 class TwoFactorAwareLoginView(DjangoLoginView):
     """LoginView that redirects confirmed-2FA users to the challenge step."""
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx["allow_registration"] = getattr(
+            settings, "ALLOW_PUBLIC_REGISTRATION", False)
+        return ctx
 
     def form_valid(self, form):
         user = form.get_user()

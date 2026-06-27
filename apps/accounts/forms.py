@@ -45,6 +45,18 @@ class UserCreateForm(UserCreationForm):
             raise forms.ValidationError("A user with that email already exists.")
         return email
 
+    def save(self, commit=True):
+        # Account creato dall'amministratore → già validato: attivo e con
+        # email verificata, così entra subito senza il passaggio di verifica.
+        user = super().save(commit=False)
+        user.is_active = True
+        if not user.email_verified_at:
+            from django.utils import timezone
+            user.email_verified_at = timezone.now()
+        if commit:
+            user.save()
+        return user
+
 
 class UserUpdateForm(forms.ModelForm):
     class Meta:

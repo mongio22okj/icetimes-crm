@@ -41,6 +41,6 @@
 </form>
 <div class="mt-4 flex items-center justify-between text-sm">
   <a href="{% url 'password_reset' %}" class="text-primary">{% trans "Forgot password?" %}</a>
-  <a href="{% url 'register' %}" class="text-muted-foreground hover:text-primary">{% trans "Create account" %}</a>
+  {% if allow_registration %}<a href="{% url 'register' %}" class="text-muted-foreground hover:text-primary">{% trans "Create account" %}</a>{% endif %}
 </div>
 {% endblock %}
