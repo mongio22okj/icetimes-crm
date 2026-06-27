@@ -25,17 +25,18 @@ def test_single_level_breadcrumb_includes_dashboard_root_and_current():
 
 
 def test_nested_breadcrumb_walks_parent():
-    class OrderEditView(BreadcrumbsMixin, TemplateView):
+    # Il label del parent è risolto da NAV_ITEMS (tracking:lead_list -> "Lead").
+    class LeadEditView(BreadcrumbsMixin, TemplateView):
         template_name = "dummy.html"
-        breadcrumb_title = "Edit order"
-        breadcrumb_parent = "orders:list"
+        breadcrumb_title = "Edit lead"
+        breadcrumb_parent = "tracking:lead_list"
 
-    view = _dispatch(OrderEditView, "/orders/5/edit/")
+    view = _dispatch(LeadEditView, "/tracking/5/edit/")
     crumbs = view.get_breadcrumbs()
     assert crumbs == [
         ("Dashboard", "/"),
-        ("Orders", "/orders/"),
-        ("Edit order", None),
+        ("Lead", "/tracking/"),
+        ("Edit lead", None),
     ]
 
 
