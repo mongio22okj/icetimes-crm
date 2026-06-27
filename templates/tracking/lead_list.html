@@ -9,6 +9,9 @@
   </div>
   <div class="flex items-center gap-2">
     {% if can_edit_stage %}
+    <button type="submit" form="syncallform"
+            class="h-9 px-4 rounded-md bg-emerald-600 text-white inline-flex items-center text-sm font-medium hover:bg-emerald-700">
+      Aggiorna tutti</button>
     <button type="submit" form="syncform"
             class="h-9 px-4 rounded-md border border-emerald-500/40 text-emerald-700 dark:text-emerald-300 inline-flex items-center text-sm font-medium hover:bg-emerald-500/10">
       Aggiorna selezionati</button>
@@ -159,7 +162,9 @@
 {# form POST per la transizione fase (fuori dal form filtri per non annidare) #}
 {% if can_edit_stage %}{% for l in leads %}<form id="sf{{ l.pk }}" method="post" action="{% url 'tracking:lead_stage' l.pk %}">{% csrf_token %}<input type="hidden" name="next" value="{{ request.get_full_path }}"></form>{% endfor %}
 {# form POST per l'aggiornamento stato dei lead selezionati #}
-<form id="syncform" method="post" action="{% url 'tracking:lead_sync_selected' %}">{% csrf_token %}<input type="hidden" name="next" value="{{ request.get_full_path }}"></form>{% endif %}
+<form id="syncform" method="post" action="{% url 'tracking:lead_sync_selected' %}">{% csrf_token %}<input type="hidden" name="next" value="{{ request.get_full_path }}"></form>
+{# form POST per l'aggiornamento di TUTTI i lead (pull tutti i broker) #}
+<form id="syncallform" method="post" action="{% url 'tracking:sync_all' %}">{% csrf_token %}<input type="hidden" name="next" value="{{ request.get_full_path }}"></form>{% endif %}
 
 {% if is_paginated %}
 <div class="flex items-center justify-between mt-4 text-sm">
