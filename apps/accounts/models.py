@@ -34,6 +34,25 @@ class User(AbstractUser):
     def is_pending_deletion(self) -> bool:
         return self.pending_deletion_at is not None
 
+    # ── Ruoli CRM (mappati su role/superuser) ─────────────────────────────
+    # Super Admin = superuser o role 'admin' · Marketer = role 'manager'
+    # Visualizzatore = il resto (role 'staff').
+    @property
+    def is_crm_admin(self) -> bool:
+        return bool(self.is_superuser or self.role == "admin")
+
+    @property
+    def is_crm_marketer(self) -> bool:
+        return self.role == "manager" and not self.is_crm_admin
+
+    @property
+    def crm_role_label(self) -> str:
+        if self.is_crm_admin:
+            return "Super Admin"
+        if self.role == "manager":
+            return "Marketer"
+        return "Visualizzatore"
+
 
 class SessionMetadata(models.Model):
     """Sidecar for django.contrib.sessions.Session.

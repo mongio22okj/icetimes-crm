@@ -1,5 +1,5 @@
 from django.contrib import messages
-from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse, reverse_lazy
@@ -28,6 +28,17 @@ from .models import (
     broker_by_kind,
     find_broker_by_slug,
 )
+
+
+class AdminOnlyMixin(UserPassesTestMixin):
+    """Accesso solo Super Admin (superuser o role 'admin').
+    Usato per config broker, chiavi API e azioni che toccano i broker.
+    Marketer/Visualizzatore → 403."""
+    raise_exception = True
+
+    def test_func(self):
+        u = self.request.user
+        return bool(u.is_authenticated and u.is_crm_admin)
 
 
 def build_form_snippet(action_url):
@@ -107,7 +118,7 @@ def landing(request, slug):
     return render(request, "tracking/landing.html", {"broker": broker, "form": form})
 
 
-# ── Lead ──────────────────────────────────────────────────────────────────
+# ── Lead (lettura: tutti gli staff) ───────────────────────────────────────
 class LeadListView(BreadcrumbsMixin, LoginRequiredMixin,
                    EmailVerifiedRequiredMixin, StaffRequiredMixin, ListView):
     model = Lead
@@ -141,7 +152,6 @@ class LeadListView(BreadcrumbsMixin, LoginRequiredMixin,
         bv = g.get("broker") or ""
         if ":" in bv:
             from django.contrib.contenttypes.models import ContentType
-            from .models import broker_by_kind
             k, _, pid = bv.partition(":")
             b = broker_by_kind(k, pid)
             if b:
@@ -158,8 +168,8 @@ class LeadListView(BreadcrumbsMixin, LoginRequiredMixin,
 
 
 class LeadPushView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
-                   StaffRequiredMixin, View):
-    """Invia (push) un lead al suo broker. La lancia lo staff/utente."""
+                   AdminOnlyMixin, View):
+    """Invia (push) un lead al suo broker. Solo Super Admin."""
 
     def post(self, request, pk):
         lead = get_object_or_404(Lead, pk=pk)
@@ -175,9 +185,9 @@ class LeadPushView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
         return redirect("tracking:lead_list")
 
 
-# ── Broker API — lista unificata (TrackBox + IREV) ────────────────────────
+# ── Broker API — solo Super Admin (config + chiavi) ───────────────────────
 class BrokerListView(BreadcrumbsMixin, LoginRequiredMixin,
-                     EmailVerifiedRequiredMixin, StaffRequiredMixin,
+                     EmailVerifiedRequiredMixin, AdminOnlyMixin,
                      TemplateView):
     template_name = "tracking/broker_list.html"
     breadcrumb_title = "Broker API"
@@ -220,9 +230,9 @@ class BrokerListView(BreadcrumbsMixin, LoginRequiredMixin,
         return ctx
 
 
-# ── TrackBox CRUD ─────────────────────────────────────────────────────────
+# ── TrackBox CRUD (solo Super Admin) ──────────────────────────────────────
 class TrackboxBrokerCreateView(BreadcrumbsMixin, LoginRequiredMixin,
-                               EmailVerifiedRequiredMixin, StaffRequiredMixin,
+                               EmailVerifiedRequiredMixin, AdminOnlyMixin,
                                CreateView):
     model = TrackboxBroker
     form_class = TrackboxBrokerForm
@@ -238,7 +248,7 @@ class TrackboxBrokerCreateView(BreadcrumbsMixin, LoginRequiredMixin,
 
 
 class TrackboxBrokerUpdateView(BreadcrumbsMixin, LoginRequiredMixin,
-                               EmailVerifiedRequiredMixin, StaffRequiredMixin,
+                               EmailVerifiedRequiredMixin, AdminOnlyMixin,
                                UpdateView):
     model = TrackboxBroker
     form_class = TrackboxBrokerForm
@@ -256,7 +266,7 @@ class TrackboxBrokerUpdateView(BreadcrumbsMixin, LoginRequiredMixin,
 
 
 class TrackboxBrokerDeleteView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
-                               StaffRequiredMixin, View):
+                               AdminOnlyMixin, View):
     def post(self, request, pk):
         b = get_object_or_404(TrackboxBroker, pk=pk)
         name = b.name
@@ -266,8 +276,8 @@ class TrackboxBrokerDeleteView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
 
 
 class TrackboxBrokerSyncView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
-                             StaffRequiredMixin, View):
-    """Pull stati per un broker TrackBox (la lancia lo staff)."""
+                             AdminOnlyMixin, View):
+    """Pull stati per un broker TrackBox (solo Super Admin)."""
 
     def post(self, request, pk):
         broker = get_object_or_404(TrackboxBroker, pk=pk)
@@ -284,9 +294,9 @@ class TrackboxBrokerSyncView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
         return redirect("tracking:broker_list")
 
 
-# ── IREV CRUD ─────────────────────────────────────────────────────────────
+# ── IREV CRUD (solo Super Admin) ──────────────────────────────────────────
 class IrevBrokerCreateView(BreadcrumbsMixin, LoginRequiredMixin,
-                           EmailVerifiedRequiredMixin, StaffRequiredMixin,
+                           EmailVerifiedRequiredMixin, AdminOnlyMixin,
                            CreateView):
     model = IrevBroker
     form_class = IrevBrokerForm
@@ -302,7 +312,7 @@ class IrevBrokerCreateView(BreadcrumbsMixin, LoginRequiredMixin,
 
 
 class IrevBrokerUpdateView(BreadcrumbsMixin, LoginRequiredMixin,
-                           EmailVerifiedRequiredMixin, StaffRequiredMixin,
+                           EmailVerifiedRequiredMixin, AdminOnlyMixin,
                            UpdateView):
     model = IrevBroker
     form_class = IrevBrokerForm
@@ -320,7 +330,7 @@ class IrevBrokerUpdateView(BreadcrumbsMixin, LoginRequiredMixin,
 
 
 class IrevBrokerDeleteView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
-                           StaffRequiredMixin, View):
+                           AdminOnlyMixin, View):
     def post(self, request, pk):
         b = get_object_or_404(IrevBroker, pk=pk)
         name = b.name
@@ -329,9 +339,9 @@ class IrevBrokerDeleteView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
         return redirect("tracking:broker_list")
 
 
-# ── SPM Monster CRUD + sync ───────────────────────────────────────────────
+# ── SPM Monster CRUD + sync (solo Super Admin) ────────────────────────────
 class SpmMonsterBrokerCreateView(BreadcrumbsMixin, LoginRequiredMixin,
-                                 EmailVerifiedRequiredMixin, StaffRequiredMixin,
+                                 EmailVerifiedRequiredMixin, AdminOnlyMixin,
                                  CreateView):
     model = SpmMonsterBroker
     form_class = SpmMonsterBrokerForm
@@ -347,7 +357,7 @@ class SpmMonsterBrokerCreateView(BreadcrumbsMixin, LoginRequiredMixin,
 
 
 class SpmMonsterBrokerUpdateView(BreadcrumbsMixin, LoginRequiredMixin,
-                                 EmailVerifiedRequiredMixin, StaffRequiredMixin,
+                                 EmailVerifiedRequiredMixin, AdminOnlyMixin,
                                  UpdateView):
     model = SpmMonsterBroker
     form_class = SpmMonsterBrokerForm
@@ -365,7 +375,7 @@ class SpmMonsterBrokerUpdateView(BreadcrumbsMixin, LoginRequiredMixin,
 
 
 class SpmMonsterBrokerDeleteView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
-                                 StaffRequiredMixin, View):
+                                 AdminOnlyMixin, View):
     def post(self, request, pk):
         b = get_object_or_404(SpmMonsterBroker, pk=pk)
         name = b.name
@@ -375,8 +385,8 @@ class SpmMonsterBrokerDeleteView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
 
 
 class SpmMonsterBrokerSyncView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
-                               StaffRequiredMixin, View):
-    """Pull stati per un broker SPM Monster (la lancia lo staff)."""
+                               AdminOnlyMixin, View):
+    """Pull stati per un broker SPM Monster (solo Super Admin)."""
 
     def post(self, request, pk):
         broker = get_object_or_404(SpmMonsterBroker, pk=pk)
@@ -391,10 +401,10 @@ class SpmMonsterBrokerSyncView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
         return redirect("tracking:broker_list")
 
 
+# ── Sync-all + Guida (tutti gli staff) ────────────────────────────────────
 class SyncAllView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
                   StaffRequiredMixin, View):
-    """Pulsante 'aggiorna lead': pull/sync di TUTTI i broker pull-capable
-    (TrackBox + SPM). La lancia lo staff dalla dashboard."""
+    """Pulsante 'aggiorna lead': pull/sync di TUTTI i broker pull-capable."""
 
     def post(self, request):
         r = sync_mod.sync_all_pullable()
@@ -414,12 +424,11 @@ class GuideView(BreadcrumbsMixin, LoginRequiredMixin, EmailVerifiedRequiredMixin
     breadcrumb_title = "Guida"
 
 
-# ── Codice tracciamento per landing ESTERNA ───────────────────────────────
+# ── Codice tracciamento per landing ESTERNA (solo Super Admin) ────────────
 class TrackingCodeView(BreadcrumbsMixin, LoginRequiredMixin,
-                       EmailVerifiedRequiredMixin, StaffRequiredMixin,
+                       EmailVerifiedRequiredMixin, AdminOnlyMixin,
                        TemplateView):
-    """Mostra lo snippet <form> da incollare nella landing esterna del broker:
-    posta a /lp/<slug>/ e il lead viene attribuito a quel broker."""
+    """Mostra lo snippet <form> da incollare nella landing esterna del broker."""
     template_name = "tracking/tracking_code.html"
     breadcrumb_title = "Codice tracciamento"
     breadcrumb_parent = "tracking:broker_list"

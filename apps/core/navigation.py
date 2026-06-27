@@ -19,6 +19,7 @@ class NavItem:
     badge: str | None = None
     group: object = "Overview"  # gettext_lazy proxy or str
     requires_staff: bool = False
+    requires_admin: bool = False  # solo Super Admin (User.is_crm_admin)
 
     def resolved_url(self) -> str:
         return reverse(self.url_name)
@@ -43,11 +44,11 @@ NAV_ITEMS: tuple[NavItem, ...] = (
     NavItem(_("Broker API"), "tracking:broker_list", "plug",
             keywords=("broker", "api", "trackbox", "postback", "landing",
                       "integrazione", "tracciamento"),
-            group=G_CRM, requires_staff=True),
+            group=G_CRM, requires_staff=True, requires_admin=True),
     NavItem(_("Administration"), "admin:index", "shield",
             keywords=("admin", "administration", "django admin", "models",
                       "permissions", "auth", "groups", "site admin"),
-            group=G_ACCOUNT, requires_staff=True),
+            group=G_ACCOUNT, requires_staff=True, requires_admin=True),
     NavItem(_("Users"), "users:list", "users",
             keywords=("team", "staff", "members", "users"),
             group=G_ACCOUNT, requires_staff=True),
@@ -62,8 +63,16 @@ NAV_ITEMS: tuple[NavItem, ...] = (
 
 def get_visible_items(user) -> list[NavItem]:
     if user is None or not getattr(user, "is_authenticated", False):
-        return [i for i in NAV_ITEMS if not i.requires_staff]
-    return [i for i in NAV_ITEMS if not i.requires_staff or user.is_staff]
+        return [i for i in NAV_ITEMS if not i.requires_staff and not i.requires_admin]
+    is_admin = bool(getattr(user, "is_crm_admin", False))
+    out = []
+    for i in NAV_ITEMS:
+        if i.requires_admin and not is_admin:
+            continue
+        if i.requires_staff and not user.is_staff:
+            continue
+        out.append(i)
+    return out
 
 
 def get_nav_groups(user) -> list[dict]:
