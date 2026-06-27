@@ -2,6 +2,7 @@ from django.urls import path
 
 from .views import (
     BrokerListView,
+    GuideView,
     IrevBrokerCreateView,
     IrevBrokerDeleteView,
     IrevBrokerUpdateView,
@@ -25,6 +26,7 @@ urlpatterns = [
     path("", LeadListView.as_view(), name="lead_list"),
     path("leads/<int:pk>/push/", LeadPushView.as_view(), name="lead_push"),
     path("sync-all/", SyncAllView.as_view(), name="sync_all"),
+    path("guida/", GuideView.as_view(), name="guide"),
     # Broker API — lista unificata
     path("brokers/", BrokerListView.as_view(), name="broker_list"),
     # TrackBox

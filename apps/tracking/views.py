@@ -407,6 +407,13 @@ class SyncAllView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
         return redirect(request.POST.get("next") or "dashboard")
 
 
+class GuideView(BreadcrumbsMixin, LoginRequiredMixin, EmailVerifiedRequiredMixin,
+                StaffRequiredMixin, TemplateView):
+    """Guida statica: come funziona il CRM, passo per passo."""
+    template_name = "tracking/guide.html"
+    breadcrumb_title = "Guida"
+
+
 # ── Codice tracciamento per landing ESTERNA ───────────────────────────────
 class TrackingCodeView(BreadcrumbsMixin, LoginRequiredMixin,
                        EmailVerifiedRequiredMixin, StaffRequiredMixin,

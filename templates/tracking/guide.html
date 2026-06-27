@@ -1,0 +1,103 @@
+{% extends "layouts/dashboard.html" %}
+{% load apex %}
+{% block title %}Guida · IceTimes CRM{% endblock %}
+{% block content %}
+<div class="mb-6">
+  <h1 class="text-2xl font-bold tracking-tight">Guida</h1>
+  <p class="mt-1 text-sm text-muted-foreground">Come funziona il CRM, passo per passo.</p>
+</div>
+
+<div class="max-w-4xl space-y-6 text-sm leading-relaxed">
+
+  <section class="rounded-lg border border-border bg-card p-6">
+    <h2 class="text-lg font-semibold mb-2">1. Accesso</h2>
+    <p>Login su <code class="px-1 rounded bg-muted">/accounts/login/</code> con utente <b>admin</b>. Dopo il login entri nel CRM (sidebar a sinistra).</p>
+  </section>
+
+  <section class="rounded-lg border border-border bg-card p-6">
+    <h2 class="text-lg font-semibold mb-2">2. Com'è organizzato</h2>
+    <ul class="list-disc pl-5 space-y-1">
+      <li><b>CRM</b> → dashboard economica (guadagni, spese, profitto, FTD)</li>
+      <li><b>Dashboard</b> → riepilogo lead (KPI + lead recenti)</li>
+      <li><b>Lead</b> → tabella completa dei lead con filtri</li>
+      <li><b>Broker API</b> → configurazione dei broker</li>
+      <li><b>Account</b> → Administration, Users, Settings, Guida</li>
+    </ul>
+  </section>
+
+  <section class="rounded-lg border border-border bg-card p-6">
+    <h2 class="text-lg font-semibold mb-2">3. Configurare un broker</h2>
+    <p class="mb-2">Sidebar → <b>Broker API</b>. Aggiungi con <b>+ TrackBox</b>, <b>+ IREV</b> o <b>+ SPM Monster</b> (in base al tipo di API del broker).</p>
+    <p>Compili: nome, base_url, credenziali (chiavi/token), parametri (ai/ci/gi · affiliate/offer · affc/bxc/vtc), <b>funnel</b>, <b>slug landing</b>, <b>brand landing</b>, eventuale <b>HTML landing</b>, nota.</p>
+    <p class="mt-2 text-muted-foreground">Le credenziali restano interne. Il <b>brand landing</b> è ciò che vede il visitatore; il <b>nome interno</b> (es. "Link Special 9") lo vedi solo tu nel CRM.</p>
+  </section>
+
+  <section class="rounded-lg border border-border bg-card p-6">
+    <h2 class="text-lg font-semibold mb-2">4. Le landing</h2>
+    <p class="mb-2">Ogni broker ha la sua landing: <code class="px-1 rounded bg-muted">/lp/&lt;slug&gt;/</code>.</p>
+    <ul class="list-disc pl-5 space-y-1">
+      <li><b>Landing nostra</b>: mandi traffico al link <code class="px-1 rounded bg-muted">/lp/&lt;slug&gt;/</code> (mostra brand + form).</li>
+      <li><b>Landing esterna (tua)</b>: in <b>Broker API → Codice</b> copi lo snippet <code class="px-1 rounded bg-muted">&lt;form&gt;</code> e lo incolli nel bottone "Inizia ora" della tua landing.</li>
+    </ul>
+  </section>
+
+  <section class="rounded-lg border border-border bg-card p-6">
+    <h2 class="text-lg font-semibold mb-2">5. Il flusso di un lead</h2>
+    <ol class="list-decimal pl-5 space-y-1">
+      <li>Il visitatore compila la landing e invia.</li>
+      <li>Il CRM crea il Lead con un <b>click_id</b> univoco.</li>
+      <li>Il lead viene inviato (push) al broker via API.</li>
+      <li>Il broker accetta → restituisce id + URL auto-login → il visitatore viene reindirizzato sul broker.</li>
+      <li>Il lead compare nella pagina <b>Lead</b>.</li>
+    </ol>
+    <p class="mt-2 text-muted-foreground">I test reali li fai tu compilando la landing (i broker bloccano i bot).</p>
+  </section>
+
+  <section class="rounded-lg border border-border bg-card p-6">
+    <h2 class="text-lg font-semibold mb-2">6. Aggiornamento stati / FTD</h2>
+    <ul class="list-disc pl-5 space-y-1">
+      <li><b>TrackBox e IREV</b> → via <b>postback</b> (il broker richiama il CRM in automatico).</li>
+      <li><b>SPM Monster</b> → via <b>pull/sync</b>.</li>
+      <li>Sincronizzazione <b>automatica ogni 10 minuti</b>; oppure bottone <b>"Aggiorna lead"</b> sulla Dashboard per farlo subito.</li>
+    </ul>
+    <p class="mt-2">✅ Quando un lead diventa <b>FTD</b>, la sua riga diventa <span class="px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-700 dark:text-emerald-300">verde</span> in tutte le tabelle.</p>
+  </section>
+
+  <section class="rounded-lg border border-border bg-card p-6">
+    <h2 class="text-lg font-semibold mb-2">7. Pagina Lead</h2>
+    <p>Tabella con tutte le colonne e una <b>riga di filtri</b> sotto le intestazioni: nome, email, telefono, IP, <b>Paese (IT/ES/DE/SE)</b>, stato, <b>broker</b>, <b>Depositare (Sì/No)</b>, ID cliccato. Premi <b>Filtra</b> / <b>Reset</b>.</p>
+  </section>
+
+  <section class="rounded-lg border border-border bg-card p-6">
+    <h2 class="text-lg font-semibold mb-2">8. Dashboard CRM (i soldi)</h2>
+    <table class="w-full text-sm mb-3 border border-border rounded">
+      <thead class="bg-muted/40 text-muted-foreground">
+        <tr><th class="text-left px-3 py-2">Tipo lead</th><th class="text-right px-3 py-2">Costo</th><th class="text-right px-3 py-2">Guadagno</th><th class="text-right px-3 py-2">Netto</th></tr>
+      </thead>
+      <tbody>
+        <tr class="border-t border-border"><td class="px-3 py-2">Lead non FTD</td><td class="px-3 py-2 text-right">€7</td><td class="px-3 py-2 text-right">—</td><td class="px-3 py-2 text-right">−€7</td></tr>
+        <tr class="border-t border-border bg-emerald-500/10"><td class="px-3 py-2">Lead FTD (deposita €300)</td><td class="px-3 py-2 text-right">€300</td><td class="px-3 py-2 text-right">€850</td><td class="px-3 py-2 text-right font-semibold">+€550</td></tr>
+      </tbody>
+    </table>
+    <ul class="list-disc pl-5 space-y-1">
+      <li><b>Spesa</b> = (lead non-FTD × €7) + (FTD × €300)</li>
+      <li><b>Guadagno</b> = FTD × €850 · <b>Profitto</b> = Guadagno − Spesa</li>
+      <li><b>Menu broker</b> in alto → filtra guadagni/spese di un singolo broker</li>
+      <li><b>Report settimanale</b> (lunedì → domenica): Lead / Depositi / Spesa / Guadagno / Profitto per settimana</li>
+    </ul>
+  </section>
+
+  <section class="rounded-lg border border-border bg-card p-6">
+    <h2 class="text-lg font-semibold mb-2">9. Ciclo completo di una campagna</h2>
+    <ol class="list-decimal pl-5 space-y-1">
+      <li><b>Broker API</b> → crea/scegli il broker, imposta slug + brand.</li>
+      <li>Prendi il link landing <code class="px-1 rounded bg-muted">/lp/&lt;slug&gt;/</code> oppure il <b>Codice</b> per la tua landing esterna.</li>
+      <li>Mandi traffico.</li>
+      <li>I lead arrivano in <b>Lead</b>, vengono inviati al broker, i visitatori vanno sul broker.</li>
+      <li>Gli <b>FTD</b> si aggiornano da soli (riga verde).</li>
+      <li>Controlli i guadagni in <b>CRM</b> (per broker, per settimana).</li>
+    </ol>
+  </section>
+
+</div>
+{% endblock %}

@@ -54,6 +54,9 @@ NAV_ITEMS: tuple[NavItem, ...] = (
     NavItem(_("Settings"), "settings:profile", "settings",
             keywords=("account", "profile", "preferences", "settings"),
             group=G_ACCOUNT),
+    NavItem(_("Guida"), "tracking:guide", "book-open",
+            keywords=("guida", "help", "aiuto", "manuale", "istruzioni", "guide"),
+            group=G_ACCOUNT, requires_staff=True),
 )
 
 
