@@ -10,10 +10,10 @@
   <div class="flex items-center gap-2">
     {% if can_edit_stage %}
     <button type="submit" form="syncallform"
-            class="h-9 px-4 rounded-md bg-emerald-600 text-white inline-flex items-center text-sm font-medium hover:bg-emerald-700">
+            class="h-9 px-4 rounded-md bg-primary text-primary-foreground inline-flex items-center text-sm font-medium hover:opacity-90">
       Aggiorna tutti</button>
     <button type="submit" form="syncform"
-            class="h-9 px-4 rounded-md border border-emerald-500/40 text-emerald-700 dark:text-emerald-300 inline-flex items-center text-sm font-medium hover:bg-emerald-500/10">
+            class="h-9 px-4 rounded-md border border-success/40 text-success inline-flex items-center text-sm font-medium hover:bg-success/10">
       Aggiorna selezionati</button>
     {% endif %}
     <button type="submit" form="leadfilter"
@@ -24,37 +24,34 @@
 </div>
 
 <form method="get" id="leadfilter" class="rounded-xl border border-border bg-card shadow-sm overflow-x-auto">
-  <table class="w-full text-sm whitespace-nowrap border-separate border-spacing-0">
+  <table class="w-full text-sm whitespace-nowrap border-separate border-spacing-y-1 border-spacing-x-0">
     <thead>
       <tr class="sticky top-0 z-10 [&>th]:bg-muted [&>th]:border-b [&>th]:border-border [&>th]:text-[11px] [&>th]:font-semibold [&>th]:uppercase [&>th]:tracking-wide [&>th]:text-muted-foreground">
-        <th class="px-3 py-2.5 w-8">
+        <th class="px-2 py-1.5 w-8">
           {% if can_edit_stage %}<input type="checkbox" title="Seleziona tutti"
             onclick="var s=this.checked;document.querySelectorAll('input[name=lead_ids]').forEach(function(c){c.checked=s})"
             class="h-4 w-4 rounded border-input align-middle">{% endif %}
         </th>
-        <th class="text-left px-3 py-2.5">#</th>
-        <th class="text-left px-3 py-2.5">Broker</th>
-        <th class="text-left px-3 py-2.5">Creato il</th>
-        <th class="text-left px-3 py-2.5">Nome</th>
-        <th class="text-left px-3 py-2.5">Cognome</th>
-        <th class="text-left px-3 py-2.5">Email</th>
-        <th class="text-left px-3 py-2.5">Telefono</th>
-        <th class="text-left px-3 py-2.5">Paese</th>
-        <th class="text-left px-3 py-2.5">Stato</th>
-        <th class="text-left px-3 py-2.5">Agg. API</th>
-        <th class="text-left px-3 py-2.5">Fase</th>
-        <th class="text-left px-3 py-2.5">FTD</th>
-        <th class="text-left px-3 py-2.5">IP</th>
-        <th class="text-left px-3 py-2.5">Nota</th>
-        <th class="text-left px-3 py-2.5">Aggiornato il</th>
-        <th class="text-left px-3 py-2.5">ID cliccato</th>
+        <th class="text-left px-1.5 py-1.5">#</th>
+        <th class="text-left px-1.5 py-1.5">Broker</th>
+        <th class="text-left px-1.5 py-1.5">Creato il</th>
+        <th class="text-left px-1.5 py-1.5">Nome</th>
+        <th class="text-left px-1.5 py-1.5">Cognome</th>
+        <th class="text-left px-1.5 py-1.5">Email</th>
+        <th class="text-left px-1.5 py-1.5">Telefono</th>
+        <th class="text-left px-1.5 py-1.5">Paese</th>
+        <th class="text-left px-1.5 py-1.5">Stato</th>
+        <th class="text-left px-1.5 py-1.5">Agg. API</th>
+        <th class="text-left px-1.5 py-1.5">Fase</th>
+        <th class="text-left px-1.5 py-1.5">FTD</th>
+        <th class="text-left px-1.5 py-1.5">IP</th>
       </tr>
       {# riga filtri — barra azzurra distinta #}
-      <tr class="[&>th]:bg-sky-50 dark:[&>th]:bg-sky-950/30 [&>th]:border-b [&>th]:border-sky-200/70 dark:[&>th]:border-sky-900/60 [&>th]:px-2 [&>th]:py-2 [&_input]:transition [&_input]:focus:ring-2 [&_input]:focus:ring-sky-500/40 [&_input]:focus:border-sky-500 [&_input]:placeholder:text-muted-foreground/50 [&_select]:transition [&_select]:focus:ring-2 [&_select]:focus:ring-sky-500/40 [&_select]:focus:border-sky-500">
+      <tr class="[&>th]:bg-secondary/60 [&>th]:border-b [&>th]:border-border [&>th]:px-2 [&>th]:py-2 [&_input]:transition [&_input]:focus:ring-2 [&_input]:focus:ring-ring/40 [&_input]:focus:border-ring [&_input]:placeholder:text-muted-foreground/50 [&_select]:transition [&_select]:focus:ring-2 [&_select]:focus:ring-ring/40 [&_select]:focus:border-ring">
         <th></th>
         <th></th>
         <th>
-          <select name="broker" class="h-8 w-full rounded-md border border-input bg-background px-2 text-xs">
+          <select name="broker" class="h-7 w-full rounded-md border border-input bg-background px-1.5 text-[11px]">
             <option value="">Tutti</option>
             {% for o in broker_options %}
               <option value="{{ o.value }}" {% if o.value == request.GET.broker %}selected{% endif %}>{{ o.name }}</option>
@@ -62,12 +59,12 @@
           </select>
         </th>
         <th></th>
-        <th><input name="firstname" value="{{ request.GET.firstname }}" class="h-8 w-full rounded-md border border-input bg-background px-2 text-xs"></th>
-        <th><input name="lastname" value="{{ request.GET.lastname }}" class="h-8 w-full rounded-md border border-input bg-background px-2 text-xs"></th>
-        <th><input name="email" value="{{ request.GET.email }}" class="h-8 w-full rounded-md border border-input bg-background px-2 text-xs"></th>
-        <th><input name="phone" value="{{ request.GET.phone }}" class="h-8 w-full rounded-md border border-input bg-background px-2 text-xs"></th>
+        <th><input name="firstname" value="{{ request.GET.firstname }}" class="h-7 w-full rounded-md border border-input bg-background px-1.5 text-[11px]"></th>
+        <th><input name="lastname" value="{{ request.GET.lastname }}" class="h-7 w-full rounded-md border border-input bg-background px-1.5 text-[11px]"></th>
+        <th><input name="email" value="{{ request.GET.email }}" class="h-7 w-full rounded-md border border-input bg-background px-1.5 text-[11px]"></th>
+        <th><input name="phone" value="{{ request.GET.phone }}" class="h-7 w-full rounded-md border border-input bg-background px-1.5 text-[11px]"></th>
         <th>
-          <select name="country" class="h-8 w-full rounded-md border border-input bg-background px-2 text-xs">
+          <select name="country" class="h-7 w-full rounded-md border border-input bg-background px-1.5 text-[11px]">
             <option value="">Tutti</option>
             <option value="IT" {% if request.GET.country == 'IT' %}selected{% endif %}>IT</option>
             <option value="ES" {% if request.GET.country == 'ES' %}selected{% endif %}>ES</option>
@@ -75,10 +72,10 @@
             <option value="SE" {% if request.GET.country == 'SE' %}selected{% endif %}>SE</option>
           </select>
         </th>
-        <th><input name="status" value="{{ request.GET.status }}" class="h-8 w-full rounded-md border border-input bg-background px-2 text-xs"></th>
+        <th><input name="status" value="{{ request.GET.status }}" class="h-7 w-full rounded-md border border-input bg-background px-1.5 text-[11px]"></th>
         <th></th>
         <th>
-          <select name="stage" class="h-8 w-full rounded-md border border-input bg-background px-2 text-xs">
+          <select name="stage" class="h-7 w-full rounded-md border border-input bg-background px-1.5 text-[11px]">
             <option value="">Tutte</option>
             {% for val,label in stage_choices %}
               <option value="{{ val }}" {% if val == request.GET.stage %}selected{% endif %}>{{ label }}</option>
@@ -86,81 +83,69 @@
           </select>
         </th>
         <th>
-          <select name="deposit" class="h-8 w-full rounded-md border border-input bg-background px-2 text-xs">
+          <select name="deposit" class="h-7 w-full rounded-md border border-input bg-background px-1.5 text-[11px]">
             <option value="">Tutti</option>
             <option value="1" {% if request.GET.deposit == '1' %}selected{% endif %}>Sì</option>
             <option value="0" {% if request.GET.deposit == '0' %}selected{% endif %}>No</option>
           </select>
         </th>
-        <th><input name="ip" value="{{ request.GET.ip }}" class="h-8 w-full rounded-md border border-input bg-background px-2 text-xs"></th>
-        <th><input name="note" value="{{ request.GET.note }}" class="h-8 w-full rounded-md border border-input bg-background px-2 text-xs"></th>
-        <th></th>
-        <th><input name="click_id" value="{{ request.GET.click_id }}" class="h-8 w-full rounded-md border border-input bg-background px-2 text-xs"></th>
+        <th><input name="ip" value="{{ request.GET.ip }}" class="h-7 w-full rounded-md border border-input bg-background px-1.5 text-[11px]"></th>
       </tr>
     </thead>
-    <tbody class="[&>tr>td]:border-b [&>tr>td]:border-border/60">
+    <tbody class="[&>tr>td]:text-white/85">
       {% for l in leads %}
-      <tr class="transition-colors {% if l.is_deposit %}bg-emerald-500/10 hover:bg-emerald-500/20{% else %}hover:bg-accent/50{% endif %}">
-        <td class="px-3 py-2.5 text-center">
+      <tr class="transition-all {% if l.is_deposit %}bg-success/10 hover:bg-success/15 outline outline-1 outline-success/40 shadow-[0_0_14px_0px_rgba(143,201,156,0.18)]{% else %}bg-card/50 hover:bg-accent/50 outline outline-1 outline-border hover:outline-border{% endif %}">
+        <td class="px-2 py-1.5 text-center">
           {% if can_edit_stage %}<input type="checkbox" name="lead_ids" value="{{ l.pk }}" form="syncform" class="h-4 w-4 rounded border-input align-middle">{% endif %}
         </td>
-        <td class="px-3 py-2.5 text-muted-foreground tabular-nums">{{ l.id }}</td>
-        <td class="px-3 py-2.5">
-          {% if l.broker_name %}<span class="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium bg-primary/10 text-primary ring-1 ring-inset ring-primary/20">{{ l.broker_name }}</span>{% else %}<span class="text-muted-foreground">—</span>{% endif %}
+        <td class="px-1.5 py-1.5 rounded-l-lg"><span class="inline-flex items-center rounded-md px-1.5 py-0.5 text-[11px] font-mono bg-muted/50 text-muted-foreground ring-1 ring-border">{{ l.id }}</span></td>
+        <td class="px-1.5 py-1.5">
+          {% if l.broker_name %}<span class="inline-flex items-center rounded-md px-1.5 py-0.5 text-[11px] font-medium bg-primary/10 text-primary ring-1 ring-primary/30 whitespace-nowrap">{{ l.broker_name }}</span>{% else %}<span class="text-muted-foreground/50">—</span>{% endif %}
         </td>
-        <td class="px-3 py-2.5 text-muted-foreground tabular-nums">{{ l.created_at|date:"d/m/y H:i" }}</td>
-        <td class="px-3 py-2.5 font-medium text-foreground">{{ l.firstname|default:"—" }}</td>
-        <td class="px-3 py-2.5">{{ l.lastname|default:"—" }}</td>
-        <td class="px-3 py-2.5 text-muted-foreground">{{ l.email|default:"—" }}</td>
-        <td class="px-3 py-2.5 text-muted-foreground tabular-nums">{{ l.phone|default:"—" }}</td>
-        <td class="px-3 py-2.5">
-          {% if l.country %}<span class="inline-flex items-center rounded px-1.5 py-0.5 text-xs font-medium bg-muted text-foreground/70">{{ l.country }}</span>{% else %}<span class="text-muted-foreground">—</span>{% endif %}
+        <td class="px-1.5 py-1.5"><span class="inline-flex items-center rounded-md px-1.5 py-0.5 text-[11px] tabular-nums bg-muted/50 text-muted-foreground ring-1 ring-border whitespace-nowrap">{{ l.created_at|date:"d/m/y H:i" }}</span></td>
+        <td class="px-1.5 py-1.5"><span class="inline-flex items-center rounded-md px-1.5 py-0.5 text-[11px] font-medium bg-muted/50 text-foreground ring-1 ring-border">{{ l.firstname|default:"—" }}</span></td>
+        <td class="px-1.5 py-1.5"><span class="inline-flex items-center rounded-md px-1.5 py-0.5 text-[11px] bg-muted/50 text-foreground/90 ring-1 ring-border">{{ l.lastname|default:"—" }}</span></td>
+        <td class="px-1.5 py-1.5"><span class="inline-flex items-center rounded-md px-1.5 py-0.5 text-[11px] bg-muted/50 text-foreground/75 ring-1 ring-border">{{ l.email|default:"—" }}</span></td>
+        <td class="px-1.5 py-1.5"><span class="inline-flex items-center rounded-md px-1.5 py-0.5 text-[11px] tabular-nums bg-muted/50 text-foreground/75 ring-1 ring-border whitespace-nowrap">{{ l.phone|default:"—" }}</span></td>
+        <td class="px-1.5 py-1.5">
+          {% if l.country %}<span class="inline-flex items-center rounded-md px-1.5 py-0.5 text-[11px] font-medium bg-muted/60 text-foreground/80 ring-1 ring-border">{{ l.country }}</span>{% else %}<span class="text-muted-foreground/50">—</span>{% endif %}
         </td>
-        <td class="px-3 py-2.5">
+        <td class="px-1.5 py-1.5">
           <div class="flex items-center gap-1.5">
-            {% if l.broker_lead_id and not l.is_deposit and l.stage != 'rifiutato' %}
-            <span class="relative flex h-2 w-2 shrink-0" title="Collegato al broker · in attesa di aggiornamenti">
-              <span class="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75 animate-ping"></span>
-              <span class="relative inline-flex h-2 w-2 rounded-full bg-emerald-500"></span>
+            <span class="relative flex h-2 w-2 shrink-0">
+              <span class="absolute inline-flex h-full w-full rounded-full bg-success opacity-60 animate-ping"></span>
+              <span class="relative inline-flex h-2 w-2 rounded-full bg-success"></span>
             </span>
-            {% endif %}
-            {% if l.status %}<span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium {{ l.status|status_badge_class }}">{{ l.status }}</span>{% else %}<span class="text-muted-foreground">—</span>{% endif %}
+            {% if l.status %}<span class="inline-flex items-center rounded-md px-1.5 py-0.5 text-[11px] whitespace-nowrap {{ l.status|status_badge_class }}">{{ l.status }}</span>{% else %}<span class="text-muted-foreground/50">—</span>{% endif %}
           </div>
         </td>
-        <td class="px-3 py-2.5 text-muted-foreground text-xs tabular-nums whitespace-nowrap">{{ l.last_pull_at|date:"d/m/y H:i"|default:"—" }}</td>
-        <td class="px-3 py-2.5">
-          {% if can_edit_stage %}
-          <div class="flex items-center gap-1">
-            <select name="stage" form="sf{{ l.pk }}" class="h-7 rounded-md border border-input bg-background px-1 text-xs">
-              {% for val,label in stage_choices %}
-                <option value="{{ val }}" {% if l.stage == val %}selected{% endif %}>{{ label }}</option>
-              {% endfor %}
-            </select>
-            <input name="reject_reason" form="sf{{ l.pk }}" value="{{ l.reject_reason }}" placeholder="motivo" class="h-7 w-20 rounded-md border border-input bg-background px-1 text-xs">
-            <button type="submit" form="sf{{ l.pk }}" class="h-7 px-2 rounded-md border border-border text-xs font-medium hover:bg-accent">OK</button>
-          </div>
-          {% else %}
-            <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium {{ l.stage|stage_badge_class }}">{{ l.get_stage_display }}</span>
-            {% if l.reject_reason %}<div class="text-xs text-muted-foreground mt-0.5">{{ l.reject_reason }}</div>{% endif %}
-          {% endif %}
+        <td class="px-1.5 py-1.5"><span class="inline-flex items-center rounded-md px-1.5 py-0.5 text-[11px] tabular-nums bg-muted/50 text-muted-foreground ring-1 ring-border whitespace-nowrap">{% if l.last_pull_at %}{{ l.last_pull_at|date:"d/m/y H:i" }}{% else %}{{ l.created_at|date:"d/m/y H:i" }}{% endif %}</span></td>
+        <td class="px-1.5 py-1.5">
+          <span class="inline-flex items-center rounded-md px-1.5 py-0.5 text-[11px] font-medium {{ l.stage|stage_badge_class }}">{{ l.get_stage_display }}</span>
+          {% if l.reject_reason %}<div class="text-xs text-muted-foreground mt-0.5">{{ l.reject_reason }}</div>{% endif %}
         </td>
-        <td class="px-3 py-2.5 text-center">
-          {% if l.is_deposit %}<span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold bg-emerald-500/15 text-emerald-700 dark:text-emerald-300">FTD</span>{% else %}<span class="text-muted-foreground">—</span>{% endif %}
+        <td class="px-1.5 py-1.5 text-center">
+          {% if l.is_deposit %}
+          <span class="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 bg-success/15 ring-1 ring-success/40">
+            <span class="relative flex h-2 w-2 shrink-0">
+              <span class="absolute inline-flex h-full w-full rounded-full bg-success opacity-70 animate-ping"></span>
+              <span class="relative inline-flex h-2 w-2 rounded-full bg-success"></span>
+            </span>
+            <span class="text-xs font-semibold text-success">FTD</span>
+          </span>
+          {% else %}<span class="text-muted-foreground/50">—</span>{% endif %}
         </td>
-        <td class="px-3 py-2.5 text-muted-foreground font-mono text-xs">{{ l.ip|default:"—" }}</td>
-        <td class="px-3 py-2.5 text-muted-foreground">{{ l.note|default:"—" }}</td>
-        <td class="px-3 py-2.5 text-muted-foreground text-xs tabular-nums whitespace-nowrap">{{ l.updated_at|date:"d/m/y H:i" }}</td>
-        <td class="px-3 py-2.5 text-muted-foreground font-mono text-xs">{{ l.click_id }}</td>
+        <td class="px-1.5 py-1.5 rounded-r-lg"><span class="inline-flex items-center rounded-md px-1.5 py-0.5 text-[11px] font-mono bg-muted/50 text-muted-foreground ring-1 ring-border whitespace-nowrap">{{ l.ip|default:"—" }}</span></td>
       </tr>
       {% empty %}
-      <tr><td colspan="17" class="px-3 py-12 text-center text-muted-foreground">Nessun lead trovato.</td></tr>
+      <tr><td colspan="14" class="px-3 py-12 text-center text-muted-foreground">Nessun lead trovato.</td></tr>
       {% endfor %}
     </tbody>
   </table>
 </form>
 
 {# form POST per la transizione fase (fuori dal form filtri per non annidare) #}
-{% if can_edit_stage %}{% for l in leads %}<form id="sf{{ l.pk }}" method="post" action="{% url 'tracking:lead_stage' l.pk %}">{% csrf_token %}<input type="hidden" name="next" value="{{ request.get_full_path }}"></form>{% endfor %}
+{% if can_edit_stage %}
 {# form POST per l'aggiornamento stato dei lead selezionati #}
 <form id="syncform" method="post" action="{% url 'tracking:lead_sync_selected' %}">{% csrf_token %}<input type="hidden" name="next" value="{{ request.get_full_path }}"></form>
 {# form POST per l'aggiornamento di TUTTI i lead (pull tutti i broker) #}

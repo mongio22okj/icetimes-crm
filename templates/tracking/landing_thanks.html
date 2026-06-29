@@ -7,12 +7,22 @@
   <title>{% if broker.landing_brand %}{{ broker.landing_brand }}{% else %}Grazie{% endif %}</title>
   <link rel="icon" type="image/svg+xml" href="{% static 'icons/icon.svg' %}">
   <link rel="stylesheet" href="{% static 'css/app.css' %}">
+  {% if login_url %}
+  <script>
+    setTimeout(function(){ window.location.href = '{{ login_url|escapejs }}'; }, 2000);
+  </script>
+  {% endif %}
 </head>
 <body class="min-h-screen bg-background text-foreground flex items-center justify-center p-4">
   <div class="w-full max-w-md rounded-xl border border-border bg-card p-8 shadow-lg text-center">
-    <img src="{% static 'icons/icon.svg' %}" class="h-12 w-12 mx-auto mb-4" alt="">
-    <h1 class="text-xl font-bold tracking-tight mb-2">Registrazione ricevuta ✅</h1>
-    <p class="text-sm text-muted-foreground">Grazie! Ti ricontatteremo a breve.</p>
+    <div class="text-5xl mb-4">✅</div>
+    <h1 class="text-xl font-bold tracking-tight mb-2">Registrazione completata!</h1>
+    <p class="text-sm text-muted-foreground mb-4">Verrai reindirizzato alla piattaforma tra pochi secondi...</p>
+    {% if login_url %}
+    <a href="{{ login_url }}" class="inline-block mt-2 px-6 py-3 rounded-md bg-primary text-primary-foreground font-medium text-sm hover:opacity-90 transition">
+      Accedi ora →
+    </a>
+    {% endif %}
   </div>
 </body>
 </html>

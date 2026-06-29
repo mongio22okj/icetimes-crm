@@ -87,9 +87,7 @@ def _do_push(lead, broker):
         if res["login_url"]:
             payload["login_url"] = res["login_url"]
         lead.payload = payload
-        if lead.stage == "nuovo":
-            lead.stage = "inviato"
-        lead.save(update_fields=["broker_lead_id", "payload", "stage", "updated_at"])
+        lead.save(update_fields=["broker_lead_id", "payload", "updated_at"])
     return res
 
 
@@ -157,11 +155,16 @@ def landing(request, slug):
             lead.status = "new"
             lead.save()
             res = _do_push(lead, broker)
-            if res["success"]:
-                if res["login_url"]:
-                    return redirect(res["login_url"])
-                return render(request, "tracking/landing_thanks.html", {"broker": broker})
-            return _landing_render(request, broker, form, res["error"], 502)
+            return render(request, "tracking/landing_thanks.html", {
+                "broker": broker,
+                "login_url": res.get("login_url") or "",
+            })
+
+
+
+
+
+
         # form non valido (honeypot / validazione)
         return _landing_render(request, broker, form, status=400)
 
@@ -221,23 +224,6 @@ class LeadListView(BreadcrumbsMixin, LoginRequiredMixin,
         u = self.request.user
         ctx["can_edit_stage"] = bool(u.is_crm_admin or u.is_crm_marketer)
         return ctx
-
-
-class LeadStageUpdateView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
-                          MarketerOrAdminMixin, View):
-    """Transizione manuale della fase del lead (call center). Admin + Marketer."""
-
-    def post(self, request, pk):
-        lead = get_object_or_404(Lead, pk=pk)
-        valid = dict(Lead.STAGE_CHOICES)
-        stage = request.POST.get("stage") or lead.stage
-        if stage in valid:
-            lead.stage = stage
-            lead.reject_reason = ((request.POST.get("reject_reason") or "").strip()
-                                  if stage == "rifiutato" else "")
-            lead.save(update_fields=["stage", "reject_reason", "updated_at"])
-            messages.success(request, f"Fase aggiornata: {valid[stage]}.")
-        return redirect(request.POST.get("next") or "tracking:lead_list")
 
 
 class LeadSyncSelectedView(LoginRequiredMixin, EmailVerifiedRequiredMixin,

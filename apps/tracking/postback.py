@@ -13,7 +13,7 @@ from django.http import JsonResponse
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 
-from .models import Lead
+from .models import Lead, status_to_stage
 
 
 def _first(data, *keys):
@@ -91,8 +91,9 @@ def postback(request):
     if is_dep and not lead.is_deposit:
         lead.is_deposit = True
         changed = True
-    if is_dep and lead.stage not in ("ftd", "retained"):
-        lead.stage = "ftd"
+    new_stage = "ftd" if is_dep else status_to_stage(status)
+    if new_stage and lead.stage != "ftd" and lead.stage != new_stage:
+        lead.stage = new_stage
         changed = True
 
     if broker_key and not lead.broker_lead_id:

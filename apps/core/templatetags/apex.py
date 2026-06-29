@@ -202,19 +202,19 @@ def avatar_color(obj):
 # quindi mappiamo per parole chiave; default neutro.
 _STATUS_BADGE_RULES = (
     (("ftd", "deposit", "depositor", "deposited"),
-     "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300"),
+     "bg-emerald-500/12 text-emerald-700 dark:text-emerald-300 ring-1 ring-emerald-500/30"),
     (("reject", "rejected", "invalid", "fail", "wrong", "fake", "trash", "duplicate", "fraud"),
-     "bg-red-500/15 text-red-700 dark:text-red-300"),
+     "bg-red-500/12 text-red-700 dark:text-red-300 ring-1 ring-red-500/30"),
     (("noanswer", "no answer", "callback", "busy", "voicemail", "not interested", "hangup"),
-     "bg-amber-500/15 text-amber-700 dark:text-amber-300"),
+     "bg-amber-500/12 text-amber-700 dark:text-amber-300 ring-1 ring-amber-500/30"),
     (("new", "nuovo"),
-     "bg-sky-500/15 text-sky-700 dark:text-sky-300"),
+     "bg-sky-500/12 text-sky-700 dark:text-sky-300 ring-1 ring-sky-500/30"),
     (("lead", "reg", "sent", "inviato", "pending", "in progress", "call"),
-     "bg-indigo-500/15 text-indigo-700 dark:text-indigo-300"),
+     "bg-indigo-500/12 text-indigo-700 dark:text-indigo-300 ring-1 ring-indigo-500/30"),
     (("test",),
-     "bg-slate-500/15 text-slate-600 dark:text-slate-300"),
+     "bg-slate-500/15 text-slate-700 dark:text-slate-300 ring-1 ring-slate-500/30"),
 )
-_STATUS_BADGE_DEFAULT = "bg-muted text-foreground/70"
+_STATUS_BADGE_DEFAULT = "bg-slate-500/12 text-slate-700 dark:text-slate-300 ring-1 ring-slate-500/30"
 
 
 @register.filter
@@ -231,13 +231,15 @@ def status_badge_class(value):
 
 # Fase pipeline (valori controllati) → classi badge.
 _STAGE_BADGE = {
-    "nuovo": "bg-sky-500/15 text-sky-700 dark:text-sky-300",
-    "inviato": "bg-indigo-500/15 text-indigo-700 dark:text-indigo-300",
-    "registrato": "bg-violet-500/15 text-violet-700 dark:text-violet-300",
-    "kyc": "bg-cyan-500/15 text-cyan-700 dark:text-cyan-300",
-    "ftd": "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
-    "retained": "bg-teal-500/15 text-teal-700 dark:text-teal-300",
-    "rifiutato": "bg-red-500/15 text-red-700 dark:text-red-300",
+    "nuovo": "bg-cyan-500/12 text-cyan-700 dark:text-cyan-300 ring-1 ring-cyan-500/30",
+    "instant_call": "bg-violet-500/12 text-violet-700 dark:text-violet-300 ring-1 ring-violet-500/30",
+    "in_work": "bg-blue-500/12 text-blue-700 dark:text-blue-300 ring-1 ring-blue-500/30",
+    "no_answer": "bg-amber-500/12 text-amber-700 dark:text-amber-300 ring-1 ring-amber-500/30",
+    "callback": "bg-sky-500/12 text-sky-700 dark:text-sky-300 ring-1 ring-sky-500/30",
+    "basso_potenziale": "bg-yellow-500/12 text-yellow-700 dark:text-yellow-300 ring-1 ring-yellow-500/30",
+    "nessun_potenziale": "bg-slate-500/15 text-slate-700 dark:text-slate-300 ring-1 ring-slate-500/30",
+    "not_interested": "bg-red-500/12 text-red-700 dark:text-red-300 ring-1 ring-red-500/30",
+    "ftd": "bg-emerald-500/12 text-emerald-700 dark:text-emerald-300 ring-1 ring-emerald-500/30",
 }
 
 

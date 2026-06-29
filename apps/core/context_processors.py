@@ -25,3 +25,32 @@ def demo_mode(request):
         "demo_username": getattr(settings, "DEMO_USERNAME", "demo"),
         "demo_password": getattr(settings, "DEMO_PASSWORD", ""),
     }
+
+
+def page_accent(request):
+    """Classe CSS per-pagina (es. 'page-lead') usata dal <body> per dare a
+    ogni sezione il suo colore-accento sovrascrivendo --primary in tema chiaro."""
+    rm = getattr(request, "resolver_match", None)
+    cls = ""
+    if rm is not None:
+        ns = (rm.namespaces[0] if rm.namespaces else "")
+        name = rm.url_name or ""
+        view = rm.view_name or ""
+        if view == "dashboard_crm":
+            cls = "page-crm"
+        elif view == "dashboard":
+            cls = "page-dashboard"
+        elif ns == "tracking":
+            if name.startswith("broker"):
+                cls = "page-broker-api"
+            elif name == "guide":
+                cls = "page-guida"
+            else:
+                cls = "page-lead"
+        elif ns == "users":
+            cls = "page-users"
+        elif ns == "settings":
+            cls = "page-settings"
+        elif ns == "admin":
+            cls = "page-administration"
+    return {"page_accent_class": cls}

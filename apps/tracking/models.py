@@ -73,6 +73,11 @@ class TrackboxBroker(models.Model):
                   "contenere un <form method='POST' action='/lp/<slug>/'> con i "
                   "campi: firstname, lastname, email, phone, country.")
 
+    match_by_contact = models.BooleanField(
+        "Aggancio per email/telefono", default=False,
+        help_text="Se attivo, la pull aggancia i lead anche per email/telefono "
+                  "(oltre a click_id/id). Da usare solo per broker che NON "
+                  "restituiscono il nostro click_id nella pull (es. Link 10).")
     is_active = models.BooleanField("Attivo", default=True)
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
@@ -216,6 +221,11 @@ class SpmMonsterBroker(models.Model):
                   "contenere un <form method='POST' action='/lp/<slug>/'> con i "
                   "campi: firstname, lastname, email, phone, country.")
 
+    match_by_contact = models.BooleanField(
+        "Aggancio per email/telefono", default=False,
+        help_text="Se attivo, la pull aggancia i lead anche per email/telefono "
+                  "(oltre a click_id/id). Attivalo solo se per questo broker "
+                  "non riusciamo a leggere gli status nel modo normale.")
     is_active = models.BooleanField("Attivo", default=True)
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
@@ -311,12 +321,14 @@ class Lead(models.Model):
     # Fase interna (pipeline call-center), separata dallo `status` grezzo broker.
     STAGE_CHOICES = [
         ("nuovo", "Nuovo"),
-        ("inviato", "Inviato"),
-        ("registrato", "Registrato"),
-        ("kyc", "Verificato (KYC)"),
+        ("instant_call", "Instant call"),
+        ("in_work", "In work"),
+        ("no_answer", "Nessuna risposta"),
+        ("callback", "Call back"),
+        ("basso_potenziale", "Basso potenziale"),
+        ("nessun_potenziale", "Nessun potenziale"),
+        ("not_interested", "Nessun interesse"),
         ("ftd", "FTD"),
-        ("retained", "Retained"),
-        ("rifiutato", "Rifiutato"),
     ]
     stage = models.CharField("Fase", max_length=20, choices=STAGE_CHOICES,
                              default="nuovo", db_index=True)
@@ -384,3 +396,49 @@ class PushLog(models.Model):
 
     def __str__(self) -> str:
         return f"Push lead {self.lead_id} → {'ok' if self.success else 'fail'}"
+
+
+def status_to_stage(status):
+    """Mappa l'esito-chiamata del broker (testo libero) sulla nostra fase.
+    Ritorna la fase corrispondente o None se lo stato non e' riconosciuto."""
+    s = str(status or "").strip().lower()
+    if not s:
+        return None
+    if any(k in s for k in ("ftd", "deposit", "depositor", "deposited",
+                            "sale", "converted", "convert", "first deposit",
+                            "deposito", "real deposit")):
+        return "ftd"
+    if any(k in s for k in ("not interested", "not interest", "no interest", "uninterested",
+                            "non interess", "no_interest", "rejected", "reject",
+                            "do not call", "dnc", "invalid", "fake", "trash",
+                            "junk", "duplicate", "not qualified", "unqualified",
+                            "declined", "spam")):
+        return "not_interested"
+    if any(k in s for k in ("no potential", "no_potential", "nessun potenzial",
+                            "not potential", "no value", "zero potential")):
+        return "nessun_potenziale"
+    if any(k in s for k in ("low potential", "low_potential", "basso potenzial",
+                            "low value", "low priority", "low quality")):
+        return "basso_potenziale"
+    if any(k in s for k in ("callback", "call back", "call-back", "recall",
+                            "richiam", "ricontatt", "interested", "interessat",
+                            "hot lead", "warm lead", "call again", "call later",
+                            "follow up", "followup", "da richiamare")):
+        return "callback"
+    if any(k in s for k in ("instant call", "instantcall", "instant_call",
+                            "instant-call", "live call")):
+        return "instant_call"
+    if any(k in s for k in ("in work", "inwork", "in_work", "working",
+                            "in lavorazione", "in progress", "in-progress",
+                            "processing", "assigned", "in process",
+                            "under review")):
+        return "in_work"
+    if any(k in s for k in ("no answer", "noanswer", "no_answer", "not reachable",
+                            "no response", "noresponse", "nessuna risposta",
+                            "non rispon", "unreachable", "busy", "voicemail",
+                            "wrong number", "wrong_number", "hangup", "hang up",
+                            "hung up", "answering machine", "answer machine",
+                            "no pickup", "no pick up", "did not answer",
+                            "not answered", "no reply")):
+        return "no_answer"
+    return None

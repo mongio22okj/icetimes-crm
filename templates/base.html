@@ -48,7 +48,7 @@
   <script src="{% static 'js/pwa.js' %}" defer></script>
   {% block head_extra %}{% endblock %}
 </head>
-<body class="bg-background text-foreground antialiased">
+<body class="bg-background text-foreground antialiased {{ page_accent_class }}">
   {% block body %}{% endblock %}
   <script src="{% static 'js/app.js' %}" defer></script>
 </body>

@@ -54,7 +54,7 @@
       <p class="text-sm text-muted-foreground">Lead, FTD e guadagno per broker.</p>
     </div>
     <table class="w-full text-sm">
-      <thead class="text-xs text-muted-foreground uppercase tracking-wide bg-muted/30">
+      <thead class="text-xs text-muted-foreground uppercase tracking-wide font-semibold bg-muted border-b border-border">
         <tr>
           <th class="text-left px-4 py-2 font-medium">Broker</th>
           <th class="text-left px-4 py-2 font-medium">Tipo</th>
@@ -68,7 +68,7 @@
           <tr class="hover:bg-muted/30">
             <td class="px-4 py-3">
               <div class="flex items-center gap-3">
-                <span class="inline-flex h-9 w-9 items-center justify-center rounded-full text-xs font-semibold text-white" style="background-color: {{ r.name|avatar_color }};">{{ r.initials }}</span>
+                <span class="inline-flex h-9 w-9 items-center justify-center rounded-full text-xs font-bold text-white ring-2 ring-white/10 shadow-lg" style="background-color: {{ r.name|avatar_color }};">{{ r.initials }}</span>
                 <span class="font-medium">{{ r.name }}</span>
               </div>
             </td>
@@ -106,7 +106,7 @@
       <p class="text-sm text-muted-foreground">Ultimi lead arrivati.</p>
     </div>
     <table class="w-full text-sm">
-      <thead class="text-xs text-muted-foreground uppercase tracking-wide bg-muted/30">
+      <thead class="text-xs text-muted-foreground uppercase tracking-wide font-semibold bg-muted border-b border-border">
         <tr>
           <th class="text-left px-4 py-2 font-medium">Lead</th>
           <th class="text-left px-4 py-2 font-medium">Broker</th>
@@ -117,13 +117,20 @@
       </thead>
       <tbody class="divide-y divide-border">
         {% for d in recent_deals %}
-          <tr class="{% if d.stage == 'won' %}bg-emerald-500/15{% else %}hover:bg-muted/30{% endif %}">
+          <tr class="{% if d.stage == 'won' %}bg-success/10 border-l-2 border-l-success{% else %}hover:bg-muted/20{% endif %}">
             <td class="px-4 py-3 font-medium">{{ d.deal }}</td>
             <td class="px-4 py-3 text-muted-foreground">{{ d.company }}</td>
             <td class="px-4 py-3 text-right tabular-nums">€{{ d.value|floatformat:0 }}</td>
             <td class="px-4 py-3 pl-6">
-              {% if d.stage == "won" %}<span class="inline-flex items-center px-2 h-6 rounded-md text-xs font-medium bg-success/10 text-success">FTD</span>
-              {% else %}<span class="inline-flex items-center px-2 h-6 rounded-md text-xs font-medium bg-muted text-muted-foreground">Lead</span>{% endif %}
+              <div class="flex items-center gap-1.5">
+                <span class="relative flex h-2 w-2 shrink-0">
+                  <span class="absolute inline-flex h-full w-full rounded-full bg-success opacity-75 animate-ping"></span>
+                  <span class="relative inline-flex h-2 w-2 rounded-full bg-success"></span>
+                </span>
+                {% if d.stage == "won" %}
+                <span class="text-xs font-bold text-success tracking-wide">FTD</span>
+                {% else %}<span class="inline-flex items-center px-2 h-6 rounded-md text-xs font-medium bg-muted text-muted-foreground">Lead</span>{% endif %}
+              </div>
             </td>
             <td class="px-4 py-3 pr-6 text-right text-muted-foreground">{{ d.close }}</td>
           </tr>
@@ -145,7 +152,7 @@
     <p class="text-sm text-muted-foreground">Ogni settimana conclusa (lunedì → domenica).</p>
   </div>
   <table class="w-full text-sm">
-    <thead class="text-xs text-muted-foreground uppercase tracking-wide bg-muted/30">
+    <thead class="text-xs text-muted-foreground uppercase tracking-wide font-semibold bg-muted border-b border-border">
       <tr>
         <th class="text-left px-4 py-2 font-medium">Settimana</th>
         <th class="text-right px-4 py-2 font-medium">Lead (non-FTD)</th>

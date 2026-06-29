@@ -45,7 +45,7 @@
         {% for b in by_broker %}
         <div class="flex items-center justify-between text-sm">
           <span class="font-medium">{{ b.name }}</span>
-          <span class="text-muted-foreground">{{ b.leads }} lead · <span class="text-emerald-600 dark:text-emerald-400">{{ b.ftd }} FTD</span></span>
+          <span class="text-muted-foreground">{{ b.leads }} lead · <span class="text-success">{{ b.ftd }} FTD</span></span>
         </div>
         {% endfor %}
       </div>
@@ -77,16 +77,32 @@
         </thead>
         <tbody>
           {% for l in recent_leads %}
-          <tr class="border-t border-border {% if l.is_deposit %}bg-emerald-500/15{% endif %}">
+          <tr class="border-t border-border transition-colors {% if l.is_deposit %}bg-success/10 border-l-2 border-l-success{% else %}hover:bg-accent/30{% endif %}">
             <td class="py-2 text-muted-foreground whitespace-nowrap">{{ l.created_at|date:"d/m H:i" }}</td>
             <td class="py-2 font-medium whitespace-nowrap">{{ l.full_name|default:"—" }}</td>
             <td class="py-2 text-muted-foreground">{{ l.email|default:"—" }}</td>
             <td class="py-2 text-muted-foreground whitespace-nowrap">{{ l.phone|default:"—" }}</td>
             <td class="py-2 text-muted-foreground">{{ l.broker_name|default:"—" }}</td>
-            <td class="py-2">{{ l.status|default:"—" }}</td>
+            <td class="py-2">
+              <div class="flex items-center gap-1.5">
+                <span class="relative flex h-2 w-2 shrink-0">
+                  <span class="absolute inline-flex h-full w-full rounded-full bg-success opacity-75 animate-ping"></span>
+                  <span class="relative inline-flex h-2 w-2 rounded-full bg-success"></span>
+                </span>
+                <span class="text-sm">{{ l.status|default:"—" }}</span>
+              </div>
+            </td>
             <td class="py-2 text-muted-foreground font-mono text-xs">{{ l.click_id|default:"—" }}</td>
             <td class="py-2 text-center">
-              {% if l.is_deposit %}<span class="text-emerald-600 dark:text-emerald-400">●</span>{% else %}<span class="text-muted-foreground">—</span>{% endif %}
+              {% if l.is_deposit %}
+              <span class="inline-flex items-center gap-1">
+                <span class="relative flex h-2.5 w-2.5">
+                  <span class="absolute inline-flex h-full w-full rounded-full bg-success opacity-90 animate-ping"></span>
+                  <span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-success shadow-[0_0_8px_2px_rgba(143,201,156,0.6)]"></span>
+                </span>
+                <span class="text-xs font-bold text-success">FTD</span>
+              </span>
+              {% else %}<span class="text-muted-foreground/40">—</span>{% endif %}
             </td>
           </tr>
           {% endfor %}

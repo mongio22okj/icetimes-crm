@@ -8,7 +8,6 @@ from .views import (
     IrevBrokerUpdateView,
     LeadListView,
     LeadPushView,
-    LeadStageUpdateView,
     LeadSyncSelectedView,
     SpmMonsterBrokerCreateView,
     SpmMonsterBrokerDeleteView,
@@ -27,7 +26,6 @@ app_name = "tracking"
 urlpatterns = [
     path("", LeadListView.as_view(), name="lead_list"),
     path("leads/<int:pk>/push/", LeadPushView.as_view(), name="lead_push"),
-    path("leads/<int:pk>/stage/", LeadStageUpdateView.as_view(), name="lead_stage"),
     path("leads/sync-selected/", LeadSyncSelectedView.as_view(), name="lead_sync_selected"),
     path("sync-all/", SyncAllView.as_view(), name="sync_all"),
     path("guida/", GuideView.as_view(), name="guide"),

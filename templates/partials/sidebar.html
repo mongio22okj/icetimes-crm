@@ -29,7 +29,7 @@
               <a href="{{ item.href }}"
                  @click="drawer.open = false"
                  {% if item_active %}aria-current="page"{% endif %}
-                 class="flex items-center gap-3 rounded-md px-2 py-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {% active current_path item.href %}">
+                 class="flex items-center gap-3 rounded-md px-2 py-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {% active current_path item.href cls='bg-sidebar-accent text-sidebar-accent-foreground [&_svg]:text-primary' %}">
                 {% icon item.icon 18 %}
                 <span>{{ item.label }}</span>
               </a>

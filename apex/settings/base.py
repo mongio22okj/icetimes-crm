@@ -102,6 +102,7 @@ TEMPLATES = [
                 # <script nonce="{{ request.csp_nonce }}"> tags work.
                 "django.template.context_processors.csp",
                 "apps.core.context_processors.navigation",
+                "apps.core.context_processors.page_accent",
                 "apps.core.context_processors.demo_mode",
                 "apps.notifications.context_processors.notification_unread_count",
                 "apps.organizations.context_processors.active_organization",
@@ -143,7 +144,7 @@ LANGUAGES = [
     ("es", "Español"),
 ]
 LOCALE_PATHS = [BASE_DIR / "locale"]
-TIME_ZONE = "UTC"
+TIME_ZONE = "Europe/Rome"
 USE_I18N = True
 USE_TZ = True
 
@@ -170,6 +171,12 @@ LOGOUT_REDIRECT_URL = "/accounts/login/"
 ALLOW_PUBLIC_REGISTRATION = False
 
 AUTH_USER_MODEL = "accounts.User"
+
+# Login con username OPPURE email.
+AUTHENTICATION_BACKENDS = [
+    "apps.accounts.backends.EmailOrUsernameBackend",
+    "django.contrib.auth.backends.ModelBackend",
+]
 
 # Custom CSRF reject page — friendlier than Django's default. Triggered
 # when a form's CSRF token doesn't match the cookie (most often: stale
