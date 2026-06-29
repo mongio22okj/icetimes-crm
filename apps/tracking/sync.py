@@ -224,13 +224,61 @@ def sync_spmmonster(broker, days=90, only_ids=None):
 
 
 # ── Sync di TUTTI i broker pull-capable (TrackBox + SPM) ─────────────────
+def sync_galassia(broker, days=90, only_ids=None):
+    """Pull stati Galassia (GET /api/v3/get-leads). Aggancio per broker_lead_id
+    (= id Galassia). Stato da 'status'; FTD da acq==1. Solo lead del broker."""
+    from . import galassia
+    now = datetime.now(dt_tz.utc)
+    rows = galassia.pull_leads(broker)
+    seen = matched = updated = 0
+    qs = Lead.for_broker(broker)
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        seen += 1
+        rid = str(row.get("id") or "")
+        lead = qs.filter(broker_lead_id=rid).first() if rid else None
+        if lead is None and getattr(broker, "match_by_contact", False):
+            lead = match_lead_by_contact(qs, row, allow_ambiguous=True)
+        if lead is None:
+            continue
+        if only_ids is not None and lead.pk not in only_ids:
+            continue
+        matched += 1
+        lead.last_pull_at = now
+        status = row.get("status")
+        changed = False
+        if status and lead.status != str(status)[:120]:
+            lead.status = str(status)[:120]
+            changed = True
+        is_dep = (str(row.get("acq")) == "1"
+                  or str(status or "").strip().lower() in {"ftd", "deposit", "deposited"})
+        if is_dep and not lead.is_deposit:
+            lead.is_deposit = True
+            changed = True
+        new_stage = "ftd" if is_dep else status_to_stage(status)
+        if new_stage and lead.stage != "ftd" and lead.stage != new_stage:
+            lead.stage = new_stage
+            changed = True
+        if changed:
+            merged = dict(lead.payload or {})
+            merged["last_pull"] = row
+            lead.payload = merged
+            lead.save()
+            updated += 1
+        else:
+            lead.save(update_fields=["last_pull_at"])
+    return {"seen": seen, "matched": matched, "updated": updated, "pages": 1}
+
+
 def sync_all_pullable():
     """Lancia la pull/sync per ogni broker attivo TrackBox + SPM Monster.
     IREV è escluso (stato via postback). Ritorna un riepilogo aggregato."""
-    from .models import TrackboxBroker, SpmMonsterBroker
+    from .models import TrackboxBroker, SpmMonsterBroker, GalassiaBroker
     total = {"updated": 0, "matched": 0, "seen": 0, "brokers": 0, "errors": []}
     jobs = ([(b, sync_broker) for b in TrackboxBroker.objects.filter(is_active=True)]
-            + [(b, sync_spmmonster) for b in SpmMonsterBroker.objects.filter(is_active=True)])
+            + [(b, sync_spmmonster) for b in SpmMonsterBroker.objects.filter(is_active=True)]
+            + [(b, sync_galassia) for b in GalassiaBroker.objects.filter(is_active=True)])
     for broker, fn in jobs:
         try:
             r = fn(broker)
@@ -247,7 +295,7 @@ def sync_selected(lead_ids):
     """Pull/sync degli stati SOLO per i lead selezionati. Raggruppa per broker,
     fa una pull per broker e aggiorna unicamente i lead spuntati. IREV escluso
     (stato via postback). Ritorna riepilogo aggregato."""
-    from .models import SpmMonsterBroker, TrackboxBroker
+    from .models import SpmMonsterBroker, TrackboxBroker, GalassiaBroker
     ids = {int(x) for x in lead_ids}
     total = {"updated": 0, "matched": 0, "seen": 0, "brokers": 0,
              "errors": [], "irev": 0}
@@ -262,6 +310,8 @@ def sync_selected(lead_ids):
                 r = sync_broker(b, only_ids=ids)
             elif isinstance(b, SpmMonsterBroker):
                 r = sync_spmmonster(b, only_ids=ids)
+            elif isinstance(b, GalassiaBroker):
+                r = sync_galassia(b, only_ids=ids)
             else:
                 total["irev"] += 1  # IREV: stato via postback, no pull
                 continue

@@ -89,7 +89,7 @@
                   <span class="absolute inline-flex h-full w-full rounded-full bg-success opacity-75 animate-ping"></span>
                   <span class="relative inline-flex h-2 w-2 rounded-full bg-success"></span>
                 </span>
-                <span class="text-sm">{{ l.status|default:"—" }}</span>
+                <span class="text-sm {% if l.is_deposit %}font-semibold text-success{% endif %}">{% if l.is_deposit %}FTD{% else %}{{ l.status|default:"—" }}{% endif %}</span>
               </div>
             </td>
             <td class="py-2 text-muted-foreground font-mono text-xs">{{ l.click_id|default:"—" }}</td>

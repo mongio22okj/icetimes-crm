@@ -1,6 +1,6 @@
 from django import forms
 
-from .models import IrevBroker, Lead, SpmMonsterBroker, TrackboxBroker
+from .models import IrevBroker, Lead, SpmMonsterBroker, TrackboxBroker, TYourAdsBroker, GalassiaBroker
 
 BASE_INPUT = (
     "w-full h-10 rounded-md border border-input bg-background px-3 text-sm "
@@ -136,3 +136,39 @@ class LandingLeadForm(forms.ModelForm):
             # Honeypot riempito → bot. Scartiamo senza dettagli.
             raise forms.ValidationError("Invio non valido.")
         return cleaned
+
+
+class TYourAdsBrokerForm(forms.ModelForm):
+    class Meta:
+        model = TYourAdsBroker
+        fields = (
+            "name", "base_url", "api_key", "offer_name", "offer_website",
+            "landing_slug", "landing_brand", "note", "landing_html",
+            "match_by_contact", "is_active",
+        )
+        widgets = {
+            "base_url": forms.URLInput(attrs={"placeholder": "https://tyourads-api.com"}),
+            "landing_html": forms.Textarea(attrs={"rows": 12}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        _style_broker_fields(self)
+
+
+class GalassiaBrokerForm(forms.ModelForm):
+    class Meta:
+        model = GalassiaBroker
+        fields = (
+            "name", "base_url", "api_token", "link_id", "funnel", "source",
+            "country", "language", "landing_slug", "landing_brand", "note",
+            "landing_html", "match_by_contact", "is_active",
+        )
+        widgets = {
+            "base_url": forms.URLInput(attrs={"placeholder": "https://elnopy.crypto-galassia.com"}),
+            "landing_html": forms.Textarea(attrs={"rows": 12}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        _style_broker_fields(self)

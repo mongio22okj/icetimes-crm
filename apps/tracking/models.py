@@ -259,9 +259,144 @@ class SpmMonsterBroker(models.Model):
             return _push_result(False, error=f"{type(exc).__name__}: {exc}"[:255])
 
 
+class TYourAdsBroker(models.Model):
+    """Broker TYourAds (tyourads-api.com). Push POST /api/v2/leads (header
+    Api-Key); auto-login da details.redirect.url. Nessun pull noto: gli stati
+    arrivano solo via postback se il broker lo supporta."""
+
+    kind = "tyourads"
+    kind_label = "TYourAds"
+
+    name = models.CharField("Nome", max_length=120)
+    base_url = models.URLField(
+        "Base URL", default="https://tyourads-api.com",
+        help_text="Es. https://tyourads-api.com")
+    api_key = models.CharField("Api-Key", max_length=255)
+    offer_name = models.CharField(
+        "offerName", max_length=160, blank=True,
+        help_text='Es. "Bitcoin Bank". Se vuoto usa il nome del broker.')
+    offer_website = models.CharField("offerWebsite", max_length=200, blank=True)
+
+    landing_slug = models.SlugField(
+        "Slug landing", max_length=60, blank=True, null=True, unique=True,
+        help_text="Landing pubblica: /lp/<slug>/.")
+    landing_brand = models.CharField(
+        "Brand landing", max_length=120, blank=True,
+        help_text="Nome/logo mostrato sulla landing pubblica (visitor-facing).")
+    note = models.CharField("Note", max_length=255, blank=True)
+    landing_html = models.TextField(
+        "HTML landing personalizzata", blank=True,
+        help_text="HTML completo della landing. Deve contenere un <form "
+                  "method='POST' action='/lp/<slug>/'> con i campi: firstname, "
+                  "lastname, email, phone, country.")
+    match_by_contact = models.BooleanField(
+        "Aggancio per email/telefono", default=False,
+        help_text="Aggancia i lead anche per email/telefono nella pull/postback.")
+    is_active = models.BooleanField("Attivo", default=True)
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Broker TYourAds"
+        verbose_name_plural = "Broker TYourAds"
+        ordering = ["name"]
+
+    def __str__(self) -> str:
+        return self.name
+
+    def push(self, lead):
+        from . import tyourads
+        try:
+            resp = tyourads.push_lead(self, lead) or {}
+            url = tyourads.extract_login_url(resp)
+            if url:
+                return _push_result(
+                    True, resp,
+                    broker_lead_id=tyourads.extract_broker_lead_id(resp),
+                    login_url=url)
+            errs = resp.get("errors") or []
+            detail = ((errs[0].get("message")
+                       if errs and isinstance(errs[0], dict) else None)
+                      or resp.get("message") or "push non riuscito")
+            return _push_result(False, resp, error=str(detail)[:255])
+        except tyourads.TYourAdsError as exc:
+            return _push_result(False, error=str(exc)[:255])
+        except Exception as exc:  # noqa: BLE001
+            return _push_result(False, error=f"{type(exc).__name__}: {exc}"[:255])
+
+
+class GalassiaBroker(models.Model):
+    """Broker tipo 'Galassia' (CRM /api/v3, es. elnopy.crypto-galassia.com).
+    Push POST /api/v3/integration?api_token (auto-login da 'autologin');
+    pull GET /api/v3/get-leads (status + acq=1 -> FTD); postback via click_id."""
+
+    kind = "galassia"
+    kind_label = "Galassia"
+
+    name = models.CharField("Nome", max_length=120)
+    base_url = models.URLField(
+        "Base URL", help_text="Es. https://elnopy.crypto-galassia.com")
+    api_token = models.CharField("api_token", max_length=255)
+    link_id = models.CharField("link_id", max_length=40)
+    funnel = models.CharField(
+        "Funnel", max_length=120, blank=True,
+        help_text="Inviato come 'funnel'. Se vuoto usa il nome del broker.")
+    source = models.CharField(
+        "Source", max_length=120, blank=True,
+        help_text="Inviato come 'source' (es. facebook).")
+    country = models.CharField(
+        "Country default", max_length=8, blank=True, default="IT",
+        help_text="ISO 3166-1 alpha-2. Se il lead non ha country, usa questo.")
+    language = models.CharField(
+        "Language", max_length=8, blank=True, default="it",
+        help_text="ISO 639-1 inviato come 'language'.")
+
+    landing_slug = models.SlugField(
+        "Slug landing", max_length=60, blank=True, null=True, unique=True,
+        help_text="Landing pubblica: /lp/<slug>/.")
+    landing_brand = models.CharField(
+        "Brand landing", max_length=120, blank=True,
+        help_text="Nome/logo mostrato sulla landing (visitor-facing).")
+    note = models.CharField("Note", max_length=255, blank=True)
+    landing_html = models.TextField(
+        "HTML landing personalizzata", blank=True,
+        help_text="HTML completo della landing. Form POST a /lp/<slug>/ con "
+                  "campi: firstname, lastname, email, phone, country.")
+    match_by_contact = models.BooleanField(
+        "Aggancio per email/telefono", default=False,
+        help_text="Aggancio extra per email/telefono nella pull, se serve.")
+    is_active = models.BooleanField("Attivo", default=True)
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Broker Galassia"
+        verbose_name_plural = "Broker Galassia"
+        ordering = ["name"]
+
+    def __str__(self) -> str:
+        return self.name
+
+    def push(self, lead):
+        from . import galassia
+        try:
+            resp = galassia.push_lead(self, lead) or {}
+            if resp.get("success"):
+                return _push_result(
+                    True, resp,
+                    broker_lead_id=galassia.extract_broker_lead_id(resp),
+                    login_url=galassia.extract_login_url(resp))
+            detail = resp.get("message") or "push non riuscito"
+            return _push_result(False, resp, error=str(detail)[:255])
+        except galassia.GalassiaError as exc:
+            return _push_result(False, error=str(exc)[:255])
+        except Exception as exc:  # noqa: BLE001
+            return _push_result(False, error=f"{type(exc).__name__}: {exc}"[:255])
+
+
 # Tipi di broker registrati: kind → modello. Per risolvere slug/landing e
 # costruire elenchi unificati senza accoppiare il resto del codice.
-BROKER_MODELS = (TrackboxBroker, IrevBroker, SpmMonsterBroker)
+BROKER_MODELS = (TrackboxBroker, IrevBroker, SpmMonsterBroker, TYourAdsBroker, GalassiaBroker)
 
 
 def find_broker_by_slug(slug):

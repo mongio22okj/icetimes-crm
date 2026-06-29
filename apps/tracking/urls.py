@@ -14,6 +14,13 @@ from .views import (
     SpmMonsterBrokerSyncView,
     SpmMonsterBrokerUpdateView,
     SyncAllView,
+    GalassiaBrokerCreateView,
+    GalassiaBrokerDeleteView,
+    GalassiaBrokerSyncView,
+    GalassiaBrokerUpdateView,
+    TYourAdsBrokerCreateView,
+    TYourAdsBrokerDeleteView,
+    TYourAdsBrokerUpdateView,
     TrackboxBrokerCreateView,
     TrackboxBrokerDeleteView,
     TrackboxBrokerSyncView,
@@ -45,6 +52,15 @@ urlpatterns = [
     path("brokers/spm/<int:pk>/edit/", SpmMonsterBrokerUpdateView.as_view(), name="spm_edit"),
     path("brokers/spm/<int:pk>/delete/", SpmMonsterBrokerDeleteView.as_view(), name="spm_delete"),
     path("brokers/spm/<int:pk>/sync/", SpmMonsterBrokerSyncView.as_view(), name="spm_sync"),
+
+    path("brokers/tyourads/new/", TYourAdsBrokerCreateView.as_view(), name="tyourads_create"),
+    path("brokers/tyourads/<int:pk>/edit/", TYourAdsBrokerUpdateView.as_view(), name="tyourads_edit"),
+    path("brokers/tyourads/<int:pk>/delete/", TYourAdsBrokerDeleteView.as_view(), name="tyourads_delete"),
+
+    path("brokers/galassia/new/", GalassiaBrokerCreateView.as_view(), name="galassia_create"),
+    path("brokers/galassia/<int:pk>/edit/", GalassiaBrokerUpdateView.as_view(), name="galassia_edit"),
+    path("brokers/galassia/<int:pk>/delete/", GalassiaBrokerDeleteView.as_view(), name="galassia_delete"),
+    path("brokers/galassia/<int:pk>/sync/", GalassiaBrokerSyncView.as_view(), name="galassia_sync"),
     # Codice tracciamento per landing esterna (snippet form)
     path("brokers/<str:kind>/<int:pk>/code/", TrackingCodeView.as_view(), name="broker_code"),
 ]

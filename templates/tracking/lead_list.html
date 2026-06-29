@@ -116,7 +116,7 @@
               <span class="absolute inline-flex h-full w-full rounded-full bg-success opacity-60 animate-ping"></span>
               <span class="relative inline-flex h-2 w-2 rounded-full bg-success"></span>
             </span>
-            {% if l.status %}<span class="inline-flex items-center rounded-md px-1.5 py-0.5 text-[11px] whitespace-nowrap {{ l.status|status_badge_class }}">{{ l.status }}</span>{% else %}<span class="text-muted-foreground/50">—</span>{% endif %}
+            {% if l.is_deposit %}<span class="inline-flex items-center rounded-md px-1.5 py-0.5 text-[11px] whitespace-nowrap {{ 'ftd'|status_badge_class }}">FTD</span>{% elif l.status %}<span class="inline-flex items-center rounded-md px-1.5 py-0.5 text-[11px] whitespace-nowrap {{ l.status|status_badge_class }}">{{ l.status }}</span>{% else %}<span class="text-muted-foreground/50">—</span>{% endif %}
           </div>
         </td>
         <td class="px-1.5 py-1.5"><span class="inline-flex items-center rounded-md px-1.5 py-0.5 text-[11px] tabular-nums bg-muted/50 text-muted-foreground ring-1 ring-border whitespace-nowrap">{% if l.last_pull_at %}{{ l.last_pull_at|date:"d/m/y H:i" }}{% else %}{{ l.created_at|date:"d/m/y H:i" }}{% endif %}</span></td>

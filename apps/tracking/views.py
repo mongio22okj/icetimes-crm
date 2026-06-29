@@ -17,6 +17,8 @@ from .forms import (
     IrevBrokerForm,
     LandingLeadForm,
     SpmMonsterBrokerForm,
+    GalassiaBrokerForm,
+    TYourAdsBrokerForm,
     TrackboxBrokerForm,
 )
 from .models import (
@@ -24,6 +26,8 @@ from .models import (
     Lead,
     PushLog,
     SpmMonsterBroker,
+    GalassiaBroker,
+    TYourAdsBroker,
     TrackboxBroker,
     broker_by_kind,
     find_broker_by_slug,
@@ -306,6 +310,26 @@ class BrokerListView(BreadcrumbsMixin, LoginRequiredMixin,
                 "code_url": reverse("tracking:broker_code", args=[b.kind, b.pk]),
                 "landing_slug": b.landing_slug,
             })
+        for b in GalassiaBroker.objects.all():
+            rows.append({
+                "obj": b, "kind": b.kind_label, "base_url": b.base_url,
+                "is_active": b.is_active, "note": b.note,
+                "edit_url": reverse("tracking:galassia_edit", args=[b.pk]),
+                "delete_url": reverse("tracking:galassia_delete", args=[b.pk]),
+                "sync_url": reverse("tracking:galassia_sync", args=[b.pk]),
+                "code_url": reverse("tracking:broker_code", args=[b.kind, b.pk]),
+                "landing_slug": b.landing_slug,
+            })
+        for b in TYourAdsBroker.objects.all():
+            rows.append({
+                "obj": b, "kind": b.kind_label, "base_url": b.base_url,
+                "is_active": b.is_active, "note": b.note,
+                "edit_url": reverse("tracking:tyourads_edit", args=[b.pk]),
+                "delete_url": reverse("tracking:tyourads_delete", args=[b.pk]),
+                "sync_url": None,  # TYourAds: nessun pull noto (stato via postback)
+                "code_url": reverse("tracking:broker_code", args=[b.kind, b.pk]),
+                "landing_slug": b.landing_slug,
+            })
         rows.sort(key=lambda r: r["obj"].name.lower())
         ctx["brokers"] = rows
         return ctx
@@ -526,3 +550,108 @@ class TrackingCodeView(BreadcrumbsMixin, LoginRequiredMixin,
             ctx["landing_url"] = url
             ctx["snippet"] = build_form_snippet(url)
         return ctx
+
+
+class TYourAdsBrokerCreateView(BreadcrumbsMixin, LoginRequiredMixin,
+                               EmailVerifiedRequiredMixin, AdminOnlyMixin,
+                               CreateView):
+    model = TYourAdsBroker
+    form_class = TYourAdsBrokerForm
+    template_name = "tracking/tyourads_form.html"
+    success_url = reverse_lazy("tracking:broker_list")
+    breadcrumb_title = "Nuovo broker TYourAds"
+    breadcrumb_parent = "tracking:broker_list"
+
+    def form_valid(self, form):
+        r = super().form_valid(form)
+        messages.success(self.request, f"Broker '{self.object.name}' creato.")
+        return r
+
+
+class TYourAdsBrokerUpdateView(BreadcrumbsMixin, LoginRequiredMixin,
+                               EmailVerifiedRequiredMixin, AdminOnlyMixin,
+                               UpdateView):
+    model = TYourAdsBroker
+    form_class = TYourAdsBrokerForm
+    template_name = "tracking/tyourads_form.html"
+    success_url = reverse_lazy("tracking:broker_list")
+    breadcrumb_parent = "tracking:broker_list"
+
+    def get_breadcrumb_title(self) -> str:
+        return f"Modifica {self.object.name}"
+
+    def form_valid(self, form):
+        r = super().form_valid(form)
+        messages.success(self.request, f"Broker '{self.object.name}' aggiornato.")
+        return r
+
+
+class TYourAdsBrokerDeleteView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
+                               AdminOnlyMixin, View):
+    def post(self, request, pk):
+        b = get_object_or_404(TYourAdsBroker, pk=pk)
+        name = b.name
+        b.delete()
+        messages.success(request, f"Broker '{name}' eliminato.")
+        return redirect("tracking:broker_list")
+
+
+class GalassiaBrokerCreateView(BreadcrumbsMixin, LoginRequiredMixin,
+                               EmailVerifiedRequiredMixin, AdminOnlyMixin,
+                               CreateView):
+    model = GalassiaBroker
+    form_class = GalassiaBrokerForm
+    template_name = "tracking/galassia_form.html"
+    success_url = reverse_lazy("tracking:broker_list")
+    breadcrumb_title = "Nuovo broker Galassia"
+    breadcrumb_parent = "tracking:broker_list"
+
+    def form_valid(self, form):
+        r = super().form_valid(form)
+        messages.success(self.request, f"Broker '{self.object.name}' creato.")
+        return r
+
+
+class GalassiaBrokerUpdateView(BreadcrumbsMixin, LoginRequiredMixin,
+                               EmailVerifiedRequiredMixin, AdminOnlyMixin,
+                               UpdateView):
+    model = GalassiaBroker
+    form_class = GalassiaBrokerForm
+    template_name = "tracking/galassia_form.html"
+    success_url = reverse_lazy("tracking:broker_list")
+    breadcrumb_parent = "tracking:broker_list"
+
+    def get_breadcrumb_title(self) -> str:
+        return f"Modifica {self.object.name}"
+
+    def form_valid(self, form):
+        r = super().form_valid(form)
+        messages.success(self.request, f"Broker '{self.object.name}' aggiornato.")
+        return r
+
+
+class GalassiaBrokerDeleteView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
+                               AdminOnlyMixin, View):
+    def post(self, request, pk):
+        b = get_object_or_404(GalassiaBroker, pk=pk)
+        name = b.name
+        b.delete()
+        messages.success(request, f"Broker '{name}' eliminato.")
+        return redirect("tracking:broker_list")
+
+
+class GalassiaBrokerSyncView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
+                             AdminOnlyMixin, View):
+    """Pull stati per un broker Galassia (solo Super Admin)."""
+
+    def post(self, request, pk):
+        broker = get_object_or_404(GalassiaBroker, pk=pk)
+        try:
+            res = sync_mod.sync_galassia(broker)
+            messages.success(
+                request,
+                f"Sync {broker.name}: {res['updated']} aggiornati, "
+                f"{res['matched']} agganciati.")
+        except Exception as exc:  # noqa: BLE001
+            messages.error(request, f"Sync {broker.name} fallito: {exc}")
+        return redirect("tracking:broker_list")
