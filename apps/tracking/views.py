@@ -92,6 +92,11 @@ def _do_push(lead, broker):
             payload["login_url"] = res["login_url"]
         lead.payload = payload
         lead.save(update_fields=["broker_lead_id", "payload", "updated_at"])
+    try:
+        from .telegram_notify import notify_new_lead
+        notify_new_lead(lead, res)
+    except Exception:  # noqa: BLE001
+        pass
     return res
 
 
@@ -655,3 +660,31 @@ class GalassiaBrokerSyncView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
         except Exception as exc:  # noqa: BLE001
             messages.error(request, f"Sync {broker.name} fallito: {exc}")
         return redirect("tracking:broker_list")
+
+
+class LeadRerouteView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
+                      MarketerOrAdminMixin, View):
+    """Gira un lead a un altro broker (es. dopo un rifiuto): riassegna il
+    broker selezionato e ri-esegue il push."""
+
+    def post(self, request, pk):
+        from django.contrib.contenttypes.models import ContentType
+        lead = get_object_or_404(Lead, pk=pk)
+        nxt = request.POST.get("next") or "tracking:lead_list"
+        kind, _, bpk = (request.POST.get("broker") or "").partition(":")
+        broker = broker_by_kind(kind, bpk) if bpk else None
+        if broker is None:
+            messages.error(request, "Seleziona un broker valido.")
+            return redirect(nxt)
+        lead.broker_content_type = ContentType.objects.get_for_model(type(broker))
+        lead.broker_object_id = broker.pk
+        lead.broker_lead_id = ""  # nuovo invio
+        lead.save(update_fields=["broker_content_type", "broker_object_id",
+                                 "broker_lead_id", "updated_at"])
+        res = _do_push(lead, broker)
+        if res.get("success"):
+            messages.success(request, f"Lead girato a {broker.name}: accettato.")
+        else:
+            messages.error(request,
+                           f"{broker.name} ha rifiutato: {res.get('error') or 'errore'}")
+        return redirect(nxt)

@@ -45,6 +45,8 @@
         <th class="text-left px-1.5 py-1.5">Fase</th>
         <th class="text-left px-1.5 py-1.5">FTD</th>
         <th class="text-left px-1.5 py-1.5">IP</th>
+        <th class="text-left px-1.5 py-1.5">Autologin</th>
+        <th class="text-left px-1.5 py-1.5 pr-4 min-w-[180px]">Gira a</th>
       </tr>
       {# riga filtri — barra azzurra distinta #}
       <tr class="[&>th]:bg-secondary/60 [&>th]:border-b [&>th]:border-border [&>th]:px-2 [&>th]:py-2 [&_input]:transition [&_input]:focus:ring-2 [&_input]:focus:ring-ring/40 [&_input]:focus:border-ring [&_input]:placeholder:text-muted-foreground/50 [&_select]:transition [&_select]:focus:ring-2 [&_select]:focus:ring-ring/40 [&_select]:focus:border-ring">
@@ -90,6 +92,8 @@
           </select>
         </th>
         <th><input name="ip" value="{{ request.GET.ip }}" class="h-7 w-full rounded-md border border-input bg-background px-1.5 text-[11px]"></th>
+        <th></th>
+        <th></th>
       </tr>
     </thead>
     <tbody class="[&>tr>td]:text-white/85">
@@ -135,10 +139,24 @@
           </span>
           {% else %}<span class="text-muted-foreground/50">—</span>{% endif %}
         </td>
-        <td class="px-1.5 py-1.5 rounded-r-lg"><span class="inline-flex items-center rounded-md px-1.5 py-0.5 text-[11px] font-mono bg-muted/50 text-muted-foreground ring-1 ring-border whitespace-nowrap">{{ l.ip|default:"—" }}</span></td>
+        <td class="px-1.5 py-1.5"><span class="inline-flex items-center rounded-md px-1.5 py-0.5 text-[11px] font-mono bg-muted/50 text-muted-foreground ring-1 ring-border whitespace-nowrap">{{ l.ip|default:"—" }}</span></td>
+        <td class="px-1.5 py-1.5">
+          {% if l.payload.login_url %}<a href="{{ l.payload.login_url }}" target="_blank" rel="noopener" title="{{ l.payload.login_url }}" class="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-medium bg-primary/10 text-primary ring-1 ring-primary/30 hover:bg-primary/20">🔗 Apri</a>{% else %}<span class="text-muted-foreground/40">—</span>{% endif %}
+        </td>
+        <td class="px-1.5 py-1.5 pr-4 rounded-r-lg min-w-[180px]">
+          {% if can_edit_stage %}
+          <div class="flex items-center gap-1.5">
+            <select name="broker" form="rr{{ l.pk }}" class="h-7 w-32 rounded-md border border-border bg-muted/60 text-foreground/90 px-1.5 text-[11px]">
+              <option value="">— broker —</option>
+              {% for o in broker_options %}<option value="{{ o.value }}">{{ o.name }}</option>{% endfor %}
+            </select>
+            <button type="submit" form="rr{{ l.pk }}" title="Gira il lead al broker selezionato" class="h-7 px-2 rounded-md border border-border text-foreground/80 text-sm font-medium hover:bg-accent/50">→</button>
+          </div>
+          {% endif %}
+        </td>
       </tr>
       {% empty %}
-      <tr><td colspan="14" class="px-3 py-12 text-center text-muted-foreground">Nessun lead trovato.</td></tr>
+      <tr><td colspan="16" class="px-3 py-12 text-center text-muted-foreground">Nessun lead trovato.</td></tr>
       {% endfor %}
     </tbody>
   </table>
@@ -150,6 +168,8 @@
 <form id="syncform" method="post" action="{% url 'tracking:lead_sync_selected' %}">{% csrf_token %}<input type="hidden" name="next" value="{{ request.get_full_path }}"></form>
 {# form POST per l'aggiornamento di TUTTI i lead (pull tutti i broker) #}
 <form id="syncallform" method="post" action="{% url 'tracking:sync_all' %}">{% csrf_token %}<input type="hidden" name="next" value="{{ request.get_full_path }}"></form>{% endif %}
+{# form POST per girare un lead a un altro broker (re-route) #}
+{% if can_edit_stage %}{% for l in leads %}<form id="rr{{ l.pk }}" method="post" action="{% url 'tracking:lead_reroute' l.pk %}">{% csrf_token %}<input type="hidden" name="next" value="{{ request.get_full_path }}"></form>{% endfor %}{% endif %}
 
 {% if is_paginated %}
 <div class="flex items-center justify-between mt-4 text-sm">
