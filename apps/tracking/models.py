@@ -155,6 +155,17 @@ class IrevBroker(models.Model):
                   "contenere un <form method='POST' action='/lp/<slug>/'> con i "
                   "campi: firstname, lastname, email, phone, country.")
 
+    api_path = models.CharField(
+        "API path (override)", max_length=120, blank=True,
+        help_text="Path push/pull se diverso dal default. Vuoto = /affiliates/v2/leads. "
+                  "Es. /api/affiliates/v2/leads")
+    extra_params = models.JSONField(
+        "Parametri extra (JSON)", default=dict, blank=True,
+        help_text='Campi extra nel push, es. {"aff_sub3": "Eterna Immediata"}. Vuoto = nessuno.')
+    use_pull = models.BooleanField(
+        "Aggiorna stati via PULL", default=False,
+        help_text="Se attivo, gli stati/FTD arrivano via pull get-leads (goal FTD). "
+                  "Se OFF (default) lo stato arriva via postback. Tenere OFF sui broker esistenti.")
     is_active = models.BooleanField("Attivo", default=True)
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)

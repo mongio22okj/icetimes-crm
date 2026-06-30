@@ -54,7 +54,7 @@ class IrevBrokerForm(forms.ModelForm):
         fields = (
             "name", "base_url", "token", "affiliate_id", "offer_id",
             "goal_lead_uuid", "goal_ftd_uuid", "funnel", "landing_slug", "landing_brand", "note",
-            "landing_html", "is_active",
+            "landing_html", "api_path", "extra_params", "use_pull", "is_active",
         )
         widgets = {
             "base_url": forms.URLInput(attrs={"placeholder": "https://stylishwnt.com"}),

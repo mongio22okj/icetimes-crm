@@ -9,7 +9,9 @@ ma non è necessaria per gli stati base.
 import json
 import secrets
 import urllib.error
+import urllib.parse
 import urllib.request
+from datetime import datetime, timedelta, timezone as _tz
 
 # Path VERIFICATO su questa deployment (stylishwnt.com): SENZA prefisso /api/.
 PUSH_PATH = "/affiliates/v2/leads"
@@ -62,7 +64,7 @@ def _explain(code, detail):
 
 
 def build_push_payload(broker, lead):
-    return {
+    payload = {
         "ip": lead.ip or "8.8.8.8",
         "country_code": (lead.country or "IT").upper(),
         "first_name": lead.firstname,
@@ -70,14 +72,21 @@ def build_push_payload(broker, lead):
         "email": lead.email,
         "phone": lead.phone,
         "password": secrets.token_urlsafe(9) + "A1",
-        "affiliate_id": broker.affiliate_id,
-        "offer_id": broker.offer_id,
     }
+    if broker.affiliate_id:
+        payload["affiliate_id"] = broker.affiliate_id
+    if broker.offer_id:
+        payload["offer_id"] = broker.offer_id
+    extra = getattr(broker, "extra_params", None)
+    if isinstance(extra, dict):
+        payload.update(extra)
+    return payload
 
 
 def push_lead(broker, lead):
     """Invia il lead a IREV. Ritorna la risposta JSON o solleva IrevError."""
-    return _request(broker, "POST", PUSH_PATH, build_push_payload(broker, lead))
+    path = (getattr(broker, "api_path", "") or "").strip() or PUSH_PATH
+    return _request(broker, "POST", path, build_push_payload(broker, lead))
 
 
 def extract_broker_lead_id(response):
@@ -92,3 +101,19 @@ def extract_login_url(response):
     if isinstance(response, dict):
         return response.get("auto_login_url") or response.get("autoLoginUrl") or ""
     return ""
+
+
+def pull_leads(broker, goal_type_uuid=None, days=14, per_page=100, timeout=30):
+    """GET get-leads (ultimi `days` giorni). Se goal_type_uuid e' valorizzato
+    filtra per quel goal (es. FTD). Ritorna la lista dei lead."""
+    path = (getattr(broker, "api_path", "") or "").strip() or PULL_PATH
+    frm = (datetime.now(_tz.utc) - timedelta(days=days)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    qs = {"created_from": frm, "per_page": per_page, "page": 1}
+    if goal_type_uuid:
+        qs["goal_type_uuid"] = goal_type_uuid
+    resp = _request(broker, "GET", path + "?" + urllib.parse.urlencode(qs), None, timeout=timeout)
+    if isinstance(resp, list):
+        return resp
+    if isinstance(resp, dict):
+        return resp.get("data") or []
+    return []
