@@ -3,6 +3,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse, reverse_lazy
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.views import View
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import CreateView, ListView, TemplateView, UpdateView
@@ -75,6 +76,17 @@ def _client_ip(request):
     if xff:
         return xff.split(",")[0].strip()
     return request.META.get("REMOTE_ADDR") or ""
+
+
+def _safe_next(request, fallback):
+    """URL di ritorno dal parametro `next`, ma solo se punta al nostro host
+    (evita open redirect verso domini esterni). Altrimenti usa il fallback."""
+    nxt = request.POST.get("next")
+    if nxt and url_has_allowed_host_and_scheme(
+            nxt, allowed_hosts={request.get_host()},
+            require_https=request.is_secure()):
+        return nxt
+    return fallback
 
 
 def _do_push(lead, broker):
@@ -243,7 +255,7 @@ class LeadSyncSelectedView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
         ids = request.POST.getlist("lead_ids")
         if not ids:
             messages.warning(request, "Nessun lead selezionato.")
-            return redirect(request.POST.get("next") or "tracking:lead_list")
+            return redirect(_safe_next(request, "tracking:lead_list"))
         r = sync_mod.sync_selected(ids)
         messages.success(
             request,
@@ -254,7 +266,7 @@ class LeadSyncSelectedView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
                           f"{r['irev']} broker IREV saltati (stato via postback).")
         if r["errors"]:
             messages.error(request, "Errori: " + "; ".join(r["errors"]))
-        return redirect(request.POST.get("next") or "tracking:lead_list")
+        return redirect(_safe_next(request, "tracking:lead_list"))
 
 
 class LeadPushView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
@@ -524,7 +536,7 @@ class SyncAllView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
             f"{r['seen']} righe, {r['brokers']} broker).")
         if r["errors"]:
             messages.error(request, "Errori: " + "; ".join(r["errors"]))
-        return redirect(request.POST.get("next") or "dashboard")
+        return redirect(_safe_next(request, "dashboard"))
 
 
 class GuideView(BreadcrumbsMixin, LoginRequiredMixin, EmailVerifiedRequiredMixin,
@@ -670,7 +682,7 @@ class LeadRerouteView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
     def post(self, request, pk):
         from django.contrib.contenttypes.models import ContentType
         lead = get_object_or_404(Lead, pk=pk)
-        nxt = request.POST.get("next") or "tracking:lead_list"
+        nxt = _safe_next(request, "tracking:lead_list")
         kind, _, bpk = (request.POST.get("broker") or "").partition(":")
         broker = broker_by_kind(kind, bpk) if bpk else None
         if broker is None:

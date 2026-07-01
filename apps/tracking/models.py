@@ -6,12 +6,23 @@ from django.db import models
 from django.utils import timezone
 
 
+def safe_login_url(url):
+    """Filtra l'URL di auto-login ritornato dal broker: accetta SOLO http/https.
+    L'URL arriva da una fonte esterna (risposta broker) e finisce sia in un
+    redirect automatico sia in un <a href> cliccato dallo staff: uno schema
+    tipo javascript:/data: qui sarebbe XSS. Scarta tutto cio' che non e' web."""
+    url = (url or "").strip()
+    if url.lower().startswith(("http://", "https://")):
+        return url
+    return ""
+
+
 def _push_result(success, response=None, broker_lead_id="", login_url="", error=""):
     """Forma normalizzata del risultato di un push, uguale per ogni broker."""
     return {
         "success": success,
         "broker_lead_id": broker_lead_id,
-        "login_url": login_url,
+        "login_url": safe_login_url(login_url),
         "error": error,
         "response": response if isinstance(response, dict) else {},
     }
