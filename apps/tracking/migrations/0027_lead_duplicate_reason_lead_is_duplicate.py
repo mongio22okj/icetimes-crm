@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('tracking', '0024_irevbroker_use_pull'),
+        ('tracking', '0026_tyouradsbroker'),
     ]
 
     operations = [
