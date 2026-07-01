@@ -55,45 +55,45 @@
   </div>
 
   {# ── Lead recenti ──────────────────────────────────────────────── #}
-  <div class="rounded-lg border border-border bg-card p-5 xl:col-span-2">
-    <div class="flex items-center justify-between mb-4">
+  <div class="rounded-lg border border-border bg-card xl:col-span-2 overflow-hidden">
+    <div class="flex items-center justify-between px-5 pt-5 pb-3">
       <h2 class="text-base font-semibold">Lead recenti</h2>
       <a href="{% url 'tracking:lead_list' %}" class="text-sm text-primary hover:underline">Tutti i lead</a>
     </div>
     {% if recent_leads %}
       <div class="overflow-x-auto">
       <table class="w-full text-sm">
-        <thead class="text-muted-foreground">
+        <thead class="text-xs uppercase tracking-wide text-muted-foreground bg-muted/40 border-y border-border">
           <tr>
-            <th class="text-left font-medium pb-2">Data</th>
-            <th class="text-left font-medium pb-2">Nome</th>
-            <th class="text-left font-medium pb-2">Email</th>
-            <th class="text-left font-medium pb-2">Telefono</th>
-            <th class="text-left font-medium pb-2">Broker</th>
-            <th class="text-left font-medium pb-2">Stato</th>
-            <th class="text-left font-medium pb-2">ID cliccato</th>
-            <th class="text-center font-medium pb-2">FTD</th>
+            <th class="text-left font-medium px-4 py-2.5 whitespace-nowrap">Data</th>
+            <th class="text-left font-medium px-4 py-2.5">Nome</th>
+            <th class="text-left font-medium px-4 py-2.5">Cognome</th>
+            <th class="text-left font-medium px-4 py-2.5">Email</th>
+            <th class="text-left font-medium px-4 py-2.5">Telefono</th>
+            <th class="text-left font-medium px-4 py-2.5">Broker</th>
+            <th class="text-left font-medium px-4 py-2.5">Stato</th>
+            <th class="text-left font-medium px-4 py-2.5">ID cliccato</th>
+            <th class="text-center font-medium px-4 py-2.5">FTD</th>
           </tr>
         </thead>
-        <tbody>
+        <tbody class="divide-y divide-border">
           {% for l in recent_leads %}
-          <tr class="border-t border-border transition-colors {% if l.is_deposit %}bg-success/10 border-l-2 border-l-success{% else %}hover:bg-accent/30{% endif %}">
-            <td class="py-2 text-muted-foreground whitespace-nowrap">{{ l.created_at|date:"d/m H:i" }}</td>
-            <td class="py-2 font-medium whitespace-nowrap">{{ l.full_name|default:"—" }}</td>
-            <td class="py-2 text-muted-foreground">{{ l.email|default:"—" }}</td>
-            <td class="py-2 text-muted-foreground whitespace-nowrap">{{ l.phone|default:"—" }}</td>
-            <td class="py-2 text-muted-foreground">{{ l.broker_name|default:"—" }}</td>
-            <td class="py-2">
-              <div class="flex items-center gap-1.5">
-                <span class="relative flex h-2 w-2 shrink-0">
-                  <span class="absolute inline-flex h-full w-full rounded-full bg-success opacity-75 animate-ping"></span>
-                  <span class="relative inline-flex h-2 w-2 rounded-full bg-success"></span>
-                </span>
-                <span class="text-sm {% if l.is_deposit %}font-semibold text-success{% endif %}">{% if l.is_deposit %}FTD{% else %}{{ l.status|default:"—" }}{% endif %}</span>
-              </div>
+          <tr class="align-middle transition-colors {% if l.is_deposit %}bg-success/10 border-l-2 border-l-success{% else %}hover:bg-accent/30{% endif %}">
+            <td class="px-4 py-2.5 text-muted-foreground whitespace-nowrap">{{ l.created_at|date:"d/m H:i" }}</td>
+            <td class="px-4 py-2.5 font-medium whitespace-nowrap">{{ l.firstname|default:"—" }}</td>
+            <td class="px-4 py-2.5 font-medium whitespace-nowrap">{{ l.lastname|default:"—" }}</td>
+            <td class="px-4 py-2.5 text-muted-foreground">{{ l.email|default:"—" }}</td>
+            <td class="px-4 py-2.5 text-muted-foreground whitespace-nowrap">{{ l.phone|default:"—" }}</td>
+            <td class="px-4 py-2.5 text-muted-foreground whitespace-nowrap">{{ l.broker_name|default:"—" }}</td>
+            <td class="px-4 py-2.5">
+              {% if l.is_deposit %}
+                <span class="inline-flex items-center px-2 h-6 rounded-md text-xs font-semibold bg-success/15 text-success">FTD</span>
+              {% else %}
+                <span class="inline-flex items-center px-2 h-6 rounded-md text-xs font-medium bg-muted text-muted-foreground whitespace-nowrap">{{ l.status|default:"—" }}</span>
+              {% endif %}
             </td>
-            <td class="py-2 text-muted-foreground font-mono text-xs">{{ l.click_id|default:"—" }}</td>
-            <td class="py-2 text-center">
+            <td class="px-4 py-2.5 text-muted-foreground font-mono text-xs">{{ l.click_id|default:"—" }}</td>
+            <td class="px-4 py-2.5 text-center">
               {% if l.is_deposit %}
               <span class="inline-flex items-center gap-1">
                 <span class="relative flex h-2.5 w-2.5">
@@ -110,7 +110,7 @@
       </table>
       </div>
     {% else %}
-      <p class="text-sm text-muted-foreground">Nessun lead ancora.</p>
+      <p class="px-5 pb-5 text-sm text-muted-foreground">Nessun lead ancora.</p>
     {% endif %}
   </div>
 </div>

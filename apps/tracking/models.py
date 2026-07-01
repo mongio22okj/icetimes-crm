@@ -562,7 +562,7 @@ def status_to_stage(status):
                             "non interess", "no_interest", "rejected", "reject",
                             "do not call", "dnc", "invalid", "fake", "trash",
                             "junk", "duplicate", "not qualified", "unqualified",
-                            "declined", "spam")):
+                            "declined", "spam", "no money", "no_money", "wrong info", "wrong_info")):
         return "not_interested"
     if any(k in s for k in ("no potential", "no_potential", "nessun potenzial",
                             "not potential", "no value", "zero potential")):

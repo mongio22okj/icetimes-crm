@@ -147,9 +147,27 @@ def _duplicate_reason(broker, email, phone, ip, firstname, lastname):
 
 
 def _landing_render(request, broker, form, error=None, status=200):
-    """Serve l'HTML custom del broker se presente, altrimenti il form standard."""
+    """Serve l'HTML custom del broker se presente, altrimenti il form standard.
+    Se c'e' un errore (duplicato / rate-limit / validazione), inietta un banner
+    ben visibile in cima alla landing personalizzata, cosi il visitatore capisce
+    perche' il form non e' andato (prima ricaricava muto -> sembrava 'torna indietro')."""
     if broker.landing_html:
-        return HttpResponse(broker.landing_html, status=status)
+        html_doc = broker.landing_html
+        if error:
+            import html as _html
+            import re as _re
+            banner = (
+                '<div style="position:fixed;top:0;left:0;right:0;z-index:2147483647;'
+                'background:#dc2626;color:#fff;text-align:center;padding:13px 18px;'
+                'font:600 15px -apple-system,Segoe UI,Roboto,Arial,sans-serif;'
+                'box-shadow:0 2px 12px rgba(0,0,0,.3)">%s</div>'
+                '<div style="height:46px"></div>'
+                % _html.escape(str(error))
+            )
+            m = _re.search(r"<body[^>]*>", html_doc, _re.I)
+            html_doc = (html_doc[:m.end()] + banner + html_doc[m.end():]
+                        if m else banner + html_doc)
+        return HttpResponse(html_doc, status=status)
     ctx = {"broker": broker, "form": form}
     if error:
         ctx["push_error"] = error
@@ -202,7 +220,8 @@ def landing(request, slug):
 
 
         # form non valido (honeypot / validazione)
-        return _landing_render(request, broker, form, status=400)
+        return _landing_render(request, broker, form,
+                               "Controlla i dati inseriti e riprova.", status=400)
 
     return _landing_render(request, broker, form)
 

@@ -271,53 +271,91 @@ def sync_galassia(broker, days=90, only_ids=None):
     return {"seen": seen, "matched": matched, "updated": updated, "pages": 1}
 
 
+def _irev_match(qs, row):
+    """Aggancia un nostro lead a una riga della pull IREV: prima per
+    broker_lead_id (leadUuid/uuid/externalId), poi email, poi telefono."""
+    for key in ("leadUuid", "uuid", "lead_uuid", "externalId"):
+        bid = str(row.get(key) or "").strip()
+        if bid:
+            lead = qs.filter(broker_lead_id=bid).first()
+            if lead:
+                return lead
+    email = (row.get("email") or "").strip()
+    if email:
+        lead = qs.filter(email__iexact=email).first()
+        if lead:
+            return lead
+    digits = "".join(ch for ch in str(row.get("phone") or "") if ch.isdigit())
+    if len(digits) >= 9:
+        return qs.filter(phone__endswith=digits[-9:]).first()
+    return None
+
+
 def sync_irev(broker, days=14, only_ids=None):
-    """Pull FTD da IREV: GET get-leads?goal_type_uuid=<goal_ftd_uuid>. Marca i
-    lead agganciati come FTD. Aggancio per email/telefono (la pull IREV
-    restituisce email/phone). Solo broker IREV con goal_ftd_uuid."""
+    """Pull stati IREV, allineata agli altri broker.
+    - goal LEAD (goal_lead_uuid): aggiorna status/stage da `saleStatus`
+      (no_answer, callback, not_interested...) via status_to_stage().
+    - goal FTD (goal_ftd_uuid): marca i depositi come FTD.
+    Aggancio per broker_lead_id (leadUuid) con fallback email/telefono.
+    Se manca goal_lead_uuid fa solo la pull FTD (comportamento precedente)."""
     from . import irev
+    lead_goal = getattr(broker, "goal_lead_uuid", "") or ""
     ftd_goal = getattr(broker, "goal_ftd_uuid", "") or ""
-    if not ftd_goal:
+    if not lead_goal and not ftd_goal:
         return {"seen": 0, "matched": 0, "updated": 0, "pages": 0}
     now = datetime.now(dt_tz.utc)
-    rows = irev.pull_leads(broker, goal_type_uuid=ftd_goal, days=days)
-    seen = matched = updated = 0
     qs = Lead.for_broker(broker)
-    for row in rows:
-        if not isinstance(row, dict):
-            continue
-        seen += 1
-        email = (row.get("email") or "").strip()
-        lead = qs.filter(email__iexact=email).first() if email else None
-        if lead is None:
-            digits = "".join(ch for ch in str(row.get("phone") or "") if ch.isdigit())
-            if len(digits) >= 9:
-                lead = qs.filter(phone__endswith=digits[-9:]).first()
-        if lead is None:
-            continue
-        if only_ids is not None and lead.pk not in only_ids:
-            continue
-        matched += 1
+    stats = {"seen": 0, "matched": set(), "updated": 0}
+
+    def _apply(lead, row, force_ftd):
         lead.last_pull_at = now
         changed = False
-        if not lead.is_deposit:
-            lead.is_deposit = True
-            changed = True
-        if lead.status != "FTD":
-            lead.status = "FTD"
-            changed = True
-        if lead.stage != "ftd":
-            lead.stage = "ftd"
-            changed = True
+        sale = row.get("saleStatus") or row.get("status")
+        new_stage = status_to_stage(sale)
+        is_dep = force_ftd or new_stage == "ftd"
+        if is_dep:
+            if not lead.is_deposit:
+                lead.is_deposit = True
+                changed = True
+            if lead.status != "FTD":
+                lead.status = "FTD"
+                changed = True
+            if lead.stage != "ftd":
+                lead.stage = "ftd"
+                changed = True
+        else:
+            if sale and lead.status != str(sale)[:120]:
+                lead.status = str(sale)[:120]
+                changed = True
+            if new_stage and lead.stage != "ftd" and lead.stage != new_stage:
+                lead.stage = new_stage
+                changed = True
         if changed:
             merged = dict(lead.payload or {})
             merged["last_pull"] = row
             lead.payload = merged
             lead.save()
-            updated += 1
+            stats["updated"] += 1
         else:
             lead.save(update_fields=["last_pull_at"])
-    return {"seen": seen, "matched": matched, "updated": updated, "pages": 1}
+
+    def _pass(goal, force_ftd):
+        for row in irev.pull_leads(broker, goal_type_uuid=goal, days=days):
+            if not isinstance(row, dict):
+                continue
+            stats["seen"] += 1
+            lead = _irev_match(qs, row)
+            if lead is None or (only_ids is not None and lead.pk not in only_ids):
+                continue
+            stats["matched"].add(lead.pk)
+            _apply(lead, row, force_ftd)
+
+    if lead_goal:
+        _pass(lead_goal, force_ftd=False)
+    if ftd_goal:
+        _pass(ftd_goal, force_ftd=True)
+    return {"seen": stats["seen"], "matched": len(stats["matched"]),
+            "updated": stats["updated"], "pages": 1}
 
 
 def sync_all_pullable():
