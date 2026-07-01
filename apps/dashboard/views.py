@@ -1,4 +1,5 @@
 import json
+import re
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
@@ -11,6 +12,54 @@ from apps.accounts.mixins import EmailVerifiedRequiredMixin
 from apps.orders.models import Order
 
 User = get_user_model()
+
+
+# Ciambella "Lead per stato": ogni broker scrive lo status in modo diverso
+# (NO ANSWER / NOANSWER / No Answer …). Li accorpiamo in un set fisso di
+# stati canonici, ognuno con un colore dedicato (niente più doppioni né
+# colori ripetuti). Ordine = ordine di visualizzazione nella legenda.
+STATUS_BUCKETS = [
+    # (key,            label,           color)
+    ("new",           "New",           "#2563eb"),  # blu
+    ("no_answer",     "No Answer",     "#d97706"),  # ambra
+    ("low_potential", "Low Potential", "#92400e"),  # marrone
+    ("instant_call",  "Instant Call",  "#0891b2"),  # ciano
+    ("work",          "Work",          "#0d9488"),  # verde acqua
+    ("callback",      "Callback",      "#eab308"),  # giallo
+    ("no_interest",   "No Interest",   "#7c3aed"),  # viola
+    ("no_money",      "No Money",      "#dc2626"),  # rosso
+    ("wrong_number",  "Wrong Number",  "#6b7280"),  # grigio
+    ("ftd",           "FTD",           "#16a34a"),  # verde
+    ("other",         "Altro",         "#94a3b8"),  # grigio chiaro
+]
+
+# Chiave normalizzata (solo a-z0-9) → bucket canonico.
+_STATUS_SYNONYMS = {
+    "new": "new", "newlead": "new", "nuovo": "new", "fresh": "new", "lead": "new",
+    "noanswer": "no_answer", "busynoresponse": "no_answer", "busy": "no_answer",
+    "noresponse": "no_answer", "na": "no_answer", "noanswered": "no_answer",
+    "lowpotential": "low_potential", "notpotential": "low_potential",
+    "lowpot": "low_potential", "lowquality": "low_potential",
+    "instantcall": "instant_call", "instant": "instant_call", "autocall": "instant_call",
+    "work": "work", "working": "work", "inwork": "work", "underwork": "work",
+    "callback": "callback", "recall": "callback", "calllater": "callback",
+    "callbacklater": "callback",
+    "nointerest": "no_interest", "notinterested": "no_interest",
+    "notinterest": "no_interest", "ni": "no_interest",
+    "nomoney": "no_money", "nofunds": "no_money", "nobudget": "no_money",
+    "wrongnumber": "wrong_number", "wrongdetails": "wrong_number",
+    "wronginfo": "wrong_number", "invalidnumber": "wrong_number",
+    "wrongdata": "wrong_number",
+    "ftd": "ftd", "deposit": "ftd", "deposited": "ftd", "depositor": "ftd",
+}
+
+
+def status_bucket(raw):
+    """Normalizza lo status grezzo del broker in uno dei bucket canonici."""
+    key = re.sub(r"[^a-z0-9]", "", (raw or "").lower())
+    if not key:
+        return "new"  # status vuoto = lead nuovo, non ancora lavorato
+    return _STATUS_SYNONYMS.get(key, "other")
 
 
 class DashboardView(LoginRequiredMixin, EmailVerifiedRequiredMixin, View):
@@ -188,10 +237,21 @@ class CrmDashboardView(LoginRequiredMixin, EmailVerifiedRequiredMixin, View):
         ]
         pipeline = {"categories": labels, "value": guad_m, "count": ftd_m}
 
-        # Ciambella: lead per stato.
-        by_status = list(leads.values("status").annotate(n=Count("id")).order_by("-n"))
-        deal_stages = [{"name": (r["status"] or "nuovo"), "value": r["n"]} for r in by_status] \
-            or [{"name": "nessun lead", "value": 0}]
+        # Ciambella: lead per stato canonico. FTD = fonte di verità `is_deposit`;
+        # gli altri stati vengono dal testo grezzo del broker, accorpato in bucket.
+        counts = {}
+        ftd_n = leads.filter(is_deposit=True).count()
+        if ftd_n:
+            counts["ftd"] = ftd_n
+        for r in leads.filter(is_deposit=False).values("status").annotate(n=Count("id")):
+            b = status_bucket(r["status"])
+            if b == "ftd":  # status dice ftd ma non è depositante → è comunque lavorato
+                b = "other"
+            counts[b] = counts.get(b, 0) + r["n"]
+        deal_stages = [
+            {"name": label, "value": counts[key], "color": color}
+            for key, label, color in STATUS_BUCKETS if counts.get(key)
+        ] or [{"name": "nessun lead", "value": 0, "color": "#94a3b8"}]
 
         # Tabella: performance per broker.
         sales_reps = []

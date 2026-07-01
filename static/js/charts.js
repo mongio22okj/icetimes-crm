@@ -303,7 +303,7 @@ function _donutFactory(targetId, dataId) {
                  toolbar: { show: false } },
         series: data.map(d => d.value),
         labels: data.map(d => d.name),
-        colors: VARIANT_PALETTE,
+        colors: data.map((d, i) => d.color || VARIANT_PALETTE[i % VARIANT_PALETTE.length]),
         legend: { position: 'bottom', labels: { colors: c.muted },
                   markers: { size: 6, strokeWidth: 0 },
                   itemMargin: { horizontal: 8, vertical: 4 } },
