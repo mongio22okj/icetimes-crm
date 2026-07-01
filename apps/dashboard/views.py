@@ -67,7 +67,9 @@ class DashboardView(LoginRequiredMixin, EmailVerifiedRequiredMixin, View):
         from apps.tracking.models import Lead, all_brokers
         from django.utils import timezone
 
-        leads = Lead.objects.all()
+        # Escludiamo i duplicati (is_duplicate) da TUTTI i conteggi/statistiche.
+        # Restano visibili solo nella pagina Lead (riga rossa).
+        leads = Lead.objects.filter(is_duplicate=False)
         total = leads.count()
         ftd = leads.filter(is_deposit=True).count()
         conv = round(ftd * 100 / total, 1) if total else 0
@@ -83,7 +85,7 @@ class DashboardView(LoginRequiredMixin, EmailVerifiedRequiredMixin, View):
         ]
         by_broker = []
         for b in sorted(brokers, key=lambda x: x.name.lower()):
-            bl = Lead.for_broker(b)
+            bl = Lead.for_broker(b).filter(is_duplicate=False)
             by_broker.append({"name": b.name, "leads": bl.count(),
                               "ftd": bl.filter(is_deposit=True).count()})
         recent_leads = leads.order_by("-created_at")[:10]
@@ -190,7 +192,10 @@ class CrmDashboardView(LoginRequiredMixin, EmailVerifiedRequiredMixin, View):
         if ":" in sel_val:
             k, _, pid = sel_val.partition(":")
             selected = broker_by_kind(k, pid)
-        leads = Lead.for_broker(selected) if selected else Lead.objects.all()
+        # Escludiamo i duplicati (is_duplicate) da TUTTI i conteggi/statistiche
+        # e dalla ciambella. Restano visibili solo nella pagina Lead.
+        leads = (Lead.for_broker(selected) if selected
+                 else Lead.objects.all()).filter(is_duplicate=False)
         brokers = [selected] if selected else brokers_all
         broker_options = [{"value": f"{b.kind}:{b.pk}", "name": b.name} for b in brokers_all]
 
@@ -256,7 +261,7 @@ class CrmDashboardView(LoginRequiredMixin, EmailVerifiedRequiredMixin, View):
         # Tabella: performance per broker.
         sales_reps = []
         for b in sorted(brokers, key=lambda x: x.name.lower()):
-            bl = Lead.for_broker(b)
+            bl = Lead.for_broker(b).filter(is_duplicate=False)
             bt = bl.count()
             bf = bl.filter(is_deposit=True).count()
             sales_reps.append({
@@ -266,7 +271,8 @@ class CrmDashboardView(LoginRequiredMixin, EmailVerifiedRequiredMixin, View):
             })
 
         # Bar chart: lead per broker.
-        lead_sources = [{"source": b.name, "leads": Lead.for_broker(b).count()}
+        lead_sources = [{"source": b.name,
+                         "leads": Lead.for_broker(b).filter(is_duplicate=False).count()}
                         for b in sorted(brokers, key=lambda x: x.name.lower())]
 
         # Tabella: lead recenti.
