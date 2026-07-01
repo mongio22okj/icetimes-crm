@@ -464,6 +464,10 @@ class Lead(models.Model):
 
     status = models.CharField("Stato", max_length=120, blank=True)
     is_deposit = models.BooleanField("FTD", default=False)
+    # Antifrode: lead riconosciuto come duplicato sullo STESSO broker.
+    # Viene salvato nel CRM (riga rossa) ma NON inviato al broker.
+    is_duplicate = models.BooleanField("Duplicato", default=False)
+    duplicate_reason = models.CharField("Motivo duplicato", max_length=40, blank=True)
     # Fase interna (pipeline call-center), separata dallo `status` grezzo broker.
     STAGE_CHOICES = [
         ("nuovo", "Nuovo"),

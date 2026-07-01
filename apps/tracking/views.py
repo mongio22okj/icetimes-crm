@@ -114,17 +114,36 @@ def _rate_limited(ip, limit=5, window=60):
     return False
 
 
-def _is_duplicate(broker, email, phone):
-    """True se per QUESTO broker esiste già un lead con stessa email o telefono."""
+def _duplicate_reason(broker, email, phone, ip, firstname, lastname):
+    """Antifrode per-broker. Ritorna il MOTIVO del duplicato (str) o None.
+
+    Sullo STESSO broker bloccano da soli: stessa email, stesso telefono,
+    stesso nome+cognome. L'IP blocca solo se combinato con uno di questi
+    (gli IP condivisi — mobile/ufficio — darebbero troppi falsi positivi)."""
     from django.db.models import Q
-    cond = Q()
-    if email:
-        cond |= Q(email__iexact=email)
-    if phone:
-        cond |= Q(phone=phone)
-    if not cond.children:
-        return False
-    return Lead.for_broker(broker).filter(cond).exists()
+    qs = Lead.for_broker(broker)
+    email = (email or "").strip()
+    phone = (phone or "").strip()
+    fn = (firstname or "").strip()
+    ln = (lastname or "").strip()
+
+    if email and qs.filter(email__iexact=email).exists():
+        return "email"
+    if phone and qs.filter(phone=phone).exists():
+        return "telefono"
+    if fn and ln and qs.filter(firstname__iexact=fn, lastname__iexact=ln).exists():
+        return "nome"
+    if ip:
+        combo = Q()
+        if email:
+            combo |= Q(email__iexact=email)
+        if phone:
+            combo |= Q(phone=phone)
+        if fn and ln:
+            combo |= (Q(firstname__iexact=fn) & Q(lastname__iexact=ln))
+        if combo.children and qs.filter(Q(ip=ip) & combo).exists():
+            return "ip"
+    return None
 
 
 def _landing_render(request, broker, form, error=None, status=200):
@@ -153,14 +172,22 @@ def landing(request, slug):
             return _landing_render(request, broker, form,
                                    "Troppi invii, riprova tra poco.", 429)
         if form.is_valid():
-            email = form.cleaned_data.get("email")
-            phone = form.cleaned_data.get("phone")
-            if _is_duplicate(broker, email, phone):
-                return _landing_render(request, broker, form,
-                                       "Lead già registrato.", 409)
+            cd = form.cleaned_data
+            reason = _duplicate_reason(
+                broker, cd.get("email"), cd.get("phone"), ip,
+                cd.get("firstname"), cd.get("lastname"))
             lead = form.save(commit=False)
             lead.broker = broker
             lead.ip = ip
+            if reason:
+                # Duplicato: si salva nel CRM (riga rossa) ma NON si invia al
+                # broker. Nessuna chiamata: la push viene saltata del tutto.
+                lead.is_duplicate = True
+                lead.duplicate_reason = reason
+                lead.status = "DUPLICATO"
+                lead.save()
+                return render(request, "tracking/landing_duplicate.html",
+                              {"broker": broker}, status=409)
             lead.status = "new"
             lead.save()
             res = _do_push(lead, broker)
