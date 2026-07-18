@@ -55,7 +55,7 @@
   </div>
 
   {# ── Lead recenti ──────────────────────────────────────────────── #}
-  <div class="rounded-lg border border-border bg-card xl:col-span-2 overflow-hidden">
+  <div id="recent-leads-wrap" class="rounded-lg border border-border bg-card xl:col-span-2 overflow-hidden" hx-get="{% url 'dashboard' %}" hx-trigger="every 15s" hx-select="#recent-leads-wrap" hx-target="#recent-leads-wrap" hx-swap="outerHTML">
     <div class="flex items-center justify-between px-5 pt-5 pb-3">
       <h2 class="text-base font-semibold">Lead recenti</h2>
       <a href="{% url 'tracking:lead_list' %}" class="text-sm text-primary hover:underline">Tutti i lead</a>
@@ -78,21 +78,21 @@
         </thead>
         <tbody class="divide-y divide-border">
           {% for l in recent_leads %}
-          <tr class="align-middle transition-colors {% if l.is_deposit %}bg-success/10 border-l-2 border-l-success{% else %}hover:bg-accent/30{% endif %}">
-            <td class="px-4 py-2.5 text-muted-foreground whitespace-nowrap">{{ l.created_at|date:"d/m H:i" }}</td>
+          <tr class="align-middle transition-colors {% if l.is_deposit %}bg-success/10 border-l-2 border-l-success{% elif l.payload.deposit_pending %}border-l-2{% else %}hover:bg-accent/30{% endif %}"{% if l.is_deposit %} style="background-color: rgba(34,197,94,0.40); border-left-color: #22c55e"{% elif l.payload.deposit_pending %} style="background-color: rgba(250,204,21,0.40); border-left-color: #eab308"{% endif %}>
+            <td class="px-4 py-2.5 whitespace-nowrap">{{ l.created_at|date:"d/m H:i" }}</td>
             <td class="px-4 py-2.5 font-medium whitespace-nowrap">{{ l.firstname|default:"—" }}</td>
             <td class="px-4 py-2.5 font-medium whitespace-nowrap">{{ l.lastname|default:"—" }}</td>
-            <td class="px-4 py-2.5 text-muted-foreground">{{ l.email|default:"—" }}</td>
-            <td class="px-4 py-2.5 text-muted-foreground whitespace-nowrap">{{ l.phone|default:"—" }}</td>
-            <td class="px-4 py-2.5 text-muted-foreground whitespace-nowrap">{{ l.broker_name|default:"—" }}</td>
+            <td class="px-4 py-2.5">{{ l.email|default:"—" }}</td>
+            <td class="px-4 py-2.5 whitespace-nowrap">{{ l.phone|default:"—" }}</td>
+            <td class="px-4 py-2.5 whitespace-nowrap">{{ l.broker_name|default:"—" }}</td>
             <td class="px-4 py-2.5">
               {% if l.is_deposit %}
                 <span class="inline-flex items-center px-2 h-6 rounded-md text-xs font-semibold bg-success/15 text-success">FTD</span>
               {% else %}
-                <span class="inline-flex items-center px-2 h-6 rounded-md text-xs font-medium bg-muted text-muted-foreground whitespace-nowrap">{{ l.status|default:"—" }}</span>
+                <span class="inline-flex items-center px-2.5 h-6 rounded-md text-xs font-semibold whitespace-nowrap" style="background-color: {{ l.badge_color }}; color: #fff;">{{ l.status|default:"New" }}</span>
               {% endif %}
             </td>
-            <td class="px-4 py-2.5 text-muted-foreground font-mono text-xs">{{ l.click_id|default:"—" }}</td>
+            <td class="px-4 py-2.5 font-mono text-xs">{{ l.click_id|default:"—" }}</td>
             <td class="px-4 py-2.5 text-center">
               {% if l.is_deposit %}
               <span class="inline-flex items-center gap-1">

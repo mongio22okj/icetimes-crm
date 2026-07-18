@@ -39,7 +39,7 @@ def notify_new_lead(lead, result=None):
         routing = ("✅ %s — OK" % _e(broker_name)) if autologin else ("⏳ %s" % _e(broker_name))
 
     lines = [
-        "🆕 <b>NUOVO LEAD</b>",
+        ("🚨 <b>PUSH FALLITO — lead NON inviato al broker</b>" if (result is not None and not result.get("success")) else "🆕 <b>NUOVO LEAD</b>"),
         "👤 <b>%s</b>" % _e(nome),
         "📧 %s" % _e(lead.email),
         "📞 %s" % _e(lead.phone),

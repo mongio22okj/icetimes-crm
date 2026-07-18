@@ -78,6 +78,7 @@ MIDDLEWARE = [
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "apps.accounts.middleware.LockedSessionMiddleware",
+    "apps.accounts.middleware.ViewerScopeMiddleware",
     "apps.accounts.middleware.SessionMetadataMiddleware",
     "apps.accounts.throttle.LoginThrottleMiddleware",
     "apps.organizations.middleware.OrganizationMiddleware",

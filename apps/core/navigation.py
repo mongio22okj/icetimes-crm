@@ -20,6 +20,7 @@ class NavItem:
     group: object = "Overview"  # gettext_lazy proxy or str
     requires_staff: bool = False
     requires_admin: bool = False  # solo Super Admin (User.is_crm_admin)
+    requires_manager: bool = False  # Admin o Manager (non Visualizzatore)
 
     def resolved_url(self) -> str:
         return reverse(self.url_name)
@@ -34,7 +35,7 @@ NAV_ITEMS: tuple[NavItem, ...] = (
     NavItem(_("CRM"), "dashboard_crm", "trending-up",
             keywords=("crm", "guadagno", "spesa", "profitto", "ftd", "broker",
                       "pipeline", "performance"),
-            group=G_CRM, requires_staff=True),
+            group=G_CRM, requires_staff=True, requires_manager=True),
     NavItem(_("Dashboard"), "dashboard", "layout-dashboard",
             keywords=("home", "overview", "dashboard", "kpi", "lead", "ftd"),
             group=G_CRM, requires_staff=True),
@@ -51,13 +52,13 @@ NAV_ITEMS: tuple[NavItem, ...] = (
             group=G_ACCOUNT, requires_staff=True, requires_admin=True),
     NavItem(_("Users"), "users:list", "users",
             keywords=("team", "staff", "members", "users"),
-            group=G_ACCOUNT, requires_staff=True),
+            group=G_ACCOUNT, requires_staff=True, requires_manager=True),
     NavItem(_("Settings"), "settings:profile", "settings",
             keywords=("account", "profile", "preferences", "settings"),
             group=G_ACCOUNT),
     NavItem(_("Guida"), "tracking:guide", "book-open",
             keywords=("guida", "help", "aiuto", "manuale", "istruzioni", "guide"),
-            group=G_ACCOUNT, requires_staff=True),
+            group=G_ACCOUNT, requires_staff=True, requires_manager=True),
 )
 
 
@@ -65,9 +66,12 @@ def get_visible_items(user) -> list[NavItem]:
     if user is None or not getattr(user, "is_authenticated", False):
         return [i for i in NAV_ITEMS if not i.requires_staff and not i.requires_admin]
     is_admin = bool(getattr(user, "is_crm_admin", False))
+    is_manager = is_admin or bool(getattr(user, "is_crm_marketer", False))
     out = []
     for i in NAV_ITEMS:
         if i.requires_admin and not is_admin:
+            continue
+        if i.requires_manager and not is_manager:
             continue
         if i.requires_staff and not user.is_staff:
             continue

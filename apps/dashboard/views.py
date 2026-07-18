@@ -67,9 +67,16 @@ class DashboardView(LoginRequiredMixin, EmailVerifiedRequiredMixin, View):
         from apps.tracking.models import Lead, all_brokers
         from django.utils import timezone
 
-        # Escludiamo i duplicati (is_duplicate) da TUTTI i conteggi/statistiche.
+        # Escludiamo i duplicati (is_duplicate) E i lead di TEST ("test" in
+        # nome/cognome/email o status "Test") da TUTTI i conteggi/statistiche.
         # Restano visibili solo nella pagina Lead (riga rossa).
-        leads = Lead.objects.filter(is_duplicate=False)
+        from django.db.models import Q as _Q
+        _test_q = (_Q(firstname__icontains="test") | _Q(lastname__icontains="test")
+                   | _Q(email__icontains="test") | _Q(status__iexact="test"))
+        # Contano SOLO i lead VALIDI: consegnati al broker (hanno l'auto-login).
+        # Errori di push, duplicati e test restano fuori da tutti i numeri.
+        leads = (Lead.objects.filter(is_duplicate=False)
+                 .filter(payload__has_key="login_url").exclude(_test_q))
         total = leads.count()
         ftd = leads.filter(is_deposit=True).count()
         conv = round(ftd * 100 / total, 1) if total else 0
@@ -85,10 +92,14 @@ class DashboardView(LoginRequiredMixin, EmailVerifiedRequiredMixin, View):
         ]
         by_broker = []
         for b in sorted(brokers, key=lambda x: x.name.lower()):
-            bl = Lead.for_broker(b).filter(is_duplicate=False)
+            bl = (Lead.for_broker(b).filter(is_duplicate=False)
+                  .filter(payload__has_key="login_url").exclude(_test_q))
             by_broker.append({"name": b.name, "leads": bl.count(),
                               "ftd": bl.filter(is_deposit=True).count()})
-        recent_leads = leads.order_by("-created_at")[:10]
+        recent_leads = list(leads.order_by("-created_at")[:10])
+        _badge_colors = {k: c for k, _lbl, c in STATUS_BUCKETS}
+        for _l in recent_leads:
+            _l.badge_color = _badge_colors["ftd"] if _l.is_deposit else _badge_colors.get(status_bucket(_l.status), "#94a3b8")
         return render(request, "dashboard/index.html", {
             "kpis": kpis,
             "by_broker": by_broker,
@@ -180,7 +191,12 @@ class CrmDashboardView(LoginRequiredMixin, EmailVerifiedRequiredMixin, View):
 
         # Modello economico: lead non-FTD = costo €7; lead FTD = costo €300
         # (deposito) e premio €850. Profitto = guadagno − spesa.
-        LEAD_COST, FTD_COST, FTD_PRIZE = 7, 300, 850
+        LEAD_COST, FTD_COST, FTD_PRIZE = 7, 300, 850   # FTD_PRIZE = default IT
+        FOREIGN_LEAD_COST = 10                          # lead non-FTD ES/SE/DE
+        FOREIGN_GEOS = ("ES", "SE", "DE")
+        FTD_PRIZE_GEO = {"ES": 900, "DE": 1000, "SE": 1000}  # payout FTD per geo
+        FTD_PRIZE_FACEBOOK = 725                        # payout FTD Link Facebook
+        PENDING_COST = 250                             # lead depositato NON confermato (giallo)
 
         def eur(v):
             return "€" + f"{int(v):,}".replace(",", ".")
@@ -196,15 +212,69 @@ class CrmDashboardView(LoginRequiredMixin, EmailVerifiedRequiredMixin, View):
         # e dalla ciambella. Restano visibili solo nella pagina Lead.
         leads = (Lead.for_broker(selected) if selected
                  else Lead.objects.all()).filter(is_duplicate=False)
+        # Escludi i lead di TEST da spesa/guadagno/statistiche: "test" nel
+        # nome, cognome o email, oppure status "Test" assegnato dal broker.
+        # Restano visibili solo nella pagina Lead.
+        from django.db.models import Q as _Q
+        _test_q = (_Q(firstname__icontains="test") | _Q(lastname__icontains="test")
+                   | _Q(email__icontains="test") | _Q(status__iexact="test"))
+        leads = leads.filter(payload__has_key="login_url").exclude(_test_q)
         brokers = [selected] if selected else brokers_all
         broker_options = [{"value": f"{b.kind}:{b.pk}", "name": b.name} for b in brokers_all]
 
         total = leads.count()
         ftd = leads.filter(is_deposit=True).count()
         non_ftd = total - ftd
-        guadagno = ftd * FTD_PRIZE
-        spesa = non_ftd * LEAD_COST + ftd * FTD_COST
-        profitto = guadagno - spesa
+        # Prezzi variabili per broker (Link Facebook) e per geo (ES/SE/DE).
+        from django.contrib.contenttypes.models import ContentType as _CT
+        from django.db.models import Q as _Qb
+        _fb_q = _Qb(pk__in=[])
+        _fb_keys = set()
+        for _b in brokers_all:
+            if "facebook" in _b.name.lower():
+                _ct = _CT.objects.get_for_model(type(_b))
+                _fb_q |= _Qb(broker_content_type=_ct, broker_object_id=_b.pk)
+                _fb_keys.add((_ct.id, _b.pk))
+
+        def lead_cost(qs):
+            nf = qs.filter(is_deposit=False)
+            nf_tot = nf.count()
+            giallo = nf.filter(payload__deposit_pending=True).count()
+            estero_tot = nf.filter(country__in=FOREIGN_GEOS).count()
+            estero_giallo = nf.filter(payload__deposit_pending=True,
+                                      country__in=FOREIGN_GEOS).count()
+            estero = estero_tot - estero_giallo        # esteri NON gialli
+            interno = (nf_tot - giallo) - estero       # italiani NON gialli
+            return giallo * PENDING_COST + estero * FOREIGN_LEAD_COST + interno * LEAD_COST
+
+        def ftd_revenue(qs):
+            fq = qs.filter(is_deposit=True)
+            fb = fq.filter(_fb_q).count()
+            rest = fq.exclude(_fb_q)
+            es = rest.filter(country="ES").count()
+            de = rest.filter(country="DE").count()
+            se = rest.filter(country="SE").count()
+            other = rest.count() - es - de - se
+            return (fb * FTD_PRIZE_FACEBOOK + es * FTD_PRIZE_GEO["ES"]
+                    + de * FTD_PRIZE_GEO["DE"] + se * FTD_PRIZE_GEO["SE"]
+                    + other * FTD_PRIZE)
+
+        def lead_value(l):
+            if l.is_deposit:
+                if (l.broker_content_type_id, l.broker_object_id) in _fb_keys:
+                    return FTD_PRIZE_FACEBOOK
+                return FTD_PRIZE_GEO.get((l.country or "").upper(), FTD_PRIZE)
+            if (l.payload or {}).get("deposit_pending"):
+                return PENDING_COST
+            return FOREIGN_LEAD_COST if (l.country or "").upper() in FOREIGN_GEOS else LEAD_COST
+        # Guadagno TOTALE da tutte le FTD; le FTD gia' pagate (ftd_paid) sono
+        # gia' state incassate → il KPI "Guadagno" mostra solo il DA INCASSARE.
+        # Il Profitto resta calcolato sul TOTALE (non si falsa).
+        guadagno_totale = ftd_revenue(leads)
+        incassato = ftd_revenue(leads.filter(ftd_paid=True))
+        guadagno = guadagno_totale - incassato   # ancora da incassare
+        spesa = lead_cost(leads) + ftd * FTD_COST
+        profitto = guadagno_totale - spesa
         win_rate = round(ftd * 100 / total, 1) if total else 0
         n_brokers = sum(1 for b in brokers if b.is_active)
 
@@ -225,15 +295,15 @@ class CrmDashboardView(LoginRequiredMixin, EmailVerifiedRequiredMixin, View):
             labels.append(date(y2, m2, 1).strftime("%b"))
             lead_m.append(lc)
             ftd_m.append(fc)
-            g = fc * FTD_PRIZE
-            s = (lc - fc) * LEAD_COST + fc * FTD_COST
+            g = ftd_revenue(qs)
+            s = lead_cost(qs) + fc * FTD_COST
             guad_m.append(g)
             prof_m.append(g - s)
 
         stats = [
             {"label": "Broker", "value": str(n_brokers), "delta": "", "trend": "up",
              "icon": "building-2", "accent": "#16a34a", "spark": _json.dumps(lead_m)},
-            {"label": "Guadagno", "value": eur(guadagno), "delta": "", "trend": "up",
+            {"label": "Guadagno (da incassare)", "value": eur(guadagno), "delta": "", "trend": "up",
              "icon": "trophy", "accent": "#0891b2", "spark": _json.dumps(guad_m)},
             {"label": "Tasso FTD", "value": f"{win_rate}%", "delta": "", "trend": "up",
              "icon": "target", "accent": "#6366f1", "spark": _json.dumps(ftd_m)},
@@ -261,18 +331,21 @@ class CrmDashboardView(LoginRequiredMixin, EmailVerifiedRequiredMixin, View):
         # Tabella: performance per broker.
         sales_reps = []
         for b in sorted(brokers, key=lambda x: x.name.lower()):
-            bl = Lead.for_broker(b).filter(is_duplicate=False)
+            bl = (Lead.for_broker(b).filter(is_duplicate=False)
+                  .filter(payload__has_key="login_url").exclude(_test_q))
             bt = bl.count()
             bf = bl.filter(is_deposit=True).count()
             sales_reps.append({
                 "name": b.name, "initials": (b.name[:2]).upper(), "role": b.kind_label,
-                "won": bf, "revenue": bf * FTD_PRIZE,
+                "won": bf, "revenue": ftd_revenue(bl),
                 "rate": round(bf * 100 / bt) if bt else 0,
             })
 
         # Bar chart: lead per broker.
         lead_sources = [{"source": b.name,
-                         "leads": Lead.for_broker(b).filter(is_duplicate=False).count()}
+                         "leads": Lead.for_broker(b).filter(is_duplicate=False)
+                                      .filter(payload__has_key="login_url")
+                                      .exclude(_test_q).count()}
                         for b in sorted(brokers, key=lambda x: x.name.lower())]
 
         # Tabella: lead recenti.
@@ -281,13 +354,13 @@ class CrmDashboardView(LoginRequiredMixin, EmailVerifiedRequiredMixin, View):
             recent_deals.append({
                 "deal": l.full_name or l.email or l.click_id,
                 "company": l.broker_name or "—",
-                "value": FTD_PRIZE if l.is_deposit else LEAD_COST,
+                "value": lead_value(l),
                 "stage": "won" if l.is_deposit else "qualified",
                 "close": l.created_at.strftime("%d/%m"),
             })
 
         targets = [
-            {"label": "Guadagno", "current": guadagno, "target": max(guadagno * 2, 1000),
+            {"label": "Guadagno", "current": guadagno_totale, "target": max(guadagno_totale * 2, 1000),
              "accent": "#16a34a", "is_money": False, "suffix": " €"},
             {"label": "Spesa", "current": spesa, "target": max(spesa * 2, 1000),
              "accent": "#d97706", "is_money": False, "suffix": " €"},
@@ -305,8 +378,8 @@ class CrmDashboardView(LoginRequiredMixin, EmailVerifiedRequiredMixin, View):
             wl = wqs.count()
             wf = wqs.filter(is_deposit=True).count()
             wnf = wl - wf
-            wg = wf * FTD_PRIZE
-            wsp = wnf * LEAD_COST + wf * FTD_COST
+            wg = ftd_revenue(wqs)
+            wsp = lead_cost(wqs) + wf * FTD_COST
             weeks.append({
                 "label": f"{ws.strftime('%d/%m')}–{we.strftime('%d/%m')}",
                 "in_corso": (i == 0),
@@ -327,7 +400,10 @@ class CrmDashboardView(LoginRequiredMixin, EmailVerifiedRequiredMixin, View):
             "selected_broker": sel_val,
             "selected_broker_name": selected.name if selected else "",
             "econ": {"lead": total, "ftd": ftd, "non_ftd": non_ftd,
-                     "guadagno": eur(guadagno), "spesa": eur(spesa), "profitto": eur(profitto)},
+                     "guadagno": eur(guadagno), "incassato": eur(incassato),
+                     "totale": eur(guadagno_totale),
+                     "ftd_pagate": leads.filter(ftd_paid=True).count(),
+                     "spesa": eur(spesa), "profitto": eur(profitto)},
             "breadcrumbs": [("Dashboards", "/"), ("CRM", None)],
         })
 

@@ -1,6 +1,8 @@
 from django import forms
 
-from .models import IrevBroker, Lead, SpmMonsterBroker, TrackboxBroker, TYourAdsBroker, GalassiaBroker
+from .models import (IrevBroker, Lead, SpmMonsterBroker, TrackboxBroker,
+                     TYourAdsBroker, GalassiaBroker, OpenAffBroker,
+                     GlobalTradeBroker, OneCryptBroker, CpaForgeBroker)
 
 BASE_INPUT = (
     "w-full h-10 rounded-md border border-input bg-background px-3 text-sm "
@@ -166,6 +168,83 @@ class GalassiaBrokerForm(forms.ModelForm):
         )
         widgets = {
             "base_url": forms.URLInput(attrs={"placeholder": "https://elnopy.crypto-galassia.com"}),
+            "landing_html": forms.Textarea(attrs={"rows": 12}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        _style_broker_fields(self)
+
+
+class OpenAffBrokerForm(forms.ModelForm):
+    class Meta:
+        model = OpenAffBroker
+        fields = (
+            "name", "base_url", "token", "aff_id", "offer_id", "funnel",
+            "landing_slug", "landing_brand", "note", "landing_html",
+            "match_by_contact", "is_active",
+        )
+        widgets = {
+            "base_url": forms.URLInput(attrs={"placeholder": "http://vip.kofoboo.com"}),
+            "token": forms.Textarea(attrs={"rows": 3}),
+            "landing_html": forms.Textarea(attrs={"rows": 12}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        _style_broker_fields(self)
+
+
+class GlobalTradeBrokerForm(forms.ModelForm):
+    class Meta:
+        model = GlobalTradeBroker
+        fields = (
+            "name", "base_url", "token", "user_id", "source", "funnel",
+            "landing_domain", "landing_slug", "landing_brand", "note",
+            "landing_html", "match_by_contact", "is_active",
+        )
+        widgets = {
+            "base_url": forms.URLInput(attrs={
+                "placeholder": "https://crm.globaltrade-company.live"}),
+            "token": forms.Textarea(attrs={"rows": 3}),
+            "landing_html": forms.Textarea(attrs={"rows": 12}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        _style_broker_fields(self)
+
+
+class OneCryptBrokerForm(forms.ModelForm):
+    class Meta:
+        model = OneCryptBroker
+        fields = (
+            "name", "base_url", "key", "web_id", "offer_id", "funnel",
+            "landing_slug", "landing_brand", "note", "landing_html",
+            "match_by_contact", "is_active",
+        )
+        widgets = {
+            "base_url": forms.URLInput(attrs={
+                "placeholder": "http://api.onecrypt.link"}),
+            "landing_html": forms.Textarea(attrs={"rows": 12}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        _style_broker_fields(self)
+
+
+class CpaForgeBrokerForm(forms.ModelForm):
+    class Meta:
+        model = CpaForgeBroker
+        fields = (
+            "name", "base_url", "key", "offer_name", "funnel",
+            "landing_slug", "landing_brand", "note", "landing_html",
+            "match_by_contact", "is_active",
+        )
+        widgets = {
+            "base_url": forms.URLInput(attrs={
+                "placeholder": "https://cpfrg-api.com"}),
             "landing_html": forms.Textarea(attrs={"rows": 12}),
         }
 

@@ -6,7 +6,7 @@
   <div>
     <h1 class="text-2xl font-bold tracking-tight">CRM{% if selected_broker_name %} — {{ selected_broker_name }}{% endif %}</h1>
     <p class="mt-1 text-sm text-muted-foreground">
-      {{ econ.lead }} lead · {{ econ.ftd }} FTD · Guadagno {{ econ.guadagno }} · Spesa {{ econ.spesa }} · Profitto {{ econ.profitto }}
+      {{ econ.lead }} lead · {{ econ.ftd }} FTD · Guadagno totale {{ econ.totale }} · <span style="color:#38bdf8">Incassato {{ econ.incassato }}{% if econ.ftd_pagate %} ({{ econ.ftd_pagate }} FTD){% endif %}</span> · Da incassare {{ econ.guadagno }} · Spesa {{ econ.spesa }} · Profitto {{ econ.profitto }}
     </p>
   </div>
   <form method="get" class="flex items-center gap-2">

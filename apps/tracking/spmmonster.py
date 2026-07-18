@@ -51,9 +51,17 @@ def _request(broker, method, payload=None, params=None, timeout=30):
         raise SpmError(f"JSON non valido: {body[:200]}") from exc
 
 
+# Il codice paese NON sempre coincide con il codice lingua ISO 639-1:
+# SE (Svezia) -> "sv" (non "se" = sami), GB/UK -> "en", DK -> "da", ecc.
+_COUNTRY_LANG = {
+    "SE": "sv", "GB": "en", "UK": "en", "IE": "en", "DK": "da",
+    "AT": "de", "CH": "de", "BE": "nl", "GR": "el",
+}
+
+
 def build_push_payload(broker, lead):
     geo = (lead.country or "IT").upper()
-    lang = (lead.country or "IT").lower()
+    lang = _COUNTRY_LANG.get(geo, geo.lower())
     return {
         "affc": broker.affc,
         "bxc": broker.bxc,

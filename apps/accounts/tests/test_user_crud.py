@@ -31,8 +31,9 @@ def test_staff_can_list_users(client):
 
 
 @pytest.mark.django_db
-def test_staff_can_create_user(client):
-    client.force_login(UserFactory(is_staff=True))
+def test_admin_can_create_user(client):
+    # Super Admin (role 'admin') can create users.
+    client.force_login(UserFactory(is_staff=True, role="admin"))
     response = client.post("/users/new/", {
         "username": "created",
         "email": "c@example.com",
@@ -63,10 +64,27 @@ def test_non_staff_cannot_create_user(client):
 
 
 @pytest.mark.django_db
-def test_staff_can_update_user(client):
-    staff = UserFactory(is_staff=True)
+def test_viewer_cannot_create_user(client):
+    # A Visualizzatore (staff + role 'staff') can view but never create.
+    client.force_login(UserFactory(is_staff=True, role="staff"))
+    response = client.post("/users/new/", {
+        "username": "nope",
+        "email": "n@example.com",
+        "first_name": "N",
+        "last_name": "O",
+        "role": "staff",
+        "password1": "Complex-passw0rd-1",
+        "password2": "Complex-passw0rd-1",
+    })
+    assert response.status_code == 403
+    assert not User.objects.filter(username="nope").exists()
+
+
+@pytest.mark.django_db
+def test_admin_can_update_user(client):
+    admin = UserFactory(is_staff=True, role="admin")
     target = UserFactory(first_name="Old")
-    client.force_login(staff)
+    client.force_login(admin)
     response = client.post(f"/users/{target.pk}/edit/", {
         "username": target.username,
         "email": target.email,
@@ -79,6 +97,35 @@ def test_staff_can_update_user(client):
     target.refresh_from_db()
     assert target.first_name == "New"
     assert target.bio == "Edited"
+
+
+@pytest.mark.django_db
+def test_viewer_cannot_update_user(client):
+    viewer = UserFactory(is_staff=True, role="staff")
+    target = UserFactory(first_name="Old")
+    client.force_login(viewer)
+    response = client.post(f"/users/{target.pk}/edit/", {
+        "username": target.username,
+        "email": target.email,
+        "first_name": "New",
+        "last_name": target.last_name,
+        "role": target.role,
+        "bio": "Edited",
+    })
+    assert response.status_code == 403
+    target.refresh_from_db()
+    assert target.first_name == "Old"
+
+
+@pytest.mark.django_db
+def test_viewer_cannot_toggle_access(client):
+    viewer = UserFactory(is_staff=True, role="staff")
+    target = UserFactory(is_active=True)
+    client.force_login(viewer)
+    response = client.post(f"/users/{target.pk}/access/")
+    assert response.status_code == 403
+    target.refresh_from_db()
+    assert target.is_active is True
 
 
 @pytest.mark.django_db

@@ -18,3 +18,10 @@ test-results/
 CLAUDE.md
 user_files/
 media/
+
+# backup automatici degli hotfix di produzione — non committare
+*.bak
+*.bak.*
+*.orig
+_bak_*
+.env.bak.*

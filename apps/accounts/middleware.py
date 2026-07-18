@@ -37,6 +37,59 @@ class LockedSessionMiddleware:
         return self.get_response(request)
 
 
+# Sezioni riservate ad Admin/Marketer: un Visualizzatore che vi accede
+# (anche digitando l'URL a mano) viene rediretto alla dashboard. La sidebar
+# gli mostra già solo Dashboard + Lead; questo è il rinforzo lato server per
+# le aree sensibili (gestione utenti, credenziali broker, dashboard
+# finanziaria, admin, fatturazione, azioni di scrittura sui lead).
+VIEWER_BLOCKED_PREFIXES = (
+    "/users",              # gestione team/utenti
+    "/tracking/brokers",   # credenziali broker API
+    "/tracking/guida",     # guida operativa (manager/admin)
+    "/tracking/sync",      # sync-all
+    "/tracking/leads/",    # azioni scrittura sui lead (push/reroute/sync-selected)
+    "/dashboards/",        # dashboard CRM finanziaria + varianti
+    "/charts",             # grafici/dati finanziari
+    "/admin/",             # Django admin
+    "/billing",            # abbonamento/fatturazione
+    "/orgs",               # organizzazioni
+)
+
+
+class ViewerScopeMiddleware:
+    """Confina i Visualizzatori a Dashboard + Lead.
+
+    Un Visualizzatore = utente staff che NON è Super Admin né Marketer
+    (role 'staff'). Se prova a raggiungere una sezione riservata
+    (VIEWER_BLOCKED_PREFIXES) viene rediretto alla dashboard. Admin e
+    Marketer non sono toccati.
+
+    Va dopo AuthenticationMiddleware (usa request.user).
+    """
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        user = getattr(request, "user", None)
+        if (
+            user is not None
+            and getattr(user, "is_authenticated", False)
+            and self._is_viewer(user)
+            and request.path.startswith(VIEWER_BLOCKED_PREFIXES)
+        ):
+            return redirect("dashboard")
+        return self.get_response(request)
+
+    @staticmethod
+    def _is_viewer(user) -> bool:
+        return bool(
+            getattr(user, "is_staff", False)
+            and not getattr(user, "is_crm_admin", False)
+            and not getattr(user, "is_crm_marketer", False)
+        )
+
+
 SESSION_TOUCH_INTERVAL_SECONDS = 60
 
 

@@ -219,13 +219,40 @@ _STATUS_BADGE_DEFAULT = "bg-slate-500/12 text-slate-700 dark:text-slate-300 ring
 
 @register.filter
 def status_badge_class(value):
-    """Classi Tailwind per il badge dello stato lead, in base al testo."""
-    s = str(value or "").strip().lower()
-    if not s:
+    """Colore del badge dello stato grezzo del broker, COERENTE col significato
+    e con la palette della Fase. Normalizza (rimuove spazi/underscore/trattini)
+    cosi tutte le varianti dello stesso stato (NO ANSWER / NoAnswer / NOANSWER)
+    hanno lo stesso colore."""
+    raw = str(value or "").strip().lower()
+    if not raw:
         return _STATUS_BADGE_DEFAULT
-    for keys, cls in _STATUS_BADGE_RULES:
-        if any(k in s for k in keys):
-            return cls
+    s = raw.replace(" ", "").replace("_", "").replace("-", "")
+
+    def has(*ks):
+        return any(k in s for k in ks)
+
+    if has("ftd", "deposit", "sale", "converted"):
+        return _STAGE_BADGE["ftd"]                 # verde
+    if has("callback", "callagain", "calllater", "richiam", "ricontatt", "followup"):
+        return _STAGE_BADGE["callback"]            # azzurro
+    if has("nopotential", "notpotential", "nessunpotenzial", "novalue", "zeropotential"):
+        return _STAGE_BADGE["nessun_potenziale"]   # grigio
+    if has("lowpotential", "bassopotenzial", "lowvalue", "lowquality", "lowpriority"):
+        return _STAGE_BADGE["basso_potenziale"]    # giallo
+    if has("notinterested", "nointerest", "uninterested", "noninteress", "reject",
+           "invalid", "fake", "trash", "junk", "duplicate", "dup", "spam",
+           "wronginfo", "wrongdetails", "wrongdata", "nomoney", "declined", "fraud"):
+        return _STAGE_BADGE["not_interested"]      # rosso
+    if has("noanswer", "notreachable", "noresponse", "nonrispon", "unreachable",
+           "busy", "voicemail", "wrongnumber", "hangup", "hungup", "noreply",
+           "answermachine", "answeringmachine", "nopickup", "didnotanswer"):
+        return _STAGE_BADGE["no_answer"]           # ambra
+    if has("instantcall", "livecall"):
+        return _STAGE_BADGE["instant_call"]        # viola
+    if has("inwork", "working", "inlavorazione", "inprogress", "processing", "assigned"):
+        return _STAGE_BADGE["in_work"]             # blu
+    if has("new", "nuovo", "lead", "reg", "sent", "inviato", "pending", "call"):
+        return _STAGE_BADGE["nuovo"]               # ciano
     return _STATUS_BADGE_DEFAULT
 
 

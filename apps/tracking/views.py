@@ -16,6 +16,10 @@ from . import trackbox
 from .forms import (
     IrevBrokerForm,
     LandingLeadForm,
+    OpenAffBrokerForm,
+    GlobalTradeBrokerForm,
+    OneCryptBrokerForm,
+    CpaForgeBrokerForm,
     SpmMonsterBrokerForm,
     GalassiaBrokerForm,
     TYourAdsBrokerForm,
@@ -24,6 +28,10 @@ from .forms import (
 from .models import (
     IrevBroker,
     Lead,
+    OpenAffBroker,
+    GlobalTradeBroker,
+    OneCryptBroker,
+    CpaForgeBroker,
     PushLog,
     SpmMonsterBroker,
     GalassiaBroker,
@@ -122,6 +130,12 @@ def _duplicate_reason(broker, email, phone, ip, firstname, lastname):
     (gli IP condivisi — mobile/ufficio — darebbero troppi falsi positivi)."""
     from django.db.models import Q
     qs = Lead.for_broker(broker)
+    # "Ripartenza" antifrode: se il broker ha una data dedup_since (es. cambio
+    # broker/piattaforma), consideriamo solo i lead da quella data in poi, così
+    # chi si era iscritto PRIMA non blocca le nuove registrazioni.
+    cutoff = getattr(broker, "dedup_since", None)
+    if cutoff:
+        qs = qs.filter(created_at__gte=cutoff)
     email = (email or "").strip()
     phone = (phone or "").strip()
     fn = (firstname or "").strip()
@@ -174,14 +188,33 @@ def _landing_render(request, broker, form, error=None, status=200):
     return render(request, "tracking/landing.html", ctx, status=status)
 
 
+_LP_DONE_COOKIE = "lp_done"
+_LP_DONE_MAX_AGE = 60 * 60 * 24 * 365  # 1 anno
+
+
+def _set_lp_done(response, slug):
+    """Marca questo browser come 'ha già inviato' su QUESTA landing.
+    Cookie con path per-landing: le altre landing/broker restano libere."""
+    response.set_cookie(_LP_DONE_COOKIE, "1", max_age=_LP_DONE_MAX_AGE,
+                        path=f"/lp/{slug}/", samesite="Lax", httponly=True)
+    return response
+
+
 @csrf_exempt
 def landing(request, slug):
     """Landing pubblica del broker (la SUA: landing_html dedicato o form standard).
-    Antifrode: honeypot (nel form), rate-limit per IP, deduplica per broker.
+    Antifrode: honeypot (nel form), rate-limit per IP, deduplica per broker,
+    blocco one-shot per browser (cookie): dopo l'invio il form non viene più
+    servito, nemmeno ricaricando la pagina.
     Visitatore compila → Lead (click_id) → push → redirect auto-login."""
     broker = find_broker_by_slug(slug)
     if broker is None:
         raise Http404("Landing non trovata")
+
+    # Blocco one-shot: questo browser ha già inviato su questa landing.
+    if request.COOKIES.get(_LP_DONE_COOKIE):
+        return render(request, "tracking/landing_thanks.html",
+                      {"broker": broker, "login_url": "", "already_done": True})
 
     form = LandingLeadForm(request.POST or None)
     if request.method == "POST":
@@ -204,15 +237,16 @@ def landing(request, slug):
                 lead.duplicate_reason = reason
                 lead.status = "DUPLICATO"
                 lead.save()
-                return render(request, "tracking/landing_duplicate.html",
-                              {"broker": broker}, status=409)
+                return _set_lp_done(
+                    render(request, "tracking/landing_duplicate.html",
+                           {"broker": broker}, status=409), slug)
             lead.status = "new"
             lead.save()
             res = _do_push(lead, broker)
-            return render(request, "tracking/landing_thanks.html", {
+            return _set_lp_done(render(request, "tracking/landing_thanks.html", {
                 "broker": broker,
                 "login_url": res.get("login_url") or "",
-            })
+            }), slug)
 
 
 
@@ -234,6 +268,7 @@ class LeadListView(BreadcrumbsMixin, LoginRequiredMixin,
     context_object_name = "leads"
     breadcrumb_title = "Lead"
     paginate_by = 50
+    error_only = False  # True nella pagina "Landing Errore"
 
     def get_queryset(self):
         qs = Lead.objects.all()
@@ -268,6 +303,16 @@ class LeadListView(BreadcrumbsMixin, LoginRequiredMixin,
             if b:
                 ct = ContentType.objects.get_for_model(type(b))
                 qs = qs.filter(broker_content_type=ct, broker_object_id=b.pk)
+        # Separazione: nella pagina Lead restano SOLO i lead VALIDI = consegnati
+        # al broker (hanno l'auto-login) e NON di test. Push falliti, duplicati
+        # (rossi) e lead di test vanno nella pagina "Landing Errore".
+        from django.db.models import Q
+        test_q = (Q(firstname__icontains="test") | Q(lastname__icontains="test")
+                  | Q(email__icontains="test") | Q(status__iexact="test"))
+        if self.error_only:
+            qs = qs.filter(~Q(payload__has_key="login_url") | test_q)
+        else:
+            qs = qs.filter(payload__has_key="login_url").exclude(test_q)
         return qs
 
     def get_context_data(self, **kwargs):
@@ -278,7 +323,21 @@ class LeadListView(BreadcrumbsMixin, LoginRequiredMixin,
         ctx["stage_choices"] = Lead.STAGE_CHOICES
         u = self.request.user
         ctx["can_edit_stage"] = bool(u.is_crm_admin or u.is_crm_marketer)
+        # Segnare una FTD come "pagata" e' un'azione contabile: solo Super Admin.
+        ctx["can_mark_paid"] = bool(u.is_crm_admin)
+        ctx["error_only"] = self.error_only
+        from django.db.models import Q
+        _tq = (Q(firstname__icontains="test") | Q(lastname__icontains="test")
+               | Q(email__icontains="test") | Q(status__iexact="test"))
+        ctx["error_count"] = (Lead.objects
+                              .filter(~Q(payload__has_key="login_url") | _tq).count())
         return ctx
+
+
+class LeadErrorListView(LeadListView):
+    """Pagina 'Landing Errore': SOLO i lead con push fallito (senza auto-login)."""
+    error_only = True
+    breadcrumb_title = "Landing Errore"
 
 
 class LeadSyncSelectedView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
@@ -319,6 +378,30 @@ class LeadPushView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
         else:
             messages.error(request, f"Push fallito ({broker.name}): {res['error']}")
         return redirect("tracking:lead_list")
+
+
+class LeadTogglePaidView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
+                         AdminOnlyMixin, View):
+    """Segna / annulla una FTD come 'gia' pagata' (payout incassato).
+
+    Solo Super Admin. Sposta la FTD dal 'Guadagno da incassare' all''Incassato'
+    nella dashboard CRM e la colora AZZURRA nella tabella Lead.
+    """
+
+    def post(self, request, pk):
+        lead = get_object_or_404(Lead, pk=pk)
+        nxt = request.POST.get("next") or "tracking:lead_list"
+        if not lead.is_deposit:
+            messages.warning(request, "Solo le FTD possono essere segnate come pagate.")
+            return redirect(nxt)
+        lead.ftd_paid = not lead.ftd_paid
+        lead.save(update_fields=["ftd_paid", "updated_at"])
+        who = lead.full_name or lead.email or lead.click_id
+        if lead.ftd_paid:
+            messages.success(request, f"FTD di {who} segnata come PAGATA (incassata).")
+        else:
+            messages.info(request, f"FTD di {who} rimessa come DA INCASSARE.")
+        return redirect(nxt)
 
 
 # ── Broker API — solo Super Admin (config + chiavi) ───────────────────────
@@ -378,6 +461,46 @@ class BrokerListView(BreadcrumbsMixin, LoginRequiredMixin,
                 "edit_url": reverse("tracking:tyourads_edit", args=[b.pk]),
                 "delete_url": reverse("tracking:tyourads_delete", args=[b.pk]),
                 "sync_url": None,  # TYourAds: nessun pull noto (stato via postback)
+                "code_url": reverse("tracking:broker_code", args=[b.kind, b.pk]),
+                "landing_slug": b.landing_slug,
+            })
+        for b in OpenAffBroker.objects.all():
+            rows.append({
+                "obj": b, "kind": b.kind_label, "base_url": b.base_url,
+                "is_active": b.is_active, "note": b.note,
+                "edit_url": reverse("tracking:openaff_edit", args=[b.pk]),
+                "delete_url": reverse("tracking:openaff_delete", args=[b.pk]),
+                "sync_url": reverse("tracking:openaff_sync", args=[b.pk]),
+                "code_url": reverse("tracking:broker_code", args=[b.kind, b.pk]),
+                "landing_slug": b.landing_slug,
+            })
+        for b in GlobalTradeBroker.objects.all():
+            rows.append({
+                "obj": b, "kind": b.kind_label, "base_url": b.base_url,
+                "is_active": b.is_active, "note": b.note,
+                "edit_url": reverse("tracking:globaltrade_edit", args=[b.pk]),
+                "delete_url": reverse("tracking:globaltrade_delete", args=[b.pk]),
+                "sync_url": reverse("tracking:globaltrade_sync", args=[b.pk]),
+                "code_url": reverse("tracking:broker_code", args=[b.kind, b.pk]),
+                "landing_slug": b.landing_slug,
+            })
+        for b in OneCryptBroker.objects.all():
+            rows.append({
+                "obj": b, "kind": b.kind_label, "base_url": b.base_url,
+                "is_active": b.is_active, "note": b.note,
+                "edit_url": reverse("tracking:onecrypt_edit", args=[b.pk]),
+                "delete_url": reverse("tracking:onecrypt_delete", args=[b.pk]),
+                "sync_url": reverse("tracking:onecrypt_sync", args=[b.pk]),
+                "code_url": reverse("tracking:broker_code", args=[b.kind, b.pk]),
+                "landing_slug": b.landing_slug,
+            })
+        for b in CpaForgeBroker.objects.all():
+            rows.append({
+                "obj": b, "kind": b.kind_label, "base_url": b.base_url,
+                "is_active": b.is_active, "note": b.note,
+                "edit_url": reverse("tracking:cpaforge_edit", args=[b.pk]),
+                "delete_url": reverse("tracking:cpaforge_delete", args=[b.pk]),
+                "sync_url": reverse("tracking:cpaforge_sync", args=[b.pk]),
                 "code_url": reverse("tracking:broker_code", args=[b.kind, b.pk]),
                 "landing_slug": b.landing_slug,
             })
@@ -560,16 +683,26 @@ class SpmMonsterBrokerSyncView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
 # ── Sync-all + Guida (tutti gli staff) ────────────────────────────────────
 class SyncAllView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
                   StaffRequiredMixin, View):
-    """Pulsante 'aggiorna lead': pull/sync di TUTTI i broker pull-capable."""
+    """Pulsante 'aggiorna lead': lancia la pull/sync di TUTTI i broker in
+    BACKGROUND e risponde subito (la sync completa può richiedere minuti:
+    i broker vengono interrogati uno per uno). Gli stessi aggiornamenti
+    girano comunque in automatico via cron ogni 5 minuti."""
 
     def post(self, request):
-        r = sync_mod.sync_all_pullable()
+        import threading
+
+        def _run():
+            try:
+                sync_mod.sync_all_pullable()
+            except Exception:  # noqa: BLE001
+                pass
+
+        threading.Thread(target=_run, daemon=True,
+                         name="sync-all-background").start()
         messages.success(
             request,
-            f"Lead aggiornati: {r['updated']} ({r['matched']} agganciati su "
-            f"{r['seen']} righe, {r['brokers']} broker).")
-        if r["errors"]:
-            messages.error(request, "Errori: " + "; ".join(r["errors"]))
+            "Aggiornamento avviato in background: gli stati si aggiornano da "
+            "soli tra qualche istante — puoi continuare a lavorare.")
         return redirect(request.POST.get("next") or "dashboard")
 
 
@@ -705,6 +838,254 @@ class GalassiaBrokerSyncView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
                 f"{res['matched']} agganciati.")
         except Exception as exc:  # noqa: BLE001
             messages.error(request, f"Sync {broker.name} fallito: {exc}")
+        return redirect("tracking:broker_list")
+
+
+# ── OpenAFF CRUD + sync (solo Super Admin) ────────────────────────────────
+class OpenAffBrokerCreateView(BreadcrumbsMixin, LoginRequiredMixin,
+                              EmailVerifiedRequiredMixin, AdminOnlyMixin,
+                              CreateView):
+    model = OpenAffBroker
+    form_class = OpenAffBrokerForm
+    template_name = "tracking/openaff_form.html"
+    success_url = reverse_lazy("tracking:broker_list")
+    breadcrumb_title = "Nuovo broker OpenAFF"
+    breadcrumb_parent = "tracking:broker_list"
+
+    def form_valid(self, form):
+        r = super().form_valid(form)
+        messages.success(self.request, f"Broker '{self.object.name}' creato.")
+        return r
+
+
+class OpenAffBrokerUpdateView(BreadcrumbsMixin, LoginRequiredMixin,
+                              EmailVerifiedRequiredMixin, AdminOnlyMixin,
+                              UpdateView):
+    model = OpenAffBroker
+    form_class = OpenAffBrokerForm
+    template_name = "tracking/openaff_form.html"
+    success_url = reverse_lazy("tracking:broker_list")
+    breadcrumb_parent = "tracking:broker_list"
+
+    def get_breadcrumb_title(self) -> str:
+        return f"Modifica {self.object.name}"
+
+    def form_valid(self, form):
+        r = super().form_valid(form)
+        messages.success(self.request, f"Broker '{self.object.name}' aggiornato.")
+        return r
+
+
+class OpenAffBrokerDeleteView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
+                              AdminOnlyMixin, View):
+    def post(self, request, pk):
+        b = get_object_or_404(OpenAffBroker, pk=pk)
+        name = b.name
+        b.delete()
+        messages.success(request, f"Broker '{name}' eliminato.")
+        return redirect("tracking:broker_list")
+
+
+class OpenAffBrokerSyncView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
+                            AdminOnlyMixin, View):
+    """Pull stati per un broker OpenAFF (solo Super Admin)."""
+
+    def post(self, request, pk):
+        broker = get_object_or_404(OpenAffBroker, pk=pk)
+        try:
+            res = sync_mod.sync_openaff(broker)
+            messages.success(
+                request,
+                f"Sync {broker.name}: {res['updated']} aggiornati "
+                f"({res['matched']} agganciati su {res['seen']} righe).")
+        except Exception as exc:  # noqa: BLE001
+            messages.error(request, f"Sync {broker.name} errore: {exc}")
+        return redirect("tracking:broker_list")
+
+
+# ── GlobalTrade CRUD + sync (solo Super Admin) ────────────────────────────
+class GlobalTradeBrokerCreateView(BreadcrumbsMixin, LoginRequiredMixin,
+                                  EmailVerifiedRequiredMixin, AdminOnlyMixin,
+                                  CreateView):
+    model = GlobalTradeBroker
+    form_class = GlobalTradeBrokerForm
+    template_name = "tracking/globaltrade_form.html"
+    success_url = reverse_lazy("tracking:broker_list")
+    breadcrumb_title = "Nuovo broker GlobalTrade"
+    breadcrumb_parent = "tracking:broker_list"
+
+    def form_valid(self, form):
+        r = super().form_valid(form)
+        messages.success(self.request, f"Broker '{self.object.name}' creato.")
+        return r
+
+
+class GlobalTradeBrokerUpdateView(BreadcrumbsMixin, LoginRequiredMixin,
+                                  EmailVerifiedRequiredMixin, AdminOnlyMixin,
+                                  UpdateView):
+    model = GlobalTradeBroker
+    form_class = GlobalTradeBrokerForm
+    template_name = "tracking/globaltrade_form.html"
+    success_url = reverse_lazy("tracking:broker_list")
+    breadcrumb_parent = "tracking:broker_list"
+
+    def get_breadcrumb_title(self) -> str:
+        return f"Modifica {self.object.name}"
+
+    def form_valid(self, form):
+        r = super().form_valid(form)
+        messages.success(self.request, f"Broker '{self.object.name}' aggiornato.")
+        return r
+
+
+class GlobalTradeBrokerDeleteView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
+                                  AdminOnlyMixin, View):
+    def post(self, request, pk):
+        b = get_object_or_404(GlobalTradeBroker, pk=pk)
+        name = b.name
+        b.delete()
+        messages.success(request, f"Broker '{name}' eliminato.")
+        return redirect("tracking:broker_list")
+
+
+class GlobalTradeBrokerSyncView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
+                                AdminOnlyMixin, View):
+    """Pull stati per un broker GlobalTrade (solo Super Admin)."""
+
+    def post(self, request, pk):
+        broker = get_object_or_404(GlobalTradeBroker, pk=pk)
+        try:
+            res = sync_mod.sync_globaltrade(broker)
+            messages.success(
+                request,
+                f"Sync {broker.name}: {res['updated']} aggiornati "
+                f"({res['matched']} agganciati su {res['seen']} righe).")
+        except Exception as exc:  # noqa: BLE001
+            messages.error(request, f"Sync {broker.name} errore: {exc}")
+        return redirect("tracking:broker_list")
+
+
+# ── OneCrypt CRUD + sync (solo Super Admin) ───────────────────────────────
+class OneCryptBrokerCreateView(BreadcrumbsMixin, LoginRequiredMixin,
+                               EmailVerifiedRequiredMixin, AdminOnlyMixin,
+                               CreateView):
+    model = OneCryptBroker
+    form_class = OneCryptBrokerForm
+    template_name = "tracking/onecrypt_form.html"
+    success_url = reverse_lazy("tracking:broker_list")
+    breadcrumb_title = "Nuovo broker OneCrypt"
+    breadcrumb_parent = "tracking:broker_list"
+
+    def form_valid(self, form):
+        r = super().form_valid(form)
+        messages.success(self.request, f"Broker '{self.object.name}' creato.")
+        return r
+
+
+class OneCryptBrokerUpdateView(BreadcrumbsMixin, LoginRequiredMixin,
+                               EmailVerifiedRequiredMixin, AdminOnlyMixin,
+                               UpdateView):
+    model = OneCryptBroker
+    form_class = OneCryptBrokerForm
+    template_name = "tracking/onecrypt_form.html"
+    success_url = reverse_lazy("tracking:broker_list")
+    breadcrumb_parent = "tracking:broker_list"
+
+    def get_breadcrumb_title(self) -> str:
+        return f"Modifica {self.object.name}"
+
+    def form_valid(self, form):
+        r = super().form_valid(form)
+        messages.success(self.request, f"Broker '{self.object.name}' aggiornato.")
+        return r
+
+
+class OneCryptBrokerDeleteView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
+                               AdminOnlyMixin, View):
+    def post(self, request, pk):
+        b = get_object_or_404(OneCryptBroker, pk=pk)
+        name = b.name
+        b.delete()
+        messages.success(request, f"Broker '{name}' eliminato.")
+        return redirect("tracking:broker_list")
+
+
+class OneCryptBrokerSyncView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
+                             AdminOnlyMixin, View):
+    """Pull stati per un broker OneCrypt (solo Super Admin)."""
+
+    def post(self, request, pk):
+        broker = get_object_or_404(OneCryptBroker, pk=pk)
+        try:
+            res = sync_mod.sync_onecrypt(broker)
+            messages.success(
+                request,
+                f"Sync {broker.name}: {res['updated']} aggiornati "
+                f"({res['matched']} agganciati su {res['seen']} righe).")
+        except Exception as exc:  # noqa: BLE001
+            messages.error(request, f"Sync {broker.name} errore: {exc}")
+        return redirect("tracking:broker_list")
+
+
+# ── CPAForge CRUD + sync (solo Super Admin) ───────────────────────────────
+class CpaForgeBrokerCreateView(BreadcrumbsMixin, LoginRequiredMixin,
+                               EmailVerifiedRequiredMixin, AdminOnlyMixin,
+                               CreateView):
+    model = CpaForgeBroker
+    form_class = CpaForgeBrokerForm
+    template_name = "tracking/cpaforge_form.html"
+    success_url = reverse_lazy("tracking:broker_list")
+    breadcrumb_title = "Nuovo broker CPAForge"
+    breadcrumb_parent = "tracking:broker_list"
+
+    def form_valid(self, form):
+        r = super().form_valid(form)
+        messages.success(self.request, f"Broker '{self.object.name}' creato.")
+        return r
+
+
+class CpaForgeBrokerUpdateView(BreadcrumbsMixin, LoginRequiredMixin,
+                               EmailVerifiedRequiredMixin, AdminOnlyMixin,
+                               UpdateView):
+    model = CpaForgeBroker
+    form_class = CpaForgeBrokerForm
+    template_name = "tracking/cpaforge_form.html"
+    success_url = reverse_lazy("tracking:broker_list")
+    breadcrumb_parent = "tracking:broker_list"
+
+    def get_breadcrumb_title(self) -> str:
+        return f"Modifica {self.object.name}"
+
+    def form_valid(self, form):
+        r = super().form_valid(form)
+        messages.success(self.request, f"Broker '{self.object.name}' aggiornato.")
+        return r
+
+
+class CpaForgeBrokerDeleteView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
+                               AdminOnlyMixin, View):
+    def post(self, request, pk):
+        b = get_object_or_404(CpaForgeBroker, pk=pk)
+        name = b.name
+        b.delete()
+        messages.success(request, f"Broker '{name}' eliminato.")
+        return redirect("tracking:broker_list")
+
+
+class CpaForgeBrokerSyncView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
+                             AdminOnlyMixin, View):
+    """Pull stati per un broker CPAForge (solo Super Admin)."""
+
+    def post(self, request, pk):
+        broker = get_object_or_404(CpaForgeBroker, pk=pk)
+        try:
+            res = sync_mod.sync_cpaforge(broker)
+            messages.success(
+                request,
+                f"Sync {broker.name}: {res['updated']} aggiornati "
+                f"({res['matched']} agganciati su {res['seen']} righe).")
+        except Exception as exc:  # noqa: BLE001
+            messages.error(request, f"Sync {broker.name} errore: {exc}")
         return redirect("tracking:broker_list")
 
 

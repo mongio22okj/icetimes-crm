@@ -62,6 +62,19 @@ def _request(broker, path, payload, api_key, timeout=25):
     return data
 
 
+# Il codice paese NON sempre coincide col codice lingua per il campo "lg":
+# SE (Svezia) -> SV (svedese, non "SE"=sami), GB/UK -> EN, DK -> DA, ecc.
+_COUNTRY_LANG = {
+    "SE": "SV", "GB": "EN", "UK": "EN", "IE": "EN", "DK": "DA",
+    "AT": "DE", "CH": "DE", "BE": "NL", "GR": "EL",
+}
+
+
+def _lg_for(country):
+    geo = (country or "IT").upper()
+    return _COUNTRY_LANG.get(geo, geo)
+
+
 def build_push_payload(broker, lead):
     """Costruisce il body del push dal broker + lead (senza inviare nulla)."""
     payload = {
@@ -79,7 +92,7 @@ def build_push_payload(broker, lead):
         "affclickid": lead.click_id,
         # so = nome funnel (visibile nei report broker).
         "so": broker.funnel or broker.name,
-        "lg": (lead.country or "IT").upper(),
+        "lg": _lg_for(lead.country),
     }
     # Parametri extra specifici del broker (es. SoftTrack: MPC_7/MPC_8).
     extra = getattr(broker, "extra_params", None)

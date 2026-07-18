@@ -8,6 +8,7 @@ ma non è necessaria per gli stati base.
 """
 import json
 import secrets
+import string
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -63,6 +64,14 @@ def _explain(code, detail):
     return f"HTTP {code}: {msg}"
 
 
+def _gen_password():
+    """Password valida e corta: max 12 caratteri, con maiuscola, minuscola e
+    cifra garantite (alcuni broker IREV impongono lunghezza max 12)."""
+    rest = "".join(secrets.choice(string.ascii_letters + string.digits)
+                   for _ in range(7))
+    return "Aa1" + rest  # 10 char: A (upper), a (lower), 1 (digit) + 7
+
+
 def build_push_payload(broker, lead):
     payload = {
         "ip": lead.ip or "8.8.8.8",
@@ -71,7 +80,7 @@ def build_push_payload(broker, lead):
         "last_name": lead.lastname,
         "email": lead.email,
         "phone": lead.phone,
-        "password": secrets.token_urlsafe(9) + "A1",
+        "password": _gen_password(),
     }
     if broker.affiliate_id:
         payload["affiliate_id"] = broker.affiliate_id
@@ -107,8 +116,13 @@ def pull_leads(broker, goal_type_uuid=None, days=14, per_page=100, timeout=30):
     """GET get-leads (ultimi `days` giorni). Se goal_type_uuid e' valorizzato
     filtra per quel goal (es. FTD). Ritorna la lista dei lead."""
     path = (getattr(broker, "api_path", "") or "").strip() or PULL_PATH
-    frm = (datetime.now(_tz.utc) - timedelta(days=days)).strftime("%Y-%m-%dT%H:%M:%SZ")
-    qs = {"created_from": frm, "per_page": per_page, "page": 1}
+    now = datetime.now(_tz.utc)
+    frm = (now - timedelta(days=days)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    # created_to è di fatto OBBLIGATORIO su questa deployment IREV: senza,
+    # l'endpoint torna un array vuoto. Times in UTC, per_page max 100.
+    to = (now + timedelta(days=1)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    qs = {"created_from": frm, "created_to": to,
+          "per_page": min(int(per_page or 100), 100), "page": 1}
     if goal_type_uuid:
         qs["goal_type_uuid"] = goal_type_uuid
     resp = _request(broker, "GET", path + "?" + urllib.parse.urlencode(qs), None, timeout=timeout)

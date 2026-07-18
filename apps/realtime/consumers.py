@@ -73,9 +73,14 @@ class PresenceConsumer(AsyncJsonWebsocketConsumer):
     """
 
     # Module-level set of currently-connected channel names (per-process).
-    # The in-memory channel layer keeps a list internally too; we keep
-    # our own so prod-style Redis layers (no listing API) still work.
-    _connected: set[str] = set()
+    # Mappa connessione → user_id (per-process). Contiamo gli UTENTI DISTINTI
+    # online, non le singole connessioni: piu tab/reload dello stesso utente
+    # valgono 1. Cosi il badge "online" mostra le persone reali.
+    _by_channel: dict[str, int] = {}
+
+    @classmethod
+    def _online_count(cls) -> int:
+        return len(set(cls._by_channel.values()))
 
     async def connect(self):
         user = self.scope.get("user")
@@ -85,12 +90,12 @@ class PresenceConsumer(AsyncJsonWebsocketConsumer):
         self.user_id = user.id
         self.username = user.get_username()
         await self.channel_layer.group_add(PRESENCE_GROUP, self.channel_name)
-        PresenceConsumer._connected.add(self.channel_name)
+        PresenceConsumer._by_channel[self.channel_name] = user.id
         await self.accept()
         await self._broadcast_state(joined=self.username)
 
     async def disconnect(self, code):
-        PresenceConsumer._connected.discard(self.channel_name)
+        PresenceConsumer._by_channel.pop(self.channel_name, None)
         if hasattr(self, "username"):
             await self._broadcast_state(left=self.username)
         await self.channel_layer.group_discard(PRESENCE_GROUP, self.channel_name)
@@ -101,7 +106,7 @@ class PresenceConsumer(AsyncJsonWebsocketConsumer):
             PRESENCE_GROUP,
             {
                 "type": "presence.update",
-                "count": len(PresenceConsumer._connected),
+                "count": PresenceConsumer._online_count(),
                 "joined": joined,
                 "left": left,
             },

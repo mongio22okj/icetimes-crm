@@ -1,4 +1,5 @@
 import io
+from dataclasses import replace
 from datetime import datetime
 
 import qrcode
@@ -12,7 +13,7 @@ from django.contrib.auth.tokens import default_token_generator
 from django.contrib.auth.views import LoginView as DjangoLoginView
 from django.contrib.auth.views import PasswordChangeView as DjangoPasswordChangeView
 from django.contrib.auth.views import redirect_to_login
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseForbidden, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse, reverse_lazy
 from django.utils import timezone
@@ -90,6 +91,31 @@ class StaffRequiredMixin(UserPassesTestMixin):
         return super().handle_no_permission()
 
 
+class CrmAdminRequiredMixin(UserPassesTestMixin):
+    """Require a CRM Super Admin (superuser or role 'admin') for write access.
+
+    Visualizzatori (role 'staff') and Marketers (role 'manager') can reach
+    the read-only pages via StaffRequiredMixin but must NOT create, edit or
+    toggle access on users — that's gated here.
+    - Unauthenticated users: 302 redirect to login.
+    - Authenticated non-admins: 403 Forbidden.
+
+    Don't stack this next to StaffRequiredMixin: both derive from
+    UserPassesTestMixin and only the leftmost `test_func` would run. Use
+    this one alone on write views.
+    """
+    raise_exception = True
+
+    def test_func(self):
+        user = self.request.user
+        return user.is_authenticated and user.is_crm_admin
+
+    def handle_no_permission(self):
+        if not self.request.user.is_authenticated:
+            return redirect_to_login(self.request.get_full_path())
+        return super().handle_no_permission()
+
+
 from apps.core.messages import LEVEL_SUCCESS  # noqa: E402
 from apps.core.messages import toast as toast_message  # noqa: E402
 from apps.core.tables import (  # noqa: E402
@@ -137,7 +163,17 @@ class UserListView(BreadcrumbsMixin, LoginRequiredMixin,
     breadcrumb_title = "Users"
     table_config = USERS_TABLE
 
+    def _config(self):
+        # Visualizzatori (non Super Admin) vedono la lista in sola lettura:
+        # niente azioni bulk nella toolbar e POST bulk rifiutati con 405.
+        config = super()._config()
+        if not self.request.user.is_crm_admin:
+            return replace(config, bulk_actions=())
+        return config
+
     def handle_bulk_action(self, action, ids, request):
+        if not request.user.is_crm_admin:
+            return HttpResponseForbidden("Solo i Super Admin possono modificare gli utenti.")
         targets = User.objects.filter(pk__in=ids)
         n = targets.count()
         if action.slug == "activate":
@@ -161,8 +197,8 @@ class UserDetailView(BreadcrumbsMixin, LoginRequiredMixin, EmailVerifiedRequired
 
 
 class UserAccessToggleView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
-                           StaffRequiredMixin, View):
-    """Dà o toglie l'OK all'accesso di un utente (is_active). Solo staff."""
+                           CrmAdminRequiredMixin, View):
+    """Dà o toglie l'OK all'accesso di un utente (is_active). Solo Super Admin."""
 
     def post(self, request, pk):
         target = get_object_or_404(User, pk=pk)
@@ -178,7 +214,7 @@ class UserAccessToggleView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
         return redirect("users:detail", pk=pk)
 
 
-class UserCreateView(BreadcrumbsMixin, LoginRequiredMixin, EmailVerifiedRequiredMixin, StaffRequiredMixin, CreateView):
+class UserCreateView(BreadcrumbsMixin, LoginRequiredMixin, EmailVerifiedRequiredMixin, CrmAdminRequiredMixin, CreateView):
     model = User
     form_class = UserCreateForm
     template_name = "accounts/user_form.html"
@@ -187,7 +223,7 @@ class UserCreateView(BreadcrumbsMixin, LoginRequiredMixin, EmailVerifiedRequired
     breadcrumb_parent = "users:list"
 
 
-class UserUpdateView(BreadcrumbsMixin, LoginRequiredMixin, EmailVerifiedRequiredMixin, StaffRequiredMixin, UpdateView):
+class UserUpdateView(BreadcrumbsMixin, LoginRequiredMixin, EmailVerifiedRequiredMixin, CrmAdminRequiredMixin, UpdateView):
     model = User
     form_class = UserUpdateForm
     template_name = "accounts/user_form.html"

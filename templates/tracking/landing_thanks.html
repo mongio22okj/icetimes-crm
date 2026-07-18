@@ -16,8 +16,14 @@
 <body class="min-h-screen bg-background text-foreground flex items-center justify-center p-4">
   <div class="w-full max-w-md rounded-xl border border-border bg-card p-8 shadow-lg text-center">
     <div class="text-5xl mb-4">✅</div>
-    <h1 class="text-xl font-bold tracking-tight mb-2">Registrazione completata!</h1>
+    <h1 class="text-xl font-bold tracking-tight mb-2">{% if already_done %}Registrazione già completata{% else %}Registrazione completata!{% endif %}</h1>
+    {% if login_url %}
     <p class="text-sm text-muted-foreground mb-4">Verrai reindirizzato alla piattaforma tra pochi secondi...</p>
+    {% elif already_done %}
+    <p class="text-sm text-muted-foreground mb-4">Hai già inviato la tua richiesta da questo dispositivo. Verrai ricontattato al più presto.</p>
+    {% else %}
+    <p class="text-sm text-muted-foreground mb-4">Grazie! Verrai ricontattato al più presto.</p>
+    {% endif %}
     {% if login_url %}
     <a href="{{ login_url }}" class="inline-block mt-2 px-6 py-3 rounded-md bg-primary text-primary-foreground font-medium text-sm hover:opacity-90 transition">
       Accedi ora →
