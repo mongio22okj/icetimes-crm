@@ -12,6 +12,25 @@ def _conf():
             os.environ.get("LEAD_SHEETS_WEBHOOK_SECRET", ""))
 
 
+# Stessi colori usati nella tabella Lead del CRM (templates/tracking/lead_list.html),
+# convertiti da rgba() semi-trasparente su sfondo bianco a hex piatto (Sheets non
+# supporta la trasparenza sulle celle). Priorita': duplicato > FTD pagata > FTD > in attesa.
+_COLOR_DUPLICATE = "#FDE3E3"   # rosso   (bg-red-500/15)
+_COLOR_FTD_PAID = "#ACE3FC"    # azzurro (rgba(56,189,248,.42))
+_COLOR_FTD = "#A7E8BF"         # verde   (rgba(34,197,94,.40))
+_COLOR_PENDING = "#FDEBA1"     # giallo  (rgba(250,204,21,.40))
+
+
+def _row_color(lead):
+    if lead.is_duplicate:
+        return _COLOR_DUPLICATE
+    if lead.is_deposit:
+        return _COLOR_FTD_PAID if getattr(lead, "ftd_paid", False) else _COLOR_FTD
+    if (lead.payload or {}).get("deposit_pending"):
+        return _COLOR_PENDING
+    return None
+
+
 def lead_to_row(lead, result=None):
     try:
         broker = lead.broker
@@ -36,6 +55,7 @@ def lead_to_row(lead, result=None):
         "ip": str(lead.ip) if lead.ip else "",
         "login_url": (lead.payload or {}).get("login_url") or "",
         "push_ok": push_ok,
+        "row_color": _row_color(lead),
     }
 
 
