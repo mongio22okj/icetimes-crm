@@ -86,6 +86,7 @@ def build_push_payload(broker, lead):
         payload["affiliate_id"] = broker.affiliate_id
     if broker.offer_id:
         payload["offer_id"] = broker.offer_id
+    payload["aff_sub5"] = lead.click_id  # nostro id di tracciamento
     extra = getattr(broker, "extra_params", None)
     if isinstance(extra, dict):
         payload.update(extra)

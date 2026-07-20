@@ -566,8 +566,16 @@ def sync_cpaforge(broker, days=90, only_ids=None):
 
 
 def _irev_match(qs, row):
-    """Aggancia un nostro lead a una riga della pull IREV: prima per
-    broker_lead_id (leadUuid/uuid/externalId), poi email, poi telefono."""
+    """Aggancia un nostro lead a una riga della pull IREV.
+    1) click_id via aff_sub5 (che la pull ci rimanda) = aggancio ESATTO e
+       affidabile, funziona anche quando il push e' andato in 504 (nessun
+       broker_lead_id salvato); 2) broker_lead_id (leadUuid/uuid/externalId);
+    3) email; 4) telefono."""
+    csub = str(row.get("aff_sub5") or row.get("aff_sub_5") or "").strip()
+    if csub:
+        lead = qs.filter(click_id=csub).first()
+        if lead:
+            return lead
     for key in ("leadUuid", "uuid", "lead_uuid", "externalId"):
         bid = str(row.get(key) or "").strip()
         if bid:
@@ -604,6 +612,13 @@ def sync_irev(broker, days=14, only_ids=None):
     def _apply(lead, row, force_ftd):
         lead.last_pull_at = now
         changed = False
+        # Backfill del broker_lead_id se vuoto (tipico dei push andati in 504:
+        # il lead e' registrato lato broker ma non abbiamo salvato il leadUuid).
+        if not lead.broker_lead_id:
+            bid = str(row.get("leadUuid") or row.get("uuid") or "").strip()
+            if bid:
+                lead.broker_lead_id = bid[:128]
+                changed = True
         sale = row.get("saleStatus") or row.get("status")
         new_stage = status_to_stage(sale)
         is_dep = force_ftd or new_stage == "ftd"
