@@ -100,6 +100,16 @@ def _do_push(lead, broker):
             payload["login_url"] = res["login_url"]
         lead.payload = payload
         lead.save(update_fields=["broker_lead_id", "payload", "updated_at"])
+    else:
+        # Un 504 / timeout NON è un rifiuto: il lead viene comunque registrato
+        # lato broker (confermato). Lo marchiamo così NON finisce tra gli errori
+        # ma tra i Lead validi; il sync poi backfilla broker_lead_id.
+        _e = str(res.get("error") or "").lower()
+        if any(t in _e for t in ("504", "timeout", "time out", "timed out")):
+            payload = dict(lead.payload or {})
+            payload["push_timeout"] = True
+            lead.payload = payload
+            lead.save(update_fields=["payload", "updated_at"])
     try:
         from .telegram_notify import notify_new_lead
         notify_new_lead(lead, res)
@@ -308,16 +318,23 @@ class LeadListView(BreadcrumbsMixin, LoginRequiredMixin,
             if b:
                 ct = ContentType.objects.get_for_model(type(b))
                 qs = qs.filter(broker_content_type=ct, broker_object_id=b.pk)
-        # Separazione: nella pagina Lead restano SOLO i lead VALIDI = consegnati
-        # al broker (hanno l'auto-login) e NON di test. Push falliti, duplicati
+        # Separazione: nella pagina Lead restano SOLO i lead VALIDI = CONSEGNATI
+        # al broker e NON di test. "Consegnato" = ha l'auto-login OPPURE un
+        # broker_lead_id (anche backfillato dalla pull) OPPURE è stato visto
+        # dalla pull (last_pull_at) OPPURE è un timeout/504 (registrato lato
+        # broker). Push RIFIUTATI davvero (400, mai registrati), duplicati
         # (rossi) e lead di test vanno nella pagina "Landing Errore".
         from django.db.models import Q
         test_q = (Q(firstname__icontains="test") | Q(lastname__icontains="test")
                   | Q(email__icontains="test") | Q(status__iexact="test"))
+        delivered_q = (Q(payload__has_key="login_url")
+                       | ~Q(broker_lead_id="")
+                       | Q(last_pull_at__isnull=False)
+                       | Q(payload__push_timeout=True))
         if self.error_only:
-            qs = qs.filter(~Q(payload__has_key="login_url") | test_q)
+            qs = qs.filter(~delivered_q | test_q)
         else:
-            qs = qs.filter(payload__has_key="login_url").exclude(test_q)
+            qs = qs.filter(delivered_q).exclude(test_q)
         return qs
 
     def get_context_data(self, **kwargs):
@@ -334,8 +351,11 @@ class LeadListView(BreadcrumbsMixin, LoginRequiredMixin,
         from django.db.models import Q
         _tq = (Q(firstname__icontains="test") | Q(lastname__icontains="test")
                | Q(email__icontains="test") | Q(status__iexact="test"))
-        ctx["error_count"] = (Lead.objects
-                              .filter(~Q(payload__has_key="login_url") | _tq).count())
+        _delivered = (Q(payload__has_key="login_url")
+                      | ~Q(broker_lead_id="")
+                      | Q(last_pull_at__isnull=False)
+                      | Q(payload__push_timeout=True))
+        ctx["error_count"] = Lead.objects.filter(~_delivered | _tq).count()
         return ctx
 
 
