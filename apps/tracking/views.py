@@ -105,6 +105,11 @@ def _do_push(lead, broker):
         notify_new_lead(lead, res)
     except Exception:  # noqa: BLE001
         pass
+    try:
+        from .sheets_notify import notify_sheets
+        notify_sheets(lead, res)
+    except Exception:  # noqa: BLE001
+        pass
     return res
 
 
