@@ -331,10 +331,16 @@ class LeadListView(BreadcrumbsMixin, LoginRequiredMixin,
                        | ~Q(broker_lead_id="")
                        | Q(last_pull_at__isnull=False)
                        | Q(payload__push_timeout=True))
+        # force_error: lead RIFIUTATO dal broker al push che vogliamo in
+        # "Landing Errore" anche se poi ha ottenuto un broker_lead_id o e'
+        # comparso nella pull. Si marca a mano in payload; reversibile.
+        # NB: has_key e NON payload__force_error=True — su una chiave assente
+        # il confronto vale NULL e l'exclude scarterebbe tutte le righe.
+        forced_q = Q(payload__has_key="force_error")
         if self.error_only:
-            qs = qs.filter(~delivered_q | test_q)
+            qs = qs.filter(~delivered_q | test_q | forced_q)
         else:
-            qs = qs.filter(delivered_q).exclude(test_q)
+            qs = qs.filter(delivered_q).exclude(test_q).exclude(forced_q)
         return qs
 
     def get_context_data(self, **kwargs):
@@ -355,7 +361,8 @@ class LeadListView(BreadcrumbsMixin, LoginRequiredMixin,
                       | ~Q(broker_lead_id="")
                       | Q(last_pull_at__isnull=False)
                       | Q(payload__push_timeout=True))
-        ctx["error_count"] = Lead.objects.filter(~_delivered | _tq).count()
+        ctx["error_count"] = Lead.objects.filter(
+            ~_delivered | _tq | Q(payload__has_key="force_error")).count()
         return ctx
 
 
