@@ -718,11 +718,78 @@ class CpaForgeBroker(models.Model):
             return _push_result(False, error=f"{type(exc).__name__}: {exc}"[:255])
 
 
+class AffinitraxBroker(models.Model):
+    """Broker tipo 'Affinitrax' (affinitrax.com). Auth header X-API-Key.
+    Push POST /api/v1/leads (JSON) -> success {lead_id, status, redirect_url}.
+    Pull GET /api/v1/leads/{lead_id}: UN LEAD ALLA VOLTA, non esiste un
+    endpoint bulk. Stati: in_progress -> relayed -> ftd (o rejected)."""
+
+    kind = "affinitrax"
+    kind_label = "Affinitrax"
+
+    name = models.CharField("Nome", max_length=120)
+    base_url = models.URLField(
+        "Base URL API", default="https://affinitrax.com",
+        help_text="Dominio API. Push=/api/v1/leads, pull=/api/v1/leads/{id}.")
+    api_key = models.CharField(
+        "API key (X-API-Key)", max_length=255,
+        help_text="Inviata nell'header X-API-Key.")
+    funnel = models.CharField(
+        "Funnel", max_length=120, blank=True,
+        help_text="Inviato nel campo 'sub1'. Se vuoto usa il nome broker.")
+
+    landing_slug = models.SlugField(
+        "Slug landing", max_length=60, blank=True, null=True, unique=True,
+        help_text="Landing pubblica: /lp/<slug>/.")
+    landing_brand = models.CharField(
+        "Brand landing", max_length=120, blank=True,
+        help_text="Nome/logo mostrato sulla landing (visitor-facing).")
+    note = models.CharField("Note", max_length=255, blank=True)
+    landing_html = models.TextField(
+        "HTML landing personalizzata", blank=True,
+        help_text="HTML completo della landing. Form POST a /lp/<slug>/ con "
+                  "campi: firstname, lastname, email, phone, country.")
+    match_by_contact = models.BooleanField(
+        "Aggancio per email/telefono", default=False,
+        help_text="Aggancio extra per email/telefono nella pull, se serve.")
+    is_active = models.BooleanField("Attivo", default=True)
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Broker Affinitrax"
+        verbose_name_plural = "Broker Affinitrax"
+        ordering = ["name"]
+
+    def __str__(self) -> str:
+        return self.name
+
+    @property
+    def signup_url(self) -> str:
+        return self.base_url.rstrip("/") + "/api/v1/leads"
+
+    def push(self, lead):
+        from . import affinitrax
+        try:
+            resp = affinitrax.push_lead(self, lead) or {}
+            lead_id = str(resp.get("lead_id") or "")
+            ok = (resp.get("_http") == 200 and lead_id)
+            if ok:
+                return _push_result(True, resp, broker_lead_id=lead_id[:128],
+                                    login_url=str(resp.get("redirect_url") or ""))
+            detail = resp.get("error") or f"push non riuscito (HTTP {resp.get('_http')})"
+            return _push_result(False, resp, error=str(detail)[:255])
+        except affinitrax.AffinitraxError as exc:
+            return _push_result(False, error=str(exc)[:255])
+        except Exception as exc:  # noqa: BLE001
+            return _push_result(False, error=f"{type(exc).__name__}: {exc}"[:255])
+
+
 # Tipi di broker registrati: kind → modello. Per risolvere slug/landing e
 # costruire elenchi unificati senza accoppiare il resto del codice.
 BROKER_MODELS = (TrackboxBroker, IrevBroker, SpmMonsterBroker, TYourAdsBroker,
                  GalassiaBroker, OpenAffBroker, GlobalTradeBroker, OneCryptBroker,
-                 CpaForgeBroker)
+                 CpaForgeBroker, AffinitraxBroker)
 
 
 def find_broker_by_slug(slug):

@@ -28,6 +28,10 @@ from .views import (
     CpaForgeBrokerDeleteView,
     CpaForgeBrokerSyncView,
     CpaForgeBrokerUpdateView,
+    AffinitraxBrokerCreateView,
+    AffinitraxBrokerDeleteView,
+    AffinitraxBrokerSyncView,
+    AffinitraxBrokerUpdateView,
     SpmMonsterBrokerCreateView,
     SpmMonsterBrokerDeleteView,
     SpmMonsterBrokerSyncView,
@@ -102,6 +106,10 @@ urlpatterns = [
     path("brokers/cpaforge/<int:pk>/edit/", CpaForgeBrokerUpdateView.as_view(), name="cpaforge_edit"),
     path("brokers/cpaforge/<int:pk>/delete/", CpaForgeBrokerDeleteView.as_view(), name="cpaforge_delete"),
     path("brokers/cpaforge/<int:pk>/sync/", CpaForgeBrokerSyncView.as_view(), name="cpaforge_sync"),
+    path("brokers/affinitrax/new/", AffinitraxBrokerCreateView.as_view(), name="affinitrax_create"),
+    path("brokers/affinitrax/<int:pk>/edit/", AffinitraxBrokerUpdateView.as_view(), name="affinitrax_edit"),
+    path("brokers/affinitrax/<int:pk>/delete/", AffinitraxBrokerDeleteView.as_view(), name="affinitrax_delete"),
+    path("brokers/affinitrax/<int:pk>/sync/", AffinitraxBrokerSyncView.as_view(), name="affinitrax_sync"),
     # Codice tracciamento per landing esterna (snippet form)
     path("brokers/<str:kind>/<int:pk>/code/", TrackingCodeView.as_view(), name="broker_code"),
 ]

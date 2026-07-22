@@ -671,12 +671,60 @@ def sync_irev(broker, days=14, only_ids=None):
             "updated": stats["updated"], "pages": 1}
 
 
+def sync_affinitrax(broker, days=90, only_ids=None):
+    """Pull stato Affinitrax UN LEAD ALLA VOLTA (GET /api/v1/leads/{id}) --
+    non esiste un endpoint bulk. Itera i lead con broker_lead_id gia' noto
+    (assegnato al push), creati negli ultimi `days` giorni, saltando quelli
+    gia' FTD (stato terminale, non serve ricontrollare)."""
+    from . import affinitrax
+    now = datetime.now(dt_tz.utc)
+    qs = (Lead.for_broker(broker).exclude(broker_lead_id="")
+          .filter(created_at__gte=now - timedelta(days=days)))
+    if only_ids is not None:
+        qs = qs.filter(pk__in=only_ids)
+    seen = matched = updated = 0
+    for lead in qs:
+        if lead.stage == "ftd":
+            continue
+        seen += 1
+        try:
+            resp = affinitrax.get_lead_status(broker, lead.broker_lead_id)
+        except affinitrax.AffinitraxError:
+            continue
+        if resp.get("_http") != 200:
+            continue
+        matched += 1
+        lead.last_pull_at = now
+        changed = False
+        status = resp.get("status")
+        is_dep = affinitrax.is_deposit(status)
+        if is_dep and not lead.is_deposit:
+            lead.is_deposit = True
+            changed = True
+        if status and lead.status != str(status)[:120]:
+            lead.status = str(status)[:120]
+            changed = True
+        new_stage = "ftd" if is_dep else status_to_stage(status)
+        if new_stage and lead.stage != "ftd" and lead.stage != new_stage:
+            lead.stage = new_stage
+            changed = True
+        if changed:
+            merged = dict(lead.payload or {})
+            merged["last_pull"] = resp
+            lead.payload = merged
+            lead.save()
+            updated += 1
+        else:
+            lead.save(update_fields=["last_pull_at"])
+    return {"seen": seen, "matched": matched, "updated": updated, "pages": 1}
+
+
 def sync_all_pullable():
     """Lancia la pull/sync per ogni broker attivo TrackBox + SPM Monster.
     IREV è escluso (stato via postback). Ritorna un riepilogo aggregato."""
     from .models import (TrackboxBroker, SpmMonsterBroker, GalassiaBroker,
                          IrevBroker, OpenAffBroker, GlobalTradeBroker, OneCryptBroker,
-                         CpaForgeBroker)
+                         CpaForgeBroker, AffinitraxBroker)
     total = {"updated": 0, "matched": 0, "seen": 0, "brokers": 0, "errors": []}
     jobs = ([(b, sync_broker) for b in TrackboxBroker.objects.filter(is_active=True)]
             + [(b, sync_spmmonster) for b in SpmMonsterBroker.objects.filter(is_active=True)]
@@ -685,6 +733,7 @@ def sync_all_pullable():
             + [(b, sync_globaltrade) for b in GlobalTradeBroker.objects.filter(is_active=True)]
             + [(b, sync_onecrypt) for b in OneCryptBroker.objects.filter(is_active=True)]
             + [(b, sync_cpaforge) for b in CpaForgeBroker.objects.filter(is_active=True)]
+            + [(b, sync_affinitrax) for b in AffinitraxBroker.objects.filter(is_active=True)]
             + [(b, sync_irev) for b in IrevBroker.objects.filter(is_active=True, use_pull=True)])
     for broker, fn in jobs:
         try:
@@ -704,7 +753,7 @@ def sync_selected(lead_ids):
     (stato via postback). Ritorna riepilogo aggregato."""
     from .models import (SpmMonsterBroker, TrackboxBroker, GalassiaBroker,
                          IrevBroker, OpenAffBroker, GlobalTradeBroker, OneCryptBroker,
-                         CpaForgeBroker)
+                         CpaForgeBroker, AffinitraxBroker)
     ids = {int(x) for x in lead_ids}
     total = {"updated": 0, "matched": 0, "seen": 0, "brokers": 0,
              "errors": [], "irev": 0}
@@ -729,6 +778,8 @@ def sync_selected(lead_ids):
                 r = sync_onecrypt(b, only_ids=ids)
             elif isinstance(b, CpaForgeBroker):
                 r = sync_cpaforge(b, only_ids=ids)
+            elif isinstance(b, AffinitraxBroker):
+                r = sync_affinitrax(b, only_ids=ids)
             elif isinstance(b, IrevBroker) and getattr(b, "use_pull", False):
                 r = sync_irev(b, only_ids=ids)
             else:
