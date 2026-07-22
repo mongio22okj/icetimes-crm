@@ -4,7 +4,7 @@
 {% block content %}
 <div class="mb-6 flex flex-wrap items-end justify-between gap-4">
   <div>
-    <h1 class="text-2xl font-bold tracking-tight">CRM{% if selected_broker_name %} — {{ selected_broker_name }}{% endif %}{% if selected_date_from or selected_date_to %} · {{ selected_date_from|default:"inizio" }} → {{ selected_date_to|default:"oggi" }}{% endif %}</h1>
+    <h1 class="text-2xl font-bold tracking-tight">CRM{% if selected_geo %} — {{ selected_geo }}{% endif %}{% if selected_broker_name %} — {{ selected_broker_name }}{% endif %}{% if selected_date_from or selected_date_to %} · {{ selected_date_from|default:"inizio" }} → {{ selected_date_to|default:"oggi" }}{% endif %}</h1>
     <p class="mt-1 text-sm text-muted-foreground">
       {{ econ.lead }} lead · {{ econ.ftd }} FTD · Guadagno totale {{ econ.totale }} · <span style="color:#38bdf8">Incassato {{ econ.incassato }}{% if econ.ftd_pagate %} ({{ econ.ftd_pagate }} FTD){% endif %}</span> · Da incassare {{ econ.guadagno }} · Spesa {{ econ.spesa }} · Profitto {{ econ.profitto }}
     </p>
@@ -16,6 +16,13 @@
     <label class="text-sm text-muted-foreground">Al:</label>
     <input type="date" name="date_to" value="{{ selected_date_to }}"
            class="h-9 rounded-md border border-input bg-background px-3 text-sm">
+    <label class="text-sm text-muted-foreground">Paese:</label>
+    <select name="geo" class="h-9 rounded-md border border-input bg-background px-3 text-sm">
+      <option value="">Tutti i paesi</option>
+      {% for o in geo_options %}
+        <option value="{{ o.value }}" {% if o.value == selected_geo %}selected{% endif %}>{{ o.name }}</option>
+      {% endfor %}
+    </select>
     <label class="text-sm text-muted-foreground">Broker:</label>
     <select name="broker" class="h-9 rounded-md border border-input bg-background px-3 text-sm">
       <option value="">Tutti i broker</option>
@@ -27,7 +34,7 @@
             class="h-9 px-4 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:opacity-90">
       Filtra
     </button>
-    {% if selected_date_from or selected_date_to or selected_broker %}
+    {% if selected_date_from or selected_date_to or selected_broker or selected_geo %}
       <a href="{% url 'dashboard_crm' %}"
          class="h-9 px-3 inline-flex items-center rounded-md border border-input text-sm text-muted-foreground hover:bg-muted">
         Azzera

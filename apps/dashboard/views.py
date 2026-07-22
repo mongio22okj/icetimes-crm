@@ -227,6 +227,12 @@ class CrmDashboardView(LoginRequiredMixin, EmailVerifiedRequiredMixin, View):
             date_q &= _Q(created_at__date__gte=date_from)
         if date_to:
             date_q &= _Q(created_at__date__lte=date_to)
+        # Filtro paese: ?geo=IT|ES|DE|SE. Vuoto = tutti. Sul campo Lead.country
+        # (non sul broker) cosi' resta corretto anche se un broker servisse piu' geo.
+        GEO_OPTIONS = [("IT", "Italia"), ("ES", "Spagna"),
+                       ("DE", "Germania"), ("SE", "Svezia")]
+        geo_val = (request.GET.get("geo") or "").upper()
+        geo_q = _Q(country=geo_val) if geo_val in dict(GEO_OPTIONS) else _Q()
         # Escludiamo i duplicati (is_duplicate) da TUTTI i conteggi/statistiche
         # e dalla ciambella. Restano visibili solo nella pagina Lead.
         leads = (Lead.for_broker(selected) if selected
@@ -236,7 +242,8 @@ class CrmDashboardView(LoginRequiredMixin, EmailVerifiedRequiredMixin, View):
         # Restano visibili solo nella pagina Lead.
         _test_q = (_Q(firstname__icontains="test") | _Q(lastname__icontains="test")
                    | _Q(email__icontains="test") | _Q(status__iexact="test"))
-        leads = leads.filter(payload__has_key="login_url").exclude(_test_q).filter(date_q)
+        leads = (leads.filter(payload__has_key="login_url").exclude(_test_q)
+                 .filter(date_q).filter(geo_q))
         brokers = [selected] if selected else brokers_all
         broker_options = [{"value": f"{b.kind}:{b.pk}", "name": b.name} for b in brokers_all]
 
@@ -350,7 +357,8 @@ class CrmDashboardView(LoginRequiredMixin, EmailVerifiedRequiredMixin, View):
         sales_reps = []
         for b in sorted(brokers, key=lambda x: x.name.lower()):
             bl = (Lead.for_broker(b).filter(is_duplicate=False)
-                  .filter(payload__has_key="login_url").exclude(_test_q).filter(date_q))
+                  .filter(payload__has_key="login_url").exclude(_test_q)
+                  .filter(date_q).filter(geo_q))
             bt = bl.count()
             bf = bl.filter(is_deposit=True).count()
             sales_reps.append({
@@ -363,7 +371,7 @@ class CrmDashboardView(LoginRequiredMixin, EmailVerifiedRequiredMixin, View):
         lead_sources = [{"source": b.name,
                          "leads": Lead.for_broker(b).filter(is_duplicate=False)
                                       .filter(payload__has_key="login_url")
-                                      .exclude(_test_q).filter(date_q).count()}
+                                      .exclude(_test_q).filter(date_q).filter(geo_q).count()}
                         for b in sorted(brokers, key=lambda x: x.name.lower())]
 
         # Tabella: lead recenti.
@@ -419,6 +427,8 @@ class CrmDashboardView(LoginRequiredMixin, EmailVerifiedRequiredMixin, View):
             "selected_broker_name": selected.name if selected else "",
             "selected_date_from": date_from_raw if date_from else "",
             "selected_date_to": date_to_raw if date_to else "",
+            "geo_options": [{"value": k, "name": v} for k, v in GEO_OPTIONS],
+            "selected_geo": geo_val if geo_val in dict(GEO_OPTIONS) else "",
             "econ": {"lead": total, "ftd": ftd, "non_ftd": non_ftd,
                      "guadagno": eur(guadagno), "incassato": eur(incassato),
                      "totale": eur(guadagno_totale),
