@@ -208,6 +208,25 @@ class CrmDashboardView(LoginRequiredMixin, EmailVerifiedRequiredMixin, View):
         if ":" in sel_val:
             k, _, pid = sel_val.partition(":")
             selected = broker_by_kind(k, pid)
+        # Filtro periodo: ?date_from=YYYY-MM-DD&date_to=YYYY-MM-DD. Vuoto = tutto lo storico.
+        from datetime import datetime as _dt
+        from django.db.models import Q as _Q
+
+        def _parse_date(raw):
+            try:
+                return _dt.strptime(raw, "%Y-%m-%d").date()
+            except (TypeError, ValueError):
+                return None
+
+        date_from_raw = request.GET.get("date_from") or ""
+        date_to_raw = request.GET.get("date_to") or ""
+        date_from = _parse_date(date_from_raw)
+        date_to = _parse_date(date_to_raw)
+        date_q = _Q()
+        if date_from:
+            date_q &= _Q(created_at__date__gte=date_from)
+        if date_to:
+            date_q &= _Q(created_at__date__lte=date_to)
         # Escludiamo i duplicati (is_duplicate) da TUTTI i conteggi/statistiche
         # e dalla ciambella. Restano visibili solo nella pagina Lead.
         leads = (Lead.for_broker(selected) if selected
@@ -215,10 +234,9 @@ class CrmDashboardView(LoginRequiredMixin, EmailVerifiedRequiredMixin, View):
         # Escludi i lead di TEST da spesa/guadagno/statistiche: "test" nel
         # nome, cognome o email, oppure status "Test" assegnato dal broker.
         # Restano visibili solo nella pagina Lead.
-        from django.db.models import Q as _Q
         _test_q = (_Q(firstname__icontains="test") | _Q(lastname__icontains="test")
                    | _Q(email__icontains="test") | _Q(status__iexact="test"))
-        leads = leads.filter(payload__has_key="login_url").exclude(_test_q)
+        leads = leads.filter(payload__has_key="login_url").exclude(_test_q).filter(date_q)
         brokers = [selected] if selected else brokers_all
         broker_options = [{"value": f"{b.kind}:{b.pk}", "name": b.name} for b in brokers_all]
 
@@ -332,7 +350,7 @@ class CrmDashboardView(LoginRequiredMixin, EmailVerifiedRequiredMixin, View):
         sales_reps = []
         for b in sorted(brokers, key=lambda x: x.name.lower()):
             bl = (Lead.for_broker(b).filter(is_duplicate=False)
-                  .filter(payload__has_key="login_url").exclude(_test_q))
+                  .filter(payload__has_key="login_url").exclude(_test_q).filter(date_q))
             bt = bl.count()
             bf = bl.filter(is_deposit=True).count()
             sales_reps.append({
@@ -345,7 +363,7 @@ class CrmDashboardView(LoginRequiredMixin, EmailVerifiedRequiredMixin, View):
         lead_sources = [{"source": b.name,
                          "leads": Lead.for_broker(b).filter(is_duplicate=False)
                                       .filter(payload__has_key="login_url")
-                                      .exclude(_test_q).count()}
+                                      .exclude(_test_q).filter(date_q).count()}
                         for b in sorted(brokers, key=lambda x: x.name.lower())]
 
         # Tabella: lead recenti.
@@ -399,6 +417,8 @@ class CrmDashboardView(LoginRequiredMixin, EmailVerifiedRequiredMixin, View):
             "broker_options": broker_options,
             "selected_broker": sel_val,
             "selected_broker_name": selected.name if selected else "",
+            "selected_date_from": date_from_raw if date_from else "",
+            "selected_date_to": date_to_raw if date_to else "",
             "econ": {"lead": total, "ftd": ftd, "non_ftd": non_ftd,
                      "guadagno": eur(guadagno), "incassato": eur(incassato),
                      "totale": eur(guadagno_totale),
