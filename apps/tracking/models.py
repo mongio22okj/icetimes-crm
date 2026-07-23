@@ -893,6 +893,17 @@ def all_brokers():
 _KIND_MODELS = {m.kind: m for m in BROKER_MODELS}
 
 
+import re as _re
+
+
+def natural_sort_key(name):
+    """Chiave di ordinamento 'naturale': i numeri nel nome contano per
+    valore, non carattere-per-carattere (Link 9 prima di Link 10 prima di
+    Link 22, non 10/22 prima di 9 come farebbe l'ordine alfabetico puro)."""
+    return [int(chunk) if chunk.isdigit() else chunk.lower()
+            for chunk in _re.split(r"(\d+)", name)]
+
+
 def broker_by_kind(kind, pk):
     model = _KIND_MODELS.get(kind)
     if model is None:

@@ -350,8 +350,9 @@ class LeadListView(BreadcrumbsMixin, LoginRequiredMixin,
     def get_context_data(self, **kwargs):
         from .models import all_brokers
         ctx = super().get_context_data(**kwargs)
+        from .models import natural_sort_key
         ctx["broker_options"] = [{"value": f"{b.kind}:{b.pk}", "name": b.name}
-                                 for b in sorted(all_brokers(), key=lambda b: b.name.lower())]
+                                 for b in sorted(all_brokers(), key=lambda b: natural_sort_key(b.name))]
         ctx["stage_choices"] = Lead.STAGE_CHOICES
         u = self.request.user
         ctx["can_edit_stage"] = bool(u.is_crm_admin or u.is_crm_marketer)
