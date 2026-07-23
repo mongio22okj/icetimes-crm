@@ -106,6 +106,18 @@ def push_lead(broker, lead):
     return _call("POST", url, broker, form_body=build_push_payload(broker, lead))
 
 
+def extract_login_url(resp):
+    """Link autologin CONFERMATO con un test reale (2026-07-23): campo
+    'link_auto_login' in cima alla risposta di successo."""
+    if not isinstance(resp, dict):
+        return ""
+    for key in ("link_auto_login", "autologin", "redirect_url", "login_url"):
+        v = resp.get(key)
+        if v:
+            return str(v)
+    return ""
+
+
 def extract_broker_lead_id(resp):
     """Formato NON documentato: proviamo le chiavi piu' comuni, sia in
     cima alla risposta sia dentro 'data' (come fa gia' la pull)."""

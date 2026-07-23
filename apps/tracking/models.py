@@ -857,7 +857,8 @@ class LeadShakerBroker(models.Model):
             # veniva letto come riuscito per errore).
             ok = (resp.get("_http") in (200, 201) and resp.get("status") is True)
             if ok:
-                return _push_result(True, resp, broker_lead_id=lead_id, login_url="")
+                return _push_result(True, resp, broker_lead_id=lead_id,
+                                    login_url=leadshaker.extract_login_url(resp))
             detail = (resp.get("error") or resp.get("message")
                      or f"push non riuscito (HTTP {resp.get('_http')})")
             return _push_result(False, resp, error=str(detail)[:255])
