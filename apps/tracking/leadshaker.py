@@ -7,9 +7,11 @@ PUSH (registrazione lead): POST {base}/api/leads (form-urlencoded)
   phone, user_id (il nostro ID nel loro sistema), ip, source (il nostro
   nickname da loro), keitaro_id (= NOSTRO click_id -> aggancio),
   description, landing_name.
-  ⚠️ Risposta di successo/errore NON documentata dal broker: parsing
-  difensivo (vedi extract_broker_lead_id) finche' non vediamo una
-  risposta vera dopo il primo test.
+  Risposta CONFERMATA con un test reale (2026-07-23): il campo e' "status"
+  (bool), non "success". Rifiuto: {"status": false, "error": "..."} (es.
+  "Offers not found" = offerta non attiva sull'account, da attivare col
+  referente). Forma esatta di un successo ("status": true, ...) ancora da
+  vedere -- extract_broker_lead_id() resta difensiva su piu' chiavi.
 
 PULL (stati): GET {base}/api/web-master/leads con BODY JSON -- si', e'
   una GET con body: cosi' la documenta Lead-Shaker e cosi' risponde
@@ -29,6 +31,12 @@ import urllib.request
 
 _PUSH_PATH = "/api/leads"
 _PULL_PATH = "/api/web-master/leads"
+# Il sito e' dietro Cloudflare: senza uno User-Agent da browser vero il bot
+# protection lo respinge con "Error 1010: browser_signature_banned" (visto
+# in produzione col primo test reale).
+_BROWSER_UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+               "AppleWebKit/537.36 (KHTML, like Gecko) "
+               "Chrome/124.0.0.0 Safari/537.36")
 
 
 class LeadShakerError(Exception):
@@ -40,6 +48,7 @@ def _headers(broker, content_type):
         "Authorization": f"Bearer {broker.token}",
         "Content-Type": content_type,
         "Accept": "application/json",
+        "User-Agent": _BROWSER_UA,
     }
 
 

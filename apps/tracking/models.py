@@ -850,10 +850,15 @@ class LeadShakerBroker(models.Model):
         try:
             resp = leadshaker.push_lead(self, lead) or {}
             lead_id = leadshaker.extract_broker_lead_id(resp)
-            ok = (resp.get("_http") in (200, 201) and resp.get("success") is not False)
+            # Campo VERO confermato con un test reale (2026-07-23): la risposta
+            # usa "status" (bool), non "success" -- {"status": false, "error":
+            # "..."} sui rifiuti (es. "Offers not found", offerta non attiva
+            # sull'account). Prima controllavamo "success" (assente -> None ->
+            # veniva letto come riuscito per errore).
+            ok = (resp.get("_http") in (200, 201) and resp.get("status") is True)
             if ok:
                 return _push_result(True, resp, broker_lead_id=lead_id, login_url="")
-            detail = (resp.get("message") or resp.get("error")
+            detail = (resp.get("error") or resp.get("message")
                      or f"push non riuscito (HTTP {resp.get('_http')})")
             return _push_result(False, resp, error=str(detail)[:255])
         except leadshaker.LeadShakerError as exc:
