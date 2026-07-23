@@ -245,7 +245,8 @@ class CrmDashboardView(LoginRequiredMixin, EmailVerifiedRequiredMixin, View):
         leads = (leads.filter(payload__has_key="login_url").exclude(_test_q)
                  .filter(date_q).filter(geo_q))
         brokers = [selected] if selected else brokers_all
-        broker_options = [{"value": f"{b.kind}:{b.pk}", "name": b.name} for b in brokers_all]
+        broker_options = [{"value": f"{b.kind}:{b.pk}", "name": b.name}
+                          for b in sorted(brokers_all, key=lambda b: b.name.lower())]
 
         total = leads.count()
         ftd = leads.filter(is_deposit=True).count()
