@@ -3,7 +3,7 @@ from django import forms
 from .models import (IrevBroker, Lead, SpmMonsterBroker, TrackboxBroker,
                      TYourAdsBroker, GalassiaBroker, OpenAffBroker,
                      GlobalTradeBroker, OneCryptBroker, CpaForgeBroker,
-                     AffinitraxBroker)
+                     AffinitraxBroker, LeadShakerBroker)
 
 BASE_INPUT = (
     "w-full h-10 rounded-md border border-input bg-background px-3 text-sm "
@@ -265,6 +265,25 @@ class AffinitraxBrokerForm(forms.ModelForm):
         widgets = {
             "base_url": forms.URLInput(attrs={
                 "placeholder": "https://affinitrax.com"}),
+            "landing_html": forms.Textarea(attrs={"rows": 12}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        _style_broker_fields(self)
+
+
+class LeadShakerBrokerForm(forms.ModelForm):
+    class Meta:
+        model = LeadShakerBroker
+        fields = (
+            "name", "base_url", "token", "user_id", "source", "funnel",
+            "landing_slug", "landing_brand", "note", "landing_html",
+            "match_by_contact", "is_active",
+        )
+        widgets = {
+            "base_url": forms.URLInput(attrs={
+                "placeholder": "https://crm.lead-shaker.live"}),
             "landing_html": forms.Textarea(attrs={"rows": 12}),
         }
 

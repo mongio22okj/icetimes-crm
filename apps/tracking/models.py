@@ -785,11 +785,88 @@ class AffinitraxBroker(models.Model):
             return _push_result(False, error=f"{type(exc).__name__}: {exc}"[:255])
 
 
+class LeadShakerBroker(models.Model):
+    """Broker tipo 'Lead-Shaker' (crm.lead-shaker.live). Auth header
+    Authorization: Bearer <token>. Push POST /api/leads (form-urlencoded).
+    Pull GET /api/web-master/leads con BODY JSON {date_start, date_end}
+    (si', una GET con body -- confermato funzionante). Risposta pull
+    verificata: {success, data:{data:[...], total}, message}; i campi
+    DENTRO ogni lead non sono documentati dal broker -- aggancio/status/FTD
+    con le chiavi generiche gia' usate per gli altri broker, da verificare
+    col payload vero dopo il primo test."""
+
+    kind = "leadshaker"
+    kind_label = "Lead-Shaker"
+
+    name = models.CharField("Nome", max_length=120)
+    base_url = models.URLField(
+        "Base URL API", default="https://crm.lead-shaker.live",
+        help_text="Dominio API. Push=/api/leads, pull=/api/web-master/leads.")
+    token = models.CharField(
+        "Token (Bearer)", max_length=2048,
+        help_text="Inviato come header Authorization: Bearer <token>.")
+    user_id = models.CharField(
+        "User ID (nel loro sistema)", max_length=40,
+        help_text="Il tuo ID assegnato da Lead-Shaker. Inviato come 'user_id'.")
+    source = models.CharField(
+        "Source (il tuo nickname da loro)", max_length=120,
+        help_text="Inviato come 'source'. Es. 'Adverterra'.")
+    funnel = models.CharField(
+        "Funnel", max_length=120, blank=True,
+        help_text="Inviato come 'landing_name'. Se vuoto usa il nome broker.")
+
+    landing_slug = models.SlugField(
+        "Slug landing", max_length=60, blank=True, null=True, unique=True,
+        help_text="Landing pubblica: /lp/<slug>/.")
+    landing_brand = models.CharField(
+        "Brand landing", max_length=120, blank=True,
+        help_text="Nome/logo mostrato sulla landing (visitor-facing).")
+    note = models.CharField("Note", max_length=255, blank=True)
+    landing_html = models.TextField(
+        "HTML landing personalizzata", blank=True,
+        help_text="HTML completo della landing. Form POST a /lp/<slug>/ con "
+                  "campi: firstname, lastname, email, phone, country.")
+    match_by_contact = models.BooleanField(
+        "Aggancio per email/telefono", default=False,
+        help_text="Aggancio extra per email/telefono nella pull, se serve.")
+    is_active = models.BooleanField("Attivo", default=True)
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Broker Lead-Shaker"
+        verbose_name_plural = "Broker Lead-Shaker"
+        ordering = ["name"]
+
+    def __str__(self) -> str:
+        return self.name
+
+    @property
+    def signup_url(self) -> str:
+        return self.base_url.rstrip("/") + "/api/leads"
+
+    def push(self, lead):
+        from . import leadshaker
+        try:
+            resp = leadshaker.push_lead(self, lead) or {}
+            lead_id = leadshaker.extract_broker_lead_id(resp)
+            ok = (resp.get("_http") in (200, 201) and resp.get("success") is not False)
+            if ok:
+                return _push_result(True, resp, broker_lead_id=lead_id, login_url="")
+            detail = (resp.get("message") or resp.get("error")
+                     or f"push non riuscito (HTTP {resp.get('_http')})")
+            return _push_result(False, resp, error=str(detail)[:255])
+        except leadshaker.LeadShakerError as exc:
+            return _push_result(False, error=str(exc)[:255])
+        except Exception as exc:  # noqa: BLE001
+            return _push_result(False, error=f"{type(exc).__name__}: {exc}"[:255])
+
+
 # Tipi di broker registrati: kind → modello. Per risolvere slug/landing e
 # costruire elenchi unificati senza accoppiare il resto del codice.
 BROKER_MODELS = (TrackboxBroker, IrevBroker, SpmMonsterBroker, TYourAdsBroker,
                  GalassiaBroker, OpenAffBroker, GlobalTradeBroker, OneCryptBroker,
-                 CpaForgeBroker, AffinitraxBroker)
+                 CpaForgeBroker, AffinitraxBroker, LeadShakerBroker)
 
 
 def find_broker_by_slug(slug):

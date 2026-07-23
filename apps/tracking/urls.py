@@ -32,6 +32,10 @@ from .views import (
     AffinitraxBrokerDeleteView,
     AffinitraxBrokerSyncView,
     AffinitraxBrokerUpdateView,
+    LeadShakerBrokerCreateView,
+    LeadShakerBrokerDeleteView,
+    LeadShakerBrokerSyncView,
+    LeadShakerBrokerUpdateView,
     SpmMonsterBrokerCreateView,
     SpmMonsterBrokerDeleteView,
     SpmMonsterBrokerSyncView,
@@ -110,6 +114,10 @@ urlpatterns = [
     path("brokers/affinitrax/<int:pk>/edit/", AffinitraxBrokerUpdateView.as_view(), name="affinitrax_edit"),
     path("brokers/affinitrax/<int:pk>/delete/", AffinitraxBrokerDeleteView.as_view(), name="affinitrax_delete"),
     path("brokers/affinitrax/<int:pk>/sync/", AffinitraxBrokerSyncView.as_view(), name="affinitrax_sync"),
+    path("brokers/leadshaker/new/", LeadShakerBrokerCreateView.as_view(), name="leadshaker_create"),
+    path("brokers/leadshaker/<int:pk>/edit/", LeadShakerBrokerUpdateView.as_view(), name="leadshaker_edit"),
+    path("brokers/leadshaker/<int:pk>/delete/", LeadShakerBrokerDeleteView.as_view(), name="leadshaker_delete"),
+    path("brokers/leadshaker/<int:pk>/sync/", LeadShakerBrokerSyncView.as_view(), name="leadshaker_sync"),
     # Codice tracciamento per landing esterna (snippet form)
     path("brokers/<str:kind>/<int:pk>/code/", TrackingCodeView.as_view(), name="broker_code"),
 ]

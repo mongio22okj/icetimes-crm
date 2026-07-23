@@ -21,6 +21,7 @@ from .forms import (
     OneCryptBrokerForm,
     CpaForgeBrokerForm,
     AffinitraxBrokerForm,
+    LeadShakerBrokerForm,
     SpmMonsterBrokerForm,
     GalassiaBrokerForm,
     TYourAdsBrokerForm,
@@ -34,6 +35,7 @@ from .models import (
     OneCryptBroker,
     CpaForgeBroker,
     AffinitraxBroker,
+    LeadShakerBroker,
     PushLog,
     SpmMonsterBroker,
     GalassiaBroker,
@@ -545,6 +547,16 @@ class BrokerListView(BreadcrumbsMixin, LoginRequiredMixin,
                 "edit_url": reverse("tracking:affinitrax_edit", args=[b.pk]),
                 "delete_url": reverse("tracking:affinitrax_delete", args=[b.pk]),
                 "sync_url": reverse("tracking:affinitrax_sync", args=[b.pk]),
+                "code_url": reverse("tracking:broker_code", args=[b.kind, b.pk]),
+                "landing_slug": b.landing_slug,
+            })
+        for b in LeadShakerBroker.objects.all():
+            rows.append({
+                "obj": b, "kind": b.kind_label, "base_url": b.base_url,
+                "is_active": b.is_active, "note": b.note,
+                "edit_url": reverse("tracking:leadshaker_edit", args=[b.pk]),
+                "delete_url": reverse("tracking:leadshaker_delete", args=[b.pk]),
+                "sync_url": reverse("tracking:leadshaker_sync", args=[b.pk]),
                 "code_url": reverse("tracking:broker_code", args=[b.kind, b.pk]),
                 "landing_slug": b.landing_slug,
             })
@@ -1186,6 +1198,68 @@ class AffinitraxBrokerSyncView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
         broker = get_object_or_404(AffinitraxBroker, pk=pk)
         try:
             res = sync_mod.sync_affinitrax(broker)
+            messages.success(
+                request,
+                f"Sync {broker.name}: {res['updated']} aggiornati "
+                f"({res['matched']} agganciati su {res['seen']} righe).")
+        except Exception as exc:  # noqa: BLE001
+            messages.error(request, f"Sync {broker.name} errore: {exc}")
+        return redirect("tracking:broker_list")
+
+
+# ── Lead-Shaker CRUD (solo Super Admin) ────────────────────────────────────
+class LeadShakerBrokerCreateView(BreadcrumbsMixin, LoginRequiredMixin,
+                                 EmailVerifiedRequiredMixin, AdminOnlyMixin,
+                                 CreateView):
+    model = LeadShakerBroker
+    form_class = LeadShakerBrokerForm
+    template_name = "tracking/leadshaker_form.html"
+    success_url = reverse_lazy("tracking:broker_list")
+    breadcrumb_title = "Nuovo broker Lead-Shaker"
+    breadcrumb_parent = "tracking:broker_list"
+
+    def form_valid(self, form):
+        r = super().form_valid(form)
+        messages.success(self.request, f"Broker '{self.object.name}' creato.")
+        return r
+
+
+class LeadShakerBrokerUpdateView(BreadcrumbsMixin, LoginRequiredMixin,
+                                 EmailVerifiedRequiredMixin, AdminOnlyMixin,
+                                 UpdateView):
+    model = LeadShakerBroker
+    form_class = LeadShakerBrokerForm
+    template_name = "tracking/leadshaker_form.html"
+    success_url = reverse_lazy("tracking:broker_list")
+    breadcrumb_parent = "tracking:broker_list"
+
+    def get_breadcrumb_title(self) -> str:
+        return f"Modifica {self.object.name}"
+
+    def form_valid(self, form):
+        r = super().form_valid(form)
+        messages.success(self.request, f"Broker '{self.object.name}' aggiornato.")
+        return r
+
+
+class LeadShakerBrokerDeleteView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
+                                 AdminOnlyMixin, View):
+    def post(self, request, pk):
+        b = get_object_or_404(LeadShakerBroker, pk=pk)
+        name = b.name
+        b.delete()
+        messages.success(request, f"Broker '{name}' eliminato.")
+        return redirect("tracking:broker_list")
+
+
+class LeadShakerBrokerSyncView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
+                               AdminOnlyMixin, View):
+    """Pull stati per un broker Lead-Shaker (solo Super Admin)."""
+
+    def post(self, request, pk):
+        broker = get_object_or_404(LeadShakerBroker, pk=pk)
+        try:
+            res = sync_mod.sync_leadshaker(broker)
             messages.success(
                 request,
                 f"Sync {broker.name}: {res['updated']} aggiornati "
