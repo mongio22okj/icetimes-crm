@@ -78,7 +78,7 @@
         </thead>
         <tbody class="divide-y divide-border">
           {% for l in recent_leads %}
-          <tr class="align-middle transition-colors {% if l.is_deposit %}bg-success/10 border-l-2 border-l-success{% elif l.payload.deposit_pending %}border-l-2{% else %}hover:bg-accent/30{% endif %}"{% if l.is_deposit %} style="background-color: rgba(34,197,94,0.40); border-left-color: #22c55e"{% elif l.payload.deposit_pending %} style="background-color: rgba(250,204,21,0.40); border-left-color: #eab308"{% endif %}>
+          <tr class="align-middle transition-colors {% if l.payload.deposit_pending %}border-l-2{% elif l.is_deposit %}bg-success/10 border-l-2 border-l-success{% else %}hover:bg-accent/30{% endif %}"{% if l.payload.deposit_pending %} style="background-color: rgba(250,204,21,0.40); border-left-color: #eab308"{% elif l.is_deposit %} style="background-color: rgba(34,197,94,0.40); border-left-color: #22c55e"{% endif %}>
             <td class="px-4 py-2.5 whitespace-nowrap">{{ l.created_at|date:"d/m H:i" }}</td>
             <td class="px-4 py-2.5 font-medium whitespace-nowrap">{{ l.firstname|default:"—" }}</td>
             <td class="px-4 py-2.5 font-medium whitespace-nowrap">{{ l.lastname|default:"—" }}</td>
