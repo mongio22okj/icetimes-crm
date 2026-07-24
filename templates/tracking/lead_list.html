@@ -104,7 +104,7 @@
         <th><input name="email" value="{{ request.GET.email }}" class="h-7 w-full rounded-md border border-input bg-background px-1.5 text-[11px]"></th>
         <th><input name="phone" value="{{ request.GET.phone }}" class="h-7 w-full rounded-md border border-input bg-background px-1.5 text-[11px]"></th>
         <th>
-          <select name="country" class="h-7 w-full rounded-md border border-input bg-background px-1.5 text-[11px]">
+          <select name="country" class="h-7 w-full min-w-[64px] rounded-md border border-input bg-background px-1.5 text-[11px]">
             <option value="">Tutti</option>
             <option value="IT" {% if request.GET.country == 'IT' %}selected{% endif %}>IT</option>
             <option value="ES" {% if request.GET.country == 'ES' %}selected{% endif %}>ES</option>
@@ -114,7 +114,7 @@
         </th>
         <th><input name="status" value="{{ request.GET.status }}" class="h-7 w-full rounded-md border border-input bg-background px-1.5 text-[11px]"></th>
         <th>
-          <select name="deposit" class="h-7 w-full rounded-md border border-input bg-background px-1.5 text-[11px]">
+          <select name="deposit" class="h-7 w-full min-w-[64px] rounded-md border border-input bg-background px-1.5 text-[11px]">
             <option value="">Tutti</option>
             <option value="1" {% if request.GET.deposit == '1' %}selected{% endif %}>Sì</option>
             <option value="0" {% if request.GET.deposit == '0' %}selected{% endif %}>No</option>
