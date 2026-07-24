@@ -696,15 +696,22 @@ def sync_affinitrax(broker, days=90, only_ids=None):
         matched += 1
         lead.last_pull_at = now
         changed = False
-        status = resp.get("status")
-        is_dep = affinitrax.is_deposit(status)
+        # crm_status esiste nella risposta reale (scoperto 2026-07-24) ma e'
+        # sempre None finora: preferiamo crm_status quando valorizzato, sennò
+        # restiamo su status (nessun cambio sui dati di oggi). Riconoscimento
+        # FTD con le stesse parole chiave "ampie" gia' usate per tutti gli
+        # altri broker (status_to_stage), non il confronto stretto =="ftd"
+        # di affinitrax.is_deposit() -- crm_status potrebbe usare una dicitura
+        # diversa da "ftd" quando comincera' a valorizzarsi.
+        status = resp.get("crm_status") or resp.get("status")
+        new_stage = status_to_stage(status)
+        is_dep = (new_stage == "ftd")
         if is_dep and not lead.is_deposit:
             lead.is_deposit = True
             changed = True
         if status and lead.status != str(status)[:120]:
             lead.status = str(status)[:120]
             changed = True
-        new_stage = "ftd" if is_dep else status_to_stage(status)
         if new_stage and lead.stage != "ftd" and lead.stage != new_stage:
             lead.stage = new_stage
             changed = True
