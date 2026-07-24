@@ -412,11 +412,14 @@ class GalassiaBroker(models.Model):
 
 
 class OpenAffBroker(models.Model):
-    """Broker tipo 'OpenAFF' (API v2.1).
-    Push GET {base_url}/api (params in URL, offer_id sempre 1737; auto-login da
-    'redirect'); pull GET tracker.openaff.com/api/get_client_conversions
-    (Bearer token) → FTD = conversion_type == 'Conversion'. Aggancio per
-    aff_sub (= nostro click_id) o lead_id."""
+    """Broker tipo 'OpenAFF' (API v2.1) -- famiglia white-label con piu'
+    deployment (OpenAFF, EPCERA, ...): stesso formato ma dominio push/pull e
+    path push possono differire per deployment, quindi configurabili per-broker
+    (stesso principio di IrevBroker.api_path).
+    Push GET {base_url}{api_path or '/api'} (params in URL, offer_id sempre
+    1737; auto-login da 'redirect'); pull GET {pull_url} (Bearer token) →
+    FTD = conversion_type == 'Conversion'. Aggancio per aff_sub (= nostro
+    click_id) o lead_id."""
 
     kind = "openaff"
     kind_label = "OpenAFF"
@@ -424,6 +427,15 @@ class OpenAffBroker(models.Model):
     name = models.CharField("Nome", max_length=120)
     base_url = models.URLField(
         "API domain", help_text="URL di invio lead dato dal manager. Es. http://vip.kofoboo.com")
+    api_path = models.CharField(
+        "Path push", max_length=60, blank=True,
+        help_text="Path dell'endpoint di invio lead. Vuoto = '/api' (default "
+                  "OpenAFF). Alcuni deployment (es. EPCERA) usano '/tracker'.")
+    pull_url = models.URLField(
+        "Pull cabinet URL", max_length=255,
+        default="https://tracker.openaff.com/api/get_client_conversions",
+        help_text="Endpoint get_client_conversions per leggere gli stati. Puo' "
+                  "essere un dominio diverso da base_url (es. cabinet.epcera.com).")
     token = models.CharField(
         "Token PULL (Bearer)", max_length=1024,
         help_text="Token dal pannello (tracker.openaff.com/profile#tokens) per leggere gli stati.")

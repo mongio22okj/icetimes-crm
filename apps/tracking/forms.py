@@ -181,12 +181,14 @@ class OpenAffBrokerForm(forms.ModelForm):
     class Meta:
         model = OpenAffBroker
         fields = (
-            "name", "base_url", "token", "aff_id", "offer_id", "funnel",
+            "name", "base_url", "api_path", "pull_url", "token", "aff_id",
+            "offer_id", "funnel",
             "landing_slug", "landing_brand", "note", "landing_html",
             "match_by_contact", "is_active",
         )
         widgets = {
             "base_url": forms.URLInput(attrs={"placeholder": "http://vip.kofoboo.com"}),
+            "api_path": forms.TextInput(attrs={"placeholder": "/api"}),
             "token": forms.Textarea(attrs={"rows": 3}),
             "landing_html": forms.Textarea(attrs={"rows": 12}),
         }

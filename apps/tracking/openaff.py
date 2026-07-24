@@ -107,12 +107,13 @@ def build_push_params(broker, lead):
 
 
 def push_lead(broker, lead):
-    """GET {base_url}/api?<params>. Ritorna la risposta JSON."""
+    """GET {base_url}{api_path or '/api'}?<params>. Ritorna la risposta JSON."""
     import json
     params = build_push_params(broker, lead)
     geo = (lead.country or "IT").upper()
     lang = _COUNTRY_LANG.get(geo, geo.lower())
-    url = broker.base_url.rstrip("/") + _PUSH_PATH + "?" + urllib.parse.urlencode(params)
+    path = (getattr(broker, "api_path", "") or "").strip() or _PUSH_PATH
+    url = broker.base_url.rstrip("/") + path + "?" + urllib.parse.urlencode(params)
     req = urllib.request.Request(url, method="GET", headers={
         "User-Agent": _BROWSER_UA,
         "Accept-Language": lang,
@@ -134,14 +135,17 @@ def push_lead(broker, lead):
 
 
 def pull_conversions(broker, date=None, all_statuses=True):
-    """GET get_client_conversions (Bearer token). Ritorna la lista `data`."""
+    """GET get_client_conversions (Bearer token) su broker.pull_url --
+    deployment diversi (EPCERA, ecc.) hanno cabinet su domini diversi.
+    Ritorna la lista `data`."""
     import json
     params = {}
     if date:
         params["date"] = date
     if all_statuses:
         params["all_statuses"] = "1"
-    url = _PULL_URL + ("?" + urllib.parse.urlencode(params) if params else "")
+    base = getattr(broker, "pull_url", "") or _PULL_URL
+    url = base + ("?" + urllib.parse.urlencode(params) if params else "")
     req = urllib.request.Request(url, method="GET", headers={
         "Authorization": f"Bearer {broker.token}",
         "User-Agent": _BROWSER_UA,
