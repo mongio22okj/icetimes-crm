@@ -77,6 +77,9 @@ def postback(request):
         return JsonResponse({"ok": True, "ignored": True,
                              "reason": "unknown lead"})
 
+    if (lead.payload or {}).get("frozen"):
+        return JsonResponse({"ok": True, "ignored": True, "reason": "lead frozen"})
+
     changed = False
     status = _first(data, "status", "termine", "saleStatus", "callStatus",
                     "statusName")

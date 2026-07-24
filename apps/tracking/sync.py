@@ -127,6 +127,10 @@ def sync_broker(broker, days=90, only_ids=None):
                 continue
             if only_ids is not None and lead.pk not in only_ids:
                 continue
+            if (lead.payload or {}).get("frozen"):
+                lead.last_pull_at = now
+                lead.save(update_fields=["last_pull_at"])
+                continue
             matched += 1
             lead.last_pull_at = now
             changed = False

@@ -308,9 +308,14 @@ class LeadListView(BreadcrumbsMixin, LoginRequiredMixin,
                 qs = qs.filter(**{field: v})
         dep = g.get("deposit") or ""
         if dep == "1":
-            qs = qs.filter(is_deposit=True)
+            # I lead con display_status (override manuale "mostra come Call
+            # back") restano is_deposit=True per i conteggi economici, ma
+            # non devono comparire quando si filtra "FTD: Si'".
+            from django.db.models import Q as _Qdep
+            qs = qs.filter(is_deposit=True).exclude(payload__has_key="display_status")
         elif dep == "0":
-            qs = qs.filter(is_deposit=False)
+            from django.db.models import Q as _Qdep
+            qs = qs.filter(_Qdep(is_deposit=False) | _Qdep(payload__has_key="display_status"))
         st = g.get("stage") or ""
         if st:
             qs = qs.filter(stage=st)
