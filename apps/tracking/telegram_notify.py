@@ -42,11 +42,10 @@ def notify_new_lead(lead, result=None):
 
     if result is not None:
         ok = bool(result.get("success"))
-        if ok:
+        # Un timeout/504 viene trattato come lead andato a buon fine (di norma il
+        # broker lo registra comunque): stesso esito visivo di un push riuscito.
+        if ok or is_timeout:
             routing = "✅ %s — OK" % _e(broker_name)
-        elif is_timeout:
-            routing = ("⏳ %s — timeout/504 (di norma il lead è registrato lato "
-                       "broker, verifica via pull)" % _e(broker_name))
         else:
             routing = "❌ %s — %s" % (_e(broker_name), _e(err[:120] or "rifiutato"))
     else:
@@ -54,8 +53,6 @@ def notify_new_lead(lead, result=None):
 
     if failed:
         header = "🚨 <b>PUSH FALLITO — lead NON inviato al broker</b>"
-    elif is_timeout:
-        header = "⏳ <b>NUOVO LEAD — timeout broker (504), lead registrato</b>"
     else:
         header = "🆕 <b>NUOVO LEAD</b>"
 
