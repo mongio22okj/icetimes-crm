@@ -84,9 +84,13 @@ class DashboardView(LoginRequiredMixin, EmailVerifiedRequiredMixin, View):
         brokers = all_brokers()
         brokers_active = sum(1 for b in brokers if b.is_active)
 
+        # Righe gialle: FTD dichiarate ma non ancora confermate dal broker.
+        ftd_pending = leads.filter(payload__deposit_pending=True).count()
+
         kpis = [
             {"label": "Lead totali", "value": total, "icon": "target", "accent": "#6366f1"},
             {"label": "FTD", "value": ftd, "icon": "dollar-sign", "accent": "#16a34a"},
+            {"label": "FTD da confermare", "value": ftd_pending, "icon": "clock", "accent": "#eab308"},
             {"label": "Conversione", "value": f"{conv}%", "icon": "trending-up", "accent": "#0891b2"},
             {"label": "Broker attivi", "value": brokers_active, "icon": "plug", "accent": "#d97706"},
         ]

@@ -1,6 +1,6 @@
 {% extends "layouts/dashboard.html" %}
 {% load apex %}
-{% block title %}{% if error_only %}Landing Errore{% else %}Lead{% endif %} · IceTimes CRM{% endblock %}
+{% block title %}{% if error_only %}Landing Errore{% elif pending_only %}FTD da confermare{% else %}Lead{% endif %} · IceTimes CRM{% endblock %}
 {% block content %}
 <style>
   /* Evidenzia chiaramente il pulsante sotto il mouse nella barra in alto */
@@ -17,18 +17,24 @@
     {% if error_only %}
     <h1 class="text-2xl font-bold tracking-tight text-destructive">⚠ Landing Errore</h1>
     <p class="text-sm text-muted-foreground mt-1">{{ paginator.count }} lead: errori di invio, duplicati e test.</p>
+    {% elif pending_only %}
+    <h1 class="text-2xl font-bold tracking-tight" style="color:#eab308">🟡 FTD da confermare</h1>
+    <p class="text-sm text-muted-foreground mt-1">{{ paginator.count }} lead in attesa di conferma dal broker.</p>
     {% else %}
     <h1 class="text-2xl font-bold tracking-tight">Lead</h1>
     <p class="text-sm text-muted-foreground mt-1">{{ paginator.count }} lead · filtra per colonna.</p>
     {% endif %}
   </div>
   <div class="lead-toolbar flex items-center gap-2">
-    {% if error_only %}
+    {% if error_only or pending_only %}
     <a href="{% url 'tracking:lead_list' %}"
        class="h-9 px-4 rounded-md border border-border inline-flex items-center text-sm font-medium hover:bg-accent">← Lead</a>
     {% else %}
     <a href="{% url 'tracking:lead_errors' %}"
        class="h-9 px-4 rounded-md border border-destructive/40 text-destructive inline-flex items-center text-sm font-medium hover:bg-destructive/10">⚠ Landing Errore ({{ error_count }})</a>
+    <a href="{% url 'tracking:lead_yellow' %}"
+       style="border-color:rgba(234,179,8,.45);color:#eab308"
+       class="h-9 px-4 rounded-md border inline-flex items-center text-sm font-medium">🟡 FTD da confermare ({{ yellow_count }})</a>
     {% endif %}
     {% if can_edit_stage %}
     <button type="submit" form="syncallform"
@@ -40,7 +46,7 @@
     {% endif %}
     <button type="submit" form="leadfilter"
             class="h-9 px-4 rounded-md bg-primary text-primary-foreground inline-flex items-center text-sm font-medium hover:opacity-90">Filtra</button>
-    <a href="{% if error_only %}{% url 'tracking:lead_errors' %}{% else %}{% url 'tracking:lead_list' %}{% endif %}"
+    <a href="{% if error_only %}{% url 'tracking:lead_errors' %}{% elif pending_only %}{% url 'tracking:lead_yellow' %}{% else %}{% url 'tracking:lead_list' %}{% endif %}"
        class="h-9 px-4 rounded-md border border-border inline-flex items-center text-sm hover:bg-accent">Reset</a>
     {% if is_paginated %}
     <div class="flex items-center gap-1 ml-1">

@@ -12,6 +12,7 @@ from .views import (
     LeadPushView,
     LeadSyncSelectedView,
     LeadTogglePaidView,
+    LeadYellowListView,
     OpenAffBrokerCreateView,
     OpenAffBrokerDeleteView,
     OpenAffBrokerSyncView,
@@ -60,6 +61,7 @@ app_name = "tracking"
 urlpatterns = [
     path("", LeadListView.as_view(), name="lead_list"),
     path("errori/", LeadErrorListView.as_view(), name="lead_errors"),
+    path("gialli/", LeadYellowListView.as_view(), name="lead_yellow"),
     path("leads/<int:pk>/push/", LeadPushView.as_view(), name="lead_push"),
     path("leads/<int:pk>/paid/", LeadTogglePaidView.as_view(), name="lead_toggle_paid"),
     path("leads/sync-selected/", LeadSyncSelectedView.as_view(), name="lead_sync_selected"),

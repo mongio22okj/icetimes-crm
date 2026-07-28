@@ -288,6 +288,7 @@ class LeadListView(BreadcrumbsMixin, LoginRequiredMixin,
     breadcrumb_title = "Lead"
     paginate_by = 50
     error_only = False  # True nella pagina "Landing Errore"
+    pending_only = False  # True nella pagina "FTD da confermare" (righe gialle)
 
     def get_queryset(self):
         qs = Lead.objects.all()
@@ -346,7 +347,12 @@ class LeadListView(BreadcrumbsMixin, LoginRequiredMixin,
         # NB: has_key e NON payload__force_error=True — su una chiave assente
         # il confronto vale NULL e l'exclude scarterebbe tutte le righe.
         forced_q = Q(payload__has_key="force_error")
-        if self.error_only:
+        if self.pending_only:
+            # Pagina "FTD da confermare": TUTTE le righe gialle, ovunque si
+            # trovino (Lead o Landing Errore), cosi' nessuna sfugge. Restano
+            # fuori solo i lead di test.
+            qs = qs.filter(payload__deposit_pending=True).exclude(test_q)
+        elif self.error_only:
             qs = qs.filter(~delivered_q | test_q | forced_q)
         else:
             qs = qs.filter(delivered_q).exclude(test_q).exclude(forced_q)
@@ -364,6 +370,7 @@ class LeadListView(BreadcrumbsMixin, LoginRequiredMixin,
         # Segnare una FTD come "pagata" e' un'azione contabile: solo Super Admin.
         ctx["can_mark_paid"] = bool(u.is_crm_admin)
         ctx["error_only"] = self.error_only
+        ctx["pending_only"] = self.pending_only
         from django.db.models import Q
         _tq = (Q(firstname__icontains="test") | Q(lastname__icontains="test")
                | Q(email__icontains="test") | Q(status__iexact="test"))
@@ -373,6 +380,9 @@ class LeadListView(BreadcrumbsMixin, LoginRequiredMixin,
                       | Q(payload__push_timeout=True))
         ctx["error_count"] = Lead.objects.filter(
             ~_delivered | _tq | Q(payload__has_key="force_error")).count()
+        # Righe gialle = FTD dichiarate ma non ancora confermate dal broker.
+        ctx["yellow_count"] = Lead.objects.filter(
+            payload__deposit_pending=True).exclude(_tq).count()
         return ctx
 
 
@@ -380,6 +390,12 @@ class LeadErrorListView(LeadListView):
     """Pagina 'Landing Errore': SOLO i lead con push fallito (senza auto-login)."""
     error_only = True
     breadcrumb_title = "Landing Errore"
+
+
+class LeadYellowListView(LeadListView):
+    """Pagina 'FTD da confermare': SOLO le righe gialle (deposit_pending)."""
+    pending_only = True
+    breadcrumb_title = "FTD da confermare"
 
 
 class LeadSyncSelectedView(LoginRequiredMixin, EmailVerifiedRequiredMixin,
