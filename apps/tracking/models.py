@@ -23,8 +23,10 @@ class TrackboxBroker(models.Model):
 
     Un modello DEDICATO per il tipo TrackBox: contiene SOLO i campi che
     servono a questo broker. Endpoint dal base_url:
-      push → {base_url}/api/signup/procform   (x-api-key = push_key)
-      pull → {base_url}/api/pull/customers     (x-api-key = pull_key)
+      push → {push_base_url o base_url}/api/signup/procform  (x-api-key = push_key)
+      pull → {base_url}/api/pull/customers                    (x-api-key = pull_key)
+    Alcuni deployment separano i due domini (SoftTrack dal 2026-07-29: push su
+    apisofttrack.com, pull sul vecchio tb.softtrack.net) → push_base_url.
     """
 
     kind = "trackbox"
@@ -35,6 +37,11 @@ class TrackboxBroker(models.Model):
         help_text="Etichetta interna, es. 'FINTECHGURUS'.")
     base_url = models.URLField(
         "Base URL", help_text="Es. https://track.fintechgurus.org")
+    push_base_url = models.URLField(
+        "Base URL PUSH (se diverso)", blank=True, default="",
+        help_text="Solo se il broker usa un dominio DIVERSO per il push "
+                  "(es. SoftTrack: push su https://apisofttrack.com, pull su "
+                  "https://tb.softtrack.net). Vuoto = usa il Base URL.")
     username = models.CharField(
         "Username", max_length=120, help_text="Header x-trackbox-username.")
     password = models.CharField(

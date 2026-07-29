@@ -24,8 +24,8 @@ class TrackboxError(Exception):
     """Errore di comunicazione o di rifiuto lato TrackBox."""
 
 
-def _request(broker, path, payload, api_key, timeout=25):
-    url = broker.base_url.rstrip("/") + path
+def _request(broker, path, payload, api_key, timeout=25, base=None):
+    url = (base or broker.base_url).rstrip("/") + path
     req = urllib.request.Request(
         url,
         data=json.dumps(payload).encode(),
@@ -152,9 +152,13 @@ def build_push_payload(broker, lead):
 
 
 def push_lead(broker, lead):
-    """Invia il lead al broker. Ritorna la risposta JSON o solleva TrackboxError."""
+    """Invia il lead al broker. Ritorna la risposta JSON o solleva TrackboxError.
+
+    Il push puo' andare su un dominio diverso dal pull (push_base_url).
+    """
     return _request(broker, "/api/signup/procform",
-                    build_push_payload(broker, lead), broker.push_key)
+                    build_push_payload(broker, lead), broker.push_key,
+                    base=getattr(broker, "push_base_url", "") or None)
 
 
 # ── PULL (stati/depositi) ────────────────────────────────────────────────

@@ -30,7 +30,7 @@ class TrackboxBrokerForm(forms.ModelForm):
     class Meta:
         model = TrackboxBroker
         fields = (
-            "name", "base_url", "username", "password",
+            "name", "base_url", "push_base_url", "username", "password",
             "push_key", "pull_key", "ai", "ci", "gi", "extra_params",
             "funnel", "landing_slug", "landing_brand", "note", "landing_html",
             "match_by_contact", "is_active",
@@ -39,6 +39,8 @@ class TrackboxBrokerForm(forms.ModelForm):
             "password": forms.PasswordInput(render_value=True),
             "base_url": forms.URLInput(attrs={
                 "placeholder": "https://track.fintechgurus.org"}),
+            "push_base_url": forms.URLInput(attrs={
+                "placeholder": "vuoto = usa il Base URL"}),
             "landing_html": forms.Textarea(attrs={"rows": 12}),
             "extra_params": forms.Textarea(attrs={
                 "rows": 3,
