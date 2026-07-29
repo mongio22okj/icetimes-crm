@@ -59,8 +59,38 @@ def _request(broker, path, payload, api_key, timeout=25):
                   or (data.get("data") if isinstance(data.get("data"), str) else None)
                   or data.get("error") or data.get("message")
                   or "errore sconosciuto")
-        raise TrackboxError(f"{detail} (code {data.get('code', '?')})")
+        # Il motivo REALE del rifiuto (es. "Your password cannot exceed 12
+        # characters!") e' annidato in error/data/errors: in superficie resta
+        # solo il generico "Validation errors", inutile per diagnosticare.
+        nested = _collect_messages(data)
+        if nested:
+            detail = f"{detail}: " + " | ".join(nested)
+        raise TrackboxError(f"{detail} (code {data.get('code', '?')}) "
+                            f"[raw: {json.dumps(data, ensure_ascii=False)[:400]}]")
     return data
+
+
+def _collect_messages(node, out=None, depth=0):
+    """Raccoglie ricorsivamente i messaggi d'errore annidati nella risposta."""
+    if out is None:
+        out = []
+    if depth > 6 or len(out) >= 6:
+        return out
+    if isinstance(node, dict):
+        for key in ("message", "msg", "errorMessage", "description", "reason"):
+            v = node.get(key)
+            if isinstance(v, str) and v.strip() and v not in out:
+                out.append(v.strip())
+        for v in node.values():
+            if isinstance(v, (dict, list)):
+                _collect_messages(v, out, depth + 1)
+    elif isinstance(node, list):
+        for v in node:
+            if isinstance(v, str) and v.strip() and v not in out:
+                out.append(v.strip())
+            elif isinstance(v, (dict, list)):
+                _collect_messages(v, out, depth + 1)
+    return out
 
 
 # Il codice paese NON sempre coincide col codice lingua per il campo "lg":
@@ -79,18 +109,20 @@ def _lg_for(country):
 def gen_password():
     """Password dell'account creato lato broker.
 
-    MAX 12 CARATTERI: alcuni deployment TrackBox (es. Sierra Affiliates)
-    rifiutano il push con "Your password cannot exceed 12 characters!".
-    Prima usavamo secrets.token_urlsafe(10) = 14 caratteri → push respinto.
-    Ne genera 11, garantendo maiuscola + minuscola + cifra + simbolo.
+    Vincoli imposti da TrackBox (rilevati su Sierra Affiliates):
+      - MAX 12 caratteri → "Your password cannot exceed 12 characters!"
+      - almeno 1 minuscola, 1 maiuscola e 1 cifra
+      - NESSUN carattere speciale → "Password should contain at least 1
+        lowercase, 1 uppercase and 1 number without special characters."
+    Prima usavamo secrets.token_urlsafe(10): 14 caratteri e con -/_ → respinta.
+    Genera 11 caratteri solo alfanumerici.
     """
     body = "".join(secrets.choice(string.ascii_letters + string.digits)
-                   for _ in range(7))
+                   for _ in range(8))
     return (secrets.choice(string.ascii_uppercase)
             + secrets.choice(string.ascii_lowercase)
-            + body
             + secrets.choice(string.digits)
-            + "!")
+            + body)
 
 
 def build_push_payload(broker, lead):
