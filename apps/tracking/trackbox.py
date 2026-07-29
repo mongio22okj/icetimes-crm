@@ -9,6 +9,7 @@ invocato solo quando un lead reale viene inviato (azione staff o landing).
 """
 import json
 import secrets
+import string
 import urllib.error
 import urllib.request
 
@@ -75,6 +76,23 @@ def _lg_for(country):
     return _COUNTRY_LANG.get(geo, geo)
 
 
+def gen_password():
+    """Password dell'account creato lato broker.
+
+    MAX 12 CARATTERI: alcuni deployment TrackBox (es. Sierra Affiliates)
+    rifiutano il push con "Your password cannot exceed 12 characters!".
+    Prima usavamo secrets.token_urlsafe(10) = 14 caratteri → push respinto.
+    Ne genera 11, garantendo maiuscola + minuscola + cifra + simbolo.
+    """
+    body = "".join(secrets.choice(string.ascii_letters + string.digits)
+                   for _ in range(7))
+    return (secrets.choice(string.ascii_uppercase)
+            + secrets.choice(string.ascii_lowercase)
+            + body
+            + secrets.choice(string.digits)
+            + "!")
+
+
 def build_push_payload(broker, lead):
     """Costruisce il body del push dal broker + lead (senza inviare nulla)."""
     payload = {
@@ -86,7 +104,7 @@ def build_push_payload(broker, lead):
         "lastname": lead.lastname,
         "email": lead.email,
         "phone": lead.phone,
-        "password": secrets.token_urlsafe(10),
+        "password": gen_password(),
         # affclickid = il NOSTRO click_id: il broker lo rimanda nel postback
         # come lead_id → è la chiave di aggancio degli aggiornamenti di stato.
         "affclickid": lead.click_id,
