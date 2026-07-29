@@ -12,6 +12,7 @@ import secrets
 import string
 import urllib.error
 import urllib.request
+from datetime import timedelta
 
 # UA da browser: Cloudflare (davanti a molti broker) blocca "Python-urllib"
 # con 403 (error 1010). Serve uno UA reale per passare il WAF.
@@ -168,12 +169,23 @@ PULL_DEPOSITS = "4"
 _PULL_DATE_FMT = "%Y-%m-%d %H:%M:%S"
 
 
+# TrackBox interpreta le date from/to nel FUSO DEL SUO SERVER, non in UTC
+# (la risposta lo dichiara: metadata.timezone = "Asia/Jerusalem" = UTC+3).
+# Noi le mandiamo in UTC, quindi il "to" veniva letto 3 ore indietro e gli
+# ultimi lead sparivano dalla pull (verificato 2026-07-29: un lead appena
+# pushato risultava assente con finestra UTC e presente spostandola di +3h).
+# Invece di inseguire il fuso di ogni broker allarghiamo la finestra: chiedere
+# qualche ora in piu' non ha controindicazioni (il matching ignora i doppioni)
+# e regge anche se il broker cambia timezone.
+_PULL_TZ_SLACK = timedelta(hours=12)
+
+
 def pull_customers(broker, date_from, date_to,
                    pull_type=PULL_LEADS_AND_DEPOSITS, page=0, timeout=30):
     """Legge stati/depositi dal broker: POST /api/pull/customers (pull_key)."""
     payload = {
-        "from": date_from.strftime(_PULL_DATE_FMT),
-        "to": date_to.strftime(_PULL_DATE_FMT),
+        "from": (date_from - _PULL_TZ_SLACK).strftime(_PULL_DATE_FMT),
+        "to": (date_to + _PULL_TZ_SLACK).strftime(_PULL_DATE_FMT),
         "type": str(pull_type),
         "page": str(page),
     }
