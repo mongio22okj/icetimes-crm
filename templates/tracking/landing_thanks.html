@@ -1,10 +1,15 @@
 {% load static %}
+{% comment %}
+Pagina di ringraziamento della landing pubblica.
+Testi in 4 lingue: la variabile `lang` arriva da views._landing_lang(broker)
+(it = default, es = Spagna, de = Germania, sv = Svezia).
+{% endcomment %}
 <!DOCTYPE html>
-<html lang="it">
+<html lang="{{ lang|default:'it' }}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% if broker.landing_brand %}{{ broker.landing_brand }}{% else %}Grazie{% endif %}</title>
+  <title>{% if broker.landing_brand %}{{ broker.landing_brand }}{% else %}{% if lang == 'es' %}Gracias{% elif lang == 'de' %}Danke{% elif lang == 'sv' %}Tack{% else %}Grazie{% endif %}{% endif %}</title>
   <link rel="icon" type="image/svg+xml" href="{% static 'icons/icon.svg' %}">
   <link rel="stylesheet" href="{% static 'css/app.css' %}">
   {% if login_url %}
@@ -16,17 +21,50 @@
 <body class="min-h-screen bg-background text-foreground flex items-center justify-center p-4">
   <div class="w-full max-w-md rounded-xl border border-border bg-card p-8 shadow-lg text-center">
     <div class="text-5xl mb-4">✅</div>
-    <h1 class="text-xl font-bold tracking-tight mb-2">{% if already_done %}Registrazione già completata{% else %}Registrazione completata!{% endif %}</h1>
+
+    <h1 class="text-xl font-bold tracking-tight mb-2">
+      {% if already_done %}
+        {% if lang == 'es' %}Registro ya completado
+        {% elif lang == 'de' %}Registrierung bereits abgeschlossen
+        {% elif lang == 'sv' %}Registreringen är redan klar
+        {% else %}Registrazione già completata{% endif %}
+      {% else %}
+        {% if lang == 'es' %}¡Registro completado!
+        {% elif lang == 'de' %}Registrierung abgeschlossen!
+        {% elif lang == 'sv' %}Registreringen är klar!
+        {% else %}Registrazione completata!{% endif %}
+      {% endif %}
+    </h1>
+
     {% if login_url %}
-    <p class="text-sm text-muted-foreground mb-4">Verrai reindirizzato alla piattaforma tra pochi secondi...</p>
+    <p class="text-sm text-muted-foreground mb-4">
+      {% if lang == 'es' %}Te redirigiremos a la plataforma en unos segundos...
+      {% elif lang == 'de' %}Sie werden in wenigen Sekunden zur Plattform weitergeleitet...
+      {% elif lang == 'sv' %}Du omdirigeras till plattformen om några sekunder...
+      {% else %}Verrai reindirizzato alla piattaforma tra pochi secondi...{% endif %}
+    </p>
     {% elif already_done %}
-    <p class="text-sm text-muted-foreground mb-4">Hai già inviato la tua richiesta da questo dispositivo. Verrai ricontattato al più presto.</p>
+    <p class="text-sm text-muted-foreground mb-4">
+      {% if lang == 'es' %}Ya has enviado tu solicitud desde este dispositivo. Nos pondremos en contacto contigo lo antes posible.
+      {% elif lang == 'de' %}Sie haben Ihre Anfrage von diesem Gerät bereits gesendet. Wir melden uns so bald wie möglich bei Ihnen.
+      {% elif lang == 'sv' %}Du har redan skickat din förfrågan från den här enheten. Vi kontaktar dig så snart som möjligt.
+      {% else %}Hai già inviato la tua richiesta da questo dispositivo. Verrai ricontattato al più presto.{% endif %}
+    </p>
     {% else %}
-    <p class="text-sm text-muted-foreground mb-4">Grazie! Verrai ricontattato al più presto.</p>
+    <p class="text-sm text-muted-foreground mb-4">
+      {% if lang == 'es' %}¡Gracias! Nos pondremos en contacto contigo lo antes posible.
+      {% elif lang == 'de' %}Vielen Dank! Wir melden uns so bald wie möglich bei Ihnen.
+      {% elif lang == 'sv' %}Tack! Vi kontaktar dig så snart som möjligt.
+      {% else %}Grazie! Verrai ricontattato al più presto.{% endif %}
+    </p>
     {% endif %}
+
     {% if login_url %}
     <a href="{{ login_url }}" class="inline-block mt-2 px-6 py-3 rounded-md bg-primary text-primary-foreground font-medium text-sm hover:opacity-90 transition">
-      Accedi ora →
+      {% if lang == 'es' %}Acceder ahora →
+      {% elif lang == 'de' %}Jetzt einloggen →
+      {% elif lang == 'sv' %}Logga in nu →
+      {% else %}Accedi ora →{% endif %}
     </a>
     {% endif %}
   </div>

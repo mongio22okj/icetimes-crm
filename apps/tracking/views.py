@@ -211,6 +211,26 @@ _LP_DONE_COOKIE = "lp_done"
 _LP_DONE_MAX_AGE = 60 * 60 * 24 * 365  # 1 anno
 
 
+_SLUG_LANG = (("velocidad", "es"), ("opulatrix", "de"), ("kenvestium", "sv"))
+
+
+def _landing_lang(broker):
+    """Lingua della pagina di ringraziamento (it/es/de/sv).
+    Solo i broker Galassia hanno il campo `language`: per gli altri la si deduce
+    dallo slug della landing (velocidad-*=ES, opulatrix-*=DE, kenvestium-*=SE).
+    Default italiano, come prima."""
+    lang = (getattr(broker, "language", "") or "").strip().lower()[:2]
+    if lang in ("es", "de", "sv", "it"):
+        return lang
+    if lang == "se":  # svedese scritto col codice paese
+        return "sv"
+    slug = (getattr(broker, "landing_slug", "") or "").lower()
+    for prefix, code in _SLUG_LANG:
+        if slug.startswith(prefix):
+            return code
+    return "it"
+
+
 def _set_lp_done(response, slug):
     """Marca questo browser come 'ha già inviato' su QUESTA landing.
     Cookie con path per-landing: le altre landing/broker restano libere."""
@@ -233,7 +253,8 @@ def landing(request, slug):
     # Blocco one-shot: questo browser ha già inviato su questa landing.
     if request.COOKIES.get(_LP_DONE_COOKIE):
         return render(request, "tracking/landing_thanks.html",
-                      {"broker": broker, "login_url": "", "already_done": True})
+                      {"broker": broker, "login_url": "", "already_done": True,
+                       "lang": _landing_lang(broker)})
 
     form = LandingLeadForm(request.POST or None)
     if request.method == "POST":
@@ -265,6 +286,7 @@ def landing(request, slug):
             return _set_lp_done(render(request, "tracking/landing_thanks.html", {
                 "broker": broker,
                 "login_url": res.get("login_url") or "",
+                "lang": _landing_lang(broker),
             }), slug)
 
 
