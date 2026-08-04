@@ -76,16 +76,27 @@ def _call(method, url, json_body=None):
 
 
 def build_push_payload(broker, lead):
-    return {
+    """⚠️ `offer` va OMESSO se non abbiamo il nome ESATTO di un'offerta
+    configurata sul loro account. Diagnosi 2026-08-04: mandando un nome
+    inventato ("Immediata Quantaro", il nostro funnel) il loro router non
+    trova nulla a cui agganciare il lead e lo scarta -- `status: declined`,
+    `payout: 0`, `sale_status: null` (= mai inoltrato a un advertiser).
+    Stessa identica chiamata SENZA il campo -> `ok: true, status: sent` +
+    autologin. Quindi: niente fallback su broker.name, o si torna al
+    rifiuto. Valorizza `funnel` SOLO col nome che ti da' il referente."""
+    data = {
         "email": lead.email or "",
         "phone": lead.phone or "",
         "first_name": lead.firstname or "",
         "last_name": lead.lastname or "",
         "country": (lead.country or "IT").upper(),
-        "offer": broker.funnel or broker.name,
         "click_id": lead.click_id,
         "ip": lead.ip or "",
     }
+    offer = (broker.funnel or "").strip()
+    if offer:
+        data["offer"] = offer
+    return data
 
 
 def push_lead(broker, lead):
