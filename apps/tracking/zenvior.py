@@ -11,6 +11,14 @@ PUSH (registrazione lead): POST {base}/intake?api_key=... (JSON body)
   Successo: HTTP 200 {"ok": true, "lead_id": 42, "click_id": "abc123"}.
   Errori: 400 (email/phone mancante o dati non validi), 401 (chiave
   invalida), 500 (errore server, ritentare).
+  ⚠️ RIFIUTO CON HTTP 200 (visto nel primo test reale, 2026-08-04): il
+  broker puo' rispondere 200 con {"ok": false, "status": "declined",
+  "reason"/"message": "Lead rejected", "code": "ERROR", "result": false,
+  "lead_id": 88, "redirect_url": null} -- quindi NON basta guardare il
+  codice HTTP, l'esito vero e' il campo `ok`. Assegna un `lead_id` anche
+  ai lead rifiutati (non lo salviamo: non e' un lead valido).
+  ⚠️ `redirect_url` NON e' documentato ma esiste nella risposta reale
+  (null sui rifiuti): e' il link di auto-login sui lead accettati.
 
 PULL (reporting): GET {base}/api/affiliate/leads?api_key=...&page=&limit=
   &status=&from=YYYY-MM-DD&to=YYYY-MM-DD
@@ -91,6 +99,30 @@ def extract_broker_lead_id(resp):
         return ""
     v = resp.get("lead_id")
     return str(v) if v not in (None, "") else ""
+
+
+def extract_login_url(resp):
+    """Link di auto-login. NON documentato, ma la risposta reale contiene
+    `redirect_url` (null sui rifiuti) -- scoperto col primo test 2026-08-04."""
+    if not isinstance(resp, dict):
+        return ""
+    for key in ("redirect_url", "autologin_url", "auto_login_url", "login_url"):
+        v = resp.get(key)
+        if v:
+            return str(v)
+    return ""
+
+
+def extract_error(resp):
+    """Messaggio d'errore leggibile. La risposta reale usa `message`/`reason`
+    (non `error` come si poteva immaginare) e porta anche `status`/`code`."""
+    if not isinstance(resp, dict):
+        return ""
+    detail = (resp.get("error") or resp.get("message") or resp.get("reason") or "")
+    status = resp.get("status") or resp.get("code") or ""
+    if detail and status and str(status).lower() not in str(detail).lower():
+        return f"{detail} ({status})"
+    return str(detail or status or "")
 
 
 def pull_leads(broker, date_start=None, date_end=None, page=1, limit=200):

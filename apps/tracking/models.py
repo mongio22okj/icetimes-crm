@@ -941,12 +941,17 @@ class ZenviorBroker(models.Model):
         from . import zenvior
         try:
             resp = zenvior.push_lead(self, lead) or {}
+            # ⚠️ Il broker rifiuta CON HTTP 200 ({"ok": false, "status":
+            # "declined"}) -- confermato dal primo test reale 2026-08-04:
+            # l'esito vero e' `ok`, non il codice HTTP.
             ok = resp.get("_http") == 200 and resp.get("ok") is True
             if ok:
                 return _push_result(
-                    True, resp, broker_lead_id=zenvior.extract_broker_lead_id(resp))
-            detail = (resp.get("error") or resp.get("message")
-                     or f"push non riuscito (HTTP {resp.get('_http')})")
+                    True, resp,
+                    broker_lead_id=zenvior.extract_broker_lead_id(resp),
+                    login_url=zenvior.extract_login_url(resp))
+            detail = (zenvior.extract_error(resp)
+                      or f"push non riuscito (HTTP {resp.get('_http')})")
             return _push_result(False, resp, error=str(detail)[:255])
         except zenvior.ZenviorError as exc:
             return _push_result(False, error=str(exc)[:255])
