@@ -37,6 +37,10 @@ from .views import (
     LeadShakerBrokerDeleteView,
     LeadShakerBrokerSyncView,
     LeadShakerBrokerUpdateView,
+    ZenviorBrokerCreateView,
+    ZenviorBrokerDeleteView,
+    ZenviorBrokerSyncView,
+    ZenviorBrokerUpdateView,
     SpmMonsterBrokerCreateView,
     SpmMonsterBrokerDeleteView,
     SpmMonsterBrokerSyncView,
@@ -120,6 +124,10 @@ urlpatterns = [
     path("brokers/leadshaker/<int:pk>/edit/", LeadShakerBrokerUpdateView.as_view(), name="leadshaker_edit"),
     path("brokers/leadshaker/<int:pk>/delete/", LeadShakerBrokerDeleteView.as_view(), name="leadshaker_delete"),
     path("brokers/leadshaker/<int:pk>/sync/", LeadShakerBrokerSyncView.as_view(), name="leadshaker_sync"),
+    path("brokers/zenvior/new/", ZenviorBrokerCreateView.as_view(), name="zenvior_create"),
+    path("brokers/zenvior/<int:pk>/edit/", ZenviorBrokerUpdateView.as_view(), name="zenvior_edit"),
+    path("brokers/zenvior/<int:pk>/delete/", ZenviorBrokerDeleteView.as_view(), name="zenvior_delete"),
+    path("brokers/zenvior/<int:pk>/sync/", ZenviorBrokerSyncView.as_view(), name="zenvior_sync"),
     # Codice tracciamento per landing esterna (snippet form)
     path("brokers/<str:kind>/<int:pk>/code/", TrackingCodeView.as_view(), name="broker_code"),
 ]

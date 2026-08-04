@@ -887,11 +887,78 @@ class LeadShakerBroker(models.Model):
             return _push_result(False, error=f"{type(exc).__name__}: {exc}"[:255])
 
 
+class ZenviorBroker(models.Model):
+    """Broker tipo 'Zenvior' (zenviorcrm.com, deployment "Adverterra").
+    Auth: api_key come query param (niente header), stessa chiave per
+    push/pull. Push POST /intake (JSON) risposta {ok, lead_id, click_id}.
+    Pull GET /api/affiliate/leads, FTD = has_conversion:true."""
+
+    kind = "zenvior"
+    kind_label = "Zenvior"
+
+    name = models.CharField("Nome", max_length=120)
+    base_url = models.URLField(
+        "Base URL API", default="https://zenviorcrm.com",
+        help_text="Dominio API. Push=/intake, pull=/api/affiliate/leads.")
+    api_key = models.CharField(
+        "API key", max_length=255,
+        help_text="Passata come ?api_key=... su ogni chiamata (push e pull).")
+    funnel = models.CharField(
+        "Funnel / offer", max_length=120, blank=True,
+        help_text="Inviato come 'offer'. Se vuoto usa il nome broker.")
+
+    landing_slug = models.SlugField(
+        "Slug landing", max_length=60, blank=True, null=True, unique=True,
+        help_text="Landing pubblica: /lp/<slug>/.")
+    landing_brand = models.CharField(
+        "Brand landing", max_length=120, blank=True,
+        help_text="Nome/logo mostrato sulla landing (visitor-facing).")
+    note = models.CharField("Note", max_length=255, blank=True)
+    landing_html = models.TextField(
+        "HTML landing personalizzata", blank=True,
+        help_text="HTML completo della landing. Form POST a /lp/<slug>/ con "
+                  "campi: firstname, lastname, email, phone, country.")
+    match_by_contact = models.BooleanField(
+        "Aggancio per email/telefono", default=False,
+        help_text="Aggancio extra per email/telefono nella pull, se serve.")
+    is_active = models.BooleanField("Attivo", default=True)
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Broker Zenvior"
+        verbose_name_plural = "Broker Zenvior"
+        ordering = ["name"]
+
+    def __str__(self) -> str:
+        return self.name
+
+    @property
+    def signup_url(self) -> str:
+        return self.base_url.rstrip("/") + "/intake"
+
+    def push(self, lead):
+        from . import zenvior
+        try:
+            resp = zenvior.push_lead(self, lead) or {}
+            ok = resp.get("_http") == 200 and resp.get("ok") is True
+            if ok:
+                return _push_result(
+                    True, resp, broker_lead_id=zenvior.extract_broker_lead_id(resp))
+            detail = (resp.get("error") or resp.get("message")
+                     or f"push non riuscito (HTTP {resp.get('_http')})")
+            return _push_result(False, resp, error=str(detail)[:255])
+        except zenvior.ZenviorError as exc:
+            return _push_result(False, error=str(exc)[:255])
+        except Exception as exc:  # noqa: BLE001
+            return _push_result(False, error=f"{type(exc).__name__}: {exc}"[:255])
+
+
 # Tipi di broker registrati: kind → modello. Per risolvere slug/landing e
 # costruire elenchi unificati senza accoppiare il resto del codice.
 BROKER_MODELS = (TrackboxBroker, IrevBroker, SpmMonsterBroker, TYourAdsBroker,
                  GalassiaBroker, OpenAffBroker, GlobalTradeBroker, OneCryptBroker,
-                 CpaForgeBroker, AffinitraxBroker, LeadShakerBroker)
+                 CpaForgeBroker, AffinitraxBroker, LeadShakerBroker, ZenviorBroker)
 
 
 def find_broker_by_slug(slug):

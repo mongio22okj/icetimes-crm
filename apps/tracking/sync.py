@@ -782,12 +782,67 @@ def sync_leadshaker(broker, days=90, only_ids=None):
     return {"seen": seen, "matched": matched, "updated": updated, "pages": 1}
 
 
+def sync_zenvior(broker, days=90, only_ids=None):
+    """Pull stati Zenvior: GET /api/affiliate/leads?from=&to=&page=&limit=
+    (paginata, envelope {leads:[...], page, pages, total}). Aggancio via
+    _match_lead sul click_id (campo esplicito nella risposta). FTD =
+    has_conversion:true (zenvior.is_deposit), NON nelle chiavi generiche
+    _DEPOSIT_KEYS -> calcolata a parte."""
+    from . import zenvior
+    now = datetime.now(dt_tz.utc)
+    date_start = (now - timedelta(days=days)).strftime("%Y-%m-%d")
+    date_end = now.strftime("%Y-%m-%d")
+    seen = matched = updated = 0
+    page = 1
+    while page <= MAX_PAGES:
+        try:
+            rows, pages = zenvior.pull_leads(broker, date_start, date_end, page=page)
+        except zenvior.ZenviorError:
+            break
+        for row in rows:
+            if not isinstance(row, dict):
+                continue
+            seen += 1
+            lead = _match_lead(broker, row)
+            if lead is None:
+                continue
+            if only_ids is not None and lead.pk not in only_ids:
+                continue
+            matched += 1
+            lead.last_pull_at = now
+            changed = False
+            status = _first(row, *_STATUS_KEYS)
+            if status and lead.status != str(status)[:120]:
+                lead.status = str(status)[:120]
+                changed = True
+            is_dep = zenvior.is_deposit(row)
+            if is_dep and not lead.is_deposit:
+                lead.is_deposit = True
+                changed = True
+            new_stage = "ftd" if is_dep else status_to_stage(status)
+            if new_stage and lead.stage != "ftd" and lead.stage != new_stage:
+                lead.stage = new_stage
+                changed = True
+            if changed:
+                merged = dict(lead.payload or {})
+                merged["last_pull"] = row
+                lead.payload = merged
+                lead.save()
+                updated += 1
+            else:
+                lead.save(update_fields=["last_pull_at"])
+        if page >= pages:
+            break
+        page += 1
+    return {"seen": seen, "matched": matched, "updated": updated, "pages": page}
+
+
 def sync_all_pullable():
     """Lancia la pull/sync per ogni broker attivo TrackBox + SPM Monster.
     IREV è escluso (stato via postback). Ritorna un riepilogo aggregato."""
     from .models import (TrackboxBroker, SpmMonsterBroker, GalassiaBroker,
                          IrevBroker, OpenAffBroker, GlobalTradeBroker, OneCryptBroker,
-                         CpaForgeBroker, AffinitraxBroker, LeadShakerBroker)
+                         CpaForgeBroker, AffinitraxBroker, LeadShakerBroker, ZenviorBroker)
     total = {"updated": 0, "matched": 0, "seen": 0, "brokers": 0, "errors": []}
     jobs = ([(b, sync_broker) for b in TrackboxBroker.objects.filter(is_active=True)]
             + [(b, sync_spmmonster) for b in SpmMonsterBroker.objects.filter(is_active=True)]
@@ -798,6 +853,7 @@ def sync_all_pullable():
             + [(b, sync_cpaforge) for b in CpaForgeBroker.objects.filter(is_active=True)]
             + [(b, sync_affinitrax) for b in AffinitraxBroker.objects.filter(is_active=True)]
             + [(b, sync_leadshaker) for b in LeadShakerBroker.objects.filter(is_active=True)]
+            + [(b, sync_zenvior) for b in ZenviorBroker.objects.filter(is_active=True)]
             + [(b, sync_irev) for b in IrevBroker.objects.filter(is_active=True, use_pull=True)])
     for broker, fn in jobs:
         try:
@@ -817,7 +873,7 @@ def sync_selected(lead_ids):
     (stato via postback). Ritorna riepilogo aggregato."""
     from .models import (SpmMonsterBroker, TrackboxBroker, GalassiaBroker,
                          IrevBroker, OpenAffBroker, GlobalTradeBroker, OneCryptBroker,
-                         CpaForgeBroker, AffinitraxBroker, LeadShakerBroker)
+                         CpaForgeBroker, AffinitraxBroker, LeadShakerBroker, ZenviorBroker)
     ids = {int(x) for x in lead_ids}
     total = {"updated": 0, "matched": 0, "seen": 0, "brokers": 0,
              "errors": [], "irev": 0}
@@ -846,6 +902,8 @@ def sync_selected(lead_ids):
                 r = sync_affinitrax(b, only_ids=ids)
             elif isinstance(b, LeadShakerBroker):
                 r = sync_leadshaker(b, only_ids=ids)
+            elif isinstance(b, ZenviorBroker):
+                r = sync_zenvior(b, only_ids=ids)
             elif isinstance(b, IrevBroker) and getattr(b, "use_pull", False):
                 r = sync_irev(b, only_ids=ids)
             else:
